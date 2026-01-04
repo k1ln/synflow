@@ -291,11 +291,6 @@ class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {
     setScriptName(finalName);
     const existingIdx = scripts.findIndex(s => s.name === finalName);
     let remoteId = existingIdx >= 0 ? scripts[existingIdx].remoteId : undefined;
-    try {
-      const { saveScript } = await import('../services/apiClient');
-      const saved = await saveScript({ name: finalName, code: processorCode });
-      if (saved && typeof saved.id === 'string') remoteId = saved.id;
-    } catch { /* backend optional */ }
     let hasDisk = existingIdx >= 0 ? scripts[existingIdx].hasDisk : false;
     try {
       const root = await loadRootHandle();
@@ -347,15 +342,6 @@ class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {
       const selectionKey = `workletScriptSelection:${nodeId}`;
       const selectedName = localStorage.getItem(selectionKey);
       if (selectedName === entry.name) localStorage.removeItem(selectionKey);
-    }
-
-    if (entry.remoteId) {
-      try {
-        const { deleteScript } = await import('../services/apiClient');
-        await deleteScript(entry.remoteId);
-      } catch (e) {
-        console.warn('[AudioWorkletFlowNode] remote script delete failed', e);
-      }
     }
 
     try {

@@ -1679,38 +1679,7 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
     }
 
     // Fallback: try backend upload
-    try {
-      const svc = (
-        await import('../services/../services/AudioFileService')
-      ).default;
-      const meta = await svc.uploadFile(file);
-      setFileId(meta.id);
-      setFileUrl(meta.url);
-      setDiskFileName(undefined);
-      // also fetch binary for immediate decoding client side
-      const resp = await fetch(meta.url);
-      const fetchedBuf = await resp.arrayBuffer();
-      setArrayBuffer(fetchedBuf);
-      eventBus.emit(data.id + '.params.updateParams', {
-        nodeid: data.id,
-        data: {
-          arrayBuffer: fetchedBuf,
-          fileName: file.name,
-          fileId: meta.id,
-          fileUrl: meta.url
-        }
-      });
-    } catch (err) {
-      console.warn('Upload failed, storing in memory only', err);
-      setArrayBuffer(buf);
-      setDiskFileName(undefined);
-      setFileId(undefined);
-      setFileUrl(undefined);
-      eventBus.emit(data.id + '.params.updateParams', {
-        nodeid: data.id,
-        data: { arrayBuffer: buf, fileName: file.name }
-      });
-    }
+    
     setDuration(undefined);
   }, [data.id, eventBus]);
 
@@ -1773,48 +1742,7 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
           }
         }
 
-        // 2. Try backend URL
-        let url = fileUrl;
-        if (!url && fileId) {
-          try {
-            const svc = (
-              await import('../services/AudioFileService')
-            ).default;
-            const meta = await svc.getMeta(fileId);
-            if (cancelled) return;
-            setFileUrl(meta.url);
-            url = meta.url;
-          } catch (err) {
-            console.warn('Prefetch meta failed', err);
-          }
-        }
-        if (url) {
-          try {
-            const resp = await fetch(url);
-            if (!resp.ok) throw new Error('Fetch failed ' + resp.status);
-            const buf = await resp.arrayBuffer();
-            if (cancelled) return;
-            setArrayBuffer(buf);
-            // Eagerly decode so waveform paints immediately
-            try {
-              const ctx = new AudioContext();
-              const decoded = await ctx.decodeAudioData(buf.slice(0));
-              if (!cancelled) {
-                setDecodedBuffer(decoded);
-                setDuration(decoded.duration);
-              }
-              ctx.close();
-            } catch (err) {
-              console.warn('Waveform decode failed after URL load', err);
-            }
-            eventBus.emit(data.id + '.params.updateParams', {
-              nodeid: data.id,
-              data: { arrayBuffer: buf, fileUrl: url }
-            });
-          } catch (err) {
-            console.warn('Prefetch audio fetch failed', err);
-          }
-        }
+        
       } finally {
         prefetchingRef.current = false;
       }
