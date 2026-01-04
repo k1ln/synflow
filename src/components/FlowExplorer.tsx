@@ -1,24 +1,91 @@
 import React, { useEffect, useState } from 'react';
-import { listMyFlows, listPublicFlows, saveFlow } from '../services/apiClient';
+import { SimpleIndexedDB } from '../util/SimpleIndexedDB';
+import {
+  loadRootHandle,
+  saveFlowToDisk,
+  listFlowsOnDisk,
+  hasFsApi,
+} from '../util/FileSystemAudioStore';
 
-interface FlowMeta { id:string; name:string; is_public?:number; updated_at?:string; owner?:string; }
+interface FlowMeta {
+  id: string;
+  name: string;
+  is_public?: number;
+  updated_at?: string;
+  owner?: string;
+}
 
-const FlowExplorer: React.FC<{ onOpen:(id:string)=>void; onCreate:(id:string)=>void; }> = ({ onOpen, onCreate }) => {
+const db = new SimpleIndexedDB('FlowSynthDB', 'flows');
+
+const FlowExplorer: React.FC<{
+  onOpen: (id: string) => void;
+  onCreate: (id: string) => void;
+}> = ({ onOpen, onCreate }) => {
   const [my, setMy] = useState<FlowMeta[]>([]);
-  const [pub, setPub] = useState<FlowMeta[]>([]);
   const [filter, setFilter] = useState('');
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('New Flow');
 
-  useEffect(()=>{ refresh(); },[]);
-  async function refresh(){
-    try { setMy(await listMyFlows()); } catch {}
-    try { setPub(await listPublicFlows()); } catch {}
+  useEffect(() => { refresh(); }, []);
+
+  async function refresh() {
+    try {
+      // Try loading from disk first if FS API is available
+      if (hasFsApi()) {
+        const rootHandle = await loadRootHandle();
+        if (rootHandle) {
+          const diskFlows = await listFlowsOnDisk(rootHandle);
+          const meta: FlowMeta[] = diskFlows.map((flow) => ({
+            id: flow.name,
+            name: flow.name,
+            updated_at: flow.updated_at,
+          }));
+          setMy(meta);
+          return;
+        }
+      }
+      // Fallback to IndexedDB
+      await db.open();
+      const flows = await db.get('*');
+      const meta: FlowMeta[] = flows.map((flow: any) => ({
+        id: flow.id,
+        name: flow.id,
+        updated_at: flow.updated_at,
+      }));
+      setMy(meta);
+    } catch (e) {
+      console.error('Error loading local flows:', e);
+    }
   }
 
-  async function createFlow(){
-    const res = await saveFlow({ name: newName, data: { nodes:[], edges:[] }, is_public:false });
-    setCreating(false); setNewName('New Flow'); refresh(); onCreate(res.id);
+  async function createFlow() {
+    const flowData = {
+      name: newName,
+      nodes: [],
+      edges: [],
+      updated_at: new Date().toISOString(),
+    };
+
+    // Try saving to disk first if FS API is available
+    if (hasFsApi()) {
+      const rootHandle = await loadRootHandle();
+      if (rootHandle) {
+        await saveFlowToDisk(rootHandle, flowData);
+      }
+    }
+
+    // Always save to IndexedDB as well
+    await db.open();
+    await db.put(newName, {
+      name: newName,
+      data: { nodes: [], edges: [] },
+      updated_at: flowData.updated_at,
+    });
+
+    setCreating(false);
+    setNewName('New Flow');
+    refresh();
+    onCreate(newName);
   }
 
   function renderGroup(title:string, items:FlowMeta[], icon:string){
@@ -47,7 +114,6 @@ const FlowExplorer: React.FC<{ onOpen:(id:string)=>void; onCreate:(id:string)=>v
     </div>}
     <div style={{ overflow:'auto', flex:1 }}>
       {renderGroup('My Flows', my, '📁')}
-      {renderGroup('Public Flows', pub, '🌐')}
     </div>
   </div>;
 };
