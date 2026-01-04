@@ -1,0 +1,70 @@
+/* Node selection glow is handled via inline boxShadow styles in Flow.tsx.
+   Do NOT add filter: drop-shadow here to avoid shadow buildup on multiple selections. */
+.react-flow__node.selected {
+    /* Ensure no additional filter is applied; boxShadow handles glow */
+    filter: none;
+}
+:root {
+    --primary-color: #464646; /* Primary color */
+    --secondary-color: #950dbe; /* Secondary color */
+    --font-color: #dddddd; /* Font color */
+}
+
+body {
+    color: var(--font-color);
+    background-color: var(--primary-color);
+    padding:0;
+    margin:0;
+}
+
+/* TopBar icon buttons */
+.topbar-btn {
+    position: relative;
+    transition: background 120ms ease, box-shadow 160ms ease, transform 60ms ease;
+}
+.topbar-btn:hover:not(:disabled) {
+    background: #262626 !important;
+    box-shadow: 0 0 0 1px #2f2f2f, 0 0 6px 2px rgba(0,255,136,0.15);
+}
+.topbar-btn:active:not(:disabled) {
+    transform: translateY(1px) scale(.97);
+    background: #1a1a1a !important;
+    box-shadow: 0 0 0 1px #333, 0 0 4px 1px rgba(0,255,136,0.25);
+}
+.topbar-btn.playing {
+    background: #0d3a17 !important;
+    box-shadow: 0 0 0 1px #1d5a2a, 0 0 10px 2px rgba(0,255,136,0.45);
+    color: #8dffbf !important;
+}
+.topbar-btn.playing:hover:not(:disabled) {
+    background: #114c21 !important;
+}
+.topbar-btn:disabled { opacity:.45; }
+
+/* Hide React Flow attribution watermark */
+.react-flow__attribution {
+    display: none !important;
+}
+
+/* Edge styling: provide a gentle default but allow per-edge inline styles to override */
+.react-flow__edge-path,
+.react-flow__connection-path {
+    /* Default stroke is white; inline styles (style.stroke) from React should override this. */
+    stroke: var(--edge-stroke, #ffffff);
+    /* Keep a sensible default thickness without overriding inline styles. */
+    stroke-width: 1.5px;
+    paint-order: stroke;
+    /* Default white-ish glow; inline style.filter, if set, will override. */
+    filter: var(--edge-filter, drop-shadow(0 0 2px rgba(255,255,255,0.6)) drop-shadow(0 0 4px rgba(255,255,255,0.3)));
+}
+
+/* Selected edges: keep a subtle default; inline styles from React will intensify */
+.react-flow__edge.selected .react-flow__edge-path {
+    stroke-width: 2px;
+}
+
+/* Animated/interactive connections while dragging (keep defaults without !important) */
+.react-flow__connectionline .react-flow__connection-path {
+    stroke: #ffffff;
+    stroke-width: 1.5px;
+}

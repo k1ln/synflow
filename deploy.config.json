@@ -1,0 +1,18 @@
+{
+  "backendDir": "backend",
+  "frontendDir": ".",
+  "remote": {
+    "host": "synflow.org",
+    "user": "deploy",
+    "port": 22,
+    "basePath": "/opt/flowsynth"
+  },
+  "services": {
+    "backend": "flowsynth-backend.service",
+    "frontend": "flowsynth-frontend.service"
+  },
+  "ssl": {
+    "email": "admin@synflow.org",
+    "staging": false
+  }
+}

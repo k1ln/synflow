@@ -1,0 +1,63 @@
+                    Refactor/Layout     |  Functionality    | there can be done more
+AudioContextFlowNode:       [x]         |                   |
+OscillatorFlowNode:         [x]         |                   |
+CustomNode/FlowNode:        [x]         |                   | 
+BiquadFilterFlowNode:       [x]         |                   |
+DynamicComsypressorFlowNode [x]         |                   |
+GainFlowNode:               [x]         |                   |
+DelayFlowNod3e:             [x]         |                   |
+WaveShaperFlowNode:         [x]         |                   | Waveshaper is deep need more TODO This is not in at the moment
+AudioWorkletFlowNode:       [x/2]       |                   | TODO it Should be better now didn't test at all need to come back later at the moment this is NTH 
+IIRFilterFlowNode:          [x]         |                   |
+ADSRFlowNode:               [x]         |                   |
+ButtonFlowNode:             [x]         |                   | removed Trigger Buttonflownode is allright Trigger has nothing to do with button perhaps think about adsr frequency and clockfrequency and samplefrequency
+MidiButtonFlowNode:         [x]         |                   | TODO still need second manual testing        
+OnOffButtonFlowNode:        [x]         | added audio comp. | OK.
+ClockFlowNode:              [x]         | added onOff Button| This seems to be ok
+FrequencyFlowNode:          [x]         |                   | somehow works now. need to find a way to effieciently make subscripbe update Params GUI and everything else.
+ConstantFlowNode:           [x]         |                   | fixed different stuff eventually this need fixxing again.
+SwitchFlowNode:             [x]         |                   | fixed evil bug with multiple edges.
+BlockingSwitchFlowNode:     [x]         |                   | much more beautiful this seems to work
+InputNode:                  [x]         |                   |
+OutputNode:                 [x]         |                   |
+SignalRouterFlowNode:       [NOTOK]     |                   | TODO: do we really need this? auskommentiert vorerst
+SampleFlowNode:             [x]         |                   | TODO: make speed adjustable 
+MidiFlowNote:               [x]         |                   |
+SequencerFlowNode:          [x]         |                   |
+SequencerFrequencyFlowNode: [x]         |                   |
+AutomationFlowNode:         [x]         |                   | dont know how to make better at the moment                   
+LogFlowNode:                [x]         |                   |
+MidiKnobFlowNode:           [x]         |                   |
+EventFlowNode:              [DELETE]    |                   |
+MouseTriggerButton:         [x]         |                   |
+NoiseFlowNode:              [x]         |                   |
+MicFlowNode:                [x]         |                   |
+RecordingFlowNode:          [x]          |                   |
+VistualAnalyzerNodeClaude   [x]          |                   | TODO:wegschmeissen
+VistualAnalyzerNodeGPT      [x]          |                   | layout and function test
+Speed divider               [x]
+
+Make new: 
+Speed Divider 
+Speed Multiploer 
+Frequency shifter 2 notes up or down ´
+Minimap einblendbar machen
+Equalizer
+
+
+TODO:
+- write documentation for every node with screenshots. 
+- add history to return to old saves. 
+- EVentBus GUI handling needs fixxing GUI to Vortual is obviously broken make nodeid+GUI. usw. as alternative. 
+- The clock is still buggy when changing stuff in edges. 
+
+- Write a Grain sampler or Grain syntheziser. 
+
+CONNECTIONS IS TOTALLY FUCKED!!!!!!!!!!!!!!!!! NEED TO CLEAN UP
+
+Was ist kaputt? 
+
+Bugs: 
+- On new node i get multi Clock 
+- Speed multiplier not working during playback
+- third part sampler node not working

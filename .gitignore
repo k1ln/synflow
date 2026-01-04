@@ -1,0 +1,32 @@
+node_modules
+src/audio
+
+# Environment files - NEVER commit these!
+.env
+.env.local
+.env.*.local
+
+# Ignore upload directories
+uploads/
+backend/uploads/
+
+# Ignore SQLite database
+backend/data/*.db
+backend/backend/data/flowSynth.db
+
+# Build outputs
+dist/
+build/
+.vite/
+*.tsbuildinfo
+
+# Docker
+.dockerignore
+
+# Logs
+logs/
+*.log
+
+# Temporary deployment artifacts
+.deploy_dist/
+deploy_artifacts.tar.gz

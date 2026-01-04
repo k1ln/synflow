@@ -1,0 +1,5 @@
+- Buttons connecting through inputs into other flows.  
+- select multiple nodes and make them movable. [x]
+- record audiofiles from mic. [x]
+- record node seperate so you can connect mic to record node. [x]
+- record node needs db saves so record is saved in database and on server. [x]
