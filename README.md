@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/audio-Web%20Audio%20API-00c853" alt="Web Audio" />
 </p>
 
-<p align="center">
+<p >
   <img src="public/screenshot.png" alt="Synflow Screenshot" width="800" />
 </p>
 
