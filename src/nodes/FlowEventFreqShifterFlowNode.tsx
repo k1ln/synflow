@@ -51,6 +51,19 @@ const FlowEventFreqShifterFlowNode: React.FC<
     }
   }, [shift, label, shiftMidiMapping]);
 
+  // Keep local state in sync with upstream data (e.g., after load or undo)
+  useEffect(() => {
+    if (typeof data.shift === "number" && data.shift !== shift) {
+      setShift(data.shift);
+    }
+    if (typeof data.label === "string" && data.label !== label) {
+      setLabel(data.label);
+    }
+    if (data.shiftMidiMapping !== undefined && data.shiftMidiMapping !== shiftMidiMapping) {
+      setShiftMidiMapping(data.shiftMidiMapping ?? null);
+    }
+  }, [data.shift, data.label, data.shiftMidiMapping]);
+
   const defaultStyle: React.CSSProperties = {
     padding: "4px",
     border: "1px solid #555",

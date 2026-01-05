@@ -16,8 +16,8 @@ Optional (production): a reverse proxy (Apache2/nginx) for SSL termination.
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/k1ln/flowSynth.git
-   cd flowSynth
+  git clone https://github.com/k1ln/synflow.git
+  cd synflow
    ```
 
 2. **Build and start containers**
@@ -60,59 +60,10 @@ This configures Apache2 to:
 
 See **`apache2-config/README.md`** for complete Apache2 setup documentation.
 
-## 🔐 GitHub Webhook Configuration (Legacy)
-
-Webhook-based auto-deploy required the removed backend service and is no longer applicable in the frontend-only setup.
-
-### 1. Configure the Webhook in GitHub
-
-1. Go to your repository on GitHub
-2. Navigate to **Settings** → **Webhooks** → **Add webhook**
-3. Configure:
-   - **Payload URL**: `https://your-domain.com/api/webhook/gitUpdate`
-     - With Apache2: `https://synflow.org/api/webhook/gitUpdate` or `https://1ln.de/api/webhook/gitUpdate`
-     - Without Apache2: `https://your-server-ip:4000/api/webhook/gitUpdate`
-   - **Content type**: `application/json`
-   - **Secret**: Enter the `WEBHOOK_SECRET` value from your `.env` file
-   - **Which events**: Select "Just the push event"
-   - **Active**: ✅ Check this box
-4. Click **Add webhook**
-
-### 2. Security Notes
-
-⚠️ **CRITICAL SECURITY REQUIREMENTS:**
-
-- **NEVER commit `.env` file** - it's already in `.gitignore`
-- **Use strong secrets** - minimum 32 characters, cryptographically random
-- **HTTPS required in production** - webhook signatures are sent over the network
-- **Keep secrets separate** - GitHub webhook secret ≠ JWT secret
-- The webhook secret is **only stored in your server's `.env`** file
-- GitHub **only stores a hash** of the secret, not the plaintext
-- Even if your repository is public, the webhook secret remains private
-
-### 3. How It Works
-
-```mermaid
-sequenceDiagram
-    Developer->>GitHub: git push
-    GitHub->>Server: POST /api/webhook/gitUpdate (with signature)
-    Server->>Server: Verify HMAC-SHA256 signature
-    alt Valid signature
-        Server->>Server: Execute deploy-docker.sh
-        Server->>Git: git pull
-        Server->>Docker: docker compose down
-        Server->>Docker: docker compose build --no-cache
-        Server->>Docker: docker compose up -d
-        Server-->>GitHub: 200 OK (deployment triggered)
-    else Invalid signature
-        Server-->>GitHub: 401 Unauthorized
-    end
-```
-
 ## 📁 File Structure
 
 ```
-flowSynth/
+synflow/
 ├── docker-compose.yml          # Container orchestration
 ├── Dockerfile                  # Frontend build & nginx config
 ├── nginx.conf                  # Nginx configuration for SPA
@@ -300,7 +251,7 @@ Built-in health checks in `docker-compose.yml`:
 Check deployment logs:
 ```bash
 # On the server
-tail -f /var/log/flowsynth-deploy.log
+tail -f /var/log/synflow-deploy.log
 ```
 
 ## 🔄 Update Workflow
@@ -343,7 +294,7 @@ Test the webhook manually:
 ```bash
 # Generate test signature
 SECRET="your-webhook-secret"
-PAYLOAD='{"ref":"refs/heads/main","repository":{"full_name":"k1ln/flowSynth"}}'
+PAYLOAD='{"ref":"refs/heads/main","repository":{"full_name":"k1ln/synflow"}}'
 SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.* //')
 
 # Send test request
@@ -359,7 +310,7 @@ Expected response:
 {
   "success": true,
   "message": "Deployment triggered",
-  "repository": "k1ln/flowSynth",
+  "repository": "k1ln/synflow",
   "ref": "refs/heads/main",
   "timestamp": "2025-10-25T12:34:56.789Z"
 }
