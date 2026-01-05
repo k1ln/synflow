@@ -1,4 +1,4 @@
-# FlowSynth
+# Synflow
 
 <p align="center">
   <img src="https://img.shields.io/badge/build-vite-blue" alt="Vite" />
