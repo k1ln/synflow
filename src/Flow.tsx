@@ -96,6 +96,7 @@ import SpeedDividerFlowNode from './nodes/SpeedDividerFlowNode';
 import AudioSignalFreqShifterFlowNode from './nodes/AudioSignalFreqShifterFlowNode';
 import FlowEventFreqShifterFlowNode from './nodes/FlowEventFreqShifterFlowNode';
 import EqualizerFlowNode from './nodes/EqualizerFlowNode';
+import DocsPlayground from './components/DocsPlayground';
 
 function makeDistortionCurve(amount: number) {
   const k = typeof amount === "number" ? amount : 50;
@@ -244,6 +245,7 @@ function Flow() {
   const [localFlowMeta, setLocalFlowMeta] = useState<ExplorerFlowItem[]>([]); // detailed local flow list with folder_path
   const [nodeItems, setNodeItems] = useState<string[]>([]);
   const [flowNameInput, setFlowNameInput] = useState(currentFlow || '');
+  const [showDocsPlayground, setShowDocsPlayground] = useState(false);
   const strippEverythingButData = (flow: any) => {
     return JSON.parse(JSON.stringify(flow));
   }
@@ -1981,7 +1983,12 @@ function Flow() {
         audioFolderMissing={!fsRootHandle}
         onSelectAudioFolder={chooseFsFolder}
         onChangeAudioFolder={chooseFsFolder}
+        onOpenDocs={() => setShowDocsPlayground(true)}
       />
+
+      {showDocsPlayground && (
+        <DocsPlayground onClose={() => setShowDocsPlayground(false)} />
+      )}
 
 
       {/* Audio Explorer (File Browser) */}
