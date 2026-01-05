@@ -1106,7 +1106,23 @@ function Flow() {
         }
       }
 
-      if (selectedNode) {
+      // Get all selected nodes from React Flow
+      const selectedNodes = nodes.filter((n) => n.selected);
+      
+      if (selectedNodes.length > 0) {
+        // Delete all selected nodes
+        const selectedIds = new Set(selectedNodes.map((n) => n.id));
+        selectedNodes.forEach((node) => {
+          if (audioGraphManagerRef.current !== null) {
+            audioGraphManagerRef.current.deleteVirtualNode(node.id);
+          }
+        });
+        setNodes((nds) => nds.filter((n) => !selectedIds.has(n.id)));
+        setEdges((eds) => eds.filter((edge) => !selectedIds.has(edge.source) && !selectedIds.has(edge.target)));
+        setSelectedNode(undefined);
+        setSelectedNodeType("");
+      } else if (selectedNode) {
+        // Fallback: delete single tracked selected node
         if (audioGraphManagerRef.current !== null) {
           audioGraphManagerRef.current.deleteVirtualNode(selectedNode.id);
         }
@@ -1123,7 +1139,7 @@ function Flow() {
       }
     };
     eventManagerRef.current?.setHandleDelete(handleDelete);
-  }, [selectedEdge, onEdgeDelete, selectedNode, onNodeDelete, nodeCount, edges]);
+  }, [selectedEdge, onEdgeDelete, selectedNode, onNodeDelete, nodeCount, edges, nodes]);
 
 
 
