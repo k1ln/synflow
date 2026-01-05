@@ -30,3 +30,6 @@ logs/
 # Temporary deployment artifacts
 .deploy_dist/
 deploy_artifacts.tar.gz
+
+#vscode
+.vscode
