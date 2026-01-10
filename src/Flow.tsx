@@ -496,12 +496,15 @@ function Flow() {
       const folderSet = new Set<string>();
       const meta: ExplorerFlowItem[] = flows.map((flow: any) => {
         const fp = flow.folder_path || flow.value?.folder_path || '';
+        // Extract just the name from the id (which may include folder path)
+        const idParts = (flow.id || '').split('/');
+        const displayName = idParts[idParts.length - 1] || flow.id;
         if (fp) {
           const parts = fp.split('/').filter(Boolean);
           let acc = '';
           for (const p of parts) { acc = acc ? acc + '/' + p : p; folderSet.add(acc); }
         }
-        return { id: flow.id, name: flow.id, folder_path: fp, updated_at: flow.updated_at, _source: 'local' } as ExplorerFlowItem;
+        return { id: flow.id, name: displayName, folder_path: fp, updated_at: flow.updated_at, _source: 'local' } as ExplorerFlowItem;
       });
       setLocalFlowMeta(meta);
       setFolderPaths(Array.from(folderSet.values()).sort());
@@ -535,9 +538,10 @@ function Flow() {
 
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'flow.json';
+    const filename = flowNameInput ? `${flowNameInput}.json` : 'flow.json';
+    a.download = filename;
     a.click();
-  }, [nodes, edges]);
+  }, [nodes, edges, flowNameInput]);
 
   // Export ALL flows & components (bulk backup)
   const exportAllAsJSON = useCallback(async () => {
@@ -582,14 +586,28 @@ function Flow() {
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      const json = e.target?.result as string;
-      const flowData = JSON.parse(json);
-      setNodes(flowData.nodes || []);
-      setEdges(flowData.edges || []);
-      //console.log('Flow imported from JSON:', flowData);
+      try {
+        const json = e.target?.result as string;
+        const flowData = JSON.parse(json);
+        setNodes(flowData.nodes || []);
+        setEdges(flowData.edges || []);
+        // Set flow name from file name (without .json extension) or from data
+        const flowName = flowData.name || file.name.replace(/\.json$/i, '');
+        setFlowNameInput(flowName);
+        sessionStorage.setItem('currentFlow', flowName);
+        showToast?.(`Imported flow: ${flowName}`, 'success');
+      } catch (err) {
+        console.error('Failed to import flow:', err);
+        showToast?.('Failed to import flow: invalid JSON', 'error');
+      }
+    };
+    reader.onerror = () => {
+      showToast?.('Failed to read file', 'error');
     };
     reader.readAsText(file);
-  }, [setNodes, setEdges]);
+    // Reset input so same file can be selected again
+    event.target.value = '';
+  }, [setNodes, setEdges, showToast]);
 
   useEffect(() => {
     setNodeCount(nodes.length);
@@ -672,6 +690,46 @@ function Flow() {
   const lastFsScanRef = useRef<number>(0);
   const fsScanInFlightRef = useRef<boolean>(false);
   const FS_SCAN_MIN_INTERVAL_MS = 1500;
+
+  // Refresh flow list from disk and IndexedDB
+  const refreshFlowList = useCallback(async () => {
+    try {
+      // If we have a disk handle, sync from disk first
+      if (fsRootHandle) {
+        await syncDiskToDb(fsRootHandle, db);
+      }
+      // Then refresh from IndexedDB
+      const flows = await db.get('*');
+      const names = flows.map((f: any) => f.id);
+      setFlowItems(names);
+      const folderSet = new Set<string>();
+      const meta: ExplorerFlowItem[] = flows.map((f: any) => {
+        const fp = f.folder_path || f.value?.folder_path || '';
+        // Extract just the name from the id (which may include folder path)
+        const idParts = (f.id || '').split('/');
+        const displayName = idParts[idParts.length - 1] || f.id;
+        if (fp) {
+          const parts = fp.split('/').filter(Boolean);
+          let acc = '';
+          for (const p of parts) {
+            acc = acc ? `${acc}/${p}` : p;
+            folderSet.add(acc);
+          }
+        }
+        return {
+          id: f.id,
+          name: displayName,
+          folder_path: fp,
+          updated_at: f.updated_at,
+          _source: 'local',
+        } as ExplorerFlowItem;
+      });
+      setLocalFlowMeta(meta);
+      setFolderPaths(Array.from(folderSet.values()).sort());
+    } catch (e) {
+      console.warn('[Flow] refresh failed', e);
+    }
+  }, [fsRootHandle, db]);
 
   const refreshRecordings = useCallback(async () => {
     const now = performance.now();
@@ -807,7 +865,7 @@ function Flow() {
             }
             return {
               id: f.id,
-              name: f.id,
+              name: (f.id || '').split('/').pop() || f.id,
               folder_path: fp,
               updated_at: f.updated_at,
               _source: 'local',
@@ -864,7 +922,7 @@ function Flow() {
           }
           return {
             id: f.id,
-            name: f.id,
+            name: (f.id || '').split('/').pop() || f.id,
             folder_path: fp,
             updated_at: f.updated_at,
             _source: 'local',
@@ -2001,7 +2059,7 @@ function Flow() {
           setNodes([]); setEdges([]);
           if (name) saveFlowToIndexedDB(name);
         }}
-        onOpenFlow={() => setOpenDialogFlows(true)}
+        onOpenFlow={() => { refreshFlowList(); setOpenDialogFlows(true); }}
         onTogglePalette={() => setNodePaletteOpen(prev => !prev)}
         onSaveFlow={triggerSave}
         onExportFlowJson={exportFlowAsJSON}
@@ -2269,7 +2327,7 @@ function Flow() {
               }
             }
             const refreshed = await db.get('*');
-            setLocalFlowMeta(refreshed.map((f: any) => ({ id: f.id, name: f.id, folder_path: f.folder_path || f.value?.folder_path || '', updated_at: f.updated_at, _source: 'local' })));
+            setLocalFlowMeta(refreshed.map((f: any) => ({ id: f.id, name: (f.id || '').split('/').pop() || f.id, folder_path: f.folder_path || f.value?.folder_path || '', updated_at: f.updated_at, _source: 'local' })));
           })();
         }}
         onMoveFlow={(flow, targetFolder) => {
@@ -2280,7 +2338,7 @@ function Flow() {
               await db.put(flow.name, { nodes: r.nodes || r.value?.nodes || [], edges: r.edges || r.value?.edges || [], folder_path: targetFolder, updated_at: r.updated_at });
               if (flowNameInput === flow.name) { setCurrentFlowFolder(targetFolder); }
               const refreshed = await db.get('*');
-              setLocalFlowMeta(refreshed.map((f: any) => ({ id: f.id, name: f.id, folder_path: f.folder_path || f.value?.folder_path || '', updated_at: f.updated_at, _source: 'local' })));
+              setLocalFlowMeta(refreshed.map((f: any) => ({ id: f.id, name: (f.id || '').split('/').pop() || f.id, folder_path: f.folder_path || f.value?.folder_path || '', updated_at: f.updated_at, _source: 'local' })));
               const folderSet = new Set<string>();
               refreshed.forEach((f: any) => { const fp = f.folder_path || f.value?.folder_path; if (fp) { const parts = fp.split('/').filter(Boolean); let acc = ''; for (const p of parts) { acc = acc ? acc + '/' + p : p; folderSet.add(acc); } } });
               setFolderPaths(Array.from(folderSet.values()).sort());

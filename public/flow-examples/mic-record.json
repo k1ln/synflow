@@ -1,0 +1,171 @@
+{
+  "nodes": [
+    {
+      "id": "e061c5d3-c138-41e7-bd76-d1b9697453b2.MicFlowNode",
+      "type": "MicFlowNode",
+      "position": {
+        "x": 860,
+        "y": 352
+      },
+      "data": {
+        "label": "Mic",
+        "id": "e061c5d3-c138-41e7-bd76-d1b9697453b2.MicFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "selectedDeviceId": "communications"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 194,
+        "height": 55
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "333e0f14-a0eb-4fab-958c-9e8b16fe892d.RecordingFlowNode",
+      "type": "RecordingFlowNode",
+      "position": {
+        "x": 1313.386813607442,
+        "y": 296.75210355100074
+      },
+      "data": {
+        "label": "",
+        "id": "333e0f14-a0eb-4fab-958c-9e8b16fe892d.RecordingFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "isRecording": false,
+        "holdMode": false
+      },
+      "zIndex": 2,
+      "measured": {
+        "width": 88,
+        "height": 56
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "2c6471da-5f91-4478-ad1c-e79293cb5746.MasterOutFlowNode",
+      "type": "MasterOutFlowNode",
+      "position": {
+        "x": 1331,
+        "y": 394.5
+      },
+      "data": {
+        "label": "",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "2c6471da-5f91-4478-ad1c-e79293cb5746.MasterOutFlowNode"
+      },
+      "zIndex": 3,
+      "measured": {
+        "width": 60,
+        "height": 62
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "c037778b-6437-43fc-b79c-51695b397f76.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 1107.039286983446,
+        "y": 199.46702366955657
+      },
+      "data": {
+        "label": "",
+        "gain": 0.44935380896598426,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "c037778b-6437-43fc-b79c-51695b397f76.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 4,
+      "measured": {
+        "width": 75,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    }
+  ],
+  "edges": [
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "e061c5d3-c138-41e7-bd76-d1b9697453b2.MicFlowNode",
+      "sourceHandle": "output",
+      "target": "333e0f14-a0eb-4fab-958c-9e8b16fe892d.RecordingFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__e061c5d3-c138-41e7-bd76-d1b9697453b2.MicFlowNodeoutput-333e0f14-a0eb-4fab-958c-9e8b16fe892d.RecordingFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "e061c5d3-c138-41e7-bd76-d1b9697453b2.MicFlowNode",
+      "sourceHandle": "output",
+      "target": "2c6471da-5f91-4478-ad1c-e79293cb5746.MasterOutFlowNode",
+      "targetHandle": "destination-input",
+      "id": "xy-edge__e061c5d3-c138-41e7-bd76-d1b9697453b2.MicFlowNodeoutput-2c6471da-5f91-4478-ad1c-e79293cb5746.MasterOutFlowNodedestination-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "e061c5d3-c138-41e7-bd76-d1b9697453b2.MicFlowNode",
+      "sourceHandle": "output",
+      "target": "c037778b-6437-43fc-b79c-51695b397f76.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__e061c5d3-c138-41e7-bd76-d1b9697453b2.MicFlowNodeoutput-c037778b-6437-43fc-b79c-51695b397f76.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "c037778b-6437-43fc-b79c-51695b397f76.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "2c6471da-5f91-4478-ad1c-e79293cb5746.MasterOutFlowNode",
+      "targetHandle": "destination-input",
+      "id": "xy-edge__c037778b-6437-43fc-b79c-51695b397f76.GainFlowNodeoutput-2c6471da-5f91-4478-ad1c-e79293cb5746.MasterOutFlowNodedestination-input"
+    }
+  ]
+}

@@ -1,0 +1,1438 @@
+{
+  "nodes": [
+    {
+      "id": "b17f214d-c903-4821-ae7b-acc28b5c19f1.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 17.826653756904307,
+        "y": 264.6945507488048
+      },
+      "data": {
+        "label": "ButtonFlowNode Node",
+        "assignedKey": "S",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "b17f214d-c903-4821-ae7b-acc28b5c19f1.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "height": "60px"
+        }
+      },
+      "measured": {
+        "width": 82,
+        "height": 82
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "602f94a0-1973-4638-b9b4-972c9b899eaf.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 22.63953140439648,
+        "y": 127.11452644180517
+      },
+      "data": {
+        "label": "ButtonFlowNode Node",
+        "assignedKey": "A",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "602f94a0-1973-4638-b9b4-972c9b899eaf.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "height": "60px"
+        }
+      },
+      "measured": {
+        "width": 82,
+        "height": 82
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "fbcd0d8e-284f-4f8c-8bf8-c844f745db78.OutputNode",
+      "type": "OutputNode",
+      "position": {
+        "x": 1123.3324432847398,
+        "y": 917.7521684194407
+      },
+      "data": {
+        "label": "OutputNode Node",
+        "id": "fbcd0d8e-284f-4f8c-8bf8-c844f745db78.OutputNode",
+        "style": {
+          "background": "#1f1f1f",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "color": "#eeeeee"
+        },
+        "index": 0
+      },
+      "measured": {
+        "width": 84,
+        "height": 75
+      },
+      "dragging": false,
+      "parentNode": null,
+      "selected": false
+    },
+    {
+      "id": "24aa9517-ab60-4153-8daa-832e66a04da1.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": {
+        "x": 259.39932146538763,
+        "y": 151.30594572907606
+      },
+      "data": {
+        "label": "ConstantFlowNode Node",
+        "value": "1",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "24aa9517-ab60-4153-8daa-832e66a04da1.ConstantFlowNode"
+      },
+      "measured": {
+        "width": 82,
+        "height": 26
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "c2367a7c-f63b-4c03-b6c0-46dcff25b388.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 19.438817841299453,
+        "y": 388.8226585478093
+      },
+      "data": {
+        "label": "ButtonFlowNode Node",
+        "assignedKey": "D",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "c2367a7c-f63b-4c03-b6c0-46dcff25b388.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "height": "60px"
+        }
+      },
+      "measured": {
+        "width": 82,
+        "height": 82
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "de232fd7-f9f7-47d8-9eb6-39b8e7ead138.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 18.38297914330333,
+        "y": 508.994237790972
+      },
+      "data": {
+        "label": "ButtonFlowNode Node",
+        "assignedKey": "F",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "de232fd7-f9f7-47d8-9eb6-39b8e7ead138.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "height": "60px"
+        }
+      },
+      "measured": {
+        "width": 82,
+        "height": 82
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "52861610-cd88-4368-ac4e-bb06480de90e.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 25.83084737913326,
+        "y": 1110.8752147898888
+      },
+      "data": {
+        "label": "ButtonFlowNode Node",
+        "assignedKey": "L",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "52861610-cd88-4368-ac4e-bb06480de90e.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "height": "60px"
+        }
+      },
+      "measured": {
+        "width": 82,
+        "height": 82
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "c2d4f50a-59cf-460e-aaf5-86c13978ed2f.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 20.66975004398637,
+        "y": 987.3276369721891
+      },
+      "data": {
+        "label": "ButtonFlowNode Node",
+        "assignedKey": "K",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "c2d4f50a-59cf-460e-aaf5-86c13978ed2f.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "height": "60px"
+        }
+      },
+      "measured": {
+        "width": 82,
+        "height": 82
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "eb940b67-9d3d-457a-8638-68fd4b202214.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 21.017324662273182,
+        "y": 749.499945349377
+      },
+      "data": {
+        "label": "ButtonFlowNode Node",
+        "assignedKey": "H",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "eb940b67-9d3d-457a-8638-68fd4b202214.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "height": "60px"
+        }
+      },
+      "measured": {
+        "width": 82,
+        "height": 82
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "87a047fb-436f-41c1-833e-8e3ba320ac62.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 18.29551723581038,
+        "y": 867.8388739605183
+      },
+      "data": {
+        "label": "ButtonFlowNode Node",
+        "assignedKey": "J",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "87a047fb-436f-41c1-833e-8e3ba320ac62.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "height": "60px"
+        }
+      },
+      "measured": {
+        "width": 82,
+        "height": 82
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "437234b1-56c3-4533-80c2-732466393153.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 19.16160393871472,
+        "y": 631.0901888955593
+      },
+      "data": {
+        "label": "ButtonFlowNode Node",
+        "assignedKey": "G",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "437234b1-56c3-4533-80c2-732466393153.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "height": "60px"
+        }
+      },
+      "measured": {
+        "width": 82,
+        "height": 82
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bdfdf7e0-efc5-4106-9b7f-17f8fab247d5.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 23.217828383193307,
+        "y": 1232.385160598753
+      },
+      "data": {
+        "label": "ButtonFlowNode Node",
+        "assignedKey": "Ö",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "bdfdf7e0-efc5-4106-9b7f-17f8fab247d5.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "height": "60px"
+        }
+      },
+      "measured": {
+        "width": 82,
+        "height": 82
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "f915102b-acfe-46ba-acc2-371784dfd04a.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": {
+        "x": 259.17388316003974,
+        "y": 286.5880025656579
+      },
+      "data": {
+        "label": "ConstantFlowNode Node",
+        "value": "3",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "f915102b-acfe-46ba-acc2-371784dfd04a.ConstantFlowNode"
+      },
+      "measured": {
+        "width": 82,
+        "height": 26
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "ef6124d7-8f5e-4db9-be91-2774812a8a3e.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": {
+        "x": 258.1654283346836,
+        "y": 411.80925589286727
+      },
+      "data": {
+        "label": "ConstantFlowNode Node",
+        "value": "5",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "ef6124d7-8f5e-4db9-be91-2774812a8a3e.ConstantFlowNode"
+      },
+      "measured": {
+        "width": 82,
+        "height": 26
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "6fcc7ebd-e5e0-414c-a8fe-f6930395dfb0.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": {
+        "x": 254.1230183824568,
+        "y": 531.0959097641189
+      },
+      "data": {
+        "label": "ConstantFlowNode Node",
+        "value": "6",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "6fcc7ebd-e5e0-414c-a8fe-f6930395dfb0.ConstantFlowNode"
+      },
+      "measured": {
+        "width": 82,
+        "height": 26
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "f3fc27b0-7c73-4fe1-98d8-21f0253e9032.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": {
+        "x": 250.2252542710175,
+        "y": 653.7065539113778
+      },
+      "data": {
+        "label": "ConstantFlowNode Node",
+        "value": "8",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "f3fc27b0-7c73-4fe1-98d8-21f0253e9032.ConstantFlowNode"
+      },
+      "measured": {
+        "width": 82,
+        "height": 26
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "5cf992de-875e-4eb0-a20b-5d02a26e3ca8.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": {
+        "x": 251.16217082536437,
+        "y": 772.2041561227486
+      },
+      "data": {
+        "label": "ConstantFlowNode Node",
+        "value": "10",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "5cf992de-875e-4eb0-a20b-5d02a26e3ca8.ConstantFlowNode"
+      },
+      "measured": {
+        "width": 82,
+        "height": 26
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "2c57c940-e5ba-4bb4-81bf-4690839f1d3a.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": {
+        "x": 251.33803443798058,
+        "y": 889.9461727660619
+      },
+      "data": {
+        "label": "ConstantFlowNode Node",
+        "value": "12",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "2c57c940-e5ba-4bb4-81bf-4690839f1d3a.ConstantFlowNode"
+      },
+      "measured": {
+        "width": 82,
+        "height": 26
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "5b5b7f0b-8b4c-4ec1-b6a0-cf8663c5f10d.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": {
+        "x": 251.0553193646782,
+        "y": 1009.6344217965569
+      },
+      "data": {
+        "label": "ConstantFlowNode Node",
+        "value": "13",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "5b5b7f0b-8b4c-4ec1-b6a0-cf8663c5f10d.ConstantFlowNode"
+      },
+      "measured": {
+        "width": 82,
+        "height": 26
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "8276c286-5780-42a8-a8d0-473439ae6586.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": {
+        "x": 251.88338097971064,
+        "y": 1133.27437951873
+      },
+      "data": {
+        "label": "ConstantFlowNode Node",
+        "value": "15",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "8276c286-5780-42a8-a8d0-473439ae6586.ConstantFlowNode"
+      },
+      "measured": {
+        "width": 82,
+        "height": 26
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "f27937e0-cd87-41bd-ae03-ae8874f1a46a.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": {
+        "x": 253.87083496825323,
+        "y": 1254.381807334217
+      },
+      "data": {
+        "label": "ConstantFlowNode Node",
+        "value": "17",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "f27937e0-cd87-41bd-ae03-ae8874f1a46a.ConstantFlowNode"
+      },
+      "measured": {
+        "width": 82,
+        "height": 26
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "7a811f01-9ec7-4d21-94d9-8ec16f956a58.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 19.859133310981747,
+        "y": 1352.9139663545916
+      },
+      "data": {
+        "label": "ButtonFlowNode Node",
+        "assignedKey": "Ä",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "7a811f01-9ec7-4d21-94d9-8ec16f956a58.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "height": "60px"
+        }
+      },
+      "measured": {
+        "width": 82,
+        "height": 82
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "36ab8b77-3ec8-47e7-bf3b-5113e660fe12.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 15.997164026956511,
+        "y": 1474.2315451122263
+      },
+      "data": {
+        "label": "ButtonFlowNode Node",
+        "assignedKey": "#",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "36ab8b77-3ec8-47e7-bf3b-5113e660fe12.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#444",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "height": "60px"
+        }
+      },
+      "measured": {
+        "width": 82,
+        "height": 82
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "32336798-3a4d-499c-a6aa-534080716b1c.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": {
+        "x": 254.9166101111345,
+        "y": 1374.844629314837
+      },
+      "data": {
+        "label": "ConstantFlowNode Node",
+        "value": "18",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "32336798-3a4d-499c-a6aa-534080716b1c.ConstantFlowNode"
+      },
+      "measured": {
+        "width": 82,
+        "height": 26
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "1f82ece3-4a50-4ebd-aeae-dc2480048109.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": {
+        "x": 250.23476129847882,
+        "y": 1496.825124027441
+      },
+      "data": {
+        "label": "ConstantFlowNode Node",
+        "value": "20",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "1f82ece3-4a50-4ebd-aeae-dc2480048109.ConstantFlowNode"
+      },
+      "measured": {
+        "width": 82,
+        "height": 26
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "type": "FunctionFlowNode",
+      "position": {
+        "x": 625.4505753037538,
+        "y": 838.5066148009445
+      },
+      "data": {
+        "functionCode": "\n  let midiNote = 23 + main*1 + (input1*1-1)*12 \nconsole.log(midiNote);\n  return 440 * Math.pow(2, (midiNote - 69) / 12);\n",
+        "value": "",
+        "id": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+        "numInputs": 1,
+        "inputDefaults": [
+          "3"
+        ],
+        "style": {
+          "background": "#1f1f1f",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "color": "#eeeeee"
+        },
+        "numOutputs": 1
+      },
+      "measured": {
+        "width": 372,
+        "height": 193
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "4bb4b241-dac5-4bc7-990d-7982fccde2fa.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 547.1519752218487,
+        "y": -24.471219313870485
+      },
+      "data": {
+        "label": "ButtonFlowNode Node",
+        "assignedKey": "1",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "4bb4b241-dac5-4bc7-990d-7982fccde2fa.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "height": "60px"
+        }
+      },
+      "measured": {
+        "width": 82,
+        "height": 82
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "3082511a-9119-41b8-80e2-ee8d8bcab7d1.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 538.2856455409692,
+        "y": 389.0963456295833
+      },
+      "data": {
+        "label": "ButtonFlowNode Node",
+        "assignedKey": "4",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "3082511a-9119-41b8-80e2-ee8d8bcab7d1.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "height": "60px"
+        }
+      },
+      "measured": {
+        "width": 82,
+        "height": 82
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "c7466101-473e-43db-b195-e98b286bbee6.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 535.5401106734814,
+        "y": 123.5012638502391
+      },
+      "data": {
+        "label": "ButtonFlowNode Node",
+        "assignedKey": "2",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "c7466101-473e-43db-b195-e98b286bbee6.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "height": "60px"
+        }
+      },
+      "measured": {
+        "width": 82,
+        "height": 82
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "95cacad9-e066-4790-84bb-30316d04d313.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 526.9089601174641,
+        "y": 538.4654757587527
+      },
+      "data": {
+        "label": "ButtonFlowNode Node",
+        "assignedKey": "5",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "95cacad9-e066-4790-84bb-30316d04d313.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "height": "60px"
+        }
+      },
+      "measured": {
+        "width": 82,
+        "height": 82
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "3ba81fc0-d4ef-469a-a76f-2ba6e2c7c8e9.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 537.3972353844067,
+        "y": 255.989619344858
+      },
+      "data": {
+        "label": "ButtonFlowNode Node",
+        "assignedKey": "3",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "3ba81fc0-d4ef-469a-a76f-2ba6e2c7c8e9.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "height": "60px"
+        }
+      },
+      "measured": {
+        "width": 82,
+        "height": 82
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "97234042-1ff4-4427-b658-bb05660905ef.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": {
+        "x": 785.9488909829829,
+        "y": 153.96947955150483
+      },
+      "data": {
+        "label": "ConstantFlowNode Node",
+        "value": "2",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "97234042-1ff4-4427-b658-bb05660905ef.ConstantFlowNode"
+      },
+      "measured": {
+        "width": 82,
+        "height": 26
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "f605076a-806a-4cb0-aac8-56d6d42ba0b6.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": {
+        "x": 762.1411444630073,
+        "y": 414.6133001378137
+      },
+      "data": {
+        "label": "ConstantFlowNode Node",
+        "value": "4",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "f605076a-806a-4cb0-aac8-56d6d42ba0b6.ConstantFlowNode"
+      },
+      "measured": {
+        "width": 82,
+        "height": 26
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "52d51404-6fef-4138-b884-9cbe9656916a.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": {
+        "x": 778.9408480490315,
+        "y": 7.22433151798208
+      },
+      "data": {
+        "label": "ConstantFlowNode Node",
+        "value": "1",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "52d51404-6fef-4138-b884-9cbe9656916a.ConstantFlowNode"
+      },
+      "measured": {
+        "width": 82,
+        "height": 26
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "59ea8db3-80d5-404b-a9fc-ff9b563d82d7.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": {
+        "x": 754.4341519125645,
+        "y": 550.9541086841962
+      },
+      "data": {
+        "label": "ConstantFlowNode Node",
+        "value": "5",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "59ea8db3-80d5-404b-a9fc-ff9b563d82d7.ConstantFlowNode"
+      },
+      "measured": {
+        "width": 82,
+        "height": 26
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "af77b014-b8d7-43c3-b32b-038032331b93.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": {
+        "x": 770.9177713884824,
+        "y": 291.12479009067465
+      },
+      "data": {
+        "label": "ConstantFlowNode Node",
+        "value": "3",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "af77b014-b8d7-43c3-b32b-038032331b93.ConstantFlowNode"
+      },
+      "measured": {
+        "width": 82,
+        "height": 26
+      },
+      "dragging": false,
+      "selected": false
+    }
+  ],
+  "edges": [
+    {
+      "source": "602f94a0-1973-4638-b9b4-972c9b899eaf.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "24aa9517-ab60-4153-8daa-832e66a04da1.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__602f94a0-1973-4638-b9b4-972c9b899eaf.ButtonFlowNodeoutput-24aa9517-ab60-4153-8daa-832e66a04da1.ConstantFlowNodemain-input"
+    },
+    {
+      "source": "b17f214d-c903-4821-ae7b-acc28b5c19f1.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "f915102b-acfe-46ba-acc2-371784dfd04a.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__b17f214d-c903-4821-ae7b-acc28b5c19f1.ButtonFlowNodeoutput-f915102b-acfe-46ba-acc2-371784dfd04a.ConstantFlowNodemain-input"
+    },
+    {
+      "source": "c2367a7c-f63b-4c03-b6c0-46dcff25b388.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "ef6124d7-8f5e-4db9-be91-2774812a8a3e.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__c2367a7c-f63b-4c03-b6c0-46dcff25b388.ButtonFlowNodeoutput-ef6124d7-8f5e-4db9-be91-2774812a8a3e.ConstantFlowNodemain-input"
+    },
+    {
+      "source": "de232fd7-f9f7-47d8-9eb6-39b8e7ead138.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "6fcc7ebd-e5e0-414c-a8fe-f6930395dfb0.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__de232fd7-f9f7-47d8-9eb6-39b8e7ead138.ButtonFlowNodeoutput-6fcc7ebd-e5e0-414c-a8fe-f6930395dfb0.ConstantFlowNodemain-input"
+    },
+    {
+      "source": "437234b1-56c3-4533-80c2-732466393153.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "f3fc27b0-7c73-4fe1-98d8-21f0253e9032.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__437234b1-56c3-4533-80c2-732466393153.ButtonFlowNodeoutput-f3fc27b0-7c73-4fe1-98d8-21f0253e9032.ConstantFlowNodemain-input"
+    },
+    {
+      "source": "eb940b67-9d3d-457a-8638-68fd4b202214.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "5cf992de-875e-4eb0-a20b-5d02a26e3ca8.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__eb940b67-9d3d-457a-8638-68fd4b202214.ButtonFlowNodeoutput-5cf992de-875e-4eb0-a20b-5d02a26e3ca8.ConstantFlowNodemain-input"
+    },
+    {
+      "source": "87a047fb-436f-41c1-833e-8e3ba320ac62.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "2c57c940-e5ba-4bb4-81bf-4690839f1d3a.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__87a047fb-436f-41c1-833e-8e3ba320ac62.ButtonFlowNodeoutput-2c57c940-e5ba-4bb4-81bf-4690839f1d3a.ConstantFlowNodemain-input"
+    },
+    {
+      "source": "c2d4f50a-59cf-460e-aaf5-86c13978ed2f.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "5b5b7f0b-8b4c-4ec1-b6a0-cf8663c5f10d.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__c2d4f50a-59cf-460e-aaf5-86c13978ed2f.ButtonFlowNodeoutput-5b5b7f0b-8b4c-4ec1-b6a0-cf8663c5f10d.ConstantFlowNodemain-input"
+    },
+    {
+      "source": "52861610-cd88-4368-ac4e-bb06480de90e.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "8276c286-5780-42a8-a8d0-473439ae6586.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__52861610-cd88-4368-ac4e-bb06480de90e.ButtonFlowNodeoutput-8276c286-5780-42a8-a8d0-473439ae6586.ConstantFlowNodemain-input"
+    },
+    {
+      "source": "bdfdf7e0-efc5-4106-9b7f-17f8fab247d5.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "f27937e0-cd87-41bd-ae03-ae8874f1a46a.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bdfdf7e0-efc5-4106-9b7f-17f8fab247d5.ButtonFlowNodeoutput-f27937e0-cd87-41bd-ae03-ae8874f1a46a.ConstantFlowNodemain-input"
+    },
+    {
+      "source": "7a811f01-9ec7-4d21-94d9-8ec16f956a58.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "32336798-3a4d-499c-a6aa-534080716b1c.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__7a811f01-9ec7-4d21-94d9-8ec16f956a58.ButtonFlowNodeoutput-32336798-3a4d-499c-a6aa-534080716b1c.ConstantFlowNodemain-input"
+    },
+    {
+      "source": "36ab8b77-3ec8-47e7-bf3b-5113e660fe12.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "1f82ece3-4a50-4ebd-aeae-dc2480048109.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__36ab8b77-3ec8-47e7-bf3b-5113e660fe12.ButtonFlowNodeoutput-1f82ece3-4a50-4ebd-aeae-dc2480048109.ConstantFlowNodemain-input"
+    },
+    {
+      "source": "95cacad9-e066-4790-84bb-30316d04d313.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "59ea8db3-80d5-404b-a9fc-ff9b563d82d7.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__95cacad9-e066-4790-84bb-30316d04d313.ButtonFlowNodeoutput-59ea8db3-80d5-404b-a9fc-ff9b563d82d7.ConstantFlowNodemain-input"
+    },
+    {
+      "source": "3082511a-9119-41b8-80e2-ee8d8bcab7d1.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "f605076a-806a-4cb0-aac8-56d6d42ba0b6.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__3082511a-9119-41b8-80e2-ee8d8bcab7d1.ButtonFlowNodeoutput-f605076a-806a-4cb0-aac8-56d6d42ba0b6.ConstantFlowNodemain-input"
+    },
+    {
+      "source": "3ba81fc0-d4ef-469a-a76f-2ba6e2c7c8e9.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "af77b014-b8d7-43c3-b32b-038032331b93.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__3ba81fc0-d4ef-469a-a76f-2ba6e2c7c8e9.ButtonFlowNodeoutput-af77b014-b8d7-43c3-b32b-038032331b93.ConstantFlowNodemain-input"
+    },
+    {
+      "source": "c7466101-473e-43db-b195-e98b286bbee6.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "97234042-1ff4-4427-b658-bb05660905ef.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__c7466101-473e-43db-b195-e98b286bbee6.ButtonFlowNodeoutput-97234042-1ff4-4427-b658-bb05660905ef.ConstantFlowNodemain-input"
+    },
+    {
+      "source": "4bb4b241-dac5-4bc7-990d-7982fccde2fa.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "52d51404-6fef-4138-b884-9cbe9656916a.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__4bb4b241-dac5-4bc7-990d-7982fccde2fa.ButtonFlowNodeoutput-52d51404-6fef-4138-b884-9cbe9656916a.ConstantFlowNodemain-input"
+    },
+    {
+      "source": "52d51404-6fef-4138-b884-9cbe9656916a.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "targetHandle": "input-0",
+      "id": "xy-edge__52d51404-6fef-4138-b884-9cbe9656916a.ConstantFlowNodeoutput-85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodeinput-0"
+    },
+    {
+      "source": "97234042-1ff4-4427-b658-bb05660905ef.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "targetHandle": "input-0",
+      "id": "xy-edge__97234042-1ff4-4427-b658-bb05660905ef.ConstantFlowNodeoutput-85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodeinput-0"
+    },
+    {
+      "source": "af77b014-b8d7-43c3-b32b-038032331b93.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "targetHandle": "input-0",
+      "id": "xy-edge__af77b014-b8d7-43c3-b32b-038032331b93.ConstantFlowNodeoutput-85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodeinput-0"
+    },
+    {
+      "source": "f605076a-806a-4cb0-aac8-56d6d42ba0b6.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "targetHandle": "input-0",
+      "id": "xy-edge__f605076a-806a-4cb0-aac8-56d6d42ba0b6.ConstantFlowNodeoutput-85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodeinput-0"
+    },
+    {
+      "source": "59ea8db3-80d5-404b-a9fc-ff9b563d82d7.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "targetHandle": "input-0",
+      "id": "xy-edge__59ea8db3-80d5-404b-a9fc-ff9b563d82d7.ConstantFlowNodeoutput-85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodeinput-0"
+    },
+    {
+      "source": "24aa9517-ab60-4153-8daa-832e66a04da1.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__24aa9517-ab60-4153-8daa-832e66a04da1.ConstantFlowNodeoutput-85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodemain-input"
+    },
+    {
+      "source": "f915102b-acfe-46ba-acc2-371784dfd04a.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__f915102b-acfe-46ba-acc2-371784dfd04a.ConstantFlowNodeoutput-85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodemain-input"
+    },
+    {
+      "source": "ef6124d7-8f5e-4db9-be91-2774812a8a3e.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__ef6124d7-8f5e-4db9-be91-2774812a8a3e.ConstantFlowNodeoutput-85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodemain-input"
+    },
+    {
+      "source": "6fcc7ebd-e5e0-414c-a8fe-f6930395dfb0.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__6fcc7ebd-e5e0-414c-a8fe-f6930395dfb0.ConstantFlowNodeoutput-85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodemain-input"
+    },
+    {
+      "source": "f3fc27b0-7c73-4fe1-98d8-21f0253e9032.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__f3fc27b0-7c73-4fe1-98d8-21f0253e9032.ConstantFlowNodeoutput-85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodemain-input"
+    },
+    {
+      "source": "5cf992de-875e-4eb0-a20b-5d02a26e3ca8.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__5cf992de-875e-4eb0-a20b-5d02a26e3ca8.ConstantFlowNodeoutput-85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodemain-input"
+    },
+    {
+      "source": "2c57c940-e5ba-4bb4-81bf-4690839f1d3a.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__2c57c940-e5ba-4bb4-81bf-4690839f1d3a.ConstantFlowNodeoutput-85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodemain-input"
+    },
+    {
+      "source": "5b5b7f0b-8b4c-4ec1-b6a0-cf8663c5f10d.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__5b5b7f0b-8b4c-4ec1-b6a0-cf8663c5f10d.ConstantFlowNodeoutput-85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodemain-input"
+    },
+    {
+      "source": "8276c286-5780-42a8-a8d0-473439ae6586.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__8276c286-5780-42a8-a8d0-473439ae6586.ConstantFlowNodeoutput-85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodemain-input"
+    },
+    {
+      "source": "f27937e0-cd87-41bd-ae03-ae8874f1a46a.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__f27937e0-cd87-41bd-ae03-ae8874f1a46a.ConstantFlowNodeoutput-85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodemain-input"
+    },
+    {
+      "source": "32336798-3a4d-499c-a6aa-534080716b1c.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__32336798-3a4d-499c-a6aa-534080716b1c.ConstantFlowNodeoutput-85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodemain-input"
+    },
+    {
+      "source": "1f82ece3-4a50-4ebd-aeae-dc2480048109.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__1f82ece3-4a50-4ebd-aeae-dc2480048109.ConstantFlowNodeoutput-85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodemain-input"
+    },
+    {
+      "source": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "sourceHandle": "output",
+      "target": "fbcd0d8e-284f-4f8c-8bf8-c844f745db78.OutputNode",
+      "targetHandle": "input-fbcd0d8e-284f-4f8c-8bf8-c844f745db78.OutputNode",
+      "id": "xy-edge__85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodeoutput-fbcd0d8e-284f-4f8c-8bf8-c844f745db78.OutputNodeinput-fbcd0d8e-284f-4f8c-8bf8-c844f745db78.OutputNode"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "sourceHandle": "output",
+      "target": "fbcd0d8e-284f-4f8c-8bf8-c844f745db78.OutputNode",
+      "targetHandle": "input",
+      "id": "xy-edge__85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodeoutput-fbcd0d8e-284f-4f8c-8bf8-c844f745db78.OutputNodeinput"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode",
+      "sourceHandle": "output-0",
+      "target": "fbcd0d8e-284f-4f8c-8bf8-c844f745db78.OutputNode",
+      "targetHandle": "input",
+      "id": "xy-edge__85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNodeoutput-0-fbcd0d8e-284f-4f8c-8bf8-c844f745db78.OutputNodeinput"
+    }
+  ]
+}
