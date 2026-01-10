@@ -1,5 +1,3 @@
-# SYNFLOW
-
 ```
 ███████╗██╗   ██╗███╗   ██╗███████╗██╗      ██████╗ ██╗    ██╗
 ██╔════╝╚██╗ ██╔╝████╗  ██║██╔════╝██║     ██╔═══██╗██║    ██║
@@ -9,14 +7,14 @@
 ╚══════╝   ╚═╝   ╚═╝  ╚═══╝╚═╝     ╚══════╝ ╚═════╝  ╚══╝╚══╝ 
 ```
 
-<p align="center">
+<p>
   <img src="https://img.shields.io/badge/build-vite-blue" alt="Vite" />
   <img src="https://img.shields.io/badge/ui-react%2019-61dafb" alt="React" />
   <img src="https://img.shields.io/badge/graph-@xyflow%20react-8e7cc3" alt="XYFlow" />
   <img src="https://img.shields.io/badge/audio-Web%20Audio%20API-00c853" alt="Web Audio" />
 </p>
 
-<p align="center">
+<p >
   <img src="public/screenshot.png" alt="Synflow Screenshot" width="800" />
 </p>
 
@@ -70,13 +68,6 @@ npm run dev
 - `npm test` — Run unit tests (Vitest)
 
 ---
-
-## 🧩 Node palette (sampling)
-- **Audio**: oscillators, biquad filter, compressor, delay, reverb, distortion, audio freq shifter, analyzer, mic/recording
-- **Flow / Control**: flow-event freq shifter, clock, frequency utility, constant, switch/blocking switch, function node, automation, speed divider
-- **MIDI**: MIDI button/knob, MIDI note source, sequencers (trigger/frequency)
-- **I/O**: master out, input/output buses, sample player, log/event nodes, mouse trigger
-- **Worklets**: audio freq shifter and other processors built on AudioWorklet for low-latency tasks
 
 ## 📖 Node catalog (full list)
 
