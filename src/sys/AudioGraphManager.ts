@@ -76,6 +76,8 @@ import VirtualFlowEventFreqShifterNode from "../virtualNodes/VirtualFlowEventFre
 import { FlowEventFreqShifterFlowNodeProps } from "../nodes/FlowEventFreqShifterFlowNode";
 import VirtualEqualizerNode from "../virtualNodes/VirtualEqualizerNode";
 import { EqualizerFlowNodeProps } from "../nodes/EqualizerFlowNode";
+import VirtualVocoderNode from "../virtualNodes/VirtualVocoderNode";
+import { VocoderFlowNodeProps } from "../nodes/VocoderFlowNode";
 import VirtualAudioWorkletOscillatorNode from "../virtualNodes/VirtualAudioWorkletOscillatorNode";
 import {
     loadRootHandle,
@@ -143,6 +145,8 @@ const webAudioApiFlowNodes = [
     "AnalyzerNodeGPT",
     "AudioSignalFreqShifterFlowNode",
     "AudioWorkletOscillatorFlowNode",
+    "EqualizerFlowNode",
+    "VocoderFlowNode",
 ];
 
 export type VirtualNodeType = VirtualFlowNode |
@@ -177,7 +181,8 @@ export type VirtualNodeType = VirtualFlowNode |
     VirtualWebRTCOutputNode |
     VirtualAnalyzerNodeGPT |
     VirtualAudioSignalFreqShifterNode |
-    VirtualFlowEventFreqShifterNode;
+    VirtualFlowEventFreqShifterNode |
+    VirtualVocoderNode;
 
 export class AudioGraphManager {
     private audioContext: AudioContext;
@@ -1032,6 +1037,25 @@ export class AudioGraphManager {
                     );
                     virtualEqualizer.render(nodeData);
                     this.virtualNodes.set(node.id, virtualEqualizer as any);
+                    break;
+                case "VocoderFlowNode":
+                    const virtualVocoder = new VirtualVocoderNode(
+                        this.audioContext,
+                        this.eventBus,
+                        node as CustomNode & VocoderFlowNodeProps
+                    );
+                    virtualVocoder.render({
+                        bandCount: nodeData.bandCount,
+                        lowFreq: nodeData.lowFreq,
+                        highFreq: nodeData.highFreq,
+                        attackTime: nodeData.attackTime,
+                        releaseTime: nodeData.releaseTime,
+                        qFactor: nodeData.qFactor,
+                        carrierGain: nodeData.carrierGain,
+                        modulatorGain: nodeData.modulatorGain,
+                        outputGain: nodeData.outputGain
+                    });
+                    this.virtualNodes.set(node.id, virtualVocoder as any);
                     break;
                 case "MasterOutFlowNode":
                     // Use a virtual master out wrapper instead of the raw AudioContext

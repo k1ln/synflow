@@ -96,6 +96,7 @@ import SpeedDividerFlowNode from './nodes/SpeedDividerFlowNode';
 import AudioSignalFreqShifterFlowNode from './nodes/AudioSignalFreqShifterFlowNode';
 import FlowEventFreqShifterFlowNode from './nodes/FlowEventFreqShifterFlowNode';
 import EqualizerFlowNode from './nodes/EqualizerFlowNode';
+import VocoderFlowNode from './nodes/VocoderFlowNode';
 import DocsPlayground from './components/DocsPlayground';
 
 function makeDistortionCurve(amount: number) {
@@ -169,6 +170,7 @@ const nodeTypes = {
   AudioSignalFreqShifterFlowNode: AudioSignalFreqShifterFlowNode,
   FlowEventFreqShifterFlowNode: FlowEventFreqShifterFlowNode,
   EqualizerFlowNode: EqualizerFlowNode,
+  VocoderFlowNode: VocoderFlowNode,
 };
 const orderedNodeTypes = Object.fromEntries(
   Object.entries(nodeTypes).sort(([a], [b]) => a.localeCompare(b))
