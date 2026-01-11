@@ -121,9 +121,6 @@ export class VirtualVocoderNode extends VirtualNode<CustomNode & VocoderFlowNode
     // Calculate logarithmically spaced frequencies
     const frequencies = this.calculateBandFrequencies();
     
-    console.log(`[Vocoder] Building vocoder with ${this.bandCount} bands, Q=${this.qFactor}, range=${this.lowFreq}-${this.highFreq}Hz`);
-    console.log(`[Vocoder] Band frequencies: ${frequencies.map(f => Math.round(f)).join(', ')}`);
-    
     // Create filter bands
     for (let i = 0; i < this.bandCount; i++) {
       const freq = frequencies[i];
@@ -285,14 +282,7 @@ export class VirtualVocoderNode extends VirtualNode<CustomNode & VocoderFlowNode
         band.vca.gain.setTargetAtTime(newEnvelope, now, rampTime / 3);
       }
       
-      // Debug log every ~500ms
       debugCounter++;
-      if (debugCounter % 60 === 0) {
-        // Show envelope distribution across bands
-        const bandValues = this.bands.map(b => b.envelopeValue.toFixed(2)).join(', ');
-        console.log(`[Vocoder] maxRms: ${maxRms.toFixed(6)}, maxEnvelope: ${maxEnvelope.toFixed(4)}`);
-        console.log(`[Vocoder] Band envelopes: [${bandValues}]`);
-      }
     }, updateIntervalMs);
   }
 
@@ -430,15 +420,12 @@ export class VirtualVocoderNode extends VirtualNode<CustomNode & VocoderFlowNode
    * This method is called by AudioGraphManager for routing
    */
   public connectToInput(source: AudioNode, handleName: string): void {
-    console.log(`[VirtualVocoderNode] connectToInput called with handle: ${handleName}`);
     if (handleName === 'carrier' || handleName === 'main-input') {
-      console.log('[VirtualVocoderNode] Connecting to CARRIER input');
       source.connect(this.carrierInputGain);
     } else if (handleName === 'modulator') {
-      console.log('[VirtualVocoderNode] Connecting to MODULATOR input');
       source.connect(this.modulatorInputGain);
     } else {
-      console.warn(`[VirtualVocoderNode] Unknown handle: ${handleName}, defaulting to carrier`);
+      // Default to carrier for unknown handles
       source.connect(this.carrierInputGain);
     }
   }

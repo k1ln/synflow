@@ -112,6 +112,7 @@ npm run dev
 - Audio Frequency Shifter — audio semitone shifter (AudioWorklet)
 - Flow Event Frequency Shifter — event/pitch shifter for flow events
 - Equalizer — 5-band parametric EQ with analyzer
+- Vocoder — classic channel vocoder with carrier/modulator inputs, adjustable bands, and presets (robot, speech, Daft Punk styles)
 
 ---
 
@@ -122,6 +123,7 @@ Key examples:
 - Audio Frequency Shifter: main audio input, shift-input (semitones), audio output; AudioWorklet-backed
 - Flow Event Frequency Shifter: trigger + shift inputs for event streams, flow-output with transposed frequency
 - Equalizer: 5-band parametric EQ with draggable canvas handles, spectrum overlay, and multiple filter types
+- Vocoder: dual-input channel vocoder (carrier + modulator); carrier is typically an oscillator or synth sound, modulator is typically a voice/mic; outputs the carrier shaped by the modulator's spectral envelope. Features adjustable band count (8–64), frequency range, Q factor, attack/release times, and presets for classic robot voice, speech clarity, Daft Punk style, and whisper effects. Includes real-time spectrum visualization.
 
 ---
 

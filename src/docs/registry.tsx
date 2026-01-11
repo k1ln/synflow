@@ -40,6 +40,7 @@ import SpeedDividerFlowNode from '../nodes/SpeedDividerFlowNode';
 import AudioSignalFreqShifterFlowNode from '../nodes/AudioSignalFreqShifterFlowNode';
 import FlowEventFreqShifterFlowNode from '../nodes/FlowEventFreqShifterFlowNode';
 import EqualizerFlowNode from '../nodes/EqualizerFlowNode';
+import VocoderFlowNode from '../nodes/VocoderFlowNode';
 
 export type ControlType = 'string' | 'number' | 'boolean' | 'select';
 
@@ -1301,6 +1302,71 @@ const EqualizerPreview: React.FC = () => (
       />
       <DocHandle side="left" top={70} />
       <DocHandle side="right" top={70} />
+    </div>
+  </div>
+);
+// Vocoder: carrier/modulator inputs with spectrum visualization
+const VocoderPreview: React.FC = () => (
+  <div
+    style={{
+      borderRadius: 8,
+      padding: 8,
+      border: '1px solid #262a3a',
+      background: '#050608',
+      display: 'inline-flex',
+      justifyContent: 'center',
+    }}
+  >
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      <div style={{ ...baseNodeStyle, width: 200, minHeight: 180 }}>
+        {/* Header */}
+        <div style={{ fontSize: 11, fontWeight: 'bold', marginBottom: 6, textAlign: 'center', color: '#9c27b0' }}>
+          🎤 VOCODER
+        </div>
+        {/* Carrier Input */}
+        <DocHandle side="left" top={30} />
+        <div style={{ position: 'absolute', left: 14, top: 24, fontSize: 8, color: '#4CAF50' }}>
+          Carrier
+        </div>
+        {/* Modulator Input */}
+        <DocHandle side="left" top={60} />
+        <div style={{ position: 'absolute', left: 14, top: 54, fontSize: 8, color: '#FF9800' }}>
+          Modulator
+        </div>
+        {/* Output */}
+        <DocHandle side="right" top={45} />
+        <div style={{ position: 'absolute', right: 14, top: 39, fontSize: 8, color: '#2196F3' }}>
+          Out
+        </div>
+        {/* Preset indicator */}
+        <div style={{ fontSize: 9, textAlign: 'center', marginTop: 40 }}>
+          <div style={{ color: '#9c27b0', fontWeight: 600 }}>Preset: Classic</div>
+          <div style={{ fontSize: 8, color: '#666', marginTop: 4 }}>
+            16 bands • Q: 8 • 80-8000 Hz
+          </div>
+        </div>
+        {/* Spectrum placeholder */}
+        <div style={{
+          marginTop: 8,
+          height: 40,
+          background: 'linear-gradient(180deg, #1a1a2e 0%, #0a0a12 100%)',
+          borderRadius: 4,
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'center',
+          gap: 2,
+          padding: '4px 8px',
+        }}>
+          {[0.3, 0.5, 0.8, 0.6, 0.9, 0.7, 0.4, 0.6, 0.5, 0.3, 0.2, 0.4].map((h, i) => (
+            <div key={i} style={{
+              width: 8,
+              height: `${h * 30}px`,
+              background: `linear-gradient(180deg, #9c27b0 0%, #4a1259 100%)`,
+              borderRadius: 2,
+            }} />
+          ))}
+        </div>
+      </div>
     </div>
   </div>
 );
@@ -4001,6 +4067,135 @@ export const docs: DocItem[] = [
       '- Problem frequency removal (notch filter).',
     ].join('\n'),
     component: EqualizerPreview,
+    defaultProps: {},
+    controls: {},
+  },
+  {
+    id: 'vocoder-node',
+    title: 'Vocoder',
+    description: [
+      'Role',
+      '- Classic channel vocoder that shapes a carrier signal using the spectral envelope of a modulator signal (typically voice). Creates robotic, talk-box, and Daft Punk-style vocal effects.',
+      '',
+      'How It Works',
+      '- Splits both carrier and modulator signals into multiple frequency bands using parallel bandpass filters.',
+      '- Extracts the amplitude envelope from each modulator band using RMS analysis.',
+      '- Applies these envelopes to the corresponding carrier bands via VCA (voltage-controlled amplifier) gain modulation.',
+      '- Sums all processed carrier bands to produce the vocoded output.',
+      '',
+      'Inputs',
+      '- carrier (left, top ~25%): Audio source to be spectrally shaped. Typically a harmonically rich signal like a sawtooth oscillator, synth pad, or noise.',
+      '- modulator (left, center ~50%): Audio source providing the spectral envelope. Typically voice/microphone input, but can be any signal with interesting amplitude variations.',
+      '- main-input (left, bottom ~75%): Alternative/combined audio input for flexible routing.',
+      '',
+      'Output',
+      '- output (right, center ~50%): Vocoded audio - the carrier signal shaped by the modulator\'s spectral characteristics.',
+      '',
+      'Presets',
+      '- Classic: 16 bands, Q=8, 80-8000 Hz, balanced attack/release - traditional vocoder sound.',
+      '- Robot: 24 bands, Q=12, 100-6000 Hz, fast attack - metallic, robotic voice effect.',
+      '- Speech: 20 bands, Q=6, 100-8000 Hz, medium response - optimized for voice intelligibility.',
+      '- Daft Punk: 32 bands, Q=10, 80-10000 Hz, fast attack - signature electronic vocal style.',
+      '- Whisper: 12 bands, Q=4, 200-4000 Hz, slow response - soft, ethereal vocal texture.',
+      '',
+      'Parameters',
+      '- Band Count (8-64): Number of frequency bands. More bands = higher resolution but more CPU usage.',
+      '- Low Frequency (20-500 Hz): Lower bound of the frequency range to process.',
+      '- High Frequency (2000-20000 Hz): Upper bound of the frequency range.',
+      '- Q Factor (1-20): Bandwidth of each band filter. Higher Q = narrower bands, more resonant.',
+      '- Attack Time (0.001-0.1s): How quickly envelope followers respond to amplitude increases.',
+      '- Release Time (0.01-1.0s): How quickly envelope followers respond to amplitude decreases.',
+      '- Carrier/Modulator/Output Gain: Level controls for each signal stage.',
+      '',
+      'Implementation',
+      '- Uses BiquadFilterNode (bandpass) for frequency band separation.',
+      '- AnalyserNode per modulator band for envelope extraction via RMS calculation.',
+      '- GainNode per carrier band as VCA controlled by extracted envelope.',
+      '- Envelope following runs at ~120Hz via setInterval for responsive tracking.',
+      '- Logarithmic frequency distribution for perceptually even band spacing.',
+      '',
+      'UI Features',
+      '- Preset selector dropdown for quick configuration.',
+      '- MIDI-learnable knobs for all parameters via MidiKnob component.',
+      '- Real-time spectrum visualization showing vocoder band activity.',
+      '- Compact dark-themed design matching synflow aesthetic.',
+      '',
+      'Typical Use Cases',
+      '- Robot voice: Sawtooth carrier + voice modulator for classic vocoder effect.',
+      '- Talk box simulation: Synth carrier + voice for guitar-like talk box sound.',
+      '- Daft Punk vocals: Rich carrier (multiple detuned saws) + voice for electronic pop vocals.',
+      '- Ambient textures: Pad carrier + rhythmic modulator for evolving soundscapes.',
+      '- Sound design: Noise carrier + voice for whisper/breath effects.',
+      '- Choir effects: Chord carrier + single voice for instant harmonies.',
+      '',
+      'Tips for Best Results',
+      '- Carrier: Use harmonically rich signals (sawtooth, pulse, noise, or stacked oscillators).',
+      '- Modulator: Clean, close-mic\'d voice works best. Avoid reverb on input.',
+      '- Carrier pitch: Match carrier fundamental to the key of the song for musical results.',
+      '- Intelligibility: Lower Q and more bands improve speech clarity.',
+      '- Character: Higher Q and fewer bands create more robotic/synthetic sounds.',
+      '',
+      '═══════════════════════════════════════════════════════════════',
+      'EXAMPLE PATCH: Daft Punk "Around the World" Style Vocoder',
+      '═══════════════════════════════════════════════════════════════',
+      '',
+      'This patch recreates the iconic robotic vocal sound from Daft Punk tracks.',
+      '',
+      'Node Setup:',
+      '┌─────────────────────────────────────────────────────────────────┐',
+      '│                                                                 │',
+      '│  [Oscillator 1]──┐                                              │',
+      '│   Sawtooth       │                                              │',
+      '│   110 Hz (A2)    ├──►[Gain]──►[Vocoder]──►[Compressor]──►[Out]  │',
+      '│                  │      0.7    carrier↑    Ratio: 4:1           │',
+      '│  [Oscillator 2]──┘             modulator↓  Threshold: -12dB     │',
+      '│   Sawtooth                         ↑                            │',
+      '│   110.5 Hz                    [Mic Input]                       │',
+      '│   (slight detune)              Voice/Vocals                     │',
+      '│                                                                 │',
+      '└─────────────────────────────────────────────────────────────────┘',
+      '',
+      'Vocoder Settings (Daft Punk Preset):',
+      '  • Bands: 32 (high resolution for detailed formants)',
+      '  • Q Factor: 10 (narrow bands for resonant character)',
+      '  • Low Freq: 80 Hz (capture bass fundamentals)',
+      '  • High Freq: 10000 Hz (full speech range)',
+      '  • Attack: 0.005s (fast - snappy consonants)',
+      '  • Release: 0.08s (medium - smooth but articulate)',
+      '  • Carrier Gain: 1.0',
+      '  • Modulator Gain: 1.5 (boost voice signal)',
+      '  • Output Gain: 1.2',
+      '',
+      'Key Techniques:',
+      '  1. DUAL DETUNED OSCILLATORS: Two sawtooths slightly detuned',
+      '     creates a fatter, chorused carrier. The beating between',
+      '     110 Hz and 110.5 Hz adds movement and richness.',
+      '',
+      '  2. CARRIER PITCH: Set carrier to match song key. For A minor,',
+      '     use A2 (110 Hz). The vocoder will impose speech formants',
+      '     onto this pitched carrier.',
+      '',
+      '  3. COMPRESSION: Post-vocoder compression evens out dynamics',
+      '     and adds that "pumping" electronic feel. Use moderate',
+      '     ratio (4:1) with medium attack to let transients through.',
+      '',
+      '  4. CLEAN MODULATOR: Use close-mic technique, no reverb on',
+      '     the voice input. Proximity effect adds bass presence.',
+      '',
+      'Variations:',
+      '  • Add [Delay] after compressor for "One More Time" echoes',
+      '  • Use [Frequency] node to play carrier melodically via MIDI',
+      '  • Stack 3+ oscillators in unison for ultra-thick carrier',
+      '  • Add subtle [Reverb] on final output for space',
+      '  • Use [Noise] mixed with saws for breathier texture',
+      '',
+      'MIDI Integration:',
+      '  Connect a [MIDI Flow Note] to the oscillators\' frequency',
+      '  inputs to play the vocoder like a keyboard - each note',
+      '  changes the carrier pitch while your voice provides the',
+      '  articulation. Classic talk-box/vocoder keyboard technique!',
+    ].join('\n'),
+    component: VocoderPreview,
     defaultProps: {},
     controls: {},
   },

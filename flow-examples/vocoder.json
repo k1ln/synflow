@@ -1,0 +1,260 @@
+{
+  "nodes": [
+    {
+      "id": "11e7f623-ae54-4631-a432-f8233271bac1.MicFlowNode",
+      "type": "MicFlowNode",
+      "position": {
+        "x": 660.2102573952878,
+        "y": 530.5067457553664
+      },
+      "data": {
+        "label": "Mic",
+        "id": "11e7f623-ae54-4631-a432-f8233271bac1.MicFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "selectedDeviceId": "7296b066f68013852f573b49f0ee854522a851870c98b4624900f477e52b14e2"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 194,
+        "height": 55
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "5733d8b3-f3de-4bb8-8d7d-9c4a2261c1f1.VocoderFlowNode",
+      "type": "VocoderFlowNode",
+      "position": {
+        "x": 1075.9206950340763,
+        "y": 164.46412340799418
+      },
+      "data": {
+        "label": "Vocoder",
+        "id": "5733d8b3-f3de-4bb8-8d7d-9c4a2261c1f1.VocoderFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "bandCount": 30,
+        "lowFreq": 80,
+        "highFreq": 12000,
+        "attackTime": 0.6535033612252089,
+        "releaseTime": 1.1117483031960105,
+        "qFactor": 19.869783223285392,
+        "carrierGain": 1.5409429290234913,
+        "modulatorGain": 1.6247997803425074,
+        "outputGain": 1,
+        "bandCountMidiMapping": null,
+        "attackMidiMapping": null,
+        "releaseMidiMapping": null,
+        "qMidiMapping": null,
+        "carrierGainMidiMapping": null,
+        "modulatorGainMidiMapping": null,
+        "outputGainMidiMapping": null
+      },
+      "zIndex": 2,
+      "measured": {
+        "width": 194,
+        "height": 259
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "c7873b65-87de-423a-a543-f343e05923d9.MasterOutFlowNode",
+      "type": "MasterOutFlowNode",
+      "position": {
+        "x": 1453.7011043763332,
+        "y": 243.86296154013974
+      },
+      "data": {
+        "label": "",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "c7873b65-87de-423a-a543-f343e05923d9.MasterOutFlowNode"
+      },
+      "zIndex": 3,
+      "measured": {
+        "width": 60,
+        "height": 62
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "39d4df14-9883-4617-8159-b1c34787abf7.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 869.5673323285775,
+        "y": 76.56093119600607
+      },
+      "data": {
+        "label": "",
+        "gain": 1.56949333993018,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "39d4df14-9883-4617-8159-b1c34787abf7.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 9,
+      "measured": {
+        "width": 75,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "4deac21e-afea-4725-90a9-ccac611ae8e7.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 1345.9699421628764,
+        "y": 257.4241206550649
+      },
+      "data": {
+        "label": "",
+        "gain": 1.906283890280203,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "4deac21e-afea-4725-90a9-ccac611ae8e7.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 10,
+      "measured": {
+        "width": 75,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "16ce409d-2710-44e8-ac38-93d01d4e01d4.NoiseFlowNode",
+      "type": "NoiseFlowNode",
+      "position": {
+        "x": 561.938717790307,
+        "y": 107.5628620126608
+      },
+      "data": {
+        "label": "",
+        "id": "16ce409d-2710-44e8-ac38-93d01d4e01d4.NoiseFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "noiseType": "white",
+        "processorCode": "class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {\n  constructor(){\n    super();\n    this._pinkState = new Float32Array(7);\n    this._brown = 0;\n    this._grayLast = 0;\n  }\n  process(inputs, outputs, parameters){\n    const out = outputs[0]; if(!out) return true;\n    for(let ch=0; ch<out.length; ch++){\n      const buf = out[ch];\n      for(let i=0;i<buf.length;i++){\n        let sample = 0;\n        switch('white') {\n          case 'white': sample = (Math.random()*2-1); break;\n          case 'pink': { let ps = this._pinkState; ps[0] = 0.99886 * ps[0] + Math.random() * 0.0555179; ps[1] = 0.99332 * ps[1] + Math.random() * 0.0750759; ps[2] = 0.96900 * ps[2] + Math.random() * 0.1538520; ps[3] = 0.86650 * ps[3] + Math.random() * 0.3104856; ps[4] = 0.55000 * ps[4] + Math.random() * 0.5329522; ps[5] = -0.7616 * ps[5] - Math.random() * 0.0168980; sample = ps[0]+ps[1]+ps[2]+ps[3]+ps[4]+ps[5]+ps[6] + Math.random()*0.5362; ps[6] = Math.random()*0.115926; sample *= 0.11; break; }\n          case 'brown': { this._brown += (Math.random()*2 - 1) * 0.02; if (this._brown < -1) this._brown = -1; else if (this._brown > 1) this._brown = 1; sample = this._brown; break; }\n          case 'blue': { const w1 = (Math.random()*2-1); const w2 = (Math.random()*2-1); sample = (w2 - w1); break; }\n          case 'violet': { const w1 = (Math.random()*2-1); const w2 = (Math.random()*2-1); const w3 = (Math.random()*2-1); sample = (w3 - 2*w2 + w1); break; }\n          case 'gray': { const white = (Math.random()*2-1); this._grayLast = 0.97 * this._grayLast + 0.03 * white; sample = this._grayLast; break; }\n        }\n        buf[i] = sample * 0.35;\n      }\n    }\n    return true;\n  }\n}"
+      },
+      "zIndex": 11,
+      "measured": {
+        "width": 90,
+        "height": 29
+      },
+      "dragging": false,
+      "selected": false
+    }
+  ],
+  "edges": [
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round",
+        "filter": "drop-shadow(0 0 2px rgba(255,255,255,0.8)) drop-shadow(0 0 4px rgba(255,255,255,0.5))"
+      },
+      "source": "39d4df14-9883-4617-8159-b1c34787abf7.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "5733d8b3-f3de-4bb8-8d7d-9c4a2261c1f1.VocoderFlowNode",
+      "targetHandle": "carrier",
+      "id": "xy-edge__39d4df14-9883-4617-8159-b1c34787abf7.GainFlowNodeoutput-5733d8b3-f3de-4bb8-8d7d-9c4a2261c1f1.VocoderFlowNodecarrier",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "11e7f623-ae54-4631-a432-f8233271bac1.MicFlowNode",
+      "sourceHandle": "output",
+      "target": "5733d8b3-f3de-4bb8-8d7d-9c4a2261c1f1.VocoderFlowNode",
+      "targetHandle": "modulator",
+      "id": "xy-edge__11e7f623-ae54-4631-a432-f8233271bac1.MicFlowNodeoutput-5733d8b3-f3de-4bb8-8d7d-9c4a2261c1f1.VocoderFlowNodemodulator"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "5733d8b3-f3de-4bb8-8d7d-9c4a2261c1f1.VocoderFlowNode",
+      "sourceHandle": "output",
+      "target": "4deac21e-afea-4725-90a9-ccac611ae8e7.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__5733d8b3-f3de-4bb8-8d7d-9c4a2261c1f1.VocoderFlowNodeoutput-4deac21e-afea-4725-90a9-ccac611ae8e7.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "4deac21e-afea-4725-90a9-ccac611ae8e7.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "c7873b65-87de-423a-a543-f343e05923d9.MasterOutFlowNode",
+      "targetHandle": "destination-input",
+      "id": "xy-edge__4deac21e-afea-4725-90a9-ccac611ae8e7.GainFlowNodeoutput-c7873b65-87de-423a-a543-f343e05923d9.MasterOutFlowNodedestination-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "16ce409d-2710-44e8-ac38-93d01d4e01d4.NoiseFlowNode",
+      "sourceHandle": "output",
+      "target": "39d4df14-9883-4617-8159-b1c34787abf7.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__16ce409d-2710-44e8-ac38-93d01d4e01d4.NoiseFlowNodeoutput-39d4df14-9883-4617-8159-b1c34787abf7.GainFlowNodemain-input"
+    }
+  ]
+}
