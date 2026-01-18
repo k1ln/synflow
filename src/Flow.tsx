@@ -98,6 +98,7 @@ import AudioSignalFreqShifterFlowNode from './nodes/AudioSignalFreqShifterFlowNo
 import FlowEventFreqShifterFlowNode from './nodes/FlowEventFreqShifterFlowNode';
 import EqualizerFlowNode from './nodes/EqualizerFlowNode';
 import VocoderFlowNode from './nodes/VocoderFlowNode';
+import MidiFileFlowNode from './nodes/MidiFileFlowNode';
 import DocsPlayground from './components/DocsPlayground';
 
 function makeDistortionCurve(amount: number) {
@@ -127,6 +128,67 @@ const nodeStyleObj = {
   // Subtle glow around nodes for dark theme
   boxShadow: "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
 };
+
+// === Style helpers moved outside component to avoid recreation on every render ===
+const DARK_NODE_BG = '#1f1f1f';
+
+const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!m) return null;
+  return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) };
+};
+
+// Cache for computed glow values to avoid recalculating the same styles
+const glowCache = new Map<string, string>();
+const makeGlow = (hex: string, strength: 'normal' | 'strong' = 'normal'): string => {
+  const cacheKey = `${hex}-${strength}`;
+  const cached = glowCache.get(cacheKey);
+  if (cached) return cached;
+  
+  const rgb = hexToRgb(hex) || { r: 0, g: 255, b: 136 };
+  const baseShadow = '0 1px 3px rgba(0,0,0,0.45)';
+  let result: string;
+  if (strength === 'strong') {
+    result = `${baseShadow}, 0 0 14px 3px rgba(${rgb.r},${rgb.g},${rgb.b},0.40)`;
+  } else {
+    result = `${baseShadow}, 0 0 8px 2px rgba(${rgb.r},${rgb.g},${rgb.b},0.12)`;
+  }
+  glowCache.set(cacheKey, result);
+  return result;
+};
+
+// Cache for edge glow filter values
+const edgeGlowCache = new Map<string, string>();
+const makeEdgeGlowFilter = (hex: string, strength: 'normal' | 'strong' = 'normal'): string => {
+  const cacheKey = `${hex}-${strength}`;
+  const cached = edgeGlowCache.get(cacheKey);
+  if (cached) return cached;
+  
+  const rgb = hexToRgb(hex) || { r: 255, g: 255, b: 255 };
+  const a1 = strength === 'strong' ? 0.8 : 0.6;
+  const a2 = strength === 'strong' ? 0.5 : 0.3;
+  const result = `drop-shadow(0 0 2px rgba(${rgb.r},${rgb.g},${rgb.b},${a1})) drop-shadow(0 0 4px rgba(${rgb.r},${rgb.g},${rgb.b},${a2}))`;
+  edgeGlowCache.set(cacheKey, result);
+  return result;
+};
+
+function normalizeNodeStylesForTheme(arr: any[] | undefined): any[] {
+  if (!Array.isArray(arr)) return [];
+  return arr.map((n) => {
+    const data = n?.data || {};
+    const style = { ...(data.style || {}) } as any;
+    if (!style.background || style.background === '#333' || style.background === '#222') {
+      style.background = DARK_NODE_BG;
+    }
+    // Ensure a consistent border and subtle glow for legacy nodes
+    if (!style.border) style.border = '1px solid #2a3139';
+    if (!style.borderRadius) style.borderRadius = '5px';
+    if (!style.glowColor) style.glowColor = '#00ff88';
+    if (!style.boxShadow) style.boxShadow = makeGlow(style.glowColor, 'normal');
+    if (!style.color) style.color = '#eeeeee';
+    return { ...n, data: { ...data, style } };
+  });
+}
 
 const nodeTypes = {
   MasterOutFlowNode: MasterOutFlowNode,
@@ -173,6 +235,7 @@ const nodeTypes = {
   FlowEventFreqShifterFlowNode: FlowEventFreqShifterFlowNode,
   EqualizerFlowNode: EqualizerFlowNode,
   VocoderFlowNode: VocoderFlowNode,
+  MidiFileFlowNode: MidiFileFlowNode,
 };
 const orderedNodeTypes = Object.fromEntries(
   Object.entries(nodeTypes).sort(([a], [b]) => a.localeCompare(b))
@@ -252,47 +315,6 @@ function Flow() {
   const [showDocsPlayground, setShowDocsPlayground] = useState(false);
   const strippEverythingButData = (flow: any) => {
     return JSON.parse(JSON.stringify(flow));
-  }
-
-  // Normalize node styles to ensure dark theme background is applied when missing or using older defaults
-  const DARK_NODE_BG = '#1f1f1f';
-  // Helpers to compute glow and work with colors
-  const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
-    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!m) return null;
-    return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) };
-  };
-  const makeGlow = (hex: string, strength: 'normal' | 'strong' = 'normal'): string => {
-    const rgb = hexToRgb(hex) || { r: 0, g: 255, b: 136 };
-    const baseShadow = '0 1px 3px rgba(0,0,0,0.45)';
-    if (strength === 'strong') {
-      return `${baseShadow}, 0 0 14px 3px rgba(${rgb.r},${rgb.g},${rgb.b},0.40)`;
-    }
-    return `${baseShadow}, 0 0 8px 2px rgba(${rgb.r},${rgb.g},${rgb.b},0.12)`;
-  };
-  // Build a CSS filter string that gives the edge a colored glow based on the chosen stroke color
-  const makeEdgeGlowFilter = (hex: string, strength: 'normal' | 'strong' = 'normal'): string => {
-    const rgb = hexToRgb(hex) || { r: 255, g: 255, b: 255 };
-    const a1 = strength === 'strong' ? 0.8 : 0.6;
-    const a2 = strength === 'strong' ? 0.5 : 0.3;
-    return `drop-shadow(0 0 2px rgba(${rgb.r},${rgb.g},${rgb.b},${a1})) drop-shadow(0 0 4px rgba(${rgb.r},${rgb.g},${rgb.b},${a2}))`;
-  };
-  function normalizeNodeStylesForTheme(arr: any[] | undefined): any[] {
-    if (!Array.isArray(arr)) return [];
-    return arr.map((n) => {
-      const data = n?.data || {};
-      const style = { ...(data.style || {}) } as any;
-      if (!style.background || style.background === '#333' || style.background === '#222') {
-        style.background = DARK_NODE_BG;
-      }
-      // Ensure a consistent border and subtle glow for legacy nodes
-      if (!style.border) style.border = '1px solid #2a3139';
-      if (!style.borderRadius) style.borderRadius = '5px';
-      if (!style.glowColor) style.glowColor = '#00ff88';
-      if (!style.boxShadow) style.boxShadow = makeGlow(style.glowColor, 'normal');
-      if (!style.color) style.color = '#eeeeee';
-      return { ...n, data: { ...data, style } };
-    });
   }
 
   useEffect(() => {
@@ -1689,6 +1711,21 @@ function Flow() {
         panOffset: 0.0,
         style: oscilloscopeStyle,
       };
+    } else if (type === "MidiFileFlowNode") {
+      const midiFileStyle = {
+        ...nodeStyleObj,
+        width: "250px",
+      };
+      data = {
+        ...data,
+        label: "MIDI File",
+        midiFile: null,
+        currentBar: 0,
+        currentTick: 0,
+        isPlaying: false,
+        loop: true,
+        style: midiFileStyle,
+      };
     }
 
     // Determine style width/height for centering.
@@ -2423,6 +2460,7 @@ function Flow() {
         onNodeClick={onNodeClick}
         nodeTypes={nodeTypes as any}
         proOptions={{ hideAttribution: true }}
+        onlyRenderVisibleElements={true}
         defaultEdgeOptions={{
           // Do not set stroke here so per-edge style.stroke can control color.
           // Keep consistent thickness and caps globally.
