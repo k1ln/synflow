@@ -83,7 +83,7 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
     setFileName(file.name);
     // backend upload
     try {
-      const svc = (await import('../services/../services/AudioFileService')).default; // dynamic to avoid bundler issues if service not yet loaded
+      const svc = (await import('../services/AudioFileService')).default; // dynamic to avoid bundler issues if service not yet loaded
       const meta = await svc.uploadFile(file);
       setFileId(meta.id);
       setFileUrl(meta.url);

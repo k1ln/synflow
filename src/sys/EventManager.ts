@@ -5,7 +5,7 @@ export default class EventManager {
     private btnAndCallbacksDown: Record<string, { [nodeId: string]: (...args: unknown[]) => void }>;
     private btnAndCallbacksUp: Record<string, { [nodeId: string]: (...args: unknown[]) => void }>;
     private handleDelete: () => void = () => { };
-    public static instance: EventManager;
+    public static instance?: EventManager;
 
     constructor(
          // Replace 'any' with the actual type of your event bus
@@ -20,7 +20,18 @@ export default class EventManager {
         if (!EventManager.instance) {
             EventManager.instance = new EventManager();
         }
-        return EventManager.instance;
+        return EventManager.instance!;
+    }
+
+    /**
+     * Destroy the current instance listeners and callbacks and unset the singleton.
+     * Call this before creating a fresh EventManager when swapping flows.
+     */
+    public static resetInstance(): void {
+        if (EventManager.instance) {
+            try { EventManager.instance.destroy(); } catch { /* noop */ }
+            EventManager.instance = undefined;
+        }
     }
 
     initializeEventListeners() {
@@ -29,6 +40,18 @@ export default class EventManager {
         window.addEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('keyup', this.handleKeyUp);
         window.addEventListener('keyup', this.handleKeyUp);
+    }
+
+    /** Remove listeners and clear internal callbacks. */
+    destroy() {
+        try {
+            window.removeEventListener('keydown', this.handleKeyDown);
+        } catch { }
+        try {
+            window.removeEventListener('keyup', this.handleKeyUp);
+        } catch { }
+        this.clearButtonCallbacks();
+        this.handleDelete = () => { };
     }
     sethandleDelete(callback: () => void) {
         this.handleDelete = callback;
