@@ -899,7 +899,7 @@ export class AudioGraphManager {
                         this.eventBus,
                         node
                     );
-                    virtualGainNode.render(nodeData.gain || 1);
+                    virtualGainNode.render(nodeData.gain ?? 1);
                     this.virtualNodes.set(node.id, virtualGainNode);
                     break;
 
