@@ -1696,12 +1696,21 @@ export class AudioGraphManager {
                 }
             } else if (targetParamHandle === "main-input") {
                 try {
+                    try {
+                        if (targetVirtual instanceof VirtualOscilloscopeNode) {
+                            console.log("ensuring oscilloscope loop for node", targetId);
+                            (targetVirtual as VirtualOscilloscopeNode).ensureLoop();
+                            targetInputNode = (targetVirtual as VirtualOscilloscopeNode).audioNode as AudioNode;
+                        }
+                    } catch (e) { /* noop */ }
                     const inputNode = targetInputNode ?? (targetNodeForParams as AudioNode);
                     if (!inputNode) {
                         throw new Error('Target input node unavailable');
                     }
                     sourceNode.connect(inputNode);
                     this.addMapConnections(sourceId, targetId);
+                    // If target is an oscilloscope, ensure its RAF loop is running so UI starts receiving data
+                    
                 } catch (e) {
                     console.warn('[connect] failed node->node', { sourceId, targetId, e });
                 }
