@@ -354,7 +354,7 @@ export class AudioGraphManager {
     }
 
     async initialize() {
-        
+
         await this.createVirtualNodes(this.nodesRef.current, null);
         this.connectVirtualNodes(this.edgesRef.current);
     }
@@ -431,22 +431,22 @@ export class AudioGraphManager {
                             // segment handles). Treat as event edge.
                             // Fall through to emit receiveNodeOn/Off.
                         } else {
-                        // For WebAudio nodes, emit updateParams with value
-                        const targetNodeHandleData = data.value;
-                        const targetDataObject = {
-                            nodeId: targetNodeId,
-                            source: node.id,
-                            data: {
-                                [targetNodeHandle]: targetNodeHandleData,
+                            // For WebAudio nodes, emit updateParams with value
+                            const targetNodeHandleData = data.value;
+                            const targetDataObject = {
+                                nodeId: targetNodeId,
+                                source: node.id,
+                                data: {
+                                    [targetNodeHandle]: targetNodeHandleData,
+                                }
+                            };
+                            if (eventType !== "receiveNodeOff") {
+                                this.eventBus.emit(
+                                    `${targetNodeId}.params.updateParams`,
+                                    targetDataObject
+                                );
                             }
-                        };
-                        if (eventType !== "receiveNodeOff") {
-                            this.eventBus.emit(
-                                `${targetNodeId}.params.updateParams`,
-                                targetDataObject
-                            );
-                        }
-                        
+
                         }
                     }
                 }
@@ -703,7 +703,7 @@ export class AudioGraphManager {
         node: CustomNode,
         data: any,
         eventType: string,
-        index: number | null = null
+        index: number | null | string = null
     ) {
         const connectedEdges = this.virtualEdges.get(node.id);
         if (!connectedEdges) {
@@ -714,7 +714,7 @@ export class AudioGraphManager {
         for (let i = 0; i < connectedEdges.length; i++) {
             const edge = connectedEdges[i];
             const targetNodeId = edge.target;
-            if (targetNodeId != null) {
+            if (targetNodeId !== null) {
                 const typeSplit = targetNodeId.split(".");
                 if (typeSplit) {
                     const type = typeSplit[typeSplit.length - 1];
@@ -746,19 +746,36 @@ export class AudioGraphManager {
                 }
             }
             if (index !== null) {
-                if (edge.sourceHandle !== "output-" + index) {
+                if (edge.sourceHandle && edge.sourceHandle.startsWith("output-")) {
+                    if (edge.sourceHandle !== "output-" + index) {
+                        continue;
+                    }
+                    const rawPayload = Array.isArray(data) ? data[index] : data;
+                    const payload =
+                        rawPayload && typeof rawPayload === 'object'
+                            ? rawPayload
+                            : { value: rawPayload };
+                    this.eventBus.emit(`${targetNodeId}.${edge.targetHandle}.${eventType}`, {
+                        ...payload,
+                        nodeId: targetNodeId,
+                        source: node.id,
+                    });
                     continue;
                 }
-                const rawPayload = Array.isArray(data) ? data[index] : data;
-                const payload =
-                    rawPayload && typeof rawPayload === 'object'
-                        ? rawPayload
-                        : { value: rawPayload };
-                this.eventBus.emit(`${targetNodeId}.${edge.targetHandle}.${eventType}`, {
-                    ...payload,
-                    nodeId: targetNodeId,
-                    source: node.id,
-                });
+                if (edge.sourceHandle !== index) {  
+                    continue;
+                } else{
+                    const rawPayload = Array.isArray(data) ? data[index] : data;
+                    const payload =
+                        rawPayload && typeof rawPayload === 'object'
+                            ? rawPayload
+                            : { value: rawPayload };
+                    this.eventBus.emit(`${targetNodeId}.${edge.targetHandle}.${eventType}`, {
+                        ...payload,
+                        nodeId: targetNodeId,
+                        source: node.id,
+                    });
+                }
             } else {
                 this.eventBus.emit(`${targetNodeId}.${edge.targetHandle}.${eventType}`, {
                     ...data,
@@ -1252,6 +1269,18 @@ export class AudioGraphManager {
                     this.eventBus.subscribe(`${node.id}.main-input.sendNodeOff`, (payload: any) => {
                         this.handleConnectedEdges({ id: node.id, type: node.type, data: node.data } as any, { value: payload.value, frequency: payload.frequency, note: payload.note }, "receiveNodeOff");
                     });
+
+                    // Forward per-message-type events from MidiFlowNote (note-on, note-off, CC, etc.)
+                    const forward = (eventId: string) => {
+                        this.eventBus.subscribe(`${node.id}.${eventId}.sendNodeOn`, (payload: any) => {
+                            this.handleConnectedEdges({ id: node.id, type: node.type, data: node.data } as any, payload, "receiveNodeOn", eventId);
+                        });
+                        this.eventBus.subscribe(`${node.id}.${eventId}.sendNodeOff`, (payload: any) => {
+                            this.handleConnectedEdges({ id: node.id, type: node.type, data: node.data } as any, payload, "receiveNodeOff", eventId);
+                        });
+                    };
+
+                    ['note-on', 'note-off', 'control-change', 'program-change', 'poly-aftertouch', 'channel-aftertouch', 'pitch-bend', 'sysex', 'mtc', 'song-position', 'song-select', 'tune-request', 'clock'].forEach(forward);
                     this.virtualNodes.set(node.id, virtualMidiNode as any);
                     break;
                 case "FunctionFlowNode":
@@ -1627,12 +1656,12 @@ export class AudioGraphManager {
     }
 
     connectSourceToTarget(
-        sourceId: string, 
-        targetId: string, 
-        sourceHandle: string | undefined, 
-        targetHandle: string | undefined, 
+        sourceId: string,
+        targetId: string,
+        sourceHandle: string | undefined,
+        targetHandle: string | undefined,
         edge: Edge,
-        originalEdge: Edge    
+        originalEdge: Edge
     ) {
         const sourceVirtual: any = this.virtualNodes.get(sourceId);
         const targetVirtual: any = this.virtualNodes.get(targetId);
@@ -1710,7 +1739,7 @@ export class AudioGraphManager {
                     sourceNode.connect(inputNode);
                     this.addMapConnections(sourceId, targetId);
                     // If target is an oscilloscope, ensure its RAF loop is running so UI starts receiving data
-                    
+
                 } catch (e) {
                     console.warn('[connect] failed node->node', { sourceId, targetId, e });
                 }
@@ -1832,7 +1861,7 @@ export class AudioGraphManager {
         if (!existingEdges) {
             this.virtualEdges.set(sourceId, [normalizedEdge]);
         } else {
-            
+
             const alreadyTracked = existingEdges.some((storedEdge) => storedEdge.id === normalizedEdge.id);
             if (!alreadyTracked) {
                 existingEdges.push(normalizedEdge);
