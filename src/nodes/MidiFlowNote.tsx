@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
+import EventBus from '../sys/EventBus';
 
 /**
  * MidiFlowNote: listens to Web MIDI and emits note-on frequencies (A4=440) via its output handle.
@@ -32,6 +33,7 @@ function midiNoteToName(note:number){
 const MidiFlowNote:React.FC<{ data: MidiFlowNoteData }> = ({ data }) => {
   // Always enabled (auto-start). User request: hide start/stop; ignore persisted disabled state.
   const enabled = true;
+  const eventBus = EventBus.getInstance();
   const [accessError, setAccessError] = useState<string | null>(null);
   const [deviceName, setDeviceName] = useState<string>('');
   const [lastNote, setLastNote] = useState(data.lastNote || '');
@@ -60,28 +62,44 @@ const MidiFlowNote:React.FC<{ data: MidiFlowNoteData }> = ({ data }) => {
         if(cmd === 0x9 && velocity>0){ // note on
           const freq = midiNoteToFreq(note);
           const name = midiNoteToName(note);
-          setLastNote(name);
-          setFrequency(freq);
+          eventBus.emit(`${data.id}.main-input.sendNodeOn`, { value: freq, frequency: freq, note: name });
         } else if (cmd === 0x8 || (cmd === 0x9 && velocity === 0)) { // note off (explicit or velocity=0)
-          setFrequency(0);
+          eventBus.emit(`${data.id}.main-input.sendNodeOff`, { value: 0, frequency: 0, note: lastNote });
         }
       };
     }
-    (navigator as any).requestMIDIAccess?.().then((midi: MidiAccess)=>{
-      if(cancelled) return;
-      const names: string[] = [];
-      midi.inputs.forEach((inp:any)=> { names.push(inp.name); attach(inp); });
-      setDevices(names.sort());
-      setDeviceName(inputs[0]?.name || '');
-      midi.onstatechange = (e: any)=>{
-        // Re-scan on device change
-        inputs = [];
-        const newNames: string[] = [];
-        midi.inputs.forEach((inp:any)=> { newNames.push(inp.name); attach(inp); });
-        setDevices(newNames.sort());
+    (async ()=>{
+      try {
+        const req = (navigator as any).requestMIDIAccess;
+        if(typeof req !== 'function'){
+          setAccessError('MIDI unavailable');
+          return;
+        }
+        const midi: MidiAccess = await req();
+        if(cancelled || !midi) return;
+        const names: string[] = [];
+        for (const inp of midi.inputs.values()) { 
+          names.push(inp.name); 
+          attach(inp); 
+        }
+        setDevices(names.sort());
         setDeviceName(inputs[0]?.name || '');
-      };
-    }).catch((err:any)=>{ setAccessError('MIDI unavailable'); console.error(err); });
+        midi.onstatechange = (e: any)=>{
+          // Re-scan on device change
+          inputs = [];
+          const newNames: string[] = [];
+          for (const inp of midi.inputs.values()) { 
+            newNames.push(inp.name); 
+            attach(inp); 
+          }
+          setDevices(newNames.sort());
+          setDeviceName(inputs[0]?.name || '');
+        };
+      } catch (err:any) {
+        setAccessError('MIDI unavailable');
+        console.error(err);
+      }
+    })();
     return ()=> { cancelled = true; inputs.forEach(i=> (i.onmidimessage = null)); };
   }, [enabled, data.device, data.channel, data.id]);
 
