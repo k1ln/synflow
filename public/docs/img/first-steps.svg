@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480">
+  <style>
+    .bg { fill: #0b0b0b; }
+    .node { fill: #1f1f1f; stroke: #333; stroke-width: 2px; rx: 8px; }
+    .text { fill: #e6f7ff; font-family: Arial, Helvetica, sans-serif; font-size: 14px; }
+    .small { font-size: 12px; fill: #bfc7cc; }
+    .arrow { stroke: #7fffd4; stroke-width: 3; fill: none; marker-end: url(#arrowhead); }
+  </style>
+  <rect class="bg" width="100%" height="100%"/>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#7fffd4" />
+    </marker>
+  </defs>
+
+  <!-- Nodes -->
+  <g>
+    <rect x="30" y="40" width="160" height="72" class="node" rx="8"/>
+    <text x="110" y="82" text-anchor="middle" class="text">MidiFlowNote</text>
+
+    <rect x="220" y="40" width="160" height="72" class="node" rx="8"/>
+    <text x="300" y="82" text-anchor="middle" class="text">ADSR</text>
+
+    <rect x="410" y="40" width="160" height="72" class="node" rx="8"/>
+    <text x="490" y="82" text-anchor="middle" class="text">Oscillator</text>
+
+    <rect x="600" y="40" width="160" height="72" class="node" rx="8"/>
+    <text x="680" y="82" text-anchor="middle" class="text">Gain</text>
+
+    <rect x="350" y="160" width="220" height="72" class="node" rx="8"/>
+    <text x="460" y="206" text-anchor="middle" class="text">Master Out</text>
+  </g>
+
+  <!-- Arrows -->
+  <path class="arrow" d="M190 76 L220 76" />
+  <path class="arrow" d="M380 76 L410 76" />
+  <path class="arrow" d="M570 76 L600 76" />
+  <path class="arrow" d="M490 112 L460 160" />
+  <path class="arrow" d="M680 112 L460 160" />
+
+  <!-- Legend -->
+  <text x="30" y="260" class="small">Midi → ADSR → Oscillator → Gain → Master</text>
+  <text x="30" y="282" class="small">Tip: open the MidiFlowNote node and select your device, then press Play to start audio.</text>
+</svg>
