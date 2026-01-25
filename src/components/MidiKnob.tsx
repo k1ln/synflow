@@ -150,10 +150,18 @@ const MidiKnob: React.FC<MidiKnobProps> = ({ value, min, max, detent, onChange, 
           // Absolute mode (default)
           const target = scaleCC(ccVal, activeMapping.min, activeMapping.max);
           const current = valueRef.current;
+          // Snap to exact min/max when receiving extreme CC values
+          if (ccVal === 0) { onChange(activeMapping.min); return; }
+          if (ccVal === 127) { onChange(activeMapping.max); return; }
           // Effective step includes sensitivity multiplier and clamps to 1
           const effective = Math.min(1, smoothFactor * sensitivity);
           const next = current + (target - current) * effective;
-          onChange(next);
+          // If remaining delta is tiny, snap to the exact target so we can reach 0
+          if (Math.abs(target - current) < 0.5) {
+            onChange(target);
+          } else {
+            onChange(next);
+          }
         }
       }
     });
@@ -164,7 +172,7 @@ const MidiKnob: React.FC<MidiKnobProps> = ({ value, min, max, detent, onChange, 
     const distance = Math.abs(v - valueRef.current);
     const range = max - min;
     // More lenient jump detection - allow up to 60% for large ranges, 50% for normal ranges
-    const maxJump = range > 150 ? range * 0.6 : range * 0.5;
+    const maxJump = range > 150 ? range * 0.9 : range * 0.8;
     if (distance > maxJump) {
       // Skip this update if it's likely a spurious jump from the knob library
       return;
