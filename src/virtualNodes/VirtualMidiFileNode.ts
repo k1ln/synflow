@@ -11,6 +11,7 @@ export interface MidiFileVirtualData {
   loop: boolean;
   ticksPerClock?: number;  // How many MIDI ticks to advance per clock signal (0 = auto from PPQ)
   subdivision?: number;    // Clock subdivision: 1 = whole beat, 2 = half, 4 = quarter, etc.
+  transpose?: number;      // Transpose notes by semitones (+12 = up one octave, -12 = down one octave)
 }
 
 export type MidiFileRuntimeNode = CustomNode & { data: MidiFileVirtualData } & { id: string };
@@ -35,6 +36,7 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
   private isPlaying: boolean = false;
   private subdivision: number = 1;  // 1 = per beat, 4 = per 16th note, etc.
   private ticksPerClock: number = 0; // 0 = auto-calculate from PPQ and subdivision
+  private transpose: number = 0;     // Transpose in semitones (+12 = up one octave)
   
   // Track the last clock time for timing calculations
   private lastClockTime: number = 0;
@@ -84,6 +86,7 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
     this.isPlaying = data.isPlaying ?? false;
     this.subdivision = data.subdivision ?? 1;
     this.ticksPerClock = data.ticksPerClock ?? 0;
+    this.transpose = data.transpose ?? 0;
     
     // Reset note index to match current position
     this.resetNoteIndex();
@@ -208,6 +211,10 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
       this.ticksPerClock = Math.max(0, d.ticksPerClock);
     }
 
+    if (typeof d.transpose === 'number') {
+      this.transpose = d.transpose;
+    }
+
     if (typeof d.jumpToBar === 'number') {
       this.jumpToBar(d.jumpToBar);
     }
@@ -255,15 +262,12 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
     }
     
     // Debug clock timing
-    console.log(`[Clock] interval=${clockInterval.toFixed(1)}ms, ticksToAdvance=${ticksToAdvance}, msPerTick=${this.msPerTick.toFixed(3)}, range=${startTick}-${endTick}`);
+    //console.log(`[Clock] interval=${clockInterval.toFixed(1)}ms, ticksToAdvance=${ticksToAdvance}, msPerTick=${this.msPerTick.toFixed(3)}, range=${startTick}-${endTick}`);
     
-    // Only process notes if we have a valid msPerTick (need at least one clock interval)
-    // This ensures note durations are always clock-dependent
-    if (this.msPerTick > 0) {
-      // Process all note-ons in this tick range with proper timing
-      // Note-offs are scheduled via setTimeout based on the note duration
-      this.processNoteOnsInRange(startTick, endTick, clockInterval, ticksToAdvance);
-    }
+    // Process all note-ons in this tick range with proper timing
+    // Note-offs are scheduled via setTimeout based on the note duration
+    // Even on first tick (msPerTick=0), we should play notes with a default duration
+    this.processNoteOnsInRange(startTick, endTick, clockInterval, ticksToAdvance);
     
     // Advance the tick position
     this.currentTick = endTick;
@@ -293,7 +297,7 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
    */
   private processNoteOnsInRange(startTick: number, endTick: number, clockIntervalMs: number, ticksInRange: number) {
     if (!this.midiFile) return;
-    if (this.msPerTick <= 0) return; // Can't calculate durations without clock timing
+    // Note: We no longer skip when msPerTick is 0 - we use a default fallback instead
     
     // Process all notes that start within this range
     while (
@@ -304,11 +308,11 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
       
       // Only process notes that start at or after startTick
       if (note.startTick >= startTick) {
-        // SANITY CHECK: Warn about zero or negative durations
-        if (note.durationTicks <= 0) {
-          console.warn(`[WARNING] Note ${note.note} has invalid durationTicks=${note.durationTicks}! This note will be skipped.`);
-          this.noteIndex++;
-          continue;
+        // SANITY CHECK: Warn about zero or negative durations and fix them
+        let noteDurationTicks = note.durationTicks;
+        if (noteDurationTicks <= 0) {
+          console.warn(`[WARNING] Note ${note.note} has invalid durationTicks=${noteDurationTicks}! Using minimum duration of 120 ticks.`);
+          noteDurationTicks = 120; // Use a reasonable minimum duration (typically 1/8 note at 480 PPQ)
         }
         
         // Calculate the delay for this note-on based on its position in the tick range
@@ -319,19 +323,32 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
         }
         
         // Calculate note-off delay based on duration in ticks * ms per tick
-        // This ties note duration directly to clock speed
-        // Ensure minimum duration of 50ms to prevent immediate note-off
-        const rawDurationMs = note.durationTicks * this.msPerTick;
+        // This ties note duration directly to clock speed.
+        // If msPerTick is not yet calculated (e.g. very first clock), derive a
+        // sensible default from a nominal BPM (120) and the file's PPQ so the
+        // first notes are not unrealistically short.
+        let effectiveMsPerTick = this.msPerTick;
+        if (effectiveMsPerTick <= 0) {
+          const ticksPerBeat = this.midiFile?.ticksPerBeat || 480;
+          const defaultBpm = 120; // 120 BPM as musical default
+          const msPerBeat = 60000 / defaultBpm; // e.g. 500ms at 120 BPM
+          effectiveMsPerTick = msPerBeat / ticksPerBeat; // ~1.04ms at 480 PPQ
+        }
+        const rawDurationMs = noteDurationTicks * effectiveMsPerTick;
         const durationMs = Math.max(50, rawDurationMs);
         
         // Detailed debug logging
-        console.log(`[NoteOn] note=${note.note}, durationTicks=${note.durationTicks}, msPerTick=${this.msPerTick.toFixed(3)}, rawDurationMs=${rawDurationMs.toFixed(1)}, finalDurationMs=${durationMs.toFixed(1)}, noteOnDelay=${noteOnDelayMs.toFixed(1)}`);
+        console.log(`[NoteOn] note=${note.note}, durationTicks=${noteDurationTicks}, msPerTick=${effectiveMsPerTick.toFixed(3)}, rawDurationMs=${rawDurationMs.toFixed(1)}, finalDurationMs=${durationMs.toFixed(1)}, noteOnDelay=${noteOnDelayMs.toFixed(1)}`);
         
         const key = `${note.channel}-${note.note}`;
         
-        // Cancel any existing timeout for this note (in case of overlapping notes)
+        // If this note is already active, send an immediate NoteOff
+        // before scheduling the new NoteOn. This guarantees that
+        // synth/ADSR envelopes retrigger cleanly on repeated notes.
         if (this.activeNoteOffTimeouts.has(key)) {
           clearTimeout(this.activeNoteOffTimeouts.get(key)!);
+          this.activeNoteOffTimeouts.delete(key);
+          this.emitNoteOff(note.note, note.channel);
         }
         
         // Capture current duration for the scheduled note-off
@@ -362,11 +379,21 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
   private scheduleNoteOff(noteNumber: number, channel: number, delayMs: number, key: string) {
     // Ensure minimum delay of 10ms to avoid immediate off
     const actualDelay = Math.max(10, delayMs);
-    
-    console.log(`[NoteOff scheduled] note=${noteNumber}, delay=${actualDelay.toFixed(1)}ms`);
-    
+    const scheduledAt = performance.now();
+    const expectedFireAt = scheduledAt + actualDelay;
+
+    console.log(
+      `[NoteOff scheduled] note=${noteNumber}, delay=${actualDelay.toFixed(1)}ms, ` +
+      `scheduledAt=${scheduledAt.toFixed(1)}ms, expectedFireAt=${expectedFireAt.toFixed(1)}ms`
+    );
+
     const timeoutId = setTimeout(() => {
-      console.log(`[NoteOff fired] note=${noteNumber}`);
+      const firedAt = performance.now();
+      const elapsed = firedAt - scheduledAt;
+      console.log(
+        `[NoteOff fired] note=${noteNumber}, firedAt=${firedAt.toFixed(1)}ms, ` +
+        `elapsed=${elapsed.toFixed(1)}ms (requested=${actualDelay.toFixed(1)}ms)`
+      );
       this.emitNoteOff(noteNumber, channel);
       this.activeNoteOffTimeouts.delete(key);
     }, actualDelay);
@@ -375,13 +402,19 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
   }
 
   private emitNoteOn(note: MidiNote) {
-    // Convert MIDI note number to frequency
-    const frequency = 440 * Math.pow(2, (note.note - 69) / 12);
+    // Apply transpose and convert MIDI note number to frequency
+    const transposedNote = note.note + this.transpose;
+    const frequency = 440 * Math.pow(2, (transposedNote - 69) / 12);
+    const now = performance.now();
     
-    console.log(`[emitNoteOn] note=${note.note}, velocity=${note.velocity}, frequency=${frequency.toFixed(2)}`);
+    console.log(
+      `[emitNoteOn] t=${now.toFixed(1)}ms, note=${note.note}, transposed=${transposedNote}, ` +
+      `velocity=${note.velocity}, frequency=${frequency.toFixed(2)}`
+    );
     
     const payload = {
-      note: note.note,
+      note: transposedNote,
+      originalNote: note.note,
       velocity: note.velocity,
       channel: note.channel,
       frequency: frequency,
@@ -397,12 +430,19 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
   }
 
   private emitNoteOff(noteNumber: number, channel: number) {
-    const frequency = 440 * Math.pow(2, (noteNumber - 69) / 12);
-    
-    console.log(`[emitNoteOff] note=${noteNumber}, frequency=${frequency.toFixed(2)}`);
+    // Apply transpose
+    const transposedNote = noteNumber + this.transpose;
+    const frequency = 440 * Math.pow(2, (transposedNote - 69) / 12);
+    const now = performance.now();
+
+    console.log(
+      `[emitNoteOff] t=${now.toFixed(1)}ms, note=${noteNumber}, transposed=${transposedNote}, ` +
+      `frequency=${frequency.toFixed(2)}`
+    );
     
     const payload = {
-      note: noteNumber,
+      note: transposedNote,
+      originalNote: noteNumber,
       channel: channel,
       frequency: frequency,
       value: frequency,  // Also include as 'value' for compatibility with other nodes

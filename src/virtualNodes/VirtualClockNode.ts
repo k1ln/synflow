@@ -19,14 +19,17 @@ export interface ClockOffConfig {
 
 /**
  * VirtualClockFlowNode emits periodic "main-input.sendNodeOn" events based on BPM.
+ * Uses high-resolution timing with drift correction for consistent musical timing.
  */
 export class VirtualClockNode extends VirtualNode<CustomNode & ClockNodeProps, undefined> {
     private isEmitting: boolean = true;
     private timeout: ReturnType<typeof setTimeout> | null = null;
+    private highResInterval: ReturnType<typeof setInterval> | null = null;
     private debounceTimeout: ReturnType<typeof setTimeout> | null = null;
     private offTimeout: ReturnType<typeof setTimeout> | null = null;
     private startTime: number = 0;
     private tickCount: number = 0;
+    private lastTickTime: number = 0;
     private emitEventsForConnectedEdges: (
         node: CustomNode & ClockNodeProps,
         data: any,
@@ -128,15 +131,56 @@ export class VirtualClockNode extends VirtualNode<CustomNode & ClockNodeProps, u
         this.isEmitting = true;
         this.startTime = performance.now();
         this.tickCount = 0;
+        this.lastTickTime = this.startTime;
         this.syncState();
-        this.interval();
+        
+        // Use a high-resolution polling interval (every 5ms) for precise timing
+        // This compensates for setTimeout's imprecision (can be up to 15ms late)
+        this.scheduleNextTick();
     }
 
-    interval() {
+    private scheduleNextTick() {
         if (!this.isEmitting) return;
+        
         const data: any = this.node.data || {};
         const bpm: number = (data.bpm || 120);
         const intervalMs = (60 / bpm) * 1000;
+        
+        const nextTickTime = this.startTime + (this.tickCount * intervalMs);
+        const now = performance.now();
+        const delay = nextTickTime - now;
+        
+        if (delay <= 0) {
+            // Time to fire now (or we're late)
+            this.fireTick();
+        } else if (delay < 20) {
+            // Less than 20ms away - use high-resolution polling
+            this.highResInterval = setInterval(() => {
+                const currentTime = performance.now();
+                if (currentTime >= nextTickTime) {
+                    if (this.highResInterval) {
+                        clearInterval(this.highResInterval);
+                        this.highResInterval = null;
+                    }
+                    this.fireTick();
+                }
+            }, 1); // Poll every 1ms for precision
+        } else {
+            // More than 20ms away - use setTimeout then switch to high-res
+            this.timeout = setTimeout(() => {
+                this.scheduleNextTick(); // Re-evaluate with high-res polling
+            }, delay - 15); // Wake up 15ms early to switch to high-res
+        }
+    }
+
+    private fireTick() {
+        if (!this.isEmitting) return;
+        
+        const data: any = this.node.data || {};
+        const bpm: number = (data.bpm || 120);
+        const intervalMs = (60 / bpm) * 1000;
+        
+        this.lastTickTime = performance.now();
 
         // Emit ON first
         this.eventBus.emit(
@@ -197,19 +241,23 @@ export class VirtualClockNode extends VirtualNode<CustomNode & ClockNodeProps, u
             }
         }
 
-        // Drift-corrected scheduling: calculate next tick
-        // based on absolute start time, not relative delay
-        const nextTickTime = this.startTime + (this.tickCount * intervalMs);
-        const now = performance.now();
-        const delay = Math.max(0, nextTickTime - now);
+        // Schedule next tick
+        this.scheduleNextTick();
+    }
 
-        this.timeout = setTimeout(() => this.interval(), delay);
+    // Legacy interval method - kept for reference but no longer used
+    interval() {
+        this.fireTick();
     }
 
     stop() {
         if (this.timeout) {
             clearTimeout(this.timeout);
             this.timeout = null;
+        }
+        if (this.highResInterval) {
+            clearInterval(this.highResInterval);
+            this.highResInterval = null;
         }
         if (this.offTimeout) {
             clearTimeout(this.offTimeout);
