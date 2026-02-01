@@ -106,18 +106,19 @@ class EventBus {
     if(eventName.indexOf("GUI")>=0){
       // After EventBus emitting GUI event
     }
-    this.events[eventName].forEach(
-      (callback) => {
+    // Call subscribers asynchronously to avoid deep synchronous re-entrancy
+    // which can cause "Maximum update depth exceeded" in React when handlers
+    // synchronously emit events that trigger each other.
+    this.events[eventName].forEach((callback) => {
+      // Use setTimeout(,0) to break the sync call-stack; handlers still run soon after.
+      setTimeout(() => {
         try {
-          // if (this.eventLoggingEnabled) {
-          //   this.eventLog.push({ eventName, data, timestamp: Date.now() });
-          // }
           callback(data);
         } catch (error) {
           console.error(`Error occurred in event handler for ${eventName}:`, error);
         }
-      }
-    );
+      }, 0);
+    });
   }
   /**
    * Clear all subscriptions for a specific event or all events.

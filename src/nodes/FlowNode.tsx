@@ -85,7 +85,7 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
         data.onChange?.({ selectedNode, outputArr: outputArr, inputArr: inputArr });
         const timeout = setTimeout(() => {
             updateNodeInternals(id);
-        }, 100); // Throttle by 100ms
+        }, 10); // Throttle by 100ms
 
         return () => clearTimeout(timeout);
 

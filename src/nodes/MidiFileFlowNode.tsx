@@ -248,6 +248,7 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
   const [isPlaying, setIsPlaying] = useState<boolean>(data.isPlaying ?? false);
   const [loop, setLoop] = useState<boolean>(data.loop ?? true);
   const [subdivision, setSubdivision] = useState<number>(data.subdivision ?? 1);
+  const suppressOnChangeRef = useRef(false);
   const [jumpToBar, setJumpToBar] = useState<number>(0);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -255,15 +256,20 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
   // Notify parent of changes
   useEffect(() => {
     if (data.onChange instanceof Function) {
-      data.onChange({
-        ...data,
-        midiFile,
-        currentBar,
-        currentTick,
-        isPlaying,
-        loop,
-        subdivision
-      });
+      if (suppressOnChangeRef.current) {
+        // This update originated from the virtual node sync; avoid emitting back to prevent update loops.
+        suppressOnChangeRef.current = false;
+      } else {
+        data.onChange({
+          ...data,
+          midiFile,
+          currentBar,
+          currentTick,
+          isPlaying,
+          loop,
+          subdivision
+        });
+      }
     }
   }, [midiFile, currentBar, currentTick, isPlaying, loop, subdivision]);
 
@@ -274,11 +280,12 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
     const channel = `FlowNode.${nodeId}.params.updateParams`;
     const handler = (p: any) => {
       const d = p?.data || p;
-      if (d?.from === 'VirtualMidiFileNode') {
-        if (typeof d.currentBar === 'number') setCurrentBar(d.currentBar);
-        if (typeof d.currentTick === 'number') setCurrentTick(d.currentTick);
-        if (typeof d.isPlaying === 'boolean') setIsPlaying(d.isPlaying);
-      }
+      // Mark that the following state changes should NOT trigger data.onChange emissions
+      // for any incoming virtual node update to avoid feedback loops.
+      suppressOnChangeRef.current = true;
+      if (typeof d.currentBar === 'number') setCurrentBar(d.currentBar);
+      if (typeof d.currentTick === 'number') setCurrentTick(d.currentTick);
+      if (typeof d.isPlaying === 'boolean') setIsPlaying(d.isPlaying);
     };
     
     eventBus.subscribe(channel, handler);
