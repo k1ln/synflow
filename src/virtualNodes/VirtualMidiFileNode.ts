@@ -421,8 +421,9 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
       value: frequency,  // Also include as 'value' for compatibility with other nodes
       gate: 1,
       startTick: note.startTick,
-      durationTicks: note.durationTicks,
-      sourceHandle: 'main-output'  // Important for edge routing
+      durationTicks: note.durationTicks
+      // Note: sourceHandle omitted intentionally - emitEventsForConnectedEdges
+      // will send to all connected edges from this node
     };
     
     // Emit to main-output handle
@@ -447,8 +448,9 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
       frequency: frequency,
       value: frequency,  // Also include as 'value' for compatibility with other nodes
       gate: 0,
-      velocity: 0,
-      sourceHandle: 'main-output'  // Important for edge routing
+      velocity: 0
+      // Note: sourceHandle omitted intentionally - emitEventsForConnectedEdges
+      // will send to all connected edges from this node
     };
     
     // Emit to main-output handle (same output for both on and off)

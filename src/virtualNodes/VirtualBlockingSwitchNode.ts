@@ -60,10 +60,31 @@ export class VirtualBlockingSwitchNode extends VirtualNode<CustomNode, undefined
         );
     }
 
+    /**
+     * Generate a stable key for tracking a signal source.
+     * Uses MIDI note number if available (integer, no precision issues),
+     * otherwise falls back to rounded frequency value to avoid floating-point comparison issues.
+     */
+    private getSignalKey(data: any): string {
+        // Prefer MIDI note number if available (from MIDI nodes)
+        if (typeof data.note === 'number') {
+            return `note:${data.note}`;
+        }
+        // Fall back to frequency value, but round to avoid floating-point precision issues
+        if (typeof data.value === 'number') {
+            // Round to 6 decimal places to avoid floating-point comparison issues
+            return `freq:${Math.round(data.value * 1000000) / 1000000}`;
+        }
+        // Ultimate fallback: use stringified value
+        return `val:${String(data.value)}`;
+    }
+
     private handleNodeOn = (data: any) => {
         const sourceId = data.source || data.nodeId || "unknown";
+        const signalKey = this.getSignalKey(data);
+        
         // Check if this source already has an assigned output
-        if (this.sourceToOutputMap.has(data.value)) {
+        if (this.sourceToOutputMap.has(signalKey)) {
             // Signal from this source is already active, ignore new nodeOn
             return;
         }
@@ -87,7 +108,7 @@ export class VirtualBlockingSwitchNode extends VirtualNode<CustomNode, undefined
 
         if (outputIndex !== -1) {
             // Assign this source to the found output
-            this.sourceToOutputMap.set(data.value, outputIndex);
+            this.sourceToOutputMap.set(signalKey, outputIndex);
             // occupiedOutputs logged
             this.occupiedOutputs.add(outputIndex);
             this.eventBus.emit(`${this.node.id}.input.sendNodeOn`, {
@@ -102,8 +123,10 @@ export class VirtualBlockingSwitchNode extends VirtualNode<CustomNode, undefined
 
     private handleNodeOff = (data: any) => {
         const sourceId = data.source || data.nodeId || "unknown";
-        if (this.sourceToOutputMap.has(data.value)) {
-            const outputIndex = this.sourceToOutputMap.get(data.value)!;
+        const signalKey = this.getSignalKey(data);
+        
+        if (this.sourceToOutputMap.has(signalKey)) {
+            const outputIndex = this.sourceToOutputMap.get(signalKey)!;
 
             // Emit the nodeOff signal to the same output that was used for nodeOn
             this.eventBus.emit(`${this.node.id}.input.sendNodeOff`, {
@@ -112,7 +135,7 @@ export class VirtualBlockingSwitchNode extends VirtualNode<CustomNode, undefined
             });
 
             // Free up the output for future use
-            this.sourceToOutputMap.delete(data.value);
+            this.sourceToOutputMap.delete(signalKey);
             // Occupied Outputs Before Delete
             this.occupiedOutputs.delete(outputIndex);
         } else {
@@ -122,12 +145,20 @@ export class VirtualBlockingSwitchNode extends VirtualNode<CustomNode, undefined
 
     private handleReset = () => {
         // Send nodeOff to all currently occupied outputs before clearing
-        this.sourceToOutputMap.forEach((outputIndex, value) => {
-            const outputIndex2 = this.sourceToOutputMap.get(value);  
-            const data = { value }; // Create a data object with the value
+        this.sourceToOutputMap.forEach((outputIndex, signalKey) => {
+            // Parse value from key for the data object
+            let value: any = signalKey;
+            if (signalKey.startsWith('note:')) {
+                value = parseInt(signalKey.substring(5), 10);
+            } else if (signalKey.startsWith('freq:')) {
+                value = parseFloat(signalKey.substring(5));
+            } else if (signalKey.startsWith('val:')) {
+                value = signalKey.substring(4);
+            }
+            const data = { value };
             this.eventBus.emit(`${this.node.id}.input.sendNodeOff`, {
                 ...data,
-                activeOutput: outputIndex2
+                activeOutput: outputIndex
             });
         });
         
