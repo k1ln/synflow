@@ -19,10 +19,8 @@ resource "scaleway_object_bucket" "synflow" {
   name   = var.bucket_name
   region = var.region
   
-  # Enable versioning (optional but recommended)
-  versioning {
-    enabled = true
-  }
+  # Set ACL to public-read for website hosting
+  acl = "public-read"
 
   tags = {
     project     = "synflow"
@@ -31,56 +29,6 @@ resource "scaleway_object_bucket" "synflow" {
   }
 }
 
-# Configure bucket for website hosting
-resource "scaleway_object_bucket_website_configuration" "synflow" {
-  bucket = scaleway_object_bucket.synflow.name
-  region = var.region
-
-  index_document {
-    suffix = "index.html"
-  }
-
-  error_document {
-    key = "index.html"  # For SPA routing
-  }
-}
-
-# Set bucket ACL to public-read for website hosting
-resource "scaleway_object_bucket_acl" "synflow" {
-  bucket = scaleway_object_bucket.synflow.name
-  region = var.region
-  acl    = "public-read"
-}
-
-# CORS configuration for the bucket
-resource "scaleway_object_bucket_cors_configuration" "synflow" {
-  bucket = scaleway_object_bucket.synflow.name
-  region = var.region
-
-  cors_rule {
-    allowed_headers = ["*"]
-    allowed_methods = ["GET", "HEAD"]
-    allowed_origins = ["*"]
-    max_age_seconds = 3000
-  }
-}
-
-# Bucket policy for public read access
-resource "scaleway_object_bucket_policy" "synflow" {
-  bucket = scaleway_object_bucket.synflow.name
-  region = var.region
-  
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Id      = "PublicReadPolicy"
-    Statement = [
-      {
-        Sid       = "PublicReadGetObject"
-        Effect    = "Allow"
-        Principal = "*"
-        Action    = "s3:GetObject"
-        Resource  = "arn:aws:s3:::${var.bucket_name}/*"
-      }
-    ]
-  })
-}
+# Note: Additional configuration (CORS, website config, etc.) 
+# needs to be done via AWS CLI after bucket creation
+# See post-apply instructions in outputs
