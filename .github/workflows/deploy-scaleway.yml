@@ -31,15 +31,11 @@ jobs:
         env:
           NODE_ENV: production
 
-      - name: Configure AWS CLI for Scaleway
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.SCW_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.SCW_SECRET_KEY }}
-          aws-region: ${{ secrets.SCW_REGION }}
-
       - name: Deploy to Scaleway Object Storage
         env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.SCW_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SCW_SECRET_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.SCW_REGION }}
           BUCKET_NAME: ${{ secrets.SCW_BUCKET_NAME }}
           SCW_REGION: ${{ secrets.SCW_REGION }}
         run: |
