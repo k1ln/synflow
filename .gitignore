@@ -5,6 +5,7 @@ src/audio
 .env
 .env.local
 .env.*.local
+.env.scaleway
 
 # Ignore upload directories
 uploads/
