@@ -12,13 +12,19 @@ export class VirtualBiquadFilterNode extends VirtualNode<CustomNode & BiquadFilt
             node);
     }
 
-    render(filterType: BiquadFilterType = "lowpass", frequency: number = 1000) {
+    render(
+        filterType: BiquadFilterType = "lowpass", 
+        frequency: number = 1000,
+        Q: number = 0,
+        gain: number = 0,
+        detune: number = 0
+    ) {
         this.audioNode!.type = filterType;
         this.audioNode!.frequency.value = frequency;
-        // Ensure deterministic defaults for reusable automation: detune, Q, gain -> 0
-        try { this.audioNode!.detune.value = 0; } catch {}
-        try { this.audioNode!.Q.value = 0; } catch {}
-        try { this.audioNode!.gain.value = 0; } catch {}
+        // Set Q, gain, detune to provided values (defaulting to 0 if not specified)
+        try { this.audioNode!.Q.value = Q; } catch {}
+        try { this.audioNode!.gain.value = gain; } catch {}
+        try { this.audioNode!.detune.value = detune; } catch {}
     }
 }
 

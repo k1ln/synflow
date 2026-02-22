@@ -20,15 +20,43 @@ export type OscillatorFlowNodeProps = {
     flowId?: string; // optional identifier for the overall flow/patch
     freqMidiMapping?: MidiMapping | null;
     detuneMidiMapping?: MidiMapping | null;
+    pulseWidth?: number;
+    periodicWaveHarmonics?: number;
     onChange: (data: any) => void;
   };
 };
+
+/**
+ * Build a PeriodicWave for a pulse wave with a given duty cycle.
+ * dutyCycle: 0..1 (0.5 = standard square wave)
+ * numHarmonics: how many harmonics to include (more = sharper edges)
+ */
+export function buildPulsePeriodicWave(
+  audioContext: AudioContext,
+  dutyCycle: number = 0.5,
+  numHarmonics: number = 128
+): PeriodicWave {
+  const real = new Float32Array(numHarmonics);
+  const imag = new Float32Array(numHarmonics);
+
+  real[0] = 2 * dutyCycle - 1; // DC offset
+  imag[0] = 0;
+
+  for (let n = 1; n < numHarmonics; n++) {
+    real[n] = (2 / (n * Math.PI)) * Math.sin(n * Math.PI * dutyCycle);
+    imag[n] = 0;
+  }
+
+  return audioContext.createPeriodicWave(real, imag, { disableNormalization: false });
+}
 
 const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
   const [frequency, setFrequency] = useState(data.frequency || 440);
   const [detune, setDetune] = useState(data.detune || 0);
   const [label, setLabel] = useState(data.label || "Oscillator");
   const [waveform, setWaveform] = useState<OscillatorType>(data.type || "sine");
+  const [pulseWidth, setPulseWidth] = useState(data.pulseWidth ?? 0.5);
+  const [periodicWaveHarmonics, setPeriodicWaveHarmonics] = useState(data.periodicWaveHarmonics ?? 128);
   
   // Calculate initial knobValue based on frequency and type, don't trust saved value
   const calculateInitialKnobValue = () => {
@@ -154,11 +182,11 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
     // Perform an action whenever frequency changes
     if (data.onChange instanceof Function) {
       //console.log("Change Data");
-      data.onChange({ ...data, frequency, detune, label, type:waveform, frequencyType: oscFrequencyType, midiNode, knobValue, freqMidiMapping, detuneMidiMapping });
+      data.onChange({ ...data, frequency, detune, label, type:waveform, frequencyType: oscFrequencyType, midiNode, knobValue, freqMidiMapping, detuneMidiMapping, pulseWidth, periodicWaveHarmonics });
     }
 
     // You can add additional logic here
-  }, [frequency, detune, label, waveform, oscFrequencyType, midiNode, knobValue,style]);
+  }, [frequency, detune, label, waveform, oscFrequencyType, midiNode, knobValue, style, pulseWidth, periodicWaveHarmonics]);
 
   function changebackgroundColor(color: string) {
     setStyle({ ...style, background: color });
@@ -331,6 +359,44 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
           ))}
         </select>
       </div>
+      {/* Pulse Width control — shown only when waveform is "custom" */}
+      {waveform === "custom" && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 4 }}>
+          <span style={{ fontSize: 10 }}>Pulse W.</span>
+          <MidiKnob
+            min={1}
+            max={99}
+            value={Math.round(pulseWidth * 100)}
+            onChange={(v) => setPulseWidth(v / 100)}
+            midiMapping={null}
+            onMidiLearnChange={() => {}}
+            label="PW"
+            persistKey={`osc:${data.flowId || 'default'}:${data.id}:pw`}
+          />
+          <span style={{ fontSize: 9, color: '#aaa' }}>{Math.round(pulseWidth * 100)}%</span>
+          <div style={{ marginTop: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <span style={{ fontSize: 9 }}>Harmonics</span>
+            <input
+              type="number"
+              min={8}
+              max={512}
+              step={8}
+              value={periodicWaveHarmonics}
+              onChange={(e) => setPeriodicWaveHarmonics(Math.max(8, Math.min(512, parseInt(e.target.value) || 128)))}
+              style={{
+                width: 42,
+                background: '#222',
+                color: '#eee',
+                border: '1px solid #444',
+                borderRadius: 4,
+                padding: '1px 3px',
+                fontSize: 9,
+                textAlign: 'center',
+              }}
+            />
+          </div>
+        </div>
+      )}
       {/* Frequency Type Selector */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         <select

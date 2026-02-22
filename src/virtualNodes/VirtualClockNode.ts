@@ -86,6 +86,15 @@ export class VirtualClockNode extends VirtualNode<CustomNode & ClockNodeProps, u
         this.eventBus.subscribe(`${this.node.id}.params.updateParams`, (data) =>
             this.handleUpdateParams(this.node, data)
         );
+
+        // BPM input handle — accepts external BPM values (e.g. from MIDI file tempo track)
+        this.eventBus.subscribe(`${this.node.id}.bpm-input.receiveNodeOn`, (data: any) => {
+            this.handleBpmInput(data);
+        });
+        this.eventBus.subscribe(`${this.node.id}.bpm-input.receivenodeOn`, (data: any) => {
+            this.handleBpmInput(data);
+        });
+
         // Only start if isEmitting is true (respects saved off state)
         if (this.isEmitting) {
             this.start();
@@ -97,6 +106,8 @@ export class VirtualClockNode extends VirtualNode<CustomNode & ClockNodeProps, u
         const target: any = node.data as any;
         const allowed = ['sendOff','offDelayMs','sendOffBeforeNextOn','bpm','isEmitting'];
         let nextEmit: boolean | null = null;
+        let bpmChanged = false;
+        const oldBpm: number = target.bpm || 120;
         if (data && data.data && typeof data.data === 'object') {
             Object.keys(data.data).forEach((key) => {
                 if (key in target || allowed.includes(key)) {
@@ -110,9 +121,21 @@ export class VirtualClockNode extends VirtualNode<CustomNode & ClockNodeProps, u
                     if (key === 'isEmitting' && typeof value === 'boolean') {
                         nextEmit = value;
                     }
+                    if (key === 'bpm') {
+                        bpmChanged = true;
+                    }
                 }
             });
         }
+
+        // BPM changes take effect immediately with phase-preserving reschedule
+        // so there is no jarring double-tick or timing gap.
+        if (bpmChanged && this.isEmitting) {
+            this.rescheduleForNewBpm(oldBpm);
+            // If only BPM changed, skip the debounced start/stop below
+            if (nextEmit === null) return;
+        }
+
         if (this.debounceTimeout) {
             clearTimeout(this.debounceTimeout);
         }
@@ -124,6 +147,79 @@ export class VirtualClockNode extends VirtualNode<CustomNode & ClockNodeProps, u
             }
             // If nextEmit is null, don't change start/stop state
         }, 200);
+    }
+
+    /**
+     * When BPM changes while the clock is running, we don't want to restart
+     * the whole clock (which would fire a tick immediately). Instead we figure
+     * out how far we are into the current beat and schedule the next tick
+     * after the proportional remaining time under the new BPM.
+     *
+     * Example: old BPM = 120 → 500ms interval, 300ms have elapsed (60% through).
+     *          new BPM = 60  → 1000ms interval, remaining = 1000 * (1 - 0.6) = 400ms.
+     *
+     * After that single bridging tick fires, normal scheduling resumes at the
+     * new BPM with a freshly anchored startTime.
+     */
+    private rescheduleForNewBpm(oldBpm: number) {
+        // Cancel ALL pending timers without touching isEmitting
+        if (this.timeout) { clearTimeout(this.timeout); this.timeout = null; }
+        if (this.highResInterval) { clearInterval(this.highResInterval); this.highResInterval = null; }
+        if (this.offTimeout) { clearTimeout(this.offTimeout); this.offTimeout = null; }
+
+        const data: any = this.node.data || {};
+        const newBpm: number = data.bpm || 120;
+        const newIntervalMs = (60 / newBpm) * 1000;
+        const oldIntervalMs = (60 / oldBpm) * 1000;
+
+        const now = performance.now();
+        const elapsed = now - this.lastTickTime;
+
+        // How far through the old interval were we? (0..1, clamped)
+        const phase = Math.min(elapsed / oldIntervalMs, 1);
+
+        // Remaining time under the new tempo — at least 5ms to avoid an
+        // immediate retrigger that causes the "double hit" feeling.
+        const remaining = Math.max(5, newIntervalMs * (1 - phase));
+
+        // Schedule a single bridging timeout. When it fires, re-anchor the
+        // clock and resume normal tick scheduling from there.
+        this.timeout = setTimeout(() => {
+            this.timeout = null;
+            if (!this.isEmitting) return;
+
+            // Re-anchor so future ticks are evenly spaced at the new BPM
+            this.startTime = performance.now();
+            this.tickCount = 0;
+            this.fireTick(); // fires tick 0 and schedules the next one
+        }, remaining);
+    }
+
+    /**
+     * Handle an incoming BPM value from the bpm-input handle.
+     * Reads bpm (or value) from the event payload, updates node data,
+     * and smoothly reschedules the clock.
+     */
+    private handleBpmInput(data: any) {
+        const incomingBpm = data?.bpm ?? data?.value;
+        if (typeof incomingBpm !== 'number' || isNaN(incomingBpm) || incomingBpm < 1) return;
+
+        const target: any = this.node.data as any;
+        const oldBpm: number = target.bpm || 120;
+        if (Math.abs(incomingBpm - oldBpm) < 0.01) return; // no meaningful change
+
+        target.bpm = incomingBpm;
+
+        // Update the UI so the displayed BPM reflects the incoming value
+        this.eventBus.emit('params.updateParams', {
+            nodeid: this.node.id,
+            data: { bpm: incomingBpm }
+        });
+
+        // Smoothly reschedule if the clock is running
+        if (this.isEmitting) {
+            this.rescheduleForNewBpm(oldBpm);
+        }
     }
 
     start() {

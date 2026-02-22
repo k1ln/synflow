@@ -16,12 +16,18 @@ export interface MidiTrack {
   notes: MidiNote[];
 }
 
+export interface MidiTempoChange {
+  tick: number;         // Absolute tick position of the tempo change
+  bpm: number;          // Tempo in beats per minute
+}
+
 export interface ParsedMidiFile {
   name: string;
   ticksPerBeat: number;
   tracks: MidiTrack[];
   totalTicks: number;
   totalBars: number;    // Assuming 4/4 time signature (4 beats per bar)
+  tempoChanges: MidiTempoChange[];  // Tempo changes found in the file (sorted by tick)
 }
 
 export interface MidiFileFlowNodeData {
@@ -34,6 +40,7 @@ export interface MidiFileFlowNodeData {
   loop: boolean;
   subdivision?: number;  // Clock subdivision: 1 = per beat, 4 = per 16th note, etc.
   transpose?: number;    // Transpose in semitones (+12 = up one octave)
+  singleVoiceMode?: boolean; // Only one note at a time (monophonic)
   style?: React.CSSProperties;
   onChange?: (data: any) => void;
 }
@@ -89,6 +96,7 @@ function parseMidiFile(buffer: ArrayBuffer, fileName: string): ParsedMidiFile {
 
   const tracks: MidiTrack[] = [];
   let totalTicks = 0;
+  const tempoChanges: MidiTempoChange[] = [];
 
   // Read track chunks
   for (let t = 0; t < numTracks; t++) {
@@ -192,6 +200,12 @@ function parseMidiFile(buffer: ArrayBuffer, fileName: string): ParsedMidiFile {
             if (metaType === 0x03) {
               // Track name
               trackName = String.fromCharCode(...data.slice(offset, offset + metaLength));
+            } else if (metaType === 0x51 && metaLength === 3) {
+              // Set Tempo: 3-byte big-endian microseconds per quarter note
+              const microsPerBeat = (data[offset] << 16) | (data[offset + 1] << 8) | data[offset + 2];
+              const tempoBpm = Math.round((60000000 / microsPerBeat) * 100) / 100;
+              tempoChanges.push({ tick: currentTick, bpm: tempoBpm });
+              console.log(`[Parse] Tempo change at tick ${currentTick}: ${tempoBpm} BPM (${microsPerBeat} µs/beat)`);
             }
             offset += metaLength;
           } else if (statusByte === 0xf0 || statusByte === 0xf7) {
@@ -230,12 +244,16 @@ function parseMidiFile(buffer: ArrayBuffer, fileName: string): ParsedMidiFile {
   const ticksPerBar = ticksPerBeat * 4;
   const totalBars = Math.ceil(totalTicks / ticksPerBar);
 
+  // Sort tempo changes by tick and deduplicate
+  tempoChanges.sort((a, b) => a.tick - b.tick);
+
   return {
     name: fileName,
     ticksPerBeat,
     tracks,
     totalTicks,
-    totalBars
+    totalBars,
+    tempoChanges
   };
 }
 
@@ -250,6 +268,7 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
   const [loop, setLoop] = useState<boolean>(data.loop ?? true);
   const [subdivision, setSubdivision] = useState<number>(data.subdivision ?? 1);
   const [transpose, setTranspose] = useState<number>(data.transpose ?? 12); // Default +12 (one octave up)
+  const [singleVoiceMode, setSingleVoiceMode] = useState<boolean>(data.singleVoiceMode ?? false);
   const suppressOnChangeRef = useRef(false);
   const [jumpToBar, setJumpToBar] = useState<number>(0);
   
@@ -270,11 +289,12 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
           isPlaying,
           loop,
           subdivision,
-          transpose
+          transpose,
+          singleVoiceMode
         });
       }
     }
-  }, [midiFile, currentBar, currentTick, isPlaying, loop, subdivision, transpose]);
+  }, [midiFile, currentBar, currentTick, isPlaying, loop, subdivision, transpose, singleVoiceMode]);
 
   // Subscribe to virtual node updates for UI sync
   useEffect(() => {
@@ -310,7 +330,7 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
       eventBus.emit(`${nodeId}.reset.receiveNodeOn`, { gate: 1 });
       eventBus.emit(`${nodeId}.params.updateParams`, {
         nodeid: nodeId,
-        data: { midiFile: parsed, currentBar: 0, currentTick: 0 }
+        data: { midiFile: parsed, currentBar: 0, currentTick: 0, singleVoiceMode }
       });
     } catch (error) {
       console.error('Failed to parse MIDI file:', error);
@@ -371,8 +391,17 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
         type="source"
         position={Position.Right}
         id="main-output"
-        style={{ top: '50%', background: '#0f0' }}
+        style={{ top: '35%', background: '#0f0' }}
         title="Note Output (On/Off)"
+      />
+
+      {/* Tempo output - sends BPM changes read from the MIDI file */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="tempo-output"
+        style={{ top: '65%', background: '#f80' }}
+        title="Tempo Output (BPM)"
       />
 
       <div style={{ marginBottom: 8, fontWeight: 'bold', fontSize: 13 }}>
@@ -411,6 +440,9 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
             <div>Tracks: {midiFile.tracks.length}</div>
             <div>Bars: {midiFile.totalBars}</div>
             <div>PPQ: {midiFile.ticksPerBeat}</div>
+            {midiFile.tempoChanges?.length > 0 && (
+              <div>Tempo: {midiFile.tempoChanges[0].bpm} BPM{midiFile.tempoChanges.length > 1 ? ` (+${midiFile.tempoChanges.length - 1} changes)` : ''}</div>
+            )}
           </div>
 
           {/* Progress bar */}
@@ -470,6 +502,23 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
               onChange={(e) => setLoop(e.target.checked)}
             />
             Loop
+          </label>
+
+          {/* Single Voice Mode toggle */}
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, marginBottom: 8 }}>
+            <input
+              type="checkbox"
+              checked={singleVoiceMode}
+              onChange={(e) => {
+                const newMode = e.target.checked;
+                setSingleVoiceMode(newMode);
+                eventBus.emit(`${nodeId}.params.updateParams`, {
+                  nodeid: nodeId,
+                  data: { singleVoiceMode: newMode }
+                });
+              }}
+            />
+            Single Voice (Mono)
           </label>
 
           {/* Subdivision control */}

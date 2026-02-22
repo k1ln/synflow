@@ -48,6 +48,10 @@ const ClockFlowNode: React.FC<ClockNodeProps> = ({ id, data }) => {
   // Notify parent of BPM changes
   useEffect(() => {
     if (data.onChange instanceof Function) {
+      if (suppressBpmOnChangeRef.current) {
+        suppressBpmOnChangeRef.current = false;
+        return;
+      }
       data.onChange({
         ...data,
         bpm,
@@ -58,6 +62,27 @@ const ClockFlowNode: React.FC<ClockNodeProps> = ({ id, data }) => {
       });
     }
   }, [bpm, isEmitting, sendOff, offDelayMs, sendOffBeforeNextOn]);
+
+  // Subscribe to virtual node param updates so the BPM display reflects
+  // external changes (e.g. incoming MIDI tempo events on the bpm-input handle).
+  const suppressBpmOnChangeRef = useRef(false);
+  const eventBus = EventBus.getInstance();
+  useEffect(() => {
+    const nodeId = (data as any).id ?? id;
+    if (!nodeId) return;
+    const channel = `params.updateParams`;
+    const handler = (p: any) => {
+      // Only handle updates for this node
+      if (p?.nodeid !== nodeId) return;
+      const d = p?.data || p;
+      if (typeof d?.bpm === 'number' && d.bpm !== bpm) {
+        suppressBpmOnChangeRef.current = true;
+        setBpm(d.bpm);
+      }
+    };
+    eventBus.subscribe(channel, handler);
+    return () => { eventBus.unsubscribe(channel, handler as any); };
+  }, [id, data, bpm, eventBus]);
 
   // ensure wrapper style exists so color can be set externally via data.style.color
   const baseStyle = (data as any).style || {} as React.CSSProperties;
@@ -121,7 +146,8 @@ const ClockFlowNode: React.FC<ClockNodeProps> = ({ id, data }) => {
           )}
         </div>
       </div>
-      <Handle type="target" position={Position.Left} id="main-input" />
+      <Handle type="target" position={Position.Left} id="main-input" style={{ top: '35%' }} title="Toggle On/Off" />
+      <Handle type="target" position={Position.Left} id="bpm-input" style={{ top: '65%', background: '#f80' }} title="BPM Input" />
       <Handle type="source" position={Position.Right} id="main-output" />
     </div>
   );

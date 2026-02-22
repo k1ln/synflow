@@ -508,6 +508,58 @@ export class AudioGraphManager {
 
 
 
+    /**
+     * Route an event to only those edges whose sourceHandle matches the given handle.
+     * Same pattern as handleSendNodeEventSwitch but keyed by an explicit handle name
+     * instead of "output-N".
+     */
+    handleSendNodeEventByHandle(node: CustomNode, data: any, eventType: string, sourceHandle: string) {
+        const connectedEdges = this.virtualEdges.get(node.id);
+        if (!connectedEdges || connectedEdges.length === 0) {
+            const fallbackEdges = this.edgesRef.current?.filter((e: Edge) => e.source === node.id) ?? [];
+            if (fallbackEdges.length) {
+                fallbackEdges.forEach((edge) => this.addConnection(edge));
+            }
+        }
+        const edges = this.virtualEdges.get(node.id);
+        if (!edges) return;
+
+        edges.forEach((edge) => {
+            // Only send to edges originating from the specified handle
+            if (edge.sourceHandle !== sourceHandle) return;
+
+            const targetNodeId = edge.target;
+            const targetNodeHandle = edge.targetHandle;
+            if (!targetNodeId) return;
+
+            // WebAudio param routing (same logic as handleSendNodeEventSwitch)
+            const typeSplit = targetNodeId.split(".");
+            const type = typeSplit[typeSplit.length - 1];
+            if (webAudioApiFlowNodes.includes(type)) {
+                if (this.isAudioParamTargetHandle(targetNodeId, targetNodeHandle)) {
+                    if (eventType !== "receiveNodeOff") {
+                        this.eventBus.emit(`${targetNodeId}.params.updateParams`, {
+                            nodeId: targetNodeId,
+                            source: node.id,
+                            data: {
+                                [targetNodeHandle]: data.value,
+                                value: data.value,
+                            }
+                        });
+                    }
+                    return;
+                }
+            }
+
+            // Normal event routing
+            this.eventBus.emit(`${targetNodeId}.${targetNodeHandle}.${eventType}`, {
+                ...data,
+                nodeId: targetNodeId,
+                source: node.id,
+            });
+        });
+    }
+
     handleReceiveNodeOnCustom(node: CustomNode, inputIndex: number, data: any) {
         this.eventBus.emit(node.id + ".input-" + inputIndex + ".receiveNodeOn", {
             nodeId: node.id,
@@ -903,11 +955,14 @@ export class AudioGraphManager {
                     const oscNode = new VirtualOscillatorNode(
                         this.audioContext,
                         this.eventBus,
-                        node as CustomNode & OscillatorFlowNodeProps
+                        node as CustomNode & OscillatorFlowNodeProps,
+                        this.resetConnectionsOfNode.bind(this)
                     );
                     oscNode.render(
                         nodeData.frequency || 440,
-                        nodeData.type || "sine"
+                        nodeData.type || "sine",
+                        nodeData.pulseWidth,
+                        nodeData.periodicWaveHarmonics,
                     );
                     this.virtualNodes.set(node.id, oscNode);
                     break;
@@ -963,7 +1018,10 @@ export class AudioGraphManager {
                     );
                     virtualBiquadFilterNode.render(
                         nodeData.filterType || "lowpass",
-                        nodeData.frequency || 1000
+                        nodeData.frequency || 1000,
+                        nodeData.Q ?? 0,
+                        nodeData.gain ?? 0,
+                        nodeData.detune ?? 0
                     );
                     this.virtualNodes.set(node.id, virtualBiquadFilterNode);
                     break;
@@ -1015,7 +1073,8 @@ export class AudioGraphManager {
                     const virtualMidiFileNode = new VirtualMidiFileNode(
                         this.eventBus,
                         node as CustomNode & MidiFileFlowNodeProps,
-                        this.emitEventsForConnectedEdges.bind(this)
+                        this.emitEventsForConnectedEdges.bind(this),
+                        this.handleSendNodeEventByHandle.bind(this)
                     );
                     this.virtualNodes.set(node.id, virtualMidiFileNode as any);
                     break;
@@ -1699,7 +1758,7 @@ export class AudioGraphManager {
             if (targetVirtual instanceof AudioNode || targetVirtual instanceof AudioContext) return targetVirtual;
             return targetVirtual.audioNode as AudioNode | undefined;
         })();
-        const targetInputNode: AudioNode | undefined = resolveInputNode(targetVirtual, targetNodeForParams instanceof AudioNode ? targetNodeForParams : undefined);
+        let targetInputNode: AudioNode | undefined = resolveInputNode(targetVirtual, targetNodeForParams instanceof AudioNode ? targetNodeForParams : undefined);
         // Removed premature ADSR minPercent initialization; envelope sets values on trigger.
 
         const targetNode: any = targetNodeForParams as any;

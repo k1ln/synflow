@@ -1,0 +1,1128 @@
+{
+  "nodes": [
+    {
+      "id": "bg000001-0000-4000-a000-000000000001.MasterOutFlowNode",
+      "type": "MasterOutFlowNode",
+      "position": { "x": 1750, "y": 300 },
+      "data": {
+        "label": "",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.12)",
+          "glowColor": "#66cc44"
+        },
+        "id": "bg000001-0000-4000-a000-000000000001.MasterOutFlowNode"
+      },
+      "zIndex": 1,
+      "measured": { "width": 60, "height": 62 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000100-0000-4000-a000-000000000100.MidiFlowNote",
+      "type": "MidiFlowNote",
+      "position": { "x": -750, "y": 200 },
+      "data": {
+        "label": "MIDI Keyboard",
+        "id": "bg000100-0000-4000-a000-000000000100.MidiFlowNote",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.12)",
+          "glowColor": "#66cc44"
+        },
+        "lastNote": "Bb4",
+        "frequency": 466.16,
+        "enabled": true,
+        "device": ""
+      },
+      "zIndex": 1,
+      "measured": { "width": 138, "height": 330 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000002-0000-4000-a000-000000000002.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": { "x": -500, "y": 250 },
+      "data": {
+        "label": "Blow",
+        "assignedKey": "A",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "bg000002-0000-4000-a000-000000000002.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#66cc44",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.12)",
+          "height": "60px"
+        }
+      },
+      "measured": { "width": 82, "height": 82 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000003-0000-4000-a000-000000000003.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": { "x": -280, "y": 340 },
+      "data": {
+        "label": "Pitch Bb4",
+        "value": "466.16",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#66cc44",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.12)"
+        },
+        "id": "bg000003-0000-4000-a000-000000000003.ConstantFlowNode"
+      },
+      "measured": { "width": 82, "height": 26 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000004-0000-4000-a000-000000000004.FunctionFlowNode",
+      "type": "FunctionFlowNode",
+      "position": { "x": -80, "y": -50 },
+      "data": {
+        "label": "Bass Drone ÷4",
+        "functionCode": "return Number(main) / 4;",
+        "numInputs": 1,
+        "numOutputs": 1,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.08)"
+        },
+        "id": "bg000004-0000-4000-a000-000000000004.FunctionFlowNode",
+        "inputDefaults": ["466.16"]
+      },
+      "zIndex": 2,
+      "measured": { "width": 200, "height": 130 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000005-0000-4000-a000-000000000005.FunctionFlowNode",
+      "type": "FunctionFlowNode",
+      "position": { "x": -80, "y": 120 },
+      "data": {
+        "label": "Tenor Drone ÷2",
+        "functionCode": "return Number(main) / 2;",
+        "numInputs": 1,
+        "numOutputs": 1,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.08)"
+        },
+        "id": "bg000005-0000-4000-a000-000000000005.FunctionFlowNode",
+        "inputDefaults": ["466.16"]
+      },
+      "zIndex": 3,
+      "measured": { "width": 200, "height": 130 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000010-0000-4000-a000-000000000010.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": { "x": 200, "y": -80 },
+      "data": {
+        "label": "Bass Drone",
+        "frequency": 116.54,
+        "detune": 0,
+        "type": "sawtooth",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.12)",
+          "width": "60px",
+          "glowColor": "#66cc44"
+        },
+        "id": "bg000010-0000-4000-a000-000000000010.OscillatorFlowNode",
+        "knobValue": 50,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 4,
+      "measured": { "width": 72, "height": 246 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000011-0000-4000-a000-000000000011.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": { "x": 200, "y": 200 },
+      "data": {
+        "label": "Tenor Drone",
+        "frequency": 233.08,
+        "detune": 3,
+        "type": "sawtooth",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.12)",
+          "width": "60px",
+          "glowColor": "#66cc44"
+        },
+        "id": "bg000011-0000-4000-a000-000000000011.OscillatorFlowNode",
+        "knobValue": 50,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 5,
+      "measured": { "width": 72, "height": 246 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000012-0000-4000-a000-000000000012.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": { "x": 200, "y": 480 },
+      "data": {
+        "label": "Chanter Reed",
+        "frequency": 466.16,
+        "detune": 0,
+        "type": "custom",
+        "pulseWidth": 0.12,
+        "periodicWaveHarmonics": 128,
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.12)",
+          "width": "60px",
+          "glowColor": "#66cc44"
+        },
+        "id": "bg000012-0000-4000-a000-000000000012.OscillatorFlowNode",
+        "knobValue": 50,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 6,
+      "measured": { "width": 72, "height": 246 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000014-0000-4000-a000-000000000014.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": { "x": 200, "y": 340 },
+      "data": {
+        "label": "Tenor Drone 2",
+        "frequency": 233.08,
+        "detune": -3,
+        "type": "sawtooth",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.12)",
+          "width": "60px",
+          "glowColor": "#66cc44"
+        },
+        "id": "bg000014-0000-4000-a000-000000000014.OscillatorFlowNode",
+        "knobValue": 50,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 5,
+      "measured": { "width": 72, "height": 246 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000006-0000-4000-a000-000000000006.FunctionFlowNode",
+      "type": "FunctionFlowNode",
+      "position": { "x": -80, "y": 280 },
+      "data": {
+        "label": "Tenor Drone 2 ÷2",
+        "functionCode": "return Number(main) / 2;",
+        "numInputs": 1,
+        "numOutputs": 1,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.08)"
+        },
+        "id": "bg000006-0000-4000-a000-000000000006.FunctionFlowNode",
+        "inputDefaults": ["466.16"]
+      },
+      "zIndex": 3,
+      "measured": { "width": 200, "height": 130 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000024-0000-4000-a000-000000000024.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 400, "y": 390 },
+      "data": {
+        "label": "Tenor 2 Lvl",
+        "gain": 0.18,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.08)"
+        },
+        "id": "bg000024-0000-4000-a000-000000000024.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 9,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000013-0000-4000-a000-000000000013.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": { "x": 200, "y": 760 },
+      "data": {
+        "label": "Chanter Saw",
+        "frequency": 466.16,
+        "detune": 5,
+        "type": "sawtooth",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.12)",
+          "width": "60px",
+          "glowColor": "#66cc44"
+        },
+        "id": "bg000013-0000-4000-a000-000000000013.OscillatorFlowNode",
+        "knobValue": 50,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 7,
+      "measured": { "width": 72, "height": 246 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000020-0000-4000-a000-000000000020.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 400, "y": -30 },
+      "data": {
+        "label": "Bass Lvl",
+        "gain": 0.25,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.08)"
+        },
+        "id": "bg000020-0000-4000-a000-000000000020.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 8,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000021-0000-4000-a000-000000000021.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 400, "y": 250 },
+      "data": {
+        "label": "Tenor Lvl",
+        "gain": 0.2,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.08)"
+        },
+        "id": "bg000021-0000-4000-a000-000000000021.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 9,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000022-0000-4000-a000-000000000022.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 400, "y": 530 },
+      "data": {
+        "label": "Reed Lvl",
+        "gain": 0.4,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.08)"
+        },
+        "id": "bg000022-0000-4000-a000-000000000022.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 10,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000023-0000-4000-a000-000000000023.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 400, "y": 810 },
+      "data": {
+        "label": "Saw Lvl",
+        "gain": 0.2,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.08)"
+        },
+        "id": "bg000023-0000-4000-a000-000000000023.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 11,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000030-0000-4000-a000-000000000030.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 600, "y": 100 },
+      "data": {
+        "label": "Drone Mix",
+        "gain": 0.6,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.08)"
+        },
+        "id": "bg000030-0000-4000-a000-000000000030.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 12,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000031-0000-4000-a000-000000000031.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 600, "y": 650 },
+      "data": {
+        "label": "Chanter Mix",
+        "gain": 0.7,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.08)"
+        },
+        "id": "bg000031-0000-4000-a000-000000000031.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 13,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000040-0000-4000-a000-000000000040.BiquadFilterFlowNode",
+      "type": "BiquadFilterFlowNode",
+      "position": { "x": 780, "y": 60 },
+      "data": {
+        "label": "Drone LP",
+        "frequency": 900,
+        "detune": 0,
+        "Q": 1.2,
+        "gain": 0,
+        "type": "lowpass",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.12)",
+          "glowColor": "#66cc44"
+        },
+        "id": "bg000040-0000-4000-a000-000000000040.BiquadFilterFlowNode",
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null,
+        "qMidiMapping": null,
+        "gainMidiMapping": null
+      },
+      "zIndex": 14,
+      "measured": { "width": 130, "height": 200 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000041-0000-4000-a000-000000000041.BiquadFilterFlowNode",
+      "type": "BiquadFilterFlowNode",
+      "position": { "x": 780, "y": 550 },
+      "data": {
+        "label": "Nasal Resonator",
+        "frequency": 1800,
+        "detune": 0,
+        "Q": 5.0,
+        "gain": 0,
+        "type": "bandpass",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.12)",
+          "glowColor": "#66cc44"
+        },
+        "id": "bg000041-0000-4000-a000-000000000041.BiquadFilterFlowNode",
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null,
+        "qMidiMapping": null,
+        "gainMidiMapping": null
+      },
+      "zIndex": 15,
+      "measured": { "width": 130, "height": 200 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000042-0000-4000-a000-000000000042.BiquadFilterFlowNode",
+      "type": "BiquadFilterFlowNode",
+      "position": { "x": 780, "y": 800 },
+      "data": {
+        "label": "Chanter Bright",
+        "frequency": 3200,
+        "detune": 0,
+        "Q": 2.0,
+        "gain": 0,
+        "type": "highshelf",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.08)"
+        },
+        "id": "bg000042-0000-4000-a000-000000000042.BiquadFilterFlowNode",
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null,
+        "qMidiMapping": null,
+        "gainMidiMapping": null
+      },
+      "zIndex": 16,
+      "measured": { "width": 130, "height": 200 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000050-0000-4000-a000-000000000050.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 1000, "y": 300 },
+      "data": {
+        "label": "VCA",
+        "gain": 0.8,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.12)",
+          "glowColor": "#66cc44"
+        },
+        "id": "bg000050-0000-4000-a000-000000000050.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 17,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000060-0000-4000-a000-000000000060.ADSRFlowNode",
+      "type": "ADSRFlowNode",
+      "position": { "x": -280, "y": -240 },
+      "data": {
+        "label": "Bag Pressure",
+        "attackTime": 0.15,
+        "decayTime": 0.05,
+        "sustainLevel": 0.95,
+        "releaseTime": 0.35,
+        "maxTime": 10,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.12)",
+          "glowColor": "#66cc44"
+        },
+        "id": "bg000060-0000-4000-a000-000000000060.ADSRFlowNode",
+        "sustainTime": 2.0,
+        "minPercent": 0,
+        "maxPercent": 100,
+        "lengthSec": 4.0
+      },
+      "zIndex": 18,
+      "measured": { "width": 212, "height": 226 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000061-0000-4000-a000-000000000061.ADSRFlowNode",
+      "type": "ADSRFlowNode",
+      "position": { "x": -280, "y": 700 },
+      "data": {
+        "label": "Chanter Open",
+        "attackTime": 0.08,
+        "decayTime": 0.1,
+        "sustainLevel": 0.7,
+        "releaseTime": 0.15,
+        "maxTime": 10,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.12)",
+          "glowColor": "#66cc44"
+        },
+        "id": "bg000061-0000-4000-a000-000000000061.ADSRFlowNode",
+        "sustainTime": 1.0,
+        "minPercent": 40,
+        "maxPercent": 200,
+        "lengthSec": 2.0
+      },
+      "zIndex": 19,
+      "measured": { "width": 212, "height": 226 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000070-0000-4000-a000-000000000070.NoiseFlowNode",
+      "type": "NoiseFlowNode",
+      "position": { "x": 600, "y": 1050 },
+      "data": {
+        "label": "Bag Air",
+        "noiseType": "white",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.08)"
+        },
+        "id": "bg000070-0000-4000-a000-000000000070.NoiseFlowNode"
+      },
+      "zIndex": 20,
+      "measured": { "width": 80, "height": 60 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000071-0000-4000-a000-000000000071.BiquadFilterFlowNode",
+      "type": "BiquadFilterFlowNode",
+      "position": { "x": 780, "y": 1020 },
+      "data": {
+        "label": "Air BP",
+        "frequency": 2200,
+        "detune": 0,
+        "Q": 1.8,
+        "gain": 0,
+        "type": "bandpass",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.08)"
+        },
+        "id": "bg000071-0000-4000-a000-000000000071.BiquadFilterFlowNode",
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null,
+        "qMidiMapping": null,
+        "gainMidiMapping": null
+      },
+      "zIndex": 21,
+      "measured": { "width": 130, "height": 200 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000072-0000-4000-a000-000000000072.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 1000, "y": 1060 },
+      "data": {
+        "label": "Air Lvl",
+        "gain": 0.02,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.08)"
+        },
+        "id": "bg000072-0000-4000-a000-000000000072.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 22,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000080-0000-4000-a000-000000000080.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 1250, "y": 300 },
+      "data": {
+        "label": "Output",
+        "gain": 0.55,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.12)",
+          "glowColor": "#66cc44"
+        },
+        "id": "bg000080-0000-4000-a000-000000000080.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 23,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bg000090-0000-4000-a000-000000000090.DistortionFlowNode",
+      "type": "DistortionFlowNode",
+      "position": { "x": 1470, "y": 240 },
+      "data": {
+        "label": "Reed Buzz",
+        "drive": 0.4,
+        "preset": "Soft Clip",
+        "formula": "Math.tanh(x*2)",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(100,200,80,0.08)"
+        },
+        "id": "bg000090-0000-4000-a000-000000000090.DistortionFlowNode"
+      },
+      "zIndex": 24,
+      "measured": { "width": 120, "height": 140 },
+      "dragging": false,
+      "selected": false
+    }
+  ],
+  "edges": [
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000100-0000-4000-a000-000000000100.MidiFlowNote",
+      "sourceHandle": "output",
+      "target": "bg000003-0000-4000-a000-000000000003.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000100-0000-4000-a000-000000000100.MidiFlowNoteoutput-bg000003-0000-4000-a000-000000000003.ConstantFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000002-0000-4000-a000-000000000002.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000003-0000-4000-a000-000000000003.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000002-0000-4000-a000-000000000002.ButtonFlowNodeoutput-bg000003-0000-4000-a000-000000000003.ConstantFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000100-0000-4000-a000-000000000100.MidiFlowNote",
+      "sourceHandle": "note-on",
+      "target": "bg000060-0000-4000-a000-000000000060.ADSRFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000100-0000-4000-a000-000000000100.MidiFlowNotenote-on-bg000060-0000-4000-a000-000000000060.ADSRFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000100-0000-4000-a000-000000000100.MidiFlowNote",
+      "sourceHandle": "note-on",
+      "target": "bg000061-0000-4000-a000-000000000061.ADSRFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000100-0000-4000-a000-000000000100.MidiFlowNotenote-on-bg000061-0000-4000-a000-000000000061.ADSRFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000002-0000-4000-a000-000000000002.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000060-0000-4000-a000-000000000060.ADSRFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000002-0000-4000-a000-000000000002.ButtonFlowNodeoutput-bg000060-0000-4000-a000-000000000060.ADSRFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000002-0000-4000-a000-000000000002.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000061-0000-4000-a000-000000000061.ADSRFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000002-0000-4000-a000-000000000002.ButtonFlowNodeoutput-bg000061-0000-4000-a000-000000000061.ADSRFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000003-0000-4000-a000-000000000003.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000012-0000-4000-a000-000000000012.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__bg000003-0000-4000-a000-000000000003.ConstantFlowNodeoutput-bg000012-0000-4000-a000-000000000012.OscillatorFlowNodefrequency"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000003-0000-4000-a000-000000000003.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000013-0000-4000-a000-000000000013.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__bg000003-0000-4000-a000-000000000003.ConstantFlowNodeoutput-bg000013-0000-4000-a000-000000000013.OscillatorFlowNodefrequency"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000003-0000-4000-a000-000000000003.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000004-0000-4000-a000-000000000004.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000003-0000-4000-a000-000000000003.ConstantFlowNodeoutput-bg000004-0000-4000-a000-000000000004.FunctionFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000003-0000-4000-a000-000000000003.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000005-0000-4000-a000-000000000005.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000003-0000-4000-a000-000000000003.ConstantFlowNodeoutput-bg000005-0000-4000-a000-000000000005.FunctionFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000004-0000-4000-a000-000000000004.FunctionFlowNode",
+      "sourceHandle": "output-0",
+      "target": "bg000010-0000-4000-a000-000000000010.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__bg000004-0000-4000-a000-000000000004.FunctionFlowNodeoutput-0-bg000010-0000-4000-a000-000000000010.OscillatorFlowNodefrequency"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000005-0000-4000-a000-000000000005.FunctionFlowNode",
+      "sourceHandle": "output-0",
+      "target": "bg000011-0000-4000-a000-000000000011.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__bg000005-0000-4000-a000-000000000005.FunctionFlowNodeoutput-0-bg000011-0000-4000-a000-000000000011.OscillatorFlowNodefrequency"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000010-0000-4000-a000-000000000010.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000020-0000-4000-a000-000000000020.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000010-0000-4000-a000-000000000010.OscillatorFlowNodeoutput-bg000020-0000-4000-a000-000000000020.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000011-0000-4000-a000-000000000011.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000021-0000-4000-a000-000000000021.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000011-0000-4000-a000-000000000011.OscillatorFlowNodeoutput-bg000021-0000-4000-a000-000000000021.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000012-0000-4000-a000-000000000012.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000022-0000-4000-a000-000000000022.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000012-0000-4000-a000-000000000012.OscillatorFlowNodeoutput-bg000022-0000-4000-a000-000000000022.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000013-0000-4000-a000-000000000013.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000023-0000-4000-a000-000000000023.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000013-0000-4000-a000-000000000013.OscillatorFlowNodeoutput-bg000023-0000-4000-a000-000000000023.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000020-0000-4000-a000-000000000020.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000030-0000-4000-a000-000000000030.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000020-0000-4000-a000-000000000020.GainFlowNodeoutput-bg000030-0000-4000-a000-000000000030.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000021-0000-4000-a000-000000000021.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000030-0000-4000-a000-000000000030.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000021-0000-4000-a000-000000000021.GainFlowNodeoutput-bg000030-0000-4000-a000-000000000030.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000022-0000-4000-a000-000000000022.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000031-0000-4000-a000-000000000031.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000022-0000-4000-a000-000000000022.GainFlowNodeoutput-bg000031-0000-4000-a000-000000000031.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000023-0000-4000-a000-000000000023.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000031-0000-4000-a000-000000000031.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000023-0000-4000-a000-000000000023.GainFlowNodeoutput-bg000031-0000-4000-a000-000000000031.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000030-0000-4000-a000-000000000030.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000040-0000-4000-a000-000000000040.BiquadFilterFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000030-0000-4000-a000-000000000030.GainFlowNodeoutput-bg000040-0000-4000-a000-000000000040.BiquadFilterFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000031-0000-4000-a000-000000000031.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000041-0000-4000-a000-000000000041.BiquadFilterFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000031-0000-4000-a000-000000000031.GainFlowNodeoutput-bg000041-0000-4000-a000-000000000041.BiquadFilterFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000031-0000-4000-a000-000000000031.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000042-0000-4000-a000-000000000042.BiquadFilterFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000031-0000-4000-a000-000000000031.GainFlowNodeoutput-bg000042-0000-4000-a000-000000000042.BiquadFilterFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000040-0000-4000-a000-000000000040.BiquadFilterFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000050-0000-4000-a000-000000000050.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000040-0000-4000-a000-000000000040.BiquadFilterFlowNodeoutput-bg000050-0000-4000-a000-000000000050.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000041-0000-4000-a000-000000000041.BiquadFilterFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000050-0000-4000-a000-000000000050.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000041-0000-4000-a000-000000000041.BiquadFilterFlowNodeoutput-bg000050-0000-4000-a000-000000000050.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000042-0000-4000-a000-000000000042.BiquadFilterFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000050-0000-4000-a000-000000000050.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000042-0000-4000-a000-000000000042.BiquadFilterFlowNodeoutput-bg000050-0000-4000-a000-000000000050.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000050-0000-4000-a000-000000000050.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000080-0000-4000-a000-000000000080.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000050-0000-4000-a000-000000000050.GainFlowNodeoutput-bg000080-0000-4000-a000-000000000080.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000070-0000-4000-a000-000000000070.NoiseFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000071-0000-4000-a000-000000000071.BiquadFilterFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000070-0000-4000-a000-000000000070.NoiseFlowNodeoutput-bg000071-0000-4000-a000-000000000071.BiquadFilterFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000071-0000-4000-a000-000000000071.BiquadFilterFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000072-0000-4000-a000-000000000072.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000071-0000-4000-a000-000000000071.BiquadFilterFlowNodeoutput-bg000072-0000-4000-a000-000000000072.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000072-0000-4000-a000-000000000072.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000080-0000-4000-a000-000000000080.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000072-0000-4000-a000-000000000072.GainFlowNodeoutput-bg000080-0000-4000-a000-000000000080.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000080-0000-4000-a000-000000000080.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000090-0000-4000-a000-000000000090.DistortionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000080-0000-4000-a000-000000000080.GainFlowNodeoutput-bg000090-0000-4000-a000-000000000090.DistortionFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000090-0000-4000-a000-000000000090.DistortionFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000001-0000-4000-a000-000000000001.MasterOutFlowNode",
+      "targetHandle": "destination-input",
+      "id": "xy-edge__bg000090-0000-4000-a000-000000000090.DistortionFlowNodeoutput-bg000001-0000-4000-a000-000000000001.MasterOutFlowNodedestination-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000003-0000-4000-a000-000000000003.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000006-0000-4000-a000-000000000006.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000003-0000-4000-a000-000000000003.ConstantFlowNodeoutput-bg000006-0000-4000-a000-000000000006.FunctionFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000006-0000-4000-a000-000000000006.FunctionFlowNode",
+      "sourceHandle": "output-0",
+      "target": "bg000014-0000-4000-a000-000000000014.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__bg000006-0000-4000-a000-000000000006.FunctionFlowNodeoutput-0-bg000014-0000-4000-a000-000000000014.OscillatorFlowNodefrequency"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000014-0000-4000-a000-000000000014.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000024-0000-4000-a000-000000000024.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000014-0000-4000-a000-000000000014.OscillatorFlowNodeoutput-bg000024-0000-4000-a000-000000000024.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000024-0000-4000-a000-000000000024.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000030-0000-4000-a000-000000000030.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__bg000024-0000-4000-a000-000000000024.GainFlowNodeoutput-bg000030-0000-4000-a000-000000000030.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000060-0000-4000-a000-000000000060.ADSRFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000050-0000-4000-a000-000000000050.GainFlowNode",
+      "targetHandle": "gain",
+      "id": "xy-edge__bg000060-0000-4000-a000-000000000060.ADSRFlowNodeoutput-bg000050-0000-4000-a000-000000000050.GainFlowNodegain"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "bg000061-0000-4000-a000-000000000061.ADSRFlowNode",
+      "sourceHandle": "output",
+      "target": "bg000041-0000-4000-a000-000000000041.BiquadFilterFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__bg000061-0000-4000-a000-000000000061.ADSRFlowNodeoutput-bg000041-0000-4000-a000-000000000041.BiquadFilterFlowNodefrequency"
+    }
+  ]
+}
