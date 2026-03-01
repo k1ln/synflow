@@ -1,0 +1,970 @@
+{
+  "nodes": [
+    {
+      "id": "p0a00001-0000-4000-a000-000000000001.MasterOutFlowNode",
+      "type": "MasterOutFlowNode",
+      "position": { "x": 1580, "y": 300 },
+      "data": {
+        "label": "",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00001-0000-4000-a000-000000000001.MasterOutFlowNode"
+      },
+      "zIndex": 2,
+      "measured": { "width": 60, "height": 62 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00002-0000-4000-a000-000000000002.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": { "x": -200, "y": 260 },
+      "data": {
+        "label": "Play",
+        "assignedKey": "A",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "p0a00002-0000-4000-a000-000000000002.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "60px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "height": "60px"
+        }
+      },
+      "measured": { "width": 82, "height": 82 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00003-0000-4000-a000-000000000003.ConstantFlowNode",
+      "type": "ConstantFlowNode",
+      "position": { "x": 20, "y": 280 },
+      "data": {
+        "label": "Freq In (Hz)",
+        "value": "261.63",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "p0a00003-0000-4000-a000-000000000003.ConstantFlowNode"
+      },
+      "measured": { "width": 82, "height": 26 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00004-0000-4000-a000-000000000004.FunctionFlowNode",
+      "type": "FunctionFlowNode",
+      "position": { "x": 200, "y": 350 },
+      "data": {
+        "functionCode": "\nfunction process(value) {\n  // Tricord string 2: ~1.5 cents sharp\n  return value * 1.0009;\n}",
+        "value": "",
+        "id": "p0a00004-0000-4000-a000-000000000004.FunctionFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "numInputs": 1,
+        "numOutputs": 1,
+        "inputDefaults": ["261.63"]
+      },
+      "zIndex": 3,
+      "measured": { "width": 200, "height": 130 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00005-0000-4000-a000-000000000005.FunctionFlowNode",
+      "type": "FunctionFlowNode",
+      "position": { "x": 200, "y": 490 },
+      "data": {
+        "functionCode": "\nfunction process(value) {\n  // Tricord string 3: ~1.5 cents flat\n  return value * 0.9991;\n}",
+        "value": "",
+        "id": "p0a00005-0000-4000-a000-000000000005.FunctionFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "numInputs": 1,
+        "numOutputs": 1,
+        "inputDefaults": ["261.63"]
+      },
+      "zIndex": 4,
+      "measured": { "width": 200, "height": 130 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00006-0000-4000-a000-000000000006.FunctionFlowNode",
+      "type": "FunctionFlowNode",
+      "position": { "x": 200, "y": 640 },
+      "data": {
+        "functionCode": "\nfunction process(value) {\n  // Impact osc 1: inharmonic ~7.37x fundamental\n  // Simulates the two unrelated pitches created\n  // when the hammer briefly divides the string\n  return value * 7.37;\n}",
+        "value": "",
+        "id": "p0a00006-0000-4000-a000-000000000006.FunctionFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "numInputs": 1,
+        "numOutputs": 1,
+        "inputDefaults": ["261.63"]
+      },
+      "zIndex": 5,
+      "measured": { "width": 200, "height": 180 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00007-0000-4000-a000-000000000007.FunctionFlowNode",
+      "type": "FunctionFlowNode",
+      "position": { "x": 200, "y": 840 },
+      "data": {
+        "functionCode": "\nfunction process(value) {\n  // Impact osc 2: inharmonic ~11.13x fundamental\n  // Second unrelated pitch from hammer contact\n  return value * 11.13;\n}",
+        "value": "",
+        "id": "p0a00007-0000-4000-a000-000000000007.FunctionFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "numInputs": 1,
+        "numOutputs": 1,
+        "inputDefaults": ["261.63"]
+      },
+      "zIndex": 6,
+      "measured": { "width": 200, "height": 180 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00010-0000-4000-a000-000000000010.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": { "x": 470, "y": 120 },
+      "data": {
+        "label": "String 1",
+        "frequency": 261.63,
+        "detune": 0,
+        "type": "sawtooth",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00010-0000-4000-a000-000000000010.OscillatorFlowNode",
+        "knobValue": 30,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 7,
+      "measured": { "width": 72, "height": 221 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00011-0000-4000-a000-000000000011.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": { "x": 470, "y": 340 },
+      "data": {
+        "label": "String 2",
+        "frequency": 261.86,
+        "detune": 0,
+        "type": "sawtooth",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00011-0000-4000-a000-000000000011.OscillatorFlowNode",
+        "knobValue": 30,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 8,
+      "measured": { "width": 72, "height": 221 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00012-0000-4000-a000-000000000012.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": { "x": 470, "y": 560 },
+      "data": {
+        "label": "String 3",
+        "frequency": 261.39,
+        "detune": 0,
+        "type": "sawtooth",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00012-0000-4000-a000-000000000012.OscillatorFlowNode",
+        "knobValue": 30,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 9,
+      "measured": { "width": 72, "height": 221 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00013-0000-4000-a000-000000000013.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": { "x": 470, "y": 720 },
+      "data": {
+        "label": "Impact 1",
+        "frequency": 1928.33,
+        "detune": 0,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00013-0000-4000-a000-000000000013.OscillatorFlowNode",
+        "knobValue": 60,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 10,
+      "measured": { "width": 72, "height": 221 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00014-0000-4000-a000-000000000014.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": { "x": 470, "y": 880 },
+      "data": {
+        "label": "Impact 2",
+        "frequency": 2912.14,
+        "detune": 0,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00014-0000-4000-a000-000000000014.OscillatorFlowNode",
+        "knobValue": 70,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 11,
+      "measured": { "width": 72, "height": 221 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00020-0000-4000-a000-000000000020.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 660, "y": 160 },
+      "data": {
+        "label": "Str1 VCA",
+        "gain": 0.4,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00020-0000-4000-a000-000000000020.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 12,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00021-0000-4000-a000-000000000021.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 660, "y": 380 },
+      "data": {
+        "label": "Str2 VCA",
+        "gain": 0.35,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00021-0000-4000-a000-000000000021.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 13,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00022-0000-4000-a000-000000000022.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 660, "y": 600 },
+      "data": {
+        "label": "Str3 VCA",
+        "gain": 0.35,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00022-0000-4000-a000-000000000022.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 14,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00023-0000-4000-a000-000000000023.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 660, "y": 760 },
+      "data": {
+        "label": "Imp1 VCA",
+        "gain": 0.15,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00023-0000-4000-a000-000000000023.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 15,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00024-0000-4000-a000-000000000024.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 660, "y": 920 },
+      "data": {
+        "label": "Imp2 VCA",
+        "gain": 0.1,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00024-0000-4000-a000-000000000024.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 16,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00030-0000-4000-a000-000000000030.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 860, "y": 380 },
+      "data": {
+        "label": "Tricord Mix",
+        "gain": 1,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00030-0000-4000-a000-000000000030.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 17,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00031-0000-4000-a000-000000000031.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 860, "y": 830 },
+      "data": {
+        "label": "Impact Mix",
+        "gain": 1,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00031-0000-4000-a000-000000000031.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 18,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00032-0000-4000-a000-000000000032.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 1020, "y": 500 },
+      "data": {
+        "label": "Main Mix",
+        "gain": 0.55,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00032-0000-4000-a000-000000000032.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 19,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00040-0000-4000-a000-000000000040.BiquadFilterFlowNode",
+      "type": "BiquadFilterFlowNode",
+      "position": { "x": 1200, "y": 380 },
+      "data": {
+        "label": "VCF Tone",
+        "filterType": "lowpass",
+        "frequency": 2800,
+        "detune": 0,
+        "Q": 0.7,
+        "gain": 0,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00040-0000-4000-a000-000000000040.BiquadFilterFlowNode",
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null,
+        "qMidiMapping": null,
+        "gainMidiMapping": null
+      },
+      "zIndex": 20,
+      "measured": { "width": 138, "height": 196 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00050-0000-4000-a000-000000000050.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": { "x": 1400, "y": 320 },
+      "data": {
+        "label": "Output",
+        "gain": 0.7,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00050-0000-4000-a000-000000000050.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 21,
+      "measured": { "width": 75, "height": 93 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00060-0000-4000-a000-000000000060.ADSRFlowNode",
+      "type": "ADSRFlowNode",
+      "position": { "x": 280, "y": -200 },
+      "data": {
+        "label": "Amp Envelope",
+        "attackTime": 0.003,
+        "decayTime": 2.5,
+        "sustainLevel": 0.05,
+        "releaseTime": 1.5,
+        "maxTime": 10,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00060-0000-4000-a000-000000000060.ADSRFlowNode",
+        "sustainTime": 0.5,
+        "minPercent": 0,
+        "maxPercent": 100,
+        "lengthSec": 4.5
+      },
+      "zIndex": 22,
+      "measured": { "width": 212, "height": 226 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00061-0000-4000-a000-000000000061.ADSRFlowNode",
+      "type": "ADSRFlowNode",
+      "position": { "x": 720, "y": -200 },
+      "data": {
+        "label": "Filter Envelope",
+        "attackTime": 0.003,
+        "decayTime": 1.2,
+        "sustainLevel": 0.08,
+        "releaseTime": 0.3,
+        "maxTime": 10,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00061-0000-4000-a000-000000000061.ADSRFlowNode",
+        "sustainTime": 0.2,
+        "minPercent": 5,
+        "maxPercent": 100,
+        "lengthSec": 2.0
+      },
+      "zIndex": 23,
+      "measured": { "width": 212, "height": 226 },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "p0a00062-0000-4000-a000-000000000062.ADSRFlowNode",
+      "type": "ADSRFlowNode",
+      "position": { "x": 280, "y": -480 },
+      "data": {
+        "label": "Impact Envelope",
+        "attackTime": 0.001,
+        "decayTime": 0.04,
+        "sustainLevel": 0,
+        "releaseTime": 0.02,
+        "maxTime": 1,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "p0a00062-0000-4000-a000-000000000062.ADSRFlowNode",
+        "sustainTime": 0,
+        "minPercent": 0,
+        "maxPercent": 100,
+        "lengthSec": 0.08
+      },
+      "zIndex": 24,
+      "measured": { "width": 212, "height": 226 },
+      "dragging": false,
+      "selected": false
+    }
+  ],
+  "edges": [
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00002-0000-4000-a000-000000000002.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00003-0000-4000-a000-000000000003.ConstantFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00002-0000-4000-a000-000000000002.ButtonFlowNodeoutput-p0a00003-0000-4000-a000-000000000003.ConstantFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00002-0000-4000-a000-000000000002.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00060-0000-4000-a000-000000000060.ADSRFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00002-0000-4000-a000-000000000002.ButtonFlowNodeoutput-p0a00060-0000-4000-a000-000000000060.ADSRFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00002-0000-4000-a000-000000000002.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00061-0000-4000-a000-000000000061.ADSRFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00002-0000-4000-a000-000000000002.ButtonFlowNodeoutput-p0a00061-0000-4000-a000-000000000061.ADSRFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00002-0000-4000-a000-000000000002.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00062-0000-4000-a000-000000000062.ADSRFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00002-0000-4000-a000-000000000002.ButtonFlowNodeoutput-p0a00062-0000-4000-a000-000000000062.ADSRFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00003-0000-4000-a000-000000000003.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00010-0000-4000-a000-000000000010.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__p0a00003-0000-4000-a000-000000000003.ConstantFlowNodeoutput-p0a00010-0000-4000-a000-000000000010.OscillatorFlowNodefrequency"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00003-0000-4000-a000-000000000003.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00004-0000-4000-a000-000000000004.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00003-0000-4000-a000-000000000003.ConstantFlowNodeoutput-p0a00004-0000-4000-a000-000000000004.FunctionFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00003-0000-4000-a000-000000000003.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00005-0000-4000-a000-000000000005.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00003-0000-4000-a000-000000000003.ConstantFlowNodeoutput-p0a00005-0000-4000-a000-000000000005.FunctionFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00003-0000-4000-a000-000000000003.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00006-0000-4000-a000-000000000006.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00003-0000-4000-a000-000000000003.ConstantFlowNodeoutput-p0a00006-0000-4000-a000-000000000006.FunctionFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00003-0000-4000-a000-000000000003.ConstantFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00007-0000-4000-a000-000000000007.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00003-0000-4000-a000-000000000003.ConstantFlowNodeoutput-p0a00007-0000-4000-a000-000000000007.FunctionFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00004-0000-4000-a000-000000000004.FunctionFlowNode",
+      "sourceHandle": "output-0",
+      "target": "p0a00011-0000-4000-a000-000000000011.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__p0a00004-0000-4000-a000-000000000004.FunctionFlowNodeoutput-0-p0a00011-0000-4000-a000-000000000011.OscillatorFlowNodefrequency"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00005-0000-4000-a000-000000000005.FunctionFlowNode",
+      "sourceHandle": "output-0",
+      "target": "p0a00012-0000-4000-a000-000000000012.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__p0a00005-0000-4000-a000-000000000005.FunctionFlowNodeoutput-0-p0a00012-0000-4000-a000-000000000012.OscillatorFlowNodefrequency"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00006-0000-4000-a000-000000000006.FunctionFlowNode",
+      "sourceHandle": "output-0",
+      "target": "p0a00013-0000-4000-a000-000000000013.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__p0a00006-0000-4000-a000-000000000006.FunctionFlowNodeoutput-0-p0a00013-0000-4000-a000-000000000013.OscillatorFlowNodefrequency"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00007-0000-4000-a000-000000000007.FunctionFlowNode",
+      "sourceHandle": "output-0",
+      "target": "p0a00014-0000-4000-a000-000000000014.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__p0a00007-0000-4000-a000-000000000007.FunctionFlowNodeoutput-0-p0a00014-0000-4000-a000-000000000014.OscillatorFlowNodefrequency"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00010-0000-4000-a000-000000000010.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00020-0000-4000-a000-000000000020.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00010-0000-4000-a000-000000000010.OscillatorFlowNodeoutput-p0a00020-0000-4000-a000-000000000020.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00011-0000-4000-a000-000000000011.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00021-0000-4000-a000-000000000021.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00011-0000-4000-a000-000000000011.OscillatorFlowNodeoutput-p0a00021-0000-4000-a000-000000000021.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00012-0000-4000-a000-000000000012.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00022-0000-4000-a000-000000000022.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00012-0000-4000-a000-000000000012.OscillatorFlowNodeoutput-p0a00022-0000-4000-a000-000000000022.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00013-0000-4000-a000-000000000013.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00023-0000-4000-a000-000000000023.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00013-0000-4000-a000-000000000013.OscillatorFlowNodeoutput-p0a00023-0000-4000-a000-000000000023.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00014-0000-4000-a000-000000000014.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00024-0000-4000-a000-000000000024.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00014-0000-4000-a000-000000000014.OscillatorFlowNodeoutput-p0a00024-0000-4000-a000-000000000024.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00020-0000-4000-a000-000000000020.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00030-0000-4000-a000-000000000030.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00020-0000-4000-a000-000000000020.GainFlowNodeoutput-p0a00030-0000-4000-a000-000000000030.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00021-0000-4000-a000-000000000021.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00030-0000-4000-a000-000000000030.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00021-0000-4000-a000-000000000021.GainFlowNodeoutput-p0a00030-0000-4000-a000-000000000030.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00022-0000-4000-a000-000000000022.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00030-0000-4000-a000-000000000030.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00022-0000-4000-a000-000000000022.GainFlowNodeoutput-p0a00030-0000-4000-a000-000000000030.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00023-0000-4000-a000-000000000023.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00031-0000-4000-a000-000000000031.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00023-0000-4000-a000-000000000023.GainFlowNodeoutput-p0a00031-0000-4000-a000-000000000031.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00024-0000-4000-a000-000000000024.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00031-0000-4000-a000-000000000031.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00024-0000-4000-a000-000000000024.GainFlowNodeoutput-p0a00031-0000-4000-a000-000000000031.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00030-0000-4000-a000-000000000030.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00032-0000-4000-a000-000000000032.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00030-0000-4000-a000-000000000030.GainFlowNodeoutput-p0a00032-0000-4000-a000-000000000032.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00031-0000-4000-a000-000000000031.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00032-0000-4000-a000-000000000032.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00031-0000-4000-a000-000000000031.GainFlowNodeoutput-p0a00032-0000-4000-a000-000000000032.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00032-0000-4000-a000-000000000032.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00040-0000-4000-a000-000000000040.BiquadFilterFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00032-0000-4000-a000-000000000032.GainFlowNodeoutput-p0a00040-0000-4000-a000-000000000040.BiquadFilterFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00040-0000-4000-a000-000000000040.BiquadFilterFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00050-0000-4000-a000-000000000050.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__p0a00040-0000-4000-a000-000000000040.BiquadFilterFlowNodeoutput-p0a00050-0000-4000-a000-000000000050.GainFlowNodemain-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00050-0000-4000-a000-000000000050.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00001-0000-4000-a000-000000000001.MasterOutFlowNode",
+      "targetHandle": "destination-input",
+      "id": "xy-edge__p0a00050-0000-4000-a000-000000000050.GainFlowNodeoutput-p0a00001-0000-4000-a000-000000000001.MasterOutFlowNodedestination-input"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00060-0000-4000-a000-000000000060.ADSRFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00020-0000-4000-a000-000000000020.GainFlowNode",
+      "targetHandle": "gain",
+      "id": "xy-edge__p0a00060-0000-4000-a000-000000000060.ADSRFlowNodeoutput-p0a00020-0000-4000-a000-000000000020.GainFlowNodegain"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00060-0000-4000-a000-000000000060.ADSRFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00021-0000-4000-a000-000000000021.GainFlowNode",
+      "targetHandle": "gain",
+      "id": "xy-edge__p0a00060-0000-4000-a000-000000000060.ADSRFlowNodeoutput-p0a00021-0000-4000-a000-000000000021.GainFlowNodegain"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00060-0000-4000-a000-000000000060.ADSRFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00022-0000-4000-a000-000000000022.GainFlowNode",
+      "targetHandle": "gain",
+      "id": "xy-edge__p0a00060-0000-4000-a000-000000000060.ADSRFlowNodeoutput-p0a00022-0000-4000-a000-000000000022.GainFlowNodegain"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00062-0000-4000-a000-000000000062.ADSRFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00023-0000-4000-a000-000000000023.GainFlowNode",
+      "targetHandle": "gain",
+      "id": "xy-edge__p0a00062-0000-4000-a000-000000000062.ADSRFlowNodeoutput-p0a00023-0000-4000-a000-000000000023.GainFlowNodegain"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00062-0000-4000-a000-000000000062.ADSRFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00024-0000-4000-a000-000000000024.GainFlowNode",
+      "targetHandle": "gain",
+      "id": "xy-edge__p0a00062-0000-4000-a000-000000000062.ADSRFlowNodeoutput-p0a00024-0000-4000-a000-000000000024.GainFlowNodegain"
+    },
+    {
+      "style": { "strokeWidth": 1.5, "strokeLinecap": "round" },
+      "source": "p0a00061-0000-4000-a000-000000000061.ADSRFlowNode",
+      "sourceHandle": "output",
+      "target": "p0a00040-0000-4000-a000-000000000040.BiquadFilterFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__p0a00061-0000-4000-a000-000000000061.ADSRFlowNodeoutput-p0a00040-0000-4000-a000-000000000040.BiquadFilterFlowNodefrequency"
+    }
+  ]
+}
