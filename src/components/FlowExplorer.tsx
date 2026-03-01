@@ -5,6 +5,7 @@ import {
   saveFlowToDisk,
   listFlowsOnDisk,
   hasFsApi,
+  makeFlowDbKey,
 } from '../util/FileSystemAudioStore';
 
 interface FlowMeta {
@@ -76,9 +77,11 @@ const FlowExplorer: React.FC<{
 
     // Always save to IndexedDB as well
     await db.open();
-    await db.put(newName, {
+    const dbKey = makeFlowDbKey(newName, flowData.folder_path || '');
+    await db.put(dbKey, {
       name: newName,
       data: { nodes: [], edges: [] },
+      folder_path: flowData.folder_path || '',
       updated_at: flowData.updated_at,
     });
 

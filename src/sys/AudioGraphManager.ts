@@ -85,6 +85,7 @@ import VirtualAudioWorkletOscillatorNode from "../virtualNodes/VirtualAudioWorkl
 import {
     loadRootHandle,
     loadFlowFromDisk,
+    makeFlowDbKey,
 } from "../util/FileSystemAudioStore";
 
 
@@ -237,7 +238,8 @@ export class AudioGraphManager {
      * Returns the flow data or null if not found.
      */
     private async loadFlowByName(
-        flowName: string
+        flowName: string,
+        folderPath: string = ''
     ): Promise<DataBaseNode | null> {
         // Try disk first
         try {
@@ -246,7 +248,7 @@ export class AudioGraphManager {
                 const diskFlow = await loadFlowFromDisk(
                     fsHandle,
                     flowName,
-                    ''
+                    folderPath
                 );
                 if (diskFlow) {
                     return {
@@ -265,7 +267,8 @@ export class AudioGraphManager {
 
         // Fallback to IndexedDB
         try {
-            const result = await this.db.get(flowName);
+            const dbKey = makeFlowDbKey(flowName, folderPath);
+            const result = await this.db.get(dbKey);
             if (result && result[0]) {
                 return {
                     nodes: result[0].nodes || result[0].value?.nodes || [],
@@ -1385,7 +1388,8 @@ export class AudioGraphManager {
                     break;
                 case "FlowNode":
                     const customNode = await this.loadFlowByName(
-                        (node as any).data.selectedNode
+                        (node as any).data.selectedNode,
+                        (node as any).data.selectedNodeFolderPath || ''
                     );
                     if (!customNode) {
                         console.warn(
@@ -1553,8 +1557,9 @@ export class AudioGraphManager {
             const nodeId = node.id;
             if (node.type === "FlowNode") {
                 const customNodeId = (node as FlowNodeProps).data.selectedNode as string;
+                const folderPath = (node as FlowNodeProps).data.selectedNodeFolderPath || '';
                 if (customNodeId) {
-                    const flowData = await this.loadFlowByName(customNodeId);
+                    const flowData = await this.loadFlowByName(customNodeId, folderPath);
                     if (flowData && flowData.edges) {
                         const edgesWithNewId = flowData.edges.map(
                             (edge: Edge) => ({

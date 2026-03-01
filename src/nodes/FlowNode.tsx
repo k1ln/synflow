@@ -4,12 +4,13 @@ import { SimpleIndexedDB } from "../util/SimpleIndexedDB";
 import EventBus from "../sys/EventBus";
 import { Knob } from 'react-rotary-knob-react19';
 import ExplorerDialog from '../components/ExplorerDialog';
-import { saveFlowToDisk, deleteFlowFromDisk, FlowData, loadRootHandle, loadFlowFromDisk, listFlowsOnDisk} from '../util/FileSystemAudioStore';
+import { saveFlowToDisk, deleteFlowFromDisk, FlowData, loadRootHandle, loadFlowFromDisk, listFlowsOnDisk, makeFlowDbKey} from '../util/FileSystemAudioStore';
 
 export type FlowNodeProps = {
     id: string;
     data: {
         selectedNode?: string;
+        selectedNodeFolderPath?: string;
         outputArr: number[];
         inputArr: number[];
         onChange?: (data: any) => void;
@@ -22,6 +23,7 @@ const storeName = "flows";
 const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
     const [availableNodes, setAvailableNodes] = useState<Array<{id: string; name: string; folder_path?: string; updated_at?: string}>>([]);
     const [selectedNode, setSelectedNode] = useState(data.selectedNode || "");
+    const [selectedNodeFolderPath, setSelectedNodeFolderPath] = useState(data.selectedNodeFolderPath || "");
     const [inputArr, setInputArr] = useState<number[]>([]);
     const [outputArr, setOutputArr] = useState<number[]>([]);
     const updateNodeInternals = useUpdateNodeInternals();
@@ -82,47 +84,51 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
     };
 
     useEffect(() => {
-        data.onChange?.({ selectedNode, outputArr: outputArr, inputArr: inputArr });
+        data.onChange?.({ selectedNode, selectedNodeFolderPath, outputArr: outputArr, inputArr: inputArr });
         const timeout = setTimeout(() => {
             updateNodeInternals(id);
         }, 10); // Throttle by 100ms
 
         return () => clearTimeout(timeout);
 
-    }, [outputArr, inputArr, id]);
+    }, [outputArr, inputArr, selectedNodeFolderPath, id]);
 
     const updateInputsOutputs = async () => {
         // Try disk first, fallback to DB
         const fsHandle = await loadRootHandle();
         
         // Load available nodes list
+        let nodes: Array<{id: string; name: string; folder_path?: string; updated_at?: string}> = [];
         if (fsHandle) {
             try {
                 const diskFlows = await listFlowsOnDisk(fsHandle);
-                setAvailableNodes(diskFlows.map((f) => ({
+                nodes = diskFlows.map((f) => ({
                     id: f.name,
                     name: f.name,
                     folder_path: f.folder_path || '',
                     updated_at: f.updated_at,
-                })));
+                }));
+                setAvailableNodes(nodes);
             } catch (e) {
                 console.warn('[FlowNode] Disk list failed, using DB', e);
-                const nodes = await db.get('*');
-                setAvailableNodes(nodes.map((n: any) => ({
+                const dbNodes = await db.get('*');
+                nodes = dbNodes.map((n: any) => ({
                     id: n.id,
                     name: n.id,
                     folder_path: n.folder_path || n.value?.folder_path || '',
                     updated_at: n.updated_at,
-                })));
+                }));
+                setAvailableNodes(nodes);
             }
         } else {
-            const nodes = await db.get('*');
-            setAvailableNodes(nodes.map((n: any) => ({
+            const dbNodes = await db.get('*');
+            nodes = dbNodes.map((n: any) => ({
                 id: n.id,
                 name: n.id,
                 folder_path: n.folder_path || n.value?.folder_path || '',
                 updated_at: n.updated_at,
-            })));
+            }));
+            setAvailableNodes(nodes);
         }
 
         // Load selected node details (disk first)
@@ -136,10 +142,20 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
         let record: any = null;
         if (fsHandle) {
             try {
+                // Find the folder_path for the selected node from the just-loaded nodes
+                // First try to use the stored folder path, then fallback to searching
+                const nodeInfo = nodes.find(n => n.name === selectedNode || n.id === selectedNode);
+                const folderPath = selectedNodeFolderPath || nodeInfo?.folder_path || '';
+                
+                // Update the folder path state if we found it
+                if (nodeInfo?.folder_path && nodeInfo.folder_path !== selectedNodeFolderPath) {
+                    setSelectedNodeFolderPath(nodeInfo.folder_path);
+                }
+                
                 const diskFlow = await loadFlowFromDisk(
                     fsHandle,
                     selectedNode,
-                    ''
+                    folderPath
                 );
                 if (diskFlow) {
                     record = diskFlow;
@@ -151,7 +167,9 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
 
         // Fallback to DB
         if (!record) {
-            const resultArr = await db.get(selectedNode);
+            // Use folder path in DB key to prevent collisions
+            const dbKey = makeFlowDbKey(selectedNode, selectedNodeFolderPath);
+            const resultArr = await db.get(dbKey);
             record = Array.isArray(resultArr) ? resultArr[0] : undefined;
         }
 
@@ -184,8 +202,7 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
         }
 
         data.onChange?.({
-            selectedNode,
-            outputArr: outputArr,
+            selectedNode,            selectedNodeFolderPath,            outputArr: outputArr,
             inputArr: inputArr,
         });
         updateNodeInternals(id);
@@ -216,8 +233,11 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
     }, [embeddedKnobs, eventBus, id]);
 
     const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setSelectedNode(e.target.value);
-        data.onChange?.({ ...data, selectedNode: e.target.value });
+        const nodeName = e.target.value;
+        const nodeInfo = availableNodes.find(n => n.name === nodeName || n.id === nodeName);
+        setSelectedNode(nodeName);
+        setSelectedNodeFolderPath(nodeInfo?.folder_path || '');
+        data.onChange?.({ ...data, selectedNode: nodeName, selectedNodeFolderPath: nodeInfo?.folder_path || '' });
         updateInputsOutputs();
     };
 
@@ -371,21 +391,25 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
                         (async () => {
                             // Handle local flows
                             if (flow._source === 'local') {
-                                const recs = await db.get(flow.name);
+                                const oldKey = makeFlowDbKey(flow.name, flow.folder_path || '');
+                                const recs = await db.get(oldKey);
                                 if (recs && recs[0]) {
-                                    try { await db.delete(flow.name); } catch { }
+                                    const folderPath = recs[0].folder_path || recs[0].value?.folder_path || '';
+                                    try { await db.delete(oldKey); } catch { }
 
                                     // For flows embedded in a FlowNode, we save the stored version, not the editor's.
                                     const nodesToSave = recs[0].nodes || recs[0].value?.nodes || [];
                                     const edgesToSave = recs[0].edges || recs[0].value?.edges || [];
+                                    const newKey = makeFlowDbKey(newName, folderPath);
 
-                                    await db.put(newName, { nodes: nodesToSave, edges: edgesToSave, folder_path: recs[0].folder_path || recs[0].value?.folder_path || '', updated_at: new Date().toISOString() });
+                                    await db.put(newKey, { nodes: nodesToSave, edges: edgesToSave, folder_path: folderPath, updated_at: new Date().toISOString() });
                                     
                                     // Update the internal state of the FlowNode
                                     setAvailableNodes(prev => prev.map(n => n.name === flow.name ? { ...n, id: newName, name: newName } : n).filter(n => n.name !== flow.name).concat({ id: newName, name: newName, folder_path: flow.folder_path, updated_at: new Date().toISOString() }));
                                     if (selectedNode === flow.name) { 
-                                        setSelectedNode(newName); 
-                                        data.onChange?.({ ...data, selectedNode: newName });
+                                        setSelectedNode(newName);
+                                        setSelectedNodeFolderPath(flow.folder_path || '');
+                                        data.onChange?.({ ...data, selectedNode: newName, selectedNodeFolderPath: flow.folder_path || '' });
                                     }
                                     
                                     // Also rename on disk if fs handle is present
@@ -409,9 +433,11 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
                         })();
                     }}
                     onOpenLocal={(name) => {
+                        const nodeInfo = availableNodes.find(n => n.name === name || n.id === name);
                         setSelectedNode(name);
+                        setSelectedNodeFolderPath(nodeInfo?.folder_path || '');
                         setFlowQuery('');
-                        data.onChange?.({ ...data, selectedNode: name });
+                        data.onChange?.({ ...data, selectedNode: name, selectedNodeFolderPath: nodeInfo?.folder_path || '' });
                         setShowExplorerDialog(false);
                         updateInputsOutputs();
                     }}

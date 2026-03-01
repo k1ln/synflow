@@ -17,6 +17,23 @@ const DB_NAME = 'FlowSynthFS';
 const STORE_NAME = 'handles';
 const ROOT_KEY = 'audioRoot';
 
+/**
+ * Generate a unique DB key that includes the folder path to prevent collisions
+ * between flows with the same name in different folders.
+ * Examples:
+ *   makeFlowDbKey('keyboard', '') => 'keyboard'
+ *   makeFlowDbKey('keyboard', 'examples') => 'examples/keyboard'
+ *   makeFlowDbKey('bagpipe', 'instruments') => 'instruments/bagpipe'
+ */
+export function makeFlowDbKey(flowName: string, folderPath: string = ''): string {
+  if (!folderPath || folderPath === '') {
+    return flowName;
+  }
+  // Normalize folder path (remove leading/trailing slashes)
+  const normalized = folderPath.replace(/^\/+|\/+$/g, '');
+  return normalized ? `${normalized}/${flowName}` : flowName;
+}
+
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, 1);
