@@ -2,10 +2,9 @@
 
 This guide covers deploying the FlowSynth frontend using Docker.
 
-Note: The previous backend/webhook deployment flow has been removed; this repository now ships a frontend-only container.
+Note: The previous backend/webhook deployment flow has been removed; this rep‚ository now ships a frontend-only container.
 
 ## 🚀 Quick Start
-
 ### Prerequisites
 
 - Docker & Docker Compose installed
@@ -23,7 +22,7 @@ Optional (production): a reverse proxy (Apache2/nginx) for SSL termination.
 2. **Build and start containers**
    ```bash
    docker compose up -d --build
-   ```
+   ``` 
 
 3. **Verify deployment**
    ```bash
