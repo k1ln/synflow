@@ -103,27 +103,39 @@ export async function selectAndPrepareRoot(): Promise<FileSystemDirectoryHandle 
   }
 }
 
-// List of example flow files to copy
-const EXAMPLE_FLOWS = [
-  'cymball_example',
-  'Hard-Synth',
-  'keyboard',
-  'kick',
-  'lasers',
-  'mic-record',
-  'PolyOrgan',
-];
-
 // Copy bundled example flows to the flows/examples folder on disk
 async function copyExampleFlowsToDisk(flowsDir: FileSystemDirectoryHandle): Promise<void> {
   try {
     const examplesDir = await flowsDir.getDirectoryHandle('examples', { create: true });
     
-    for (const flowName of EXAMPLE_FLOWS) {
+    // Fetch the manifest to discover all available flow examples
+    let flowExamples: string[] = [];
+    try {
+      const manifestResponse = await fetch('/flow-examples/manifest.json');
+      if (manifestResponse.ok) {
+        const manifest = await manifestResponse.json();
+        flowExamples = manifest.examples || [];
+      }
+    } catch (e) {
+      console.warn('[FS Examples] Failed to load manifest, using empty list:', e);
+    }
+    
+    for (const flowName of flowExamples) {
       try {
+        // Parse path to handle subdirectories
+        const pathParts = flowName.split('/');
+        const fileName = pathParts[pathParts.length - 1];
+        const subDirs = pathParts.slice(0, -1);
+        
+        // Navigate/create subdirectories
+        let targetDir = examplesDir;
+        for (const subDir of subDirs) {
+          targetDir = await targetDir.getDirectoryHandle(subDir, { create: true });
+        }
+        
         // Check if file already exists to avoid overwriting user modifications
         try {
-          await examplesDir.getFileHandle(`${flowName}.json`);
+          await targetDir.getFileHandle(`${fileName}.json`);
           // File exists, skip
           continue;
         } catch {
@@ -139,12 +151,12 @@ async function copyExampleFlowsToDisk(flowsDir: FileSystemDirectoryHandle): Prom
         
         const flowData = await response.json();
         // Ensure the flow has a name and folder_path
-        flowData.name = flowData.name || flowName;
-        flowData.folder_path = 'examples';
+        flowData.name = flowData.name || fileName;
+        flowData.folder_path = subDirs.length > 0 ? `examples/${subDirs.join('/')}` : 'examples';
         flowData.updated_at = flowData.updated_at || new Date().toISOString();
         
         // Write to disk
-        const fileHandle = await examplesDir.getFileHandle(`${flowName}.json`, { create: true });
+        const fileHandle = await targetDir.getFileHandle(`${fileName}.json`, { create: true });
         const writable = await fileHandle.createWritable();
         await writable.write(JSON.stringify(flowData, null, 2));
         await writable.close();

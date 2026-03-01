@@ -17,6 +17,7 @@
   "scripts": {
     "dev": "node scripts/dev.js",
     "start": "vite",
+    "prebuild": "node scripts/generate-examples-manifest.js",
     "build": "vite build",
     "test": "vitest run",
     "test:ui": "vitest",
