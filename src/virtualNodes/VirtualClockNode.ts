@@ -278,10 +278,10 @@ export class VirtualClockNode extends VirtualNode<CustomNode & ClockNodeProps, u
         
         this.lastTickTime = performance.now();
 
-        // Emit ON first
+        // Emit ON first with BPM/speed metadata
         this.eventBus.emit(
             `${this.node.id}.main-input.sendNodeOn`,
-            { nodeId: this.node.id }
+            { nodeId: this.node.id, bpm: bpm, intervalMs: intervalMs }
         );
         this.tickCount++;
 
