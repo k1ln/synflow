@@ -45,6 +45,11 @@ export class VirtualSampleFlowNode extends VirtualNode<CustomNode & SampleFlowNo
   private reverse = false;
   private speed = 1;
 
+  // Per-segment granular synthesis state
+  private grainSchedulers: Map<string, ReturnType<typeof setInterval>> = new Map();
+  private grainReadPtrs:   Map<string, number>                        = new Map();
+  private grainNodes:      Map<string, AudioBufferSourceNode[]>       = new Map();
+
   constructor(audioContext: AudioContext, eventBus: EventBus, node: CustomNode & SampleFlowNodeProps){
     super(audioContext, audioContext.createGain(), eventBus, node);
     this.subscribeDynamic();
@@ -84,7 +89,52 @@ export class VirtualSampleFlowNode extends VirtualNode<CustomNode & SampleFlowNo
         this.fetchAndDecode(d.fileUrl);
       }
       if(Array.isArray(d.segments)){
-        this.updateSegmentSubscriptions(d.segments);
+        // Before updating, check which looping segments are playing and have changed boundaries
+        const oldSegments = this.segments;
+        const newSegments: AudioBufferSegment[] = d.segments;
+        this.updateSegmentSubscriptions(newSegments);
+
+        // Restart any currently-playing looping segment whose boundaries/speed/reverse changed
+        for (const newSeg of newSegments) {
+          const sources = this.segmentSources.get(newSeg.id);
+          if (!sources || !sources.size) continue;
+          const eff = this.effectiveSettings(newSeg);
+          if (!eff.loopEnabled) continue;
+          const old = oldSegments.find(s => s.id === newSeg.id);
+          if (!old) continue;
+          const changed =
+            old.start !== newSeg.start ||
+            old.end !== newSeg.end ||
+            old.speed !== newSeg.speed ||
+            old.reverse !== newSeg.reverse;
+          if (changed) {
+            this.stopSegment(newSeg.id);
+            this.playSegment(newSeg);
+          }
+        }
+
+        // Restart granular engines when on/off toggle or period-defining params change.
+        // Pitch, spread, speed, frozen are read live per tick so they don't need a restart.
+        for (const newSeg of newSegments) {
+          const old = oldSegments.find(s => s.id === newSeg.id);
+          if (!old) continue;
+          const wasRunning   = this.grainSchedulers.has(newSeg.id);
+          const enabling     = !old.grainEnabled && !!newSeg.grainEnabled;
+          const disabling    = !!old.grainEnabled && !newSeg.grainEnabled;
+          const periodChanged =
+            old.grainSize    !== newSeg.grainSize ||
+            old.grainOverlap !== newSeg.grainOverlap ||
+            old.start        !== newSeg.start ||
+            old.end          !== newSeg.end;
+          if (disabling) {
+            this.stopGranular(newSeg.id);
+          } else if (enabling) {
+            this.playGranular(newSeg);
+          } else if (wasRunning && periodChanged) {
+            this.stopGranular(newSeg.id);
+            this.playGranular(newSeg);
+          }
+        }
       }
       if (typeof d.loopEnabled === 'boolean') {
         this.loopEnabled = d.loopEnabled;
@@ -194,6 +244,71 @@ export class VirtualSampleFlowNode extends VirtualNode<CustomNode & SampleFlowNo
     return reversed;
   }
 
+  /**
+   * Create a buffer with smoothed loop boundaries to prevent clicks.
+   * Applies a crossfade at the loop point so the end blends into the beginning.
+   */
+  private createLoopSmoothedBuffer(
+    source: AudioBuffer,
+    offset: number,
+    length: number
+  ): AudioBuffer {
+    const ctx = this.audioContext!;
+    const sampleRate = source.sampleRate;
+    
+    // Calculate sample positions
+    const startSample = Math.floor(offset * sampleRate);
+    const lengthSamples = Math.floor(length * sampleRate);
+    const endSample = startSample + lengthSamples;
+    
+    // Crossfade duration: 5-10ms typically works well (adjust as needed)
+    const crossfadeDuration = 0.005; // 5ms
+    const crossfadeSamples = Math.min(
+      Math.floor(crossfadeDuration * sampleRate),
+      Math.floor(lengthSamples / 4) // Don't crossfade more than 25% of the loop
+    );
+    
+    // Create new buffer for the loop segment
+    const loopBuffer = ctx.createBuffer(
+      source.numberOfChannels,
+      lengthSamples,
+      sampleRate
+    );
+    
+    // Copy and process each channel
+    for (let ch = 0; ch < source.numberOfChannels; ch++) {
+      const srcData = source.getChannelData(ch);
+      const destData = loopBuffer.getChannelData(ch);
+      
+      // Copy the main segment
+      for (let i = 0; i < lengthSamples; i++) {
+        const srcIdx = startSample + i;
+        if (srcIdx >= 0 && srcIdx < source.length) {
+          destData[i] = srcData[srcIdx];
+        }
+      }
+      
+      // Apply crossfade at loop boundaries if we have enough samples
+      if (crossfadeSamples > 0 && lengthSamples > crossfadeSamples * 2) {
+        for (let i = 0; i < crossfadeSamples; i++) {
+          const fadeRatio = i / crossfadeSamples; // 0 to 1
+          
+          // Crossfade at the end: blend end with beginning
+          const endIdx = lengthSamples - crossfadeSamples + i;
+          const startIdx = i;
+          
+          if (endIdx < lengthSamples) {
+            // Fade out the end, fade in the beginning
+            destData[endIdx] = destData[endIdx] * (1 - fadeRatio) + 
+                               destData[startIdx] * fadeRatio;
+          }
+        }
+      }
+    }
+    
+    return loopBuffer;
+  }
+
   private async fetchAndDecode(url: string){
     try {
       const resp = await fetch(url);
@@ -260,6 +375,11 @@ export class VirtualSampleFlowNode extends VirtualNode<CustomNode & SampleFlowNo
   }
 
   private playSegment(seg: AudioBufferSegment, targetFrequency?: number){
+    // Route to granular engine when enabled
+    if (seg.grainEnabled) {
+      this.playGranular(seg);
+      return;
+    }
     const playback = this.computePlayback(seg);
     if(!playback) {
       return;
@@ -269,7 +389,13 @@ export class VirtualSampleFlowNode extends VirtualNode<CustomNode & SampleFlowNo
       return;
     }
     const src = this.audioContext!.createBufferSource();
-    src.buffer = buffer;
+    
+    // Apply loop smoothing if looping is enabled
+    if (isLoop && buffer) {
+      src.buffer = this.createLoopSmoothedBuffer(buffer, offset, length);
+    } else {
+      src.buffer = buffer;
+    }
     
     // Calculate playback rate: combine speed setting with repitch ratio
     let finalRate = speed;
@@ -285,20 +411,20 @@ export class VirtualSampleFlowNode extends VirtualNode<CustomNode & SampleFlowNo
     }
     src.playbackRate.value = finalRate;
     
-    if(isLoop){
-      src.loop = true;
-      src.loopStart = loopStart;
-      src.loopEnd = loopEnd;
-    }
     src.connect(this.audioNode!);
     const when = this.audioContext!.currentTime;
     // Use offset/duration to play only the segment.
     // IMPORTANT: never pass `undefined` as an explicit argument to start(),
     // otherwise it becomes NaN and the browser throws, resulting in silence.
     if (!isLoop) {
+      // Non-looping: play from offset in original buffer
       src.start(when, offset, length);
     } else {
-      src.start(when, offset);
+      // Looping: we've already created a smoothed buffer segment, play from start
+      src.loop = true;
+      src.loopStart = 0;
+      src.loopEnd = length;
+      src.start(when, 0);
     }
     this.currentlyPlaying.add(src);
     const set = this.segmentSources.get(seg.id) || new Set<AudioBufferSourceNode>();
@@ -359,17 +485,140 @@ export class VirtualSampleFlowNode extends VirtualNode<CustomNode & SampleFlowNo
   }
 
   private stopAll(){
+    // Stop all granular schedulers
+    for (const id of [...this.grainSchedulers.keys()]) this.stopGranular(id);
     this.currentlyPlaying.forEach(s=>{ try{ s.stop(); } catch{} });
     this.currentlyPlaying.clear();
     this.segmentSources.clear();
   }
 
   private stopSegment(segmentId: string){
+    this.stopGranular(segmentId);
     const set = this.segmentSources.get(segmentId);
     if(!set || !set.size) return;
     set.forEach(src=>{ try{ src.stop(); } catch{} this.currentlyPlaying.delete(src); });
     set.clear();
     this.segmentSources.delete(segmentId);
+  }
+
+  // ── Granular engine ─────────────────────────────────────────────────────────────
+
+  /**
+   * Build a mono Float32Array snapshot of the segment's audio region.
+   * Called once per playGranular call so grains always read from a stable copy.
+   */
+  private getSegmentMonoData(seg: AudioBufferSegment): Float32Array | null {
+    const buf = this.decodedBuffer;
+    if (!buf) return null;
+    const sr    = buf.sampleRate;
+    const start = Math.floor(Math.max(0, seg.start) * sr);
+    const end   = Math.min(Math.floor(seg.end * sr), buf.length);
+    const len   = Math.max(1, end - start);
+    const mono  = new Float32Array(len);
+    const nc    = buf.numberOfChannels;
+    for (let ch = 0; ch < nc; ch++) {
+      const cd = buf.getChannelData(ch);
+      for (let i = 0; i < len; i++) mono[i] += (cd[start + i] || 0) / nc;
+    }
+    return mono;
+  }
+
+  /**
+   * Start an asynchronous granular scheduler for the given segment.
+   * Each tick: pick a read position (pointer + jitter), copy grainSize samples,
+   * apply a Hann window, and play via AudioBufferSourceNode at pitch-shifted rate.
+   * Pitch, spread, speed and frozen are re-read from this.segments on every tick
+   * so MIDI knob changes take effect immediately without restarting the engine.
+   * Only grainSize / grainOverlap (which control the interval period) require a
+   * full restart – that is handled in subscribeDynamic.
+   */
+  private playGranular(seg: AudioBufferSegment): void {
+    this.stopGranular(seg.id); // clear any previous scheduler for this segment
+
+    const segMono = this.getSegmentMonoData(seg);
+    if (!segMono || segMono.length === 0) return;
+
+    const sr            = this.audioContext!.sampleRate;
+    const segLen        = segMono.length;
+    const grainSizeMs   = Math.max(5, seg.grainSize ?? 100);
+    const overlap       = Math.min(0.95, Math.max(0, seg.grainOverlap ?? 0.6));
+    const periodMs      = Math.max(1, grainSizeMs * (1 - overlap));
+    const periodSamples = Math.floor(periodMs / 1000 * sr);
+
+    this.grainReadPtrs.set(seg.id, 0);
+
+    const grains: AudioBufferSourceNode[] = [];
+    this.grainNodes.set(seg.id, grains);
+
+    const handle = setInterval(() => {
+      const ctx = this.audioContext;
+      if (!ctx || !this.audioNode) return;
+
+      // Re-read live params from the current segment state
+      const liveSeg      = this.segments.find(s => s.id === seg.id) ?? seg;
+      const pitch        = liveSeg.grainPitch  ?? 0;
+      const spread       = Math.max(0, Math.min(0.5, liveSeg.grainSpread ?? 0.05));
+      const speed        = liveSeg.grainSpeed  ?? 0.1;
+      const frozen       = !!liveSeg.grainFrozen;
+      const grainSampNow = Math.max(2, Math.floor((liveSeg.grainSize ?? grainSizeMs) / 1000 * sr));
+
+      // Advance read pointer
+      let ptr = this.grainReadPtrs.get(seg.id) ?? 0;
+      if (!frozen) {
+        const step = Math.round(speed * periodSamples * 0.15);
+        ptr = ((ptr + step) % segLen + segLen) % segLen;
+        this.grainReadPtrs.set(seg.id, ptr);
+      }
+
+      // Apply jitter (spread)
+      const jitter = Math.round((Math.random() * 2 - 1) * spread * segLen);
+      const start  = ((ptr + jitter) % segLen + segLen) % segLen;
+
+      // Build Hann-windowed grain
+      const grainBuf  = ctx.createBuffer(1, grainSampNow, sr);
+      const gd        = grainBuf.getChannelData(0);
+      const N         = Math.max(1, grainSampNow - 1);
+      for (let i = 0; i < grainSampNow; i++) {
+        const win = 0.5 * (1 - Math.cos(2 * Math.PI * i / N));
+        gd[i]     = (segMono[(start + i) % segLen] || 0) * win;
+      }
+
+      // Play grain
+      const src = ctx.createBufferSource();
+      src.buffer           = grainBuf;
+      src.playbackRate.value = Math.pow(2, pitch / 12);
+      src.connect(this.audioNode);
+      src.start();
+
+      // Track and cap concurrent grains
+      grains.push(src);
+      if (grains.length > 64) {
+        const old = grains.shift();
+        try { old?.stop(); old?.disconnect(); } catch {}
+      }
+      src.onended = () => {
+        try { src.disconnect(); } catch {}
+        const idx = grains.indexOf(src);
+        if (idx !== -1) grains.splice(idx, 1);
+      };
+    }, periodMs);
+
+    this.grainSchedulers.set(seg.id, handle);
+  }
+
+  /** Stop and clean up the granular engine for one segment. */
+  private stopGranular(segId: string): void {
+    const handle = this.grainSchedulers.get(segId);
+    if (handle !== undefined) {
+      clearInterval(handle);
+      this.grainSchedulers.delete(segId);
+    }
+    const grains = this.grainNodes.get(segId);
+    if (grains) {
+      for (const g of grains) { try { g.stop(); g.disconnect(); } catch {} }
+      this.grainNodes.delete(segId);
+    }
+    this.grainReadPtrs.delete(segId);
   }
 
   private effectiveSettings(seg: AudioBufferSegment){

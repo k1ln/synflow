@@ -12,7 +12,9 @@ import {
 } from '@xyflow/react';
 import { createPortal } from 'react-dom';
 import EventBus from '../sys/EventBus';
+import MidiKnob from '../components/MidiKnob';
 import { frequencyToNote } from '../util/pitchDetection';
+import { detectOnsets as detectOnsetsEssentia } from '../util/onsetDetection';
 import './AudioNode.css';
 
 export type AudioBufferSegment = {
@@ -26,6 +28,14 @@ export type AudioBufferSegment = {
   reverse?: boolean;
   speed?: number;
   detectedFrequency?: number | null; // segment pitch in Hz
+  // ── Granular FX (active when grainEnabled = true) ──────────────────────
+  grainEnabled?: boolean;
+  grainSize?: number;    // grain length in ms (5–500)
+  grainOverlap?: number; // 0–0.95: higher = denser / smoother
+  grainPitch?: number;   // pitch shift in semitones (−36..+36)
+  grainSpread?: number;  // position jitter as fraction of segment (0–0.5)
+  grainSpeed?: number;   // read-pointer drift speed (−4..4)
+  grainFrozen?: boolean; // freeze the read pointer in place
 };
 
 // Helper to draw waveform on a canvas for a given segment
@@ -232,7 +242,7 @@ const SegmentWaveform: React.FC<SegmentWaveformProps> = ({
       ref={canvasRef}
       style={{
         width: '100%',
-        height: 120,
+        height: 60,
         marginTop: 4,
         borderRadius: 3,
         border: '1px solid #444',
@@ -1362,6 +1372,368 @@ const WaveformSelector: React.FC<WaveformSelectorProps> = ({
   );
 };
 
+// Auto-Sample Dialog Component
+type AutoSampleDialogProps = {
+  duration: number;
+  onClose: () => void;
+  onConfirm: (
+    rangeStart: number,
+    rangeEnd: number,
+    method: 'equal' | 'transient',
+    options?: {
+      detectionMethods?: Array<'hfc' | 'complex' | 'flux' | 'complex_phase'>;
+      sensitivity?: number;
+      overlapPadding?: number;
+    }
+  ) => void;
+};
+
+const AutoSampleDialog: React.FC<AutoSampleDialogProps> = ({
+  duration,
+  onClose,
+  onConfirm
+}) => {
+  const [rangeStart, setRangeStart] = useState(0);
+  const [rangeEnd, setRangeEnd] = useState(duration);
+  const [method, setMethod] = useState<'equal' | 'transient'>('transient');
+  
+  // Advanced onset detection options
+  const [detectionMethods, setDetectionMethods] = useState<{
+    hfc: boolean;
+    complex: boolean;
+    flux: boolean;
+    complex_phase: boolean;
+  }>({
+    hfc: true,
+    complex: true,
+    flux: false,
+    complex_phase: false
+  });
+  const [sensitivity, setSensitivity] = useState(0.7);
+  const [overlapPadding, setOverlapPadding] = useState(0.01); // 10ms default
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const handleConfirm = () => {
+    if (rangeEnd <= rangeStart) {
+      alert('End time must be greater than start time');
+      return;
+    }
+    
+    const selectedMethods = Object.entries(detectionMethods)
+      .filter(([_, enabled]) => enabled)
+      .map(([name, _]) => name as 'hfc' | 'complex' | 'flux' | 'complex_phase');
+    
+    if (method === 'transient' && selectedMethods.length === 0) {
+      alert('Please select at least one detection method');
+      return;
+    }
+    
+    onConfirm(rangeStart, rangeEnd, method, {
+      detectionMethods: selectedMethods,
+      sensitivity,
+      overlapPadding
+    });
+    onClose();
+  };
+
+  // Close on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        background: 'rgba(0, 0, 0, 0.85)',
+        zIndex: 10000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: '#2a2a2a',
+          border: '1px solid #555',
+          borderRadius: 8,
+          padding: 24,
+          width: 400,
+          maxWidth: '90vw',
+          color: '#eee',
+          fontFamily: 'Calibri, sans-serif'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 style={{ margin: '0 0 16px 0', fontSize: 18 }}>
+          Auto-Sample
+        </h3>
+
+        {/* Range Selection */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>
+            Range Start (seconds)
+          </label>
+          <input
+            type="number"
+            value={rangeStart}
+            onChange={(e) => setRangeStart(Math.max(0, parseFloat(e.target.value) || 0))}
+            step={0.01}
+            min={0}
+            max={duration}
+            style={{
+              width: '100%',
+              background: '#1a1a1a',
+              color: '#eee',
+              border: '1px solid #555',
+              padding: '6px 8px',
+              borderRadius: 4
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>
+            Range End (seconds)
+          </label>
+          <input
+            type="number"
+            value={rangeEnd}
+            onChange={(e) => setRangeEnd(Math.min(duration, parseFloat(e.target.value) || duration))}
+            step={0.01}
+            min={0}
+            max={duration}
+            style={{
+              width: '100%',
+              background: '#1a1a1a',
+              color: '#eee',
+              border: '1px solid #555',
+              padding: '6px 8px',
+              borderRadius: 4
+            }}
+          />
+        </div>
+
+        {/* Method Selection */}
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: 'block', marginBottom: 8, fontSize: 13 }}>
+            Division Method
+          </label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => setMethod('equal')}
+              style={{
+                flex: 1,
+                background: method === 'equal' ? '#2d5a8a' : '#333',
+                color: '#eee',
+                border: '1px solid #555',
+                padding: '8px 12px',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontWeight: method === 'equal' ? 'bold' : 'normal'
+              }}
+            >
+              Equal Time
+            </button>
+            <button
+              onClick={() => setMethod('transient')}
+              style={{
+                flex: 1,
+                background: method === 'transient' ? '#2d5a8a' : '#333',
+                color: '#eee',
+                border: '1px solid #555',
+                padding: '8px 12px',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontWeight: method === 'transient' ? 'bold' : 'normal'
+              }}
+            >
+              Detect Onsets
+            </button>
+          </div>
+          <div style={{ fontSize: 11, opacity: 0.7, marginTop: 4 }}>
+            {method === 'equal'
+              ? 'Creates 8 equal-length segments (good for loops)'
+              : 'Uses Essentia.js professional onset detection (best for drums/percussion)'}
+          </div>
+        </div>
+
+        {/* Advanced Options Toggle */}
+        {method === 'transient' && (
+          <div style={{ marginBottom: 16 }}>
+            <button
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              style={{
+                width: '100%',
+                background: '#1a1a1a',
+                color: '#eee',
+                border: '1px solid #555',
+                padding: '8px 12px',
+                borderRadius: 4,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}
+            >
+              <span>⚙️ Advanced Options</span>
+              <span>{showAdvanced ? '▼' : '▶'}</span>
+            </button>
+          </div>
+        )}
+
+        {/* Advanced Options Panel */}
+        {method === 'transient' && showAdvanced && (
+          <div style={{ 
+            marginBottom: 16, 
+            padding: 12, 
+            background: '#1a1a1a', 
+            borderRadius: 4,
+            border: '1px solid #555'
+          }}>
+            {/* Detection Methods */}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', marginBottom: 6, fontSize: 13 }}>
+                Detection Methods
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                {([
+                  ['hfc', 'HFC (Percussive)'],
+                  ['complex', 'Complex (Tonal)'],
+                  ['flux', 'Flux (Timbre)'],
+                  ['complex_phase', 'Complex Phase']
+                ] as const).map(([key, label]) => (
+                  <label
+                    key={key}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      cursor: 'pointer',
+                      padding: 4,
+                      background: detectionMethods[key] ? '#2d5a8a44' : 'transparent',
+                      borderRadius: 3
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={detectionMethods[key]}
+                      onChange={(e) => setDetectionMethods(prev => ({
+                        ...prev,
+                        [key]: e.target.checked
+                      }))}
+                      style={{ cursor: 'pointer' }}
+                    />
+                    <span style={{ fontSize: 12 }}>{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Sensitivity */}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', marginBottom: 6, fontSize: 13 }}>
+                Sensitivity: {sensitivity.toFixed(2)}
+              </label>
+              <input
+                type="range"
+                min="0.1"
+                max="0.99"
+                step="0.01"
+                value={sensitivity}
+                onChange={(e) => setSensitivity(parseFloat(e.target.value))}
+                style={{ width: '100%' }}
+              />
+              <div style={{ fontSize: 10, opacity: 0.7, marginTop: 2 }}>
+                Lower: fewer but stronger onsets • Higher: more onsets detected
+              </div>
+            </div>
+
+            {/* Overlap Padding */}
+            <div>
+              <label style={{ display: 'block', marginBottom: 6, fontSize: 13 }}>
+                Overlap Padding: {(overlapPadding * 1000).toFixed(0)}ms
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="0.1"
+                step="0.005"
+                value={overlapPadding}
+                onChange={(e) => setOverlapPadding(parseFloat(e.target.value))}
+                style={{ width: '100%' }}
+              />
+              <div style={{ fontSize: 10, opacity: 0.7, marginTop: 2 }}>
+                Extends each segment to create overlap (useful for smooth playback)
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Preview Info */}
+        <div
+          style={{
+            background: '#1a1a1a',
+            padding: 8,
+            borderRadius: 4,
+            marginBottom: 16,
+            fontSize: 12
+          }}
+        >
+          <div>Range: {rangeStart.toFixed(2)}s - {rangeEnd.toFixed(2)}s</div>
+          <div>Duration: {(rangeEnd - rangeStart).toFixed(2)}s</div>
+          {method === 'transient' && (
+            <div style={{ opacity: 0.7 }}>Segments will be detected automatically</div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1,
+              background: '#333',
+              color: '#eee',
+              border: '1px solid #555',
+              padding: '10px 16px',
+              borderRadius: 4,
+              cursor: 'pointer'
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirm}
+            style={{
+              flex: 1,
+              background: '#2d5a8a',
+              color: '#fff',
+              border: '1px solid #4a9eff',
+              padding: '10px 16px',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            Create Segments
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
 export type SampleFlowNodeProps = {
   data: {
     id: string;
@@ -1438,7 +1810,7 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
   );
   const fileInputRef = useRef<HTMLInputElement|null>(null);
   const [style, setStyle] = useState<React.CSSProperties>(
-    data.style || { background:'#333', color:'#eee', padding:10, width:260 }
+    data.style || { background:'#333', color:'#eee', padding:10, width:360 }
   );
   // Prefetch guard
   const prefetchingRef = useRef(false);
@@ -1448,6 +1820,16 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
   const [decodedBuffer, setDecodedBuffer] = useState<AudioBuffer | null>(null);
   // Waveform selector modal state
   const [showSelector, setShowSelector] = useState(false);
+  // Auto-sample dialog state
+  const [showAutoSample, setShowAutoSample] = useState(false);
+  // Which segment cards are expanded to show full details
+  const [expandedSegments, setExpandedSegments] = useState<Set<string>>(new Set());
+  const toggleSegmentExpanded = (id: string) =>
+    setExpandedSegments(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
 
   // Safety net: if we have a disk file but no decoded buffer, try to decode once on mount
   useEffect(() => {
@@ -1803,16 +2185,139 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
     setSegments((prev) => [...prev, seg]);
   };
 
-  const updateSegment = (id:string, patch: Partial<AudioBufferSegment>)=>{
-    setSegments(prev=> prev.map(s=> s.id===id ? { ...s, ...patch } : s));
+  const updateSegment = (id: string, patch: Partial<AudioBufferSegment>) => {
+    setSegments(prev => {
+      const next = prev.map(s => s.id === id ? { ...s, ...patch } : s);
+      // If this is the currently playing segment and loop boundaries changed, restart playback
+      if (
+        id === playingSegmentId &&
+        (patch.start !== undefined || patch.end !== undefined || patch.speed !== undefined || patch.reverse !== undefined)
+      ) {
+        const updated = next.find(s => s.id === id);
+        if (updated?.loopEnabled) {
+          // defer so state has settled
+          setTimeout(() => playSegment(updated), 0);
+        }
+      }
+      return next;
+    });
   };
 
   const removeSegment = (id:string)=>{ setSegments(prev=> prev.filter(s=> s.id!==id)); };
+
+  // Auto-sample: create multiple segments automatically
+  const autoSample = async (
+    rangeStart: number,
+    rangeEnd: number,
+    method: 'equal' | 'transient',
+    options?: {
+      detectionMethods?: Array<'hfc' | 'complex' | 'flux' | 'complex_phase'>;
+      sensitivity?: number;
+      overlapPadding?: number;
+    }
+  ) => {
+    if (!decodedBuffer) return;
+
+    const { detectionMethods, sensitivity, overlapPadding = 0 } = options || {};
+    const newSegments: AudioBufferSegment[] = [];
+
+    if (method === 'equal') {
+      // Equal time divisions (default 8 segments)
+      const numSegments = 8;
+      const segmentDuration = (rangeEnd - rangeStart) / numSegments;
+      for (let i = 0; i < numSegments; i++) {
+        let start = rangeStart + i * segmentDuration;
+        let end = start + segmentDuration;
+        
+        // Apply overlap padding
+        if (overlapPadding > 0) {
+          start = Math.max(0, start - overlapPadding);
+          end = Math.min(decodedBuffer.duration, end + overlapPadding);
+        }
+        
+        const seg: AudioBufferSegment = {
+          id: randomId(),
+          label: `Part ${segments.length + i + 1}`,
+          start,
+          end,
+          loopEnabled: false,
+          loopMode: 'hold',
+          reverse: false,
+          speed: 1
+        };
+        newSegments.push(seg);
+      }
+    } else if (method === 'transient') {
+      // Essentia-based onset detection with advanced options
+      try {
+        const cutPoints = await detectOnsetsEssentia(
+          decodedBuffer,
+          rangeStart,
+          rangeEnd,
+          {
+            methods: detectionMethods,
+            sensitivity,
+            overlapPadding
+          }
+        );
+        
+        // Create segments from adjacent cut points with overlap
+        for (let i = 0; i < cutPoints.length - 1; i++) {
+          let start = cutPoints[i];
+          let end = cutPoints[i + 1];
+          
+          // Apply overlap padding
+          if (overlapPadding > 0) {
+            start = Math.max(0, start - overlapPadding);
+            end = Math.min(decodedBuffer.duration, end + overlapPadding);
+          }
+          
+          const seg: AudioBufferSegment = {
+            id: randomId(),
+            label: `Part ${segments.length + i + 1}`,
+            start,
+            end,
+            loopEnabled: false,
+            loopMode: 'hold',
+            reverse: false,
+            speed: 1
+          };
+          newSegments.push(seg);
+        }
+      } catch (err) {
+        console.error('Auto-sampling failed:', err);
+        alert('Auto-sampling failed. Please try again.');
+        return;
+      }
+    }
+
+    // Add all new segments and detect pitch for each
+    setSegments(prev => [...prev, ...newSegments]);
+    
+    // Asynchronously detect pitch for each segment
+    if (decodedBuffer) {
+      import('../util/pitchDetection').then(({ detectPitch }) => {
+        newSegments.forEach(seg => {
+          const freq = detectPitch(decodedBuffer, seg.start, seg.end);
+          if (freq) {
+            updateSegment(seg.id, { detectedFrequency: freq });
+          }
+        });
+      });
+    }
+  };
 
   // Direct playback state for segment preview
   const segmentAudioCtxRef = useRef<AudioContext | null>(null);
   const segmentSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const [playingSegmentId, setPlayingSegmentId] = useState<string | null>(null);
+
+  // Granular preview refs
+  const grainIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const grainCtxRef = useRef<AudioContext | null>(null);
+  // Always-current segments for use inside setInterval closures
+  const segmentsRef = useRef<AudioBufferSegment[]>(segments);
+  useEffect(() => { segmentsRef.current = segments; }, [segments]);
 
   // Convert speed for segment playback
   const segmentSpeedToRate = (spd: number): number => {
@@ -1821,11 +2326,82 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
     return Math.pow(10, spd / 50);
   };
 
+  const playGranularPreview = (segment: AudioBufferSegment) => {
+    if (!decodedBuffer) return;
+
+    const ctx = new AudioContext();
+    grainCtxRef.current = ctx;
+
+    const srcSr = decodedBuffer.sampleRate;
+    const startSample = Math.floor(Math.max(0, segment.start) * srcSr);
+    const endSample = Math.min(Math.floor(segment.end * srcSr), decodedBuffer.length);
+    const segLen = Math.max(1, endSample - startSample);
+
+    // Build mono snapshot of the segment region
+    const nc = decodedBuffer.numberOfChannels;
+    const mono = new Float32Array(segLen);
+    for (let ch = 0; ch < nc; ch++) {
+      const cd = decodedBuffer.getChannelData(ch);
+      for (let i = 0; i < segLen; i++) mono[i] += (cd[startSample + i] || 0) / nc;
+    }
+
+    const grainSizeMs = Math.max(5, segment.grainSize ?? 100);
+    const overlap = Math.min(0.95, Math.max(0, segment.grainOverlap ?? 0.6));
+    const periodMs = Math.max(1, grainSizeMs * (1 - overlap));
+
+    let ptr = 0;
+
+    const handle = setInterval(() => {
+      const ctx = grainCtxRef.current;
+      if (!ctx) return;
+
+      const liveSeg = segmentsRef.current.find(s => s.id === segment.id) ?? segment;
+      const pitch = liveSeg.grainPitch ?? 0;
+      const spread = Math.max(0, Math.min(0.5, liveSeg.grainSpread ?? 0.05));
+      const speed = liveSeg.grainSpeed ?? 0.1;
+      const frozen = !!liveSeg.grainFrozen;
+      const sr = ctx.sampleRate;
+      const grainSampNow = Math.max(2, Math.floor((liveSeg.grainSize ?? grainSizeMs) / 1000 * sr));
+
+      if (!frozen) {
+        const periodSamples = Math.floor(periodMs / 1000 * sr);
+        const step = Math.round(speed * periodSamples * 0.15);
+        ptr = ((ptr + step) % segLen + segLen) % segLen;
+      }
+
+      const jitter = Math.round((Math.random() * 2 - 1) * spread * segLen);
+      const grainStart = ((ptr + jitter) % segLen + segLen) % segLen;
+
+      const grainBuf = ctx.createBuffer(1, grainSampNow, sr);
+      const gd = grainBuf.getChannelData(0);
+      const N = Math.max(1, grainSampNow - 1);
+      for (let i = 0; i < grainSampNow; i++) {
+        const win = 0.5 * (1 - Math.cos(2 * Math.PI * i / N));
+        gd[i] = (mono[(grainStart + i) % segLen] || 0) * win;
+      }
+
+      const src = ctx.createBufferSource();
+      src.buffer = grainBuf;
+      src.playbackRate.value = Math.pow(2, pitch / 12);
+      src.connect(ctx.destination);
+      src.start();
+    }, periodMs);
+
+    grainIntervalRef.current = handle;
+    setPlayingSegmentId(segment.id);
+  };
+
   const playSegment = (segment: AudioBufferSegment) => {
     // Stop any currently playing segment
     stopAllSegments();
 
     if (!decodedBuffer) return;
+
+    // Route to granular engine when enabled
+    if (segment.grainEnabled) {
+      playGranularPreview(segment);
+      return;
+    }
 
     const ctx = new AudioContext();
     segmentAudioCtxRef.current = ctx;
@@ -1897,6 +2473,16 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
   };
 
   const stopAllSegments = () => {
+    // Stop granular preview scheduler
+    if (grainIntervalRef.current !== null) {
+      clearInterval(grainIntervalRef.current);
+      grainIntervalRef.current = null;
+    }
+    if (grainCtxRef.current) {
+      grainCtxRef.current.close();
+      grainCtxRef.current = null;
+    }
+    // Stop regular playback
     if (segmentSourceRef.current) {
       try {
         segmentSourceRef.current.stop();
@@ -1968,6 +2554,29 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
         <span>🎚️</span> Select Parts
       </button>
 
+      {/* Auto Sample Button */}
+      <button
+        onClick={() => setShowAutoSample(true)}
+        disabled={!decodedBuffer || !duration}
+        style={{
+          width: '100%',
+          marginBottom: 8,
+          background: decodedBuffer ? '#5a2d8a' : '#333',
+          color: decodedBuffer ? '#fff' : '#666',
+          border: '1px solid #555',
+          padding: '8px 12px',
+          borderRadius: 4,
+          cursor: decodedBuffer ? 'pointer' : 'not-allowed',
+          fontWeight: 'bold',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6
+        }}
+      >
+        <span>✂️</span> Auto Sample
+      </button>
+
       {/* Waveform Selector Modal */}
       {showSelector && decodedBuffer && duration && (
         <WaveformSelector
@@ -1979,186 +2588,330 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
         />
       )}
 
+      {/* Auto Sample Dialog */}
+      {showAutoSample && duration && (
+        <AutoSampleDialog
+          duration={duration}
+          onClose={() => setShowAutoSample(false)}
+          onConfirm={autoSample}
+        />
+      )}
+
       {/* No global options; configure per-part below */}
 
       <div style={segmentListStyle}>
-        {segments.map((seg, idx)=> (
-          <div key={seg.id} style={{ border:'1px solid #555', borderRadius:4, padding:4, marginBottom:4, background: playingSegmentId === seg.id ? '#2a3a4a' : '#2f2f2f', position:'relative' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:4 }}>
-              <input style={{ flex:1, background:'#111', color:'#eee', border:'1px solid #555', padding:'2px 4px' }} value={seg.label} onChange={e=> updateSegment(seg.id,{ label:e.target.value })} />
-              {seg.detectedFrequency && (
-                <span style={{ fontSize:10, opacity:0.7 }} title={frequencyToNote(seg.detectedFrequency)}>
-                  🎵{seg.detectedFrequency.toFixed(0)}Hz
-                </span>
-              )}
-              <button
-                onClick={() => playingSegmentId === seg.id ? stopSegment(seg) : playSegment(seg)}
-                style={{
-                  background: playingSegmentId === seg.id ? '#733' : '#373',
-                  color: '#eee',
-                  padding: '4px 8px',
-                  border: '1px solid #555',
-                  borderRadius: 3
-                }}
-              >
-                {playingSegmentId === seg.id ? '■' : '▶'}
-              </button>
-              <button onClick={()=> removeSegment(seg.id)} style={{ background:'#522', color:'#eee', padding: '4px 8px', border: '1px solid #555', borderRadius: 3 }}>✕</button>
-            </div>
-            <div style={{ display:'flex', gap:4, marginTop:4 }}>
-              <label style={{ fontSize:11 }}>Start
-                <input
-                  type='text'
-                  value={seg.start}
-                  onChange={e=> {
-                    const v = parseFloat(e.target.value.replace(/,/g,'.'));
-                    if(!isNaN(v)) updateSegment(seg.id,{ start: Math.max(0, v) });
+        {segments.map((seg, idx) => {
+          const isExpanded = expandedSegments.has(seg.id);
+          const isPlaying = playingSegmentId === seg.id;
+          return (
+            <div
+              key={seg.id}
+              style={{
+                border: isPlaying ? '1px solid #4a9eff' : '1px solid #555',
+                borderRadius: 4,
+                marginBottom: 3,
+                background: isPlaying ? '#1e2e40' : '#2f2f2f',
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: isPlaying ? '0 0 8px 2px rgba(74,158,255,0.45)' : 'none',
+                transition: 'box-shadow 0.15s, border-color 0.15s, background 0.15s'
+              }}
+            >
+              {/* Compact row: waveform + minimal controls */}
+              <div style={{ position: 'relative' }}>
+                {/* Half-height waveform — click to play/stop */}
+                <canvas
+                  ref={el => {
+                    if (!el) return;
+                    const ro = new ResizeObserver(() => drawSegmentWaveform(el, decodedBuffer, seg.start, seg.end));
+                    ro.observe(el);
+                    drawSegmentWaveform(el, decodedBuffer, seg.start, seg.end);
                   }}
-                  onKeyDown={e=>{
-                        adjustNumericInput(
-                          e,
-                          seg.start,
-                          (v)=> updateSegment(seg.id, { start: Math.max(0, v) })
-                        );
-                  }}
-                  style={{ width:60, marginLeft:4, background:'#111', color:'#eee', border:'1px solid #555', padding:'2px 4px', fontSize:12 }}
-                />
-              </label>
-              <label style={{ fontSize:11 }}>End
-                <input
-                  type='text'
-                  value={seg.end}
-                  onChange={e=> {
-                    const v = parseFloat(e.target.value.replace(/,/g,'.'));
-                    if(!isNaN(v)) updateSegment(seg.id,{ end: Math.max(0, v) });
-                  }}
-                  onKeyDown={e=>{
-                    adjustNumericInput(
-                      e,
-                      seg.end,
-                      (v)=> updateSegment(seg.id, { end: Math.max(0, v) })
-                    );
-                  }}
-                  style={{ width:60, marginLeft:4, background:'#111', color:'#eee', border:'1px solid #555', padding:'2px 4px', fontSize:12 }}
-                />
-              </label>
-            </div>
-            <details style={{ marginTop:6 }}>
-              <summary style={{ cursor:'pointer', fontSize:12 }}>Options</summary>
-              <div style={{ marginTop:4, display:'flex', flexWrap:'wrap', gap:8, alignItems:'center', background:'#222', padding:6, borderRadius:4 }}>
-                <label style={{ fontSize:12 }}>
-                  <input
-                    type='checkbox'
-                    checked={!!seg.loopEnabled}
-                    onChange={(e)=> updateSegment(seg.id, { loopEnabled: e.target.checked })}
-                    style={{ marginRight:4 }}
-                  />
-                  Loop
-                </label>
-                <label style={{ fontSize:12 }}>
-                  <input
-                    type='checkbox'
-                    checked={seg.holdEnabled !== false}
-                    onChange={(e)=> updateSegment(seg.id, { holdEnabled: e.target.checked })}
-                    style={{ marginRight:4 }}
-                  />
-                  Hold
-                </label>
-                <div style={{ fontSize:12, display:'flex', alignItems:'center', gap:4 }}>
-                  Mode
-                  <button
-                    type='button'
-                    onClick={()=> updateSegment(seg.id, { loopMode: 'hold' })}
-                    style={{
-                      background: (seg.loopMode || 'hold') === 'hold' ? '#4a9eff' : '#333',
-                      color: '#eee',
-                      border: '1px solid #555',
-                      padding: '2px 6px',
-                      borderRadius: 3,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    On→Off
-                  </button>
-                  <button
-                    type='button'
-                    onClick={()=> updateSegment(seg.id, { loopMode: 'toggle' })}
-                    style={{
-                      background: (seg.loopMode || 'hold') === 'toggle' ? '#4a9eff' : '#333',
-                      color: '#eee',
-                      border: '1px solid #555',
-                      padding: '2px 6px',
-                      borderRadius: 3,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    On↔On
-                  </button>
-                </div>
-                <label style={{ fontSize:12 }}>
-                  <input
-                    type='checkbox'
-                    checked={!!seg.reverse}
-                    onChange={(e)=> updateSegment(seg.id, { reverse: e.target.checked })}
-                    style={{ marginRight:4 }}
-                  />
-                  Reverse
-                </label>
-                <label style={{ fontSize:12, display:'flex', alignItems:'center', gap:4 }}>
-                  Speed
-                  <input
-                    type='text'
-                    value={seg.speed ?? 1}
-                    onChange={(e)=>{
-                      const v = parseFloat(e.target.value.replace(/,/g,'.'));
-                      if(!isNaN(v)) updateSegment(seg.id,{ speed: Math.max(-10, Math.min(10, v)) });
-                    }}
-                    onKeyDown={(e)=> adjustNumericInput(
-                      e,
-                      seg.speed ?? 1,
-                      (v)=> updateSegment(seg.id,{ speed: Math.max(-10, Math.min(10, v)) })
-                    )}
-                    style={{ width:70, background:'#111', color:'#eee', border:'1px solid #555', padding:'2px 4px', fontSize:12 }}
-                  />
-                </label>
-                <button
-                  type='button'
-                  onClick={async ()=> {
-                    if (!decodedBuffer) return;
-                    const { detectPitch } = await import('../util/pitchDetection');
-                    const freq = detectPitch(decodedBuffer, seg.start, seg.end);
-                    updateSegment(seg.id, { detectedFrequency: freq });
-                  }}
-                  disabled={!decodedBuffer}
                   style={{
-                    background: '#335',
-                    color: '#eee',
-                    border: '1px solid #555',
-                    padding: '2px 6px',
-                    borderRadius: 3,
-                    fontSize: 11,
-                    cursor: decodedBuffer ? 'pointer' : 'not-allowed'
+                    width: '100%',
+                    height: 60,
+                    display: 'block',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => isPlaying ? stopAllSegments() : playSegment(seg)}
+                  title={isPlaying ? 'Stop' : 'Play'}
+                />
+                {/* Overlay: label top-left, buttons top-right */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    pointerEvents: 'none'
                   }}
                 >
-                  🎵 Detect
-                </button>
+                  {/* Label — top left */}
+                  <span style={{
+                    position: 'absolute',
+                    top: 2,
+                    left: 4,
+                    fontSize: 10,
+                    color: isPlaying ? '#8ecfff' : '#ccc',
+                    textShadow: '0 0 4px #000, 0 0 4px #000',
+                    maxWidth: 'calc(100% - 60px)',
+                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
+                    textOverflow: 'ellipsis',
+                    pointerEvents: 'none',
+                    transition: 'color 0.15s'
+                  }}>
+                    {seg.label}
+                    {seg.detectedFrequency ? ` · ${seg.detectedFrequency.toFixed(0)}Hz` : ''}
+                  </span>
+                  {/* Buttons — top right */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 2,
+                    right: 3,
+                    display: 'flex',
+                    gap: 2,
+                    pointerEvents: 'all'
+                  }}>
+                    <button
+                      onClick={e => { e.stopPropagation(); removeSegment(seg.id); }}
+                      style={{
+                        background: 'rgba(80,30,30,0.85)',
+                        color: '#eee',
+                        padding: '1px 4px',
+                        border: '1px solid #666',
+                        borderRadius: 3,
+                        fontSize: 11,
+                        lineHeight: 1,
+                        cursor: 'pointer'
+                      }}
+                      title='Delete segment'
+                    >
+                      🗑
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); toggleSegmentExpanded(seg.id); }}
+                      style={{
+                        background: 'rgba(40,40,80,0.85)',
+                        color: '#aac',
+                        padding: '1px 4px',
+                        border: '1px solid #666',
+                        borderRadius: 3,
+                        fontSize: 10,
+                        lineHeight: 1,
+                        cursor: 'pointer'
+                      }}
+                      title={isExpanded ? 'Collapse' : 'Expand details'}
+                    >
+                      {isExpanded ? '▲' : '▼'}
+                    </button>
+                  </div>
+                </div>
               </div>
-            </details>
-            {/* Waveform canvas for segment */}
-            <SegmentWaveform
-              audioBuffer={decodedBuffer}
-              start={seg.start}
-              end={seg.end}
-            />
-            {/* Dynamic target handle for this segment (vertically centered within segment card) */}
-            <Handle
-              type='target'
-              position={Position.Left}
-              id={seg.id}
-              style={{ top: '50%', transform: 'translateY(-50%)' }}
-            />
-          </div>
-        ))}
+
+              {/* Expanded details panel */}
+              {isExpanded && (
+                <div style={{ padding: 6, borderTop: '1px solid #444' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:4, marginBottom:4 }}>
+                    <input
+                      style={{ flex:1, background:'#111', color:'#eee', border:'1px solid #555', padding:'2px 4px', fontSize:12 }}
+                      value={seg.label}
+                      onChange={e => updateSegment(seg.id, { label: e.target.value })}
+                    />
+                    {seg.detectedFrequency && (
+                      <span style={{ fontSize:10, opacity:0.7 }} title={frequencyToNote(seg.detectedFrequency)}>
+                        🎵{seg.detectedFrequency.toFixed(0)}Hz
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display:'flex', gap:4, marginBottom:4 }}>
+                    <label style={{ fontSize:11 }}>Start
+                      <input
+                        type='text'
+                        value={seg.start}
+                        onChange={e => {
+                          const v = parseFloat(e.target.value.replace(/,/g,'.'));
+                          if(!isNaN(v)) updateSegment(seg.id, { start: Math.max(0, v) });
+                        }}
+                        onKeyDown={e => adjustNumericInput(e, seg.start, v => updateSegment(seg.id, { start: Math.max(0, v) }))}
+                        style={{ width:60, marginLeft:4, background:'#111', color:'#eee', border:'1px solid #555', padding:'2px 4px', fontSize:12 }}
+                      />
+                    </label>
+                    <label style={{ fontSize:11 }}>End
+                      <input
+                        type='text'
+                        value={seg.end}
+                        onChange={e => {
+                          const v = parseFloat(e.target.value.replace(/,/g,'.'));
+                          if(!isNaN(v)) updateSegment(seg.id, { end: Math.max(0, v) });
+                        }}
+                        onKeyDown={e => adjustNumericInput(e, seg.end, v => updateSegment(seg.id, { end: Math.max(0, v) }))}
+                        style={{ width:60, marginLeft:4, background:'#111', color:'#eee', border:'1px solid #555', padding:'2px 4px', fontSize:12 }}
+                      />
+                    </label>
+                  </div>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:8, alignItems:'center', background:'#222', padding:6, borderRadius:4 }}>
+                    <label style={{ fontSize:12 }}>
+                      <input type='checkbox' checked={!!seg.loopEnabled} onChange={e => updateSegment(seg.id, { loopEnabled: e.target.checked })} style={{ marginRight:4 }} />
+                      Loop
+                    </label>
+                    <label style={{ fontSize:12 }}>
+                      <input type='checkbox' checked={seg.holdEnabled !== false} onChange={e => updateSegment(seg.id, { holdEnabled: e.target.checked })} style={{ marginRight:4 }} />
+                      Hold
+                    </label>
+                    <div style={{ fontSize:12, display:'flex', alignItems:'center', gap:4 }}>
+                      Mode
+                      <button type='button' onClick={() => updateSegment(seg.id, { loopMode: 'hold' })} style={{ background: (seg.loopMode||'hold')==='hold' ? '#4a9eff' : '#333', color:'#eee', border:'1px solid #555', padding:'2px 6px', borderRadius:3, cursor:'pointer' }}>On→Off</button>
+                      <button type='button' onClick={() => updateSegment(seg.id, { loopMode: 'toggle' })} style={{ background: (seg.loopMode||'hold')==='toggle' ? '#4a9eff' : '#333', color:'#eee', border:'1px solid #555', padding:'2px 6px', borderRadius:3, cursor:'pointer' }}>On↔On</button>
+                    </div>
+                    <label style={{ fontSize:12 }}>
+                      <input type='checkbox' checked={!!seg.reverse} onChange={e => updateSegment(seg.id, { reverse: e.target.checked })} style={{ marginRight:4 }} />
+                      Reverse
+                    </label>
+                    <label style={{ fontSize:12, display:'flex', alignItems:'center', gap:4 }}>
+                      Speed
+                      <input
+                        type='text'
+                        value={seg.speed ?? 1}
+                        onChange={e => {
+                          const v = parseFloat(e.target.value.replace(/,/g,'.'));
+                          if(!isNaN(v)) updateSegment(seg.id, { speed: Math.max(-10, Math.min(10, v)) });
+                        }}
+                        onKeyDown={e => adjustNumericInput(e, seg.speed ?? 1, v => updateSegment(seg.id, { speed: Math.max(-10, Math.min(10, v)) }))}
+                        style={{ width:70, background:'#111', color:'#eee', border:'1px solid #555', padding:'2px 4px', fontSize:12 }}
+                      />
+                    </label>
+                    <button
+                      type='button'
+                      onClick={async () => {
+                        if (!decodedBuffer) return;
+                        const { detectPitch } = await import('../util/pitchDetection');
+                        const freq = detectPitch(decodedBuffer, seg.start, seg.end);
+                        updateSegment(seg.id, { detectedFrequency: freq });
+                      }}
+                      disabled={!decodedBuffer}
+                      style={{ background:'#335', color:'#eee', border:'1px solid #555', padding:'2px 6px', borderRadius:3, fontSize:11, cursor: decodedBuffer ? 'pointer' : 'not-allowed' }}
+                    >
+                      🎵 Detect
+                    </button>
+                  </div>
+
+                  {/* ── Granular FX ─────────────────────────────────────── */}
+                  <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid #3a3a3a' }}>
+                    <label
+                      className='nodrag'
+                      style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', marginBottom: 4 }}
+                    >
+                      <input
+                        type='checkbox'
+                        checked={!!seg.grainEnabled}
+                        onChange={e => updateSegment(seg.id, { grainEnabled: e.target.checked })}
+                      />
+                      <span style={{ fontWeight: 'bold', color: seg.grainEnabled ? '#4a9eff' : '#777', letterSpacing: 0.5 }}>
+                        ✦ Granular FX
+                      </span>
+                    </label>
+                    {seg.grainEnabled && (
+                      <>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, marginBottom: 4 }}>
+                          {/* Grain Size */}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <div style={{ fontSize: 9, opacity: 0.7 }}>Grain</div>
+                            <div className='nodrag'>
+                              <MidiKnob value={seg.grainSize ?? 100} min={5} max={500}
+                                onChange={v => updateSegment(seg.id, { grainSize: v })}
+                                persistKey={`sample:${data.id}:seg:${seg.id}:grainSize`} />
+                            </div>
+                            <div style={{ fontSize: 9 }}>{(seg.grainSize ?? 100).toFixed(0)}ms</div>
+                          </div>
+                          {/* Overlap */}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <div style={{ fontSize: 9, opacity: 0.7 }}>Overlap</div>
+                            <div className='nodrag'>
+                              <MidiKnob value={seg.grainOverlap ?? 0.6} min={0} max={0.95}
+                                onChange={v => updateSegment(seg.id, { grainOverlap: v })}
+                                persistKey={`sample:${data.id}:seg:${seg.id}:grainOverlap`} />
+                            </div>
+                            <div style={{ fontSize: 9 }}>{((seg.grainOverlap ?? 0.6) * 100).toFixed(0)}%</div>
+                          </div>
+                          {/* Pitch – the scream */}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <div style={{ fontSize: 9, opacity: 0.7, color: Math.abs(seg.grainPitch ?? 0) >= 12 ? '#ff8844' : undefined }}>Pitch 🔊</div>
+                            <div className='nodrag'>
+                              <MidiKnob value={seg.grainPitch ?? 0} min={-36} max={36}
+                                onChange={v => updateSegment(seg.id, { grainPitch: v })}
+                                persistKey={`sample:${data.id}:seg:${seg.id}:grainPitch`} />
+                            </div>
+                            <div style={{ fontSize: 9, color: Math.abs(seg.grainPitch ?? 0) >= 12 ? '#ff8844' : undefined }}>
+                              {(seg.grainPitch ?? 0) >= 0 ? '+' : ''}{(seg.grainPitch ?? 0).toFixed(1)}st
+                            </div>
+                          </div>
+                          {/* Spread */}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <div style={{ fontSize: 9, opacity: 0.7 }}>Spread</div>
+                            <div className='nodrag'>
+                              <MidiKnob value={seg.grainSpread ?? 0.05} min={0} max={0.5}
+                                onChange={v => updateSegment(seg.id, { grainSpread: v })}
+                                persistKey={`sample:${data.id}:seg:${seg.id}:grainSpread`} />
+                            </div>
+                            <div style={{ fontSize: 9 }}>{((seg.grainSpread ?? 0.05) * 100).toFixed(0)}%</div>
+                          </div>
+                          {/* Speed */}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <div style={{ fontSize: 9, opacity: 0.7 }}>Speed</div>
+                            <div className='nodrag'>
+                              <MidiKnob value={seg.grainSpeed ?? 0.1} min={-4} max={4}
+                                onChange={v => updateSegment(seg.id, { grainSpeed: v })}
+                                persistKey={`sample:${data.id}:seg:${seg.id}:grainSpeed`} />
+                            </div>
+                            <div style={{ fontSize: 9 }}>{(seg.grainSpeed ?? 0.1) >= 0 ? '+' : ''}{(seg.grainSpeed ?? 0.1).toFixed(2)}</div>
+                          </div>
+                          {/* Freeze */}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                            <button
+                              type='button'
+                              className='nodrag'
+                              onClick={() => updateSegment(seg.id, { grainFrozen: !seg.grainFrozen })}
+                              style={{
+                                background: seg.grainFrozen ? '#1c6bc7' : '#333',
+                                color: '#fff',
+                                border: `1px solid ${seg.grainFrozen ? '#4a9eff' : '#555'}`,
+                                padding: '6px 4px',
+                                borderRadius: 3,
+                                cursor: 'pointer',
+                                fontSize: 9,
+                                fontWeight: 'bold',
+                                boxShadow: seg.grainFrozen ? '0 0 6px rgba(74,158,255,0.4)' : 'none',
+                                transition: 'all 0.15s',
+                                width: '100%',
+                              }}
+                            >
+                              {seg.grainFrozen ? '❄️ FROZEN' : '⏺ FREEZE'}
+                            </button>
+                          </div>
+                        </div>
+                        {Math.abs(seg.grainPitch ?? 0) >= 12 && (
+                          <div style={{ fontSize: 9, color: '#ff4422', textAlign: 'center', opacity: 0.85 }}>
+                            🔥 Scream zone – grain rate approaching audio frequency
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* React Flow target handle */}
+              <Handle
+                type='target'
+                position={Position.Left}
+                id={seg.id}
+                style={{ top: '50%', transform: 'translateY(-50%)' }}
+              />
+            </div>
+          );
+        })}
         {segments.length===0 && <div style={{ fontSize:12, opacity:0.7 }}>No segments yet. Add one.</div>}
       </div>
   <button onClick={addSegment} style={{ width:'100%', marginTop:4, background:'#222', color:'#eee', border:'1px solid #555', padding:'6px 8px', borderRadius:4 }}>Add Segment</button>
