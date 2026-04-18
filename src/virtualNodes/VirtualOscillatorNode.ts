@@ -22,6 +22,7 @@ export class VirtualOscillatorNode extends VirtualNode<CustomNode & OscillatorFl
         this.resetConnectionsOfNode = resetConnectionsOfNode;
     }
 
+    
     handleUpdateParams(node: CustomNode & OscillatorFlowNodeProps, payload: any) {
         if (!payload || !payload.data) return;
         const data = node.data;
@@ -38,14 +39,6 @@ export class VirtualOscillatorNode extends VirtualNode<CustomNode & OscillatorFl
                     data.periodicWaveHarmonics = value;
                     shouldRerender = true;
                     break;
-                case "type":
-                    data.type = value;
-                    shouldRerender = true;
-                    break;
-                case "frequency":
-                    data.frequency = value;
-                    shouldRerender = true;
-                    break;
                 default:
                     super.handleUpdateParams(node, { data: { [key]: value } });
             }
@@ -60,7 +53,7 @@ export class VirtualOscillatorNode extends VirtualNode<CustomNode & OscillatorFl
             );
         }
     }
-
+    
     handleReceiveNodeOnOscillator(node: ExtendedOscillatorNode, data: any) {
         if (node.playbackState !== "started") {
             // Custom logic for starting oscillator if needed
@@ -77,6 +70,7 @@ export class VirtualOscillatorNode extends VirtualNode<CustomNode & OscillatorFl
         type: OscillatorType,
         pulseWidth?: number,
         periodicWaveHarmonics?: number,
+        detune?: number
     ) {
         this.eventBus.unsubscribeAllByNodeId(this.node.id);
         // Stop and disconnect the old oscillator if it exists
@@ -98,6 +92,7 @@ export class VirtualOscillatorNode extends VirtualNode<CustomNode & OscillatorFl
         // Create new oscillator
         this.audioNode = this.audioContext!.createOscillator() as ExtendedOscillatorNode;
         this.audioNode.frequency.value = frequency || 440;
+        this.audioNode.detune.value = detune ||  0;
 
         // Apply periodic wave for custom type, otherwise use built-in waveform
         if (type === "custom" && this.audioContext) {

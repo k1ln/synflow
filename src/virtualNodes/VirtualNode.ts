@@ -21,18 +21,21 @@ export class VirtualNode<U extends { id: string; data?: any }, T extends AudioNo
     }
 
     subscribeParams() {
-        this.eventBus.subscribe(`${this.node.id}.params.updateParams`, (data) =>
+        this.eventBus.subscribe(`${this.node.id}.params.updateParams`, (data) => {
+            console.log("VirtualNode received params.updateParams for node:", this.node, "with data:", data)
             this.handleUpdateParams(this.node, data)
+        }
         );
     }
 
     handleUpdateParams(node: U, data: any) {
+        console.log("VirtualNode handleUpdateParams called with node:", node, "data:", data);
         if (node.data && typeof node.data === "object" && data) {
             const audioNode = this.audioNode;
-            
+
             // Track which keys were actually updated for the UI notification
             const updatedKeys: Record<string, any> = {};
-            
+
             if (audioNode) {
                 Object.keys(data.data).forEach((key) => {
                     //TODO i think i dont want this. 
@@ -41,22 +44,22 @@ export class VirtualNode<U extends { id: string; data?: any }, T extends AudioNo
                         updatedKeys[key] = data.data[key];
                     }
                     let target: any = undefined;
-                    
+
                     if (key in audioNode) {
                         target = (audioNode as any)[key];
                     } else if (
                         audioNode.parameters &&
-                        audioNode.parameters.has(key) 
+                        audioNode.parameters.has(key)
                     ) {
                         target = audioNode.parameters.get(key);
                     }
                     if (target !== undefined) {
                         let incoming = data.data[key];
-                        let potentialNumber = incoming*1;
-                        if(typeof potentialNumber == "number" && !isNaN(potentialNumber)){ incoming = data.data[key]*1; }
+                        let potentialNumber = incoming * 1;
+                        if (typeof potentialNumber == "number" && !isNaN(potentialNumber)) { incoming = data.data[key] * 1; }
                         if (target instanceof AudioParam) {
                             if (typeof incoming === 'number' && Number.isFinite(incoming)) {
-                                let v = incoming*1;
+                                let v = incoming * 1;
                                 if (key === 'frequency') {
                                     v = Math.max(0.0001, Math.min(24000, v));
                                     // Round to two decimals for stability/log readability
@@ -102,9 +105,9 @@ export class VirtualNode<U extends { id: string; data?: any }, T extends AudioNo
                                     }
                                 }
                             } else if (typeof incoming == "string") {
-                                if(audioNode instanceof AudioWorkletNode){ 
+                                if (audioNode instanceof AudioWorkletNode) {
                                     audioNode.port.postMessage({ type: "set" + key, value: incoming });
-                                }else {
+                                } else {
                                     try {
                                         target.value = incoming;
                                     } catch (e) {

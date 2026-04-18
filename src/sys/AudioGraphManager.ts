@@ -968,6 +968,7 @@ export class AudioGraphManager {
                         nodeData.type || "sine",
                         nodeData.pulseWidth,
                         nodeData.periodicWaveHarmonics,
+                        nodeData.detune
                     );
                     this.virtualNodes.set(node.id, oscNode);
                     break;
