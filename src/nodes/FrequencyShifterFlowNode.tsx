@@ -36,13 +36,15 @@ const FrequencyShifterFlowNode: React.FC<
   const flowId = data.flowId ?? "default";
 
   useEffect(() => {
-    if (data.onChange instanceof Function) {
-      data.onChange({
-        ...data,
-        shift,
-        label,
-        shiftMidiMapping,
-      });
+    if (shift !== data.shift || label !== data.label || shiftMidiMapping !== data.shiftMidiMapping) {
+      if (data.onChange instanceof Function) {
+        data.onChange({
+          ...data,
+          shift,
+          label,
+          shiftMidiMapping,
+        });
+      }
     }
   }, [shift, label, shiftMidiMapping]);
 

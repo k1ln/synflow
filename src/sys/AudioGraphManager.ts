@@ -406,8 +406,9 @@ export class AudioGraphManager {
             return;
         }
 
-        // Filter by sourceHandle if provided in data
-        const sourceHandle = data?.sourceHandle;
+        // Filter by sourceHandle if provided in data, but strip it from forwarded payloads
+        // so it doesn't leak into downstream nodes and incorrectly block their edge routing.
+        const { sourceHandle, ...dataToForward } = data || {};
 
         connectedEdges.forEach((edge) => {
             // If sourceHandle is specified, filter edges:
@@ -462,7 +463,7 @@ export class AudioGraphManager {
             this.eventBus.emit(eventChannel, {
                 nodeId: targetNodeId,
                 source: node.id,
-                ...data,
+                ...dataToForward,
             });
         });
     }

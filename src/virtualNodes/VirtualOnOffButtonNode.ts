@@ -29,6 +29,7 @@ export class VirtualOnOffButtonNode extends VirtualNode<CustomNode & OnOffButton
     super(audioContext, audioNode, eventBus, node);
     // Dummy audio node
     this.isOn = node.data.isOn;
+    console.log("ONOFF IS ON" + this.isOn);
     this.subscribe();
   }
 
@@ -66,7 +67,10 @@ export class VirtualOnOffButtonNode extends VirtualNode<CustomNode & OnOffButton
   }
 
   private handleIncoming(kind: 'On' | 'Off', payload: any) {
+    
     if (!this.isOn) return; // gate closed
+    console.log("Handle Incoming");
+    
     const path = `${this.node.id}.main-input.sendNode${kind}`;
     // Forward original payload so downstream nodes receive the same data, with gate metadata attached
     this.eventBus.emit(path, {
