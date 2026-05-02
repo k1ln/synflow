@@ -19,12 +19,22 @@ import {
   Decoration,
   DecorationSet,
   EditorView,
-  keymap
+  keymap,
+  ViewPlugin
 } from '@codemirror/view';
 import { StreamLanguage } from '@codemirror/language';
 import EventBus from '../sys/EventBus';
 import './AudioNode.css';
 import './ScriptSequencerFlowNode.css';
+
+export interface FavoriteItem {
+  id: string;
+  token: string;
+  type: 'var' | 'number' | 'note';
+  label?: string;
+  rowHeight?: number; // px; 36 = compact, 64 = expanded
+  pos?: number;      // absolute char offset in script — identifies a specific occurrence
+}
 
 export interface ScriptSequencerFlowNodeData {
   id?: string;
@@ -36,6 +46,10 @@ export interface ScriptSequencerFlowNodeData {
    *  references a higher index via `#N`. Each handle (`out-N`) accepts
    *  any action — send / on / off / pulse / ramp / array. */
   outputCount?: number;
+  showOutputs?: boolean;
+  showFavorites?: boolean;
+  favorites?: FavoriteItem[];
+  vars?: Record<string, any>;
   onChange?: (d: any) => void;
   style?: React.CSSProperties;
 }
@@ -191,6 +205,10 @@ const ssqRunningLineTheme = EditorView.baseTheme({
     boxShadow: 'inset 2px 0 0 rgba(120, 230, 140, 0.85)',
     transition: 'background-color 120ms ease'
   },
+  '.ssq-cm-exec': {
+    backgroundColor: 'rgba(120, 230, 140, 0.10)',
+    boxShadow: 'inset 2px 0 0 rgba(120, 230, 140, 0.55)',
+  },
   '.ssq-cm-error': {
     backgroundColor: 'rgba(255, 80, 80, 0.10)',
     boxShadow: 'inset 2px 0 0 rgba(255, 90, 90, 0.85)'
@@ -203,6 +221,28 @@ const ssqRunningLineTheme = EditorView.baseTheme({
   // Custom token colors layered on top of vscodeDark
   '.cm-content .tok-labelName, .cm-content [class*="tok-labelName"]': {
     color: '#ffd479'
+  },
+  // ---- Inline token highlight marks (◈ mode) ----
+  '.ssq-tok-hl': {
+    borderRadius: '2px',
+    padding: '0 1px',
+    cursor: 'pointer'
+  },
+  '.ssq-tok-hl--var': {
+    boxShadow: '0 0 0 1px #4a9eff',
+    backgroundColor: 'rgba(74, 158, 255, 0.12)'
+  },
+  '.ssq-tok-hl--note': {
+    boxShadow: '0 0 0 1px #7dc87d',
+    backgroundColor: 'rgba(125, 200, 125, 0.12)'
+  },
+  '.ssq-tok-hl--number': {
+    boxShadow: '0 0 0 1px #d7ba7d',
+    backgroundColor: 'rgba(215, 186, 125, 0.12)'
+  },
+  '.ssq-tok-hl.ssq-tok-hl--fav': {
+    boxShadow: '0 0 0 1.5px #fc0',
+    backgroundColor: 'rgba(255, 192, 0, 0.18)'
   }
 });
 
@@ -475,6 +515,316 @@ const ssqErrorField = StateField.define<DecorationSet>({
   provide: (f) => EditorView.decorations.from(f)
 });
 
+// ---- exec: line flash decoration ------------------------------------------
+
+const flashExecLinesEffect = StateEffect.define<number[]>();
+
+const ssqExecFlashField = StateField.define<DecorationSet>({
+  create: () => Decoration.none,
+  update(deco, tr) {
+    deco = deco.map(tr.changes);
+    for (const e of tr.effects) {
+      if (e.is(flashExecLinesEffect)) {
+        const execLines = e.value;
+        if (execLines.length === 0) { deco = Decoration.none; continue; }
+        const docLines = tr.state.doc.lines;
+        const builder = new RangeSetBuilder<Decoration>();
+        const sorted = [...execLines].sort((a, b) => a - b);
+        for (const lineNum of sorted) {
+          if (lineNum < 0 || lineNum >= docLines) continue;
+          const line = tr.state.doc.line(lineNum + 1);
+          builder.add(line.from, line.from,
+            Decoration.line({ attributes: { class: 'ssq-cm-exec' } }));
+        }
+        deco = builder.finish();
+      }
+    }
+    return deco;
+  },
+  provide: (f) => EditorView.decorations.from(f)
+});
+
+// ---- inline token highlight decorations ------------------------------------
+
+type TokenPos = {
+  from: number; to: number;
+  type: 'var' | 'number' | 'note';
+  token: string;
+  isFav: boolean;
+};
+
+function findAllTokenPositions(script: string, favSet: Set<number>): TokenPos[] {
+  const result: TokenPos[] = [];
+  const lines = script.split('\n');
+  let offset = 0;
+  for (const line of lines) {
+    const ci = line.indexOf('//');
+    const safe = ci >= 0 ? line.slice(0, ci) : line;
+    for (const m of safe.matchAll(/\$([A-Za-z_]\w*)/g)) {
+      const from = offset + m.index!;
+      result.push({ from, to: from + m[0].length, type: 'var', token: m[0], isFav: favSet.has(from) });
+    }
+    for (const m of safe.matchAll(/@[A-Ga-g][#b]?-?\d+(?:[+-]\d+)?/g)) {
+      const from = offset + m.index!;
+      result.push({ from, to: from + m[0].length, type: 'note', token: m[0], isFav: favSet.has(from) });
+    }
+    for (const m of safe.matchAll(/(?<![#$@\w.])(\d+(?:\.\d+)?)(?![\w.])/g)) {
+      const from = offset + m.index!;
+      result.push({ from, to: from + m[0].length, type: 'number', token: m[0], isFav: favSet.has(from) });
+    }
+    offset += line.length + 1;
+  }
+  return result.sort((a, b) => a.from - b.from);
+}
+
+const setHighlightTokensEffect = StateEffect.define<TokenPos[]>();
+
+const ssqHighlightMarksField = StateField.define<DecorationSet>({
+  create: () => Decoration.none,
+  update(deco, tr) {
+    deco = deco.map(tr.changes);
+    for (const e of tr.effects) {
+      if (e.is(setHighlightTokensEffect)) {
+        if (e.value.length === 0) { deco = Decoration.none; continue; }
+        const builder = new RangeSetBuilder<Decoration>();
+        for (const t of e.value) {
+          const cls = `ssq-tok-hl ssq-tok-hl--${t.type}${t.isFav ? ' ssq-tok-hl--fav' : ''}`;
+          builder.add(t.from, t.to, Decoration.mark({ class: cls }));
+        }
+        deco = builder.finish();
+      }
+    }
+    return deco;
+  },
+  provide: (f) => EditorView.decorations.from(f)
+});
+
+/** Per-view registry of "add token to favorites" callbacks for click handling. */
+const _tokenClickHandlerMap = new WeakMap<
+  EditorView,
+  (token: string, type: 'var' | 'number' | 'note', pos: number) => void
+>();
+
+const ssqTokenClickPlugin = ViewPlugin.fromClass(
+  class { constructor(_v: EditorView) {} },
+  {
+    eventHandlers: {
+      mousedown(e: MouseEvent, view: EditorView) {
+        const deco = view.state.field(ssqHighlightMarksField, false);
+        if (!deco || (deco as any).size === 0) return;
+        const docPos = view.posAtCoords({ x: e.clientX, y: e.clientY });
+        if (docPos == null) return;
+        const tokens = findAllTokenPositions(view.state.doc.toString(), new Set<number>());
+        const hit = tokens.find((t) => t.from <= docPos && docPos <= t.to);
+        if (!hit) return;
+        const handler = _tokenClickHandlerMap.get(view);
+        if (handler) handler(hit.token, hit.type, hit.from);
+        // Don't preventDefault — let CM place the cursor normally too
+      }
+    }
+  }
+);
+
+// ---- token/favorites helpers -----------------------------------------------
+
+const NOTE_CHROMATIC = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const NOTE_BASE_MAP: Record<string, number> = { c:0, d:2, e:4, f:5, g:7, a:9, b:11 };
+
+function stepNote(noteFull: string, semitones: number): string {
+  const prefix = noteFull.startsWith('@') ? '@' : '';
+  const text = prefix ? noteFull.slice(1) : noteFull;
+  const m = /^([A-Ga-g])([#b]?)(-?\d+)$/.exec(text);
+  if (!m) return noteFull;
+  const base = NOTE_BASE_MAP[m[1].toLowerCase()] ?? 0;
+  const acc = m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0;
+  const octave = parseInt(m[3], 10);
+  let midi = (octave + 1) * 12 + base + acc + semitones;
+  midi = Math.max(0, Math.min(127, midi));
+  const newOctave = Math.floor(midi / 12) - 1;
+  const newSemi = ((midi % 12) + 12) % 12;
+  return prefix + NOTE_CHROMATIC[newSemi] + newOctave;
+}
+
+function stepNumToken(numStr: string, direction: number): string {
+  const n = parseFloat(numStr);
+  if (isNaN(n)) return numStr;
+  const hasDot = numStr.includes('.');
+  const step = hasDot ? Math.pow(10, -(numStr.split('.')[1] || '').length) : 1;
+  const newVal = n + direction * step;
+  if (hasDot) {
+    const decimals = (numStr.split('.')[1] || '').length;
+    return newVal.toFixed(Math.max(1, decimals));
+  }
+  return String(Math.round(newVal));
+}
+
+function replaceTokenInScript(
+  script: string, oldToken: string, newToken: string,
+  type: 'var' | 'number' | 'note'
+): string {
+  if (type === 'note') {
+    return script.split(oldToken).join(newToken);
+  }
+  if (type === 'number') {
+    const escaped = oldToken.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return script.replace(new RegExp('(?<![#$@\\w.])' + escaped + '(?![\\w.])', 'g'), newToken);
+  }
+  return script;
+}
+
+function extractScriptTokens(script: string): Array<{ type: 'var' | 'number' | 'note'; token: string }> {
+  const seen = new Set<string>();
+  const result: Array<{ type: 'var' | 'number' | 'note'; token: string }> = [];
+  const stripped = script.replace(/\/\/[^\n]*/g, '');
+  for (const m of stripped.matchAll(/\$([A-Za-z_]\w*)/g)) {
+    const t = '$' + m[1];
+    if (!seen.has(t)) { seen.add(t); result.push({ type: 'var', token: t }); }
+  }
+  for (const m of stripped.matchAll(/@[A-Ga-g][#b]?-?\d+/g)) {
+    const t = m[0];
+    if (!seen.has(t)) { seen.add(t); result.push({ type: 'note', token: t }); }
+  }
+  for (const m of stripped.matchAll(/(?<![#$@\w.])(\d+(?:\.\d+)?)(?![\w])/g)) {
+    const t = m[1];
+    if (!seen.has(t)) { seen.add(t); result.push({ type: 'number', token: t }); }
+  }
+  return result;
+}
+
+// ---- Token panel sub-component ---------------------------------------------
+
+const TokenPanel: React.FC<{
+  script: string;
+  favorites: FavoriteItem[];
+  onToggle: (token: string, type: 'var' | 'number' | 'note') => void;
+}> = React.memo(({ script, favorites, onToggle }) => {
+  const tokens = useMemo(() => extractScriptTokens(script), [script]);
+  const favSet = useMemo(() => new Set(favorites.map((f) => f.token)), [favorites]);
+  if (tokens.length === 0) {
+    return <div className="ssq-token-panel ssq-token-panel--empty">no tokens found</div>;
+  }
+  return (
+    <div className="ssq-token-panel">
+      {tokens.map(({ type, token }) => (
+        <button
+          key={token}
+          className={`ssq-token-chip ssq-token-chip--${type}${favSet.has(token) ? ' ssq-token-chip--fav' : ''}`}
+          title={`${type}: ${token} — click to ${favSet.has(token) ? 'remove from' : 'add to'} favorites`}
+          onClick={() => onToggle(token, type)}
+        >
+          <span className="ssq-token-icon">
+            {type === 'var' ? 'x' : type === 'note' ? '♪' : '#'}
+          </span>
+          <span className="ssq-token-label">{token}</span>
+          <span className="ssq-token-star">{favSet.has(token) ? '\u2605' : '\u2606'}</span>
+        </button>
+      ))}
+    </div>
+  );
+});
+
+// ---- Favorites panel sub-component -----------------------------------------
+
+const FavoritesPanel: React.FC<{
+  favorites: FavoriteItem[];
+  runtimeVars: Record<string, any>;
+  script: string;
+  showFavorites: boolean;
+  onToggleShow: () => void;
+  onStep: (fav: FavoriteItem, dir: number) => void;
+  onRemove: (id: string) => void;
+  onToggleHeight: (id: string) => void;
+}> = React.memo(({ favorites, runtimeVars, script, showFavorites, onToggleShow, onStep, onRemove, onToggleHeight }) => {
+  const [selectedId, setSelectedId] = React.useState<string | null>(null);
+  const panelRef = React.useRef<HTMLDivElement>(null);
+
+  // Keep selectedId valid when favorites change
+  React.useEffect(() => {
+    if (selectedId && !favorites.find((f) => f.id === selectedId)) {
+      setSelectedId(null);
+    }
+  }, [favorites, selectedId]);
+
+  // Keyboard handler — fires when panel is focused
+  const onKeyDown = React.useCallback((e: React.KeyboardEvent) => {
+    if (!selectedId) return;
+    const fav = favorites.find((f) => f.id === selectedId);
+    if (!fav) return;
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      e.stopPropagation();
+      onStep(fav, 1);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      e.stopPropagation();
+      onStep(fav, -1);
+    }
+  }, [selectedId, favorites, onStep]);
+
+  // Wheel handler on the whole panel — only acts on selected fav
+  const onWheel = React.useCallback((e: React.WheelEvent) => {
+    if (!selectedId) return;
+    const fav = favorites.find((f) => f.id === selectedId);
+    if (!fav) return;
+    e.stopPropagation();
+    onStep(fav, e.deltaY < 0 ? 1 : -1);
+  }, [selectedId, favorites, onStep]);
+
+  return (
+    <div
+      className="ssq-fav-panel"
+      ref={panelRef}
+      tabIndex={0}
+      onKeyDown={onKeyDown}
+      onWheel={onWheel}
+      style={{ outline: 'none' }}
+    >
+      <div className="ssq-outputs-head" onClick={onToggleShow}>
+        <span style={{ display: 'inline-block', transform: showFavorites ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 120ms ease' }}>▶</span>
+        <span>Favorites ({favorites.length}){selectedId ? ` — ▲▼ or wheel to step` : ''}</span>
+      </div>
+      {showFavorites && (
+        <div className="ssq-fav-list">
+          {favorites.map((fav) => {
+            const isExpanded = (fav.rowHeight ?? 36) > 36;
+            const isSelected = fav.id === selectedId;
+            const varName = fav.token.startsWith('$') ? fav.token.slice(1) : fav.token;
+            const lineNum = fav.pos !== undefined ? script.slice(0, fav.pos).split('\n').length : null;
+            const displayValue = fav.type === 'var'
+              ? `${fav.token} = ${runtimeVars[varName] ?? '?'}${lineNum !== null ? '  L' + lineNum : ''}`
+              : lineNum !== null
+                ? `${fav.token}  L${lineNum}`
+                : fav.token;
+            return (
+              <div
+                key={fav.id}
+                className={`ssq-fav-row${isExpanded ? ' ssq-fav-row--expanded' : ''}${isSelected ? ' ssq-fav-row--selected' : ''}`}
+                style={{ height: isExpanded ? undefined : fav.rowHeight ? fav.rowHeight + 'px' : undefined }}
+                onClick={() => {
+                  setSelectedId((prev) => (prev === fav.id ? null : fav.id));
+                  panelRef.current?.focus();
+                }}
+              >
+                <span className={`ssq-fav-type-icon ssq-fav-type--${fav.type}`}>
+                  {fav.type === 'var' ? 'x' : fav.type === 'note' ? '♪' : '#'}
+                </span>
+                <span className="ssq-fav-value">{displayValue}</span>
+                <button className="ssq-btn ssq-fav-step" title="Increase" onClick={(e) => { e.stopPropagation(); onStep(fav, 1); }}>▲</button>
+                <button className="ssq-btn ssq-fav-step" title="Decrease" onClick={(e) => { e.stopPropagation(); onStep(fav, -1); }}>▼</button>
+                <button className="ssq-btn" title="Toggle size" onClick={(e) => { e.stopPropagation(); onToggleHeight(fav.id); }} style={{ fontSize: 10 }}>
+                  {isExpanded ? '⊟' : '⊞'}
+                </button>
+                <button className="ssq-btn ssq-del" title="Remove from favorites" onClick={(e) => { e.stopPropagation(); onRemove(fav.id); }}>✕</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+});
+
+
 const ScriptSequencerFlowNode: React.FC<ScriptSequencerFlowNodeProps> = ({
   id,
   data
@@ -497,7 +847,11 @@ const ScriptSequencerFlowNode: React.FC<ScriptSequencerFlowNodeProps> = ({
       ? data.outputCount
       : DEFAULT_OUTPUT_COUNT
   );
-  const [showOutputs, setShowOutputs] = useState<boolean>(true);
+  const [showOutputs, setShowOutputs] = useState<boolean>(data.showOutputs ?? false);
+  const [showHighlight, setShowHighlight] = useState<boolean>(false);
+  const [favorites, setFavorites] = useState<FavoriteItem[]>(data.favorites ?? []);
+  const [showFavorites, setShowFavorites] = useState<boolean>(data.showFavorites ?? true);
+  const [runtimeVars, setRuntimeVars] = useState<Record<string, any>>(data.vars ?? {});
   const [showHelp, setShowHelp] = useState<boolean>(false);
 
   const lines = useMemo(() => script.split('\n'), [script]);
@@ -511,16 +865,35 @@ const ScriptSequencerFlowNode: React.FC<ScriptSequencerFlowNodeProps> = ({
   const outputsKey = String(effectiveCount);
   const suppressOnChange = useRef(false);
   const cmRef = useRef<ReactCodeMirrorRef>(null);
+  // Set to true when the virtual-node handler already pushed CM effects so
+  // the activeLine useEffect below can skip its redundant dispatch.
+  const cmUpdatedFromHandlerRef = useRef(false);
 
-  // Subscribe to virtual-node updates (active line, tick interval)
+  // Subscribe to virtual-node updates (active line, tick interval, vars, exec lines)
   useEffect(() => {
     const ch = 'FlowNode.' + nodeId + '.params.updateParams';
     const handler = (p: any) => {
       if (p?.nodeid !== nodeId) return;
       const d = p?.data || p;
-      if (typeof d?.activeLine === 'number') setActiveLine(d.activeLine);
-      if (typeof d?.tickIntervalMs === 'number')
-        setTickIntervalMs(d.tickIntervalMs);
+      if (typeof d?.activeLine === 'number') {
+        setActiveLine(d.activeLine);
+        // Push running-line + exec highlights together so exec: lines stay
+        // green until the *next* tick rather than flashing for 600 ms.
+        const view = cmRef.current?.view;
+        if (view) {
+          cmUpdatedFromHandlerRef.current = true;
+          const execLines: number[] = Array.isArray(d?.execLines) ? d.execLines : [];
+          view.dispatch({
+            effects: [
+              setRunningLineEffect.of(d.activeLine),
+              flashExecLinesEffect.of(execLines)
+            ]
+          });
+        }
+      }
+      if (typeof d?.tickIntervalMs === 'number') setTickIntervalMs(d.tickIntervalMs);
+      if (d?.vars && typeof d.vars === 'object')
+        setRuntimeVars((prev) => ({ ...prev, ...d.vars }));
     };
     eventBus.subscribe(ch, handler);
     return () => eventBus.unsubscribe(ch, handler);
@@ -532,11 +905,24 @@ const ScriptSequencerFlowNode: React.FC<ScriptSequencerFlowNodeProps> = ({
   }, [outputsKey, nodeId, updateNodeInternals]);
 
   // Push the running-line highlight into the CodeMirror view whenever
-  // the virtual node advances the cursor.
+  // the cursor changes. When a tick arrived from the virtual node the
+  // handler already dispatched both effects together; skip here to avoid
+  // clearing exec highlights that were just set.  For manual jumps
+  // (jumpToLine, reset) the ref is false, so we dispatch running line
+  // and clear any stale exec highlights.
   useEffect(() => {
+    if (cmUpdatedFromHandlerRef.current) {
+      cmUpdatedFromHandlerRef.current = false;
+      return;
+    }
     const view = cmRef.current?.view;
     if (!view) return;
-    view.dispatch({ effects: setRunningLineEffect.of(activeLine) });
+    view.dispatch({
+      effects: [
+        setRunningLineEffect.of(activeLine),
+        flashExecLinesEffect.of([]) // clear stale exec highlights on manual navigation
+      ]
+    });
   }, [activeLine]);
 
   // Validate script and push errors into CodeMirror
@@ -547,6 +933,18 @@ const ScriptSequencerFlowNode: React.FC<ScriptSequencerFlowNodeProps> = ({
     view.dispatch({ effects: setErrorsEffect.of(scriptErrors) });
   }, [scriptErrors]);
 
+  // Update inline token highlight marks whenever showHighlight, script, or favorites change
+  useEffect(() => {
+    const view = cmRef.current?.view;
+    if (!view) return;
+    if (!showHighlight) {
+      view.dispatch({ effects: setHighlightTokensEffect.of([]) });
+      return;
+    }
+    const favSet = new Set<number>(favorites.map((f) => f.pos).filter((p): p is number => p !== undefined));
+    view.dispatch({ effects: setHighlightTokensEffect.of(findAllTokenPositions(script, favSet)) });
+  }, [showHighlight, script, favorites]);
+
   // Persist + push to virtual node
   useEffect(() => {
     if (suppressOnChange.current) {
@@ -554,7 +952,7 @@ const ScriptSequencerFlowNode: React.FC<ScriptSequencerFlowNodeProps> = ({
       return;
     }
     if (data.onChange instanceof Function) {
-      data.onChange({ ...data, script, activeLine, outputCount });
+      data.onChange({ ...data, script, activeLine, outputCount, showOutputs, showFavorites, favorites });
     }
     eventBus.emit(nodeId + '.params.updateParams', {
       nodeid: nodeId,
@@ -564,7 +962,70 @@ const ScriptSequencerFlowNode: React.FC<ScriptSequencerFlowNodeProps> = ({
         from: 'ScriptSequencerFlowNode'
       }
     });
-  }, [script, outputCount]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [script, outputCount, showOutputs, showFavorites, favorites]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ---- favorites management -----------------------------------------------
+
+  const toggleFavorite = useCallback((token: string, type: 'var' | 'number' | 'note', pos: number) => {
+    setFavorites((prev) => {
+      const exists = prev.find((f) => f.pos === pos);
+      if (exists) return prev.filter((f) => f.pos !== pos);
+      return [...prev, { id: token + '@' + pos + '-' + Date.now(), token, type, pos }];
+    });
+  }, []);
+
+  // Keep the WeakMap entry up to date so ssqTokenClickPlugin can call back into React
+  useEffect(() => {
+    const view = cmRef.current?.view;
+    if (view) _tokenClickHandlerMap.set(view, toggleFavorite);
+  }, [toggleFavorite]);
+
+  const stepFavorite = useCallback((fav: FavoriteItem, dir: number) => {
+    if (fav.type === 'note' || fav.type === 'number') {
+      const newToken = fav.type === 'note'
+        ? stepNote(fav.token, dir)
+        : stepNumToken(fav.token, dir);
+      if (newToken === fav.token) return;
+      if (fav.pos !== undefined) {
+        // Positional: replace only this occurrence, then shift positions of
+        // all other positional favorites that sit after this one.
+        const delta = newToken.length - fav.token.length;
+        setScript((prev) => prev.slice(0, fav.pos!) + newToken + prev.slice(fav.pos! + fav.token.length));
+        setFavorites((prev) => prev.map((f) => {
+          if (f.id === fav.id) return { ...f, token: newToken };
+          if (f.pos !== undefined && f.pos > fav.pos!) return { ...f, pos: f.pos + delta };
+          return f;
+        }));
+      } else {
+        // Legacy global path (backward compat with old saved data without pos)
+        setScript((prev) => replaceTokenInScript(prev, fav.token, newToken, fav.type));
+        setFavorites((prev) => prev.map((f) => f.token === fav.token ? { ...f, token: newToken } : f));
+      }
+    } else if (fav.type === 'var') {
+      const varName = fav.token.startsWith('$') ? fav.token.slice(1) : fav.token;
+      setRuntimeVars((prev) => {
+        const cur = Number(prev[varName] ?? 0);
+        const newVal = (isNaN(cur) ? 0 : cur) + dir;
+        const updated = { ...prev, [varName]: newVal };
+        eventBus.emit(nodeId + '.params.updateParams', {
+          nodeid: nodeId,
+          data: { vars: { [varName]: newVal }, from: 'ScriptSequencerFlowNode.favorites' }
+        });
+        return updated;
+      });
+    }
+  }, [nodeId, eventBus]);
+
+  const removeFavorite = useCallback((id: string) => {
+    setFavorites((prev) => prev.filter((f) => f.id !== id));
+  }, []);
+
+  const toggleFavoriteHeight = useCallback((id: string) => {
+    setFavorites((prev) => prev.map((f) => f.id === id
+      ? { ...f, rowHeight: (f.rowHeight ?? 36) > 36 ? 36 : 64 }
+      : f
+    ));
+  }, []);
 
   // ---- script editing helpers ---------------------------------------------
 
@@ -754,6 +1215,13 @@ const ScriptSequencerFlowNode: React.FC<ScriptSequencerFlowNodeProps> = ({
           ▶
         </button>
         <button
+          className={`ssq-btn ssq-highlight-btn${showHighlight ? ' ssq-highlight-btn--active' : ''}`}
+          title="Show all tokens (variables, numbers, notes) — click any to add to Favorites"
+          onClick={(e) => { e.stopPropagation(); setShowHighlight((s) => !s); }}
+        >
+          ◈
+        </button>
+        <button
           className="ssq-help-btn"
           title="How to write the script (open documentation)"
           onClick={(e) => {
@@ -767,6 +1235,20 @@ const ScriptSequencerFlowNode: React.FC<ScriptSequencerFlowNodeProps> = ({
 
       {showHelp && (
         <ScriptSequencerHelpModal onClose={() => setShowHelp(false)} />
+      )}
+
+      {/* ---- Favorites panel ----------------------------------------- */}
+      {favorites.length > 0 && (
+        <FavoritesPanel
+          favorites={favorites}
+          runtimeVars={runtimeVars}
+          script={script}
+          showFavorites={showFavorites}
+          onToggleShow={() => setShowFavorites((s) => !s)}
+          onStep={stepFavorite}
+          onRemove={removeFavorite}
+          onToggleHeight={toggleFavoriteHeight}
+        />
       )}
 
       {/* ---- Outputs panel -------------------------------------------- */}
@@ -869,6 +1351,9 @@ const ScriptSequencerFlowNode: React.FC<ScriptSequencerFlowNodeProps> = ({
             StreamLanguage.define(ssqStreamParser),
             ssqActiveLineField,
             ssqErrorField,
+            ssqExecFlashField,
+            ssqHighlightMarksField,
+            ssqTokenClickPlugin,
             ssqRunningLineTheme,
             ssqKeymap,
             EditorView.lineWrapping
@@ -877,6 +1362,8 @@ const ScriptSequencerFlowNode: React.FC<ScriptSequencerFlowNodeProps> = ({
             // Initial highlight + error pass
             view.dispatch({ effects: setRunningLineEffect.of(activeLine) });
             view.dispatch({ effects: setErrorsEffect.of(validateScript(script)) });
+            // Register click handler
+            _tokenClickHandlerMap.set(view, toggleFavorite);
           }}
           onChange={(value) => setScript(value)}
         />
