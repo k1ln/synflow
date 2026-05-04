@@ -32,12 +32,16 @@ export class VirtualOscillatorNode extends VirtualNode<CustomNode & OscillatorFl
             const value = payload.data[key];
             switch (key) {
                 case "pulseWidth":
-                    data.pulseWidth = value;
-                    shouldRerender = true;
+                    if (data.pulseWidth !== value) {
+                        data.pulseWidth = value;
+                        shouldRerender = true;
+                    }
                     break;
                 case "periodicWaveHarmonics":
-                    data.periodicWaveHarmonics = value;
-                    shouldRerender = true;
+                    if (data.periodicWaveHarmonics !== value) {
+                        data.periodicWaveHarmonics = value;
+                        shouldRerender = true;
+                    }
                     break;
                 default:
                     super.handleUpdateParams(node, { data: { [key]: value } });
@@ -49,7 +53,8 @@ export class VirtualOscillatorNode extends VirtualNode<CustomNode & OscillatorFl
                 data.frequency || 440,
                 data.type || "sine",
                 data.pulseWidth,
-                data.periodicWaveHarmonics
+                data.periodicWaveHarmonics,
+                data.detune  // preserve detune when re-creating the oscillator node
             );
         }
     }
@@ -93,7 +98,7 @@ export class VirtualOscillatorNode extends VirtualNode<CustomNode & OscillatorFl
         this.audioNode = this.audioContext!.createOscillator() as ExtendedOscillatorNode;
         this.audioNode.frequency.value = frequency || 440;
         this.audioNode.detune.value = detune ||  0;
-
+        console.log("create oscillator with params", { frequency, type, pulseWidth, periodicWaveHarmonics, detune });
         // Apply periodic wave for custom type, otherwise use built-in waveform
         if (type === "custom" && this.audioContext) {
             const pw = pulseWidth ?? 0.5;

@@ -15,7 +15,7 @@ export type OscillatorFlowNodeProps = {
     frequencyType: FrequencyType;
     midiNode: string;
     knobValue: number;
-    knobDetuneValue: number;
+    knobDetuneValue?: number;
     id:string;
     flowId?: string; // optional identifier for the overall flow/patch
     freqMidiMapping?: MidiMapping | null;
@@ -84,7 +84,6 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
   };
   
   const [knobValue, setKnobValue] = useState(calculateInitialKnobValue());
-  const [knobDetuneValue, setKnobDetuneValue] = useState(data.knobDetuneValue || 0);
   const [oscFrequencyType, setOscFrequencyType] = useState<FrequencyType>(data.frequencyType);
   const [midiNode, setMidiNode] = useState<string>(data.midiNode);
   const [style, setStyle] = useState<React.CSSProperties>(data.style);
@@ -142,10 +141,7 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
     return result;
   }
 
-  function knobToFrequencyDetune(knobValue: number) {
-    const knobFrequency = knobValue/knobMax * (frequency * 0.1);
-    return knobFrequency;
-  }
+
 
 
   useEffect(() => {
@@ -207,11 +203,6 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
     setFrequency(f);
   }
 
-  function changeDetuneValue(value: number) {
-    setKnobDetuneValue(value);
-    setDetune(knobToFrequencyDetune(value));
-  }
-
   function beforeSetOscFrequencyType(value: FrequencyType) {
     setOscFrequencyType(value);
     if (value == "midi") {
@@ -226,10 +217,11 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
     }
   }
 
-  // When knob range changes (e.g., switching to LFO), update existing MIDI mappings so scaling stays correct
+  // When frequency knob range changes, update freq MIDI mapping.
+  // Detune is always fixed at ±100 cents (1 semitone either side).
   useEffect(() => {
     setFreqMidiMapping(m => m ? { ...m, min: knobMin, max: knobMax } : m);
-    setDetuneMidiMapping(m => m ? { ...m, min: knobMax * -1, max: knobMax } : m);
+    setDetuneMidiMapping(m => m ? { ...m, min: -100, max: 100 } : m);
   }, [knobMin, knobMax]);
 
   if (data.style === undefined) {
@@ -310,13 +302,13 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span>Detune</span>
           <MidiKnob
-            min={knobMax * -1}
-            max={knobMax}
-            value={knobDetuneValue}
-            onChange={(v)=> changeDetuneValue(v)}
+            min={-100}
+            max={100}
+            value={detune}
+            onChange={(v) => setDetune(v)}
             midiMapping={detuneMidiMapping}
             onMidiLearnChange={setDetuneMidiMapping}
-            label="Detune"
+            label="Detune (ct)"
             persistKey={`osc:${data.flowId || 'default'}:${data.id}:detune`}
           />
           <input

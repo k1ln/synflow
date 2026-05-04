@@ -205,15 +205,18 @@ const FlowEventFreqShifterFlowNode: React.FC<
           Semitones
         </span>
         <input
-          type="number"
-          step="0.001"
-          value={shift}
-          onChange={(e) => {
+          type="text"
+          defaultValue={shift}
+          key={shift}
+          onBlur={(e) => {
             const val = parseFloat(e.target.value);
             if (!isNaN(val)) {
               setShift(Math.max(-96, Math.min(96, val)));
+            } else {
+              e.target.value = String(shift);
             }
           }}
+          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
           style={{
             width: 65,
             background: "#222",

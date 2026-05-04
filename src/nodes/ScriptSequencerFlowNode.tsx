@@ -46,6 +46,9 @@ export interface ScriptSequencerFlowNodeData {
    *  references a higher index via `#N`. Each handle (`out-N`) accepts
    *  any action — send / on / off / pulse / ramp / array. */
   outputCount?: number;
+  /** How many value-input handles to render on the left (in-0, in-1, …).
+   *  Their live values are stored in $in0, $in1, … for use in the script. */
+  inputCount?: number;
   showOutputs?: boolean;
   showFavorites?: boolean;
   favorites?: FavoriteItem[];
@@ -847,6 +850,11 @@ const ScriptSequencerFlowNode: React.FC<ScriptSequencerFlowNodeProps> = ({
       ? data.outputCount
       : DEFAULT_OUTPUT_COUNT
   );
+  const [inputCount, setInputCount] = useState<number>(
+    typeof data.inputCount === 'number' && data.inputCount > 0
+      ? data.inputCount
+      : 0
+  );
   const [showOutputs, setShowOutputs] = useState<boolean>(data.showOutputs ?? false);
   const [showHighlight, setShowHighlight] = useState<boolean>(false);
   const [favorites, setFavorites] = useState<FavoriteItem[]>(data.favorites ?? []);
@@ -862,7 +870,7 @@ const ScriptSequencerFlowNode: React.FC<ScriptSequencerFlowNodeProps> = ({
     return Math.max(outputCount, referenced + 1);
   }, [outputCount, script]);
 
-  const outputsKey = String(effectiveCount);
+  const outputsKey = effectiveCount + '-' + inputCount;
   const suppressOnChange = useRef(false);
   const cmRef = useRef<ReactCodeMirrorRef>(null);
   // Set to true when the virtual-node handler already pushed CM effects so
@@ -952,17 +960,18 @@ const ScriptSequencerFlowNode: React.FC<ScriptSequencerFlowNodeProps> = ({
       return;
     }
     if (data.onChange instanceof Function) {
-      data.onChange({ ...data, script, activeLine, outputCount, showOutputs, showFavorites, favorites });
+      data.onChange({ ...data, script, activeLine, outputCount, inputCount, showOutputs, showFavorites, favorites });
     }
     eventBus.emit(nodeId + '.params.updateParams', {
       nodeid: nodeId,
       data: {
         script,
         outputCount,
+        inputCount,
         from: 'ScriptSequencerFlowNode'
       }
     });
-  }, [script, outputCount, showOutputs, showFavorites, favorites]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [script, outputCount, inputCount, showOutputs, showFavorites, favorites]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- favorites management -----------------------------------------------
 
@@ -1164,6 +1173,17 @@ const ScriptSequencerFlowNode: React.FC<ScriptSequencerFlowNodeProps> = ({
         title="Reset cursor to line 1"
         style={{ top: 50, width: 10, height: 10, background: '#f80' }}
       />
+      {/* Value inputs — in-0, in-1, … → accessible as $in0, $in1, … */}
+      {Array.from({ length: inputCount }).map((_, i) => (
+        <Handle
+          key={'in-' + i}
+          type="target"
+          position={Position.Left}
+          id={'in-' + i}
+          title={`$in${i} — connects to $in${i} in the script`}
+          style={{ top: 74 + i * 24, width: 10, height: 10, background: '#c7a' }}
+        />
+      ))}
 
       <div className="ssq-header">
         <span style={{ fontWeight: 600, letterSpacing: 1 }}>
@@ -1250,6 +1270,45 @@ const ScriptSequencerFlowNode: React.FC<ScriptSequencerFlowNodeProps> = ({
           onToggleHeight={toggleFavoriteHeight}
         />
       )}
+
+      {/* ---- Inputs panel -------------------------------------------- */}
+      <div className="ssq-outputs">
+        <div className="ssq-outputs-head">
+          <span style={{ color: '#c7a', marginRight: 4 }}>↙</span>
+          <span>Value Inputs ({inputCount})</span>
+          <button
+            className="ssq-btn"
+            title="Add value input"
+            onClick={(e) => { e.stopPropagation(); setInputCount((c) => c + 1); }}
+            style={{ marginLeft: 'auto' }}
+          >+</button>
+          {inputCount > 0 && (
+            <button
+              className="ssq-btn"
+              title="Remove value input"
+              onClick={(e) => { e.stopPropagation(); setInputCount((c) => Math.max(0, c - 1)); }}
+            >−</button>
+          )}
+        </div>
+        {inputCount > 0 && (
+          <div className="ssq-outputs-list">
+            {Array.from({ length: inputCount }).map((_, i) => {
+              const val = runtimeVars['in' + i];
+              return (
+                <div key={i} className="ssq-out-row">
+                  <span className="ssq-dot" style={{ background: '#c7a' }} />
+                  <code style={{ fontSize: 11 }}>${'in' + i}</code>
+                  {val !== undefined && (
+                    <span style={{ marginLeft: 'auto', fontSize: 11, color: '#9c9' }}>
+                      {typeof val === 'number' ? val.toFixed(3) : String(val)}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* ---- Outputs panel -------------------------------------------- */}
       <div className="ssq-outputs">
@@ -1505,6 +1564,14 @@ const ScriptSequencerHelpModal: React.FC<{ onClose: () => void }> = ({
             <li>
               <code>reset</code> — moves the cursor back to line 1, cancels
               any pending ramps/arrays.
+            </li>
+            <li>
+              <code>in-0</code>, <code>in-1</code>, … — value inputs (add
+              via the <b>Value Inputs</b> panel). Each incoming value is
+              stored in <code>$in0</code>, <code>$in1</code>, … and is
+              available in any expression, e.g.{' '}
+              <code>send #0 $in0 * 2</code> or{' '}
+              <code>pulse #1 [$in0,$in1] 80ms 1t</code>.
             </li>
           </ul>
 

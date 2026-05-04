@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Save, Upload, Download, LogIn, LogOut, User, FolderOpen, Share2, RefreshCw, Plus, Settings, HardDriveDownload, Database, FilePlus, FileInput, FileOutput, Play, Square, MoreHorizontal, Mic, Music, BookOpen, Github } from 'lucide-react';
+import { Save, Upload, Download, LogIn, LogOut, User, FolderOpen, Share2, RefreshCw, Plus, Settings, HardDriveDownload, Database, FilePlus, FileInput, FileOutput, Play, Square, MoreHorizontal, Mic, Music, BookOpen, Github, Youtube, HelpCircle, Shield } from 'lucide-react';
 
 export interface TopBarProps {
   // Left cluster (sidebar-related)
@@ -347,9 +347,30 @@ export const TopBar: React.FC<TopBarProps> = ({
             </IconBtn>
           )}
 
-          {onOpenImpressum && <IconBtn title="Impressum" onClick={onOpenImpressum}><Download size={18} /></IconBtn>}
-          {onOpenDatenschutz && <IconBtn title="Datenschutz" onClick={onOpenDatenschutz}><Database size={18} /></IconBtn>}
+          {onOpenImpressum && <IconBtn title="Impressum" onClick={onOpenImpressum}><HelpCircle size={18} /></IconBtn>}
+          {onOpenDatenschutz && <IconBtn title="Datenschutz" onClick={onOpenDatenschutz}><Shield size={18} /></IconBtn>}
 
+          <a
+            href="https://www.youtube.com/@synflow-org"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="View on YouTube"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 32,
+              height: 32,
+              borderRadius: 6,
+              background: '#1f1f1f',
+              color: '#eee',
+              border: '1px solid #333',
+              cursor: 'pointer',
+              marginLeft: 4,
+            }}
+          >
+            <Youtube size={18} />
+          </a>
           <a
             href="https://github.com/k1ln/synflow"
             target="_blank"

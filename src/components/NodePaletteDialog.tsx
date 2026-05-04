@@ -8,117 +8,180 @@ export interface NodePaletteDialogProps {
   onSelect: (type: string) => void;
 }
 
-// Derive a simple display name by splitting camel-case and trimming suffixes
 function humanize(type: string){
-  // Special case for FlowNode which is just "FlowNode" without prefix
   if (type === 'FlowNode') return 'Flow';
   return type.replace(/FlowNode$/,'').replace(/Node$/,'').replace(/([A-Z])/g,' $1').trim();
 }
 
-const dialogStyle: React.CSSProperties = {
-  background:'#1d1d1f',
-  color:'#eee',
-  borderRadius:12,
-  padding:'20px 22px 26px',
-  position:'fixed',
-  top:'50%',
-  left:'50%',
-  transform:'translate(-50%, -50%)',
-  width:'min(900px, 90vw)',
-  maxHeight:'80vh',
-  display:'flex',
-  flexDirection:'column',
-  boxShadow:'0 8px 32px -4px rgba(0,0,0,0.6)',
-  border:'1px solid #333'
+// ── Category definitions (mirroring the presentation layout) ──────────────
+
+const AUDIO_SOURCES = ['OscillatorFlowNode','AudioWorkletOscillatorFlowNode','NoiseFlowNode','SampleFlowNode','MicFlowNode','AudioWorkletFlowNode'];
+const AUDIO_DESTINATIONS = ['MasterOutFlowNode','RecordingFlowNode','OscilloscopeFlowNode','AnalyzerNodeGPT'];
+const AUDIO_TRANSFORMING = ['GainFlowNode','BiquadFilterFlowNode','IIRFilterFlowNode','DelayFlowNode','ReverbFlowNode','DistortionFlowNode','DynamicCompressorFlowNode','EqualizerFlowNode','VocoderFlowNode','AudioSignalFreqShifterFlowNode'];
+const EVENT_NODES = ['ADSRFlowNode','AutomationFlowNode','ClockFlowNode','MidiKnobFlowNode','FrequencyFlowNode','ConstantFlowNode','EventFlowNode','FlowEventFreqShifterFlowNode'];
+const MIDI_SEQ = ['MidiFlowNote','MidiButtonFlowNode','MidiFileFlowNode','SequencerFlowNode','SequencerFrequencyFlowNode','ArpeggiatorFlowNode','OrchestratorFlowNode','ScriptSequencerFlowNode'];
+const LOGIC = ['FunctionFlowNode','SwitchFlowNode','BlockingSwitchFlowNode','SpeedDividerFlowNode','FlowNode','InputNode','OutputNode','ButtonFlowNode','OnOffButtonFlowNode','MouseTriggerButton','LogFlowNode','WebRTCInputFlowNode','WebRTCOutputFlowNode'];
+
+const ALL_CATEGORIZED = new Set([...AUDIO_SOURCES,...AUDIO_DESTINATIONS,...AUDIO_TRANSFORMING,...EVENT_NODES,...MIDI_SEQ,...LOGIC]);
+
+// ── Shared styles ──────────────────────────────────────────────────────────
+
+const pillStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'flex-start',
+  padding: '4px 8px',
+  background: 'transparent',
+  border: '1px solid #2e2e38',
+  borderRadius: 5,
+  cursor: 'pointer',
+  fontSize: 12,
+  color: '#e2e8f0',
+  textAlign: 'left',
+  width: '100%',
+  transition: 'background .12s, border-color .12s',
 };
+
+function NodePill({ nodeKey, onSelect }: { nodeKey: string; onSelect: (k: string) => void }) {
+  return (
+    <button
+      style={pillStyle}
+      onClick={() => onSelect(nodeKey)}
+      onMouseEnter={e => { e.currentTarget.style.background = '#2a2a35'; e.currentTarget.style.borderColor = '#4a4a58'; }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#2e2e38'; }}
+    >
+      {humanize(nodeKey)}
+    </button>
+  );
+}
+
+function SubSection({ title, color, keys, nodeTypes, onSelect, filter }: {
+  title: string; color: string; keys: string[];
+  nodeTypes: Record<string, React.FC<any>>; onSelect: (k: string) => void;
+  filter?: Set<string>;
+}) {
+  const present = keys.filter(k => k in nodeTypes && (!filter || filter.has(k)));
+  if (present.length === 0) return null;
+  return (
+    <div style={{ flex: '1 1 0', minWidth: 0 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color, marginBottom: 5, paddingBottom: 3, borderBottom: `1px solid ${color}44` }}>
+        {title}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {present.map(k => <NodePill key={k} nodeKey={k} onSelect={onSelect} />)}
+      </div>
+    </div>
+  );
+}
+
+function CategoryBlock({ icon, title, color, keys, nodeTypes, onSelect, filter }: {
+  icon: string; title: string; color: string; keys: string[];
+  nodeTypes: Record<string, React.FC<any>>; onSelect: (k: string) => void;
+  filter?: Set<string>;
+}) {
+  const present = keys.filter(k => k in nodeTypes && (!filter || filter.has(k)));
+  if (present.length === 0) return null;
+  return (
+    <div style={{ background: '#141417', border: `1px solid ${color}33`, borderRadius: 8, padding: '10px 10px 10px' }}>
+      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+        <span style={{ fontSize: 12 }}>{icon}</span>{title}
+        <span style={{ marginLeft: 'auto', opacity: .4, fontWeight: 400, fontSize: 10 }}>{present.length}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {present.map(k => <NodePill key={k} nodeKey={k} onSelect={onSelect} />)}
+      </div>
+    </div>
+  );
+}
+
+// ── Dialog ─────────────────────────────────────────────────────────────────
 
 const NodePaletteDialog: React.FC<NodePaletteDialogProps> = ({ open, onOpenChange, nodeTypes, onSelect }) => {
   const [query, setQuery] = useState('');
-  const [sortAsc, setSortAsc] = useState(true);
 
-  const rows = useMemo(() => Object.keys(nodeTypes).map(k => ({ key:k, name:humanize(k) })), [nodeTypes]);
+  const allKeys = useMemo(() => Object.keys(nodeTypes), [nodeTypes]);
 
-  const filtered = useMemo(() => {
-    const q = query.toLowerCase();
-    return rows.filter(r => r.key.toLowerCase().includes(q) || r.name.toLowerCase().includes(q))
-      .sort((a,b)=> sortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
-  }, [rows, query, sortAsc]);
-
-  const handleSelect = useCallback((type:string)=>{
+  const handleSelect = useCallback((type: string) => {
     onSelect(type);
     onOpenChange(false);
   }, [onSelect, onOpenChange]);
 
+  const filterSet = useMemo(() => {
+    if (!query.trim()) return undefined;
+    const q = query.toLowerCase();
+    return new Set(allKeys.filter(k => k.toLowerCase().includes(q) || humanize(k).toLowerCase().includes(q)));
+  }, [allKeys, query]);
+
+  const uncategorized = useMemo(() =>
+    allKeys.filter(k => !ALL_CATEGORIZED.has(k)).sort((a,b) => humanize(a).localeCompare(humanize(b))),
+    [allKeys]
+  );
+
+  const noResults = filterSet && filterSet.size === 0;
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', backdropFilter:'blur(2px)', zIndex:1000 }} />
-        <Dialog.Content style={{ ...dialogStyle, zIndex:1001 }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
-            <Dialog.Title style={{ fontSize:18, fontWeight:600 }}>Add Node</Dialog.Title>
-            <button onClick={()=> onOpenChange(false)} style={{ background:'transparent', color:'#aaa', border:'none', fontSize:18, cursor:'pointer' }} aria-label='Close'>×</button>
+        <Dialog.Overlay style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', backdropFilter:'blur(2px)', zIndex:1000 }} />
+        <Dialog.Content style={{
+          position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)',
+          width:'min(1020px, 94vw)', maxHeight:'88vh',
+          background:'#111114', color:'#e2e8f0',
+          borderRadius:12, border:'1px solid #2a2a35',
+          boxShadow:'0 12px 40px rgba(0,0,0,0.7)',
+          display:'flex', flexDirection:'column',
+          padding:'18px 20px 20px',
+          zIndex:1001,
+        }}>
+          {/* Header */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+            <Dialog.Title style={{ fontSize:16, fontWeight:700, color:'#f1f5f9', letterSpacing:'0.04em' }}>ADD NODE</Dialog.Title>
+            <button onClick={() => onOpenChange(false)} style={{ background:'transparent', color:'#666', border:'none', fontSize:20, cursor:'pointer', lineHeight:1 }} aria-label='Close'>×</button>
           </div>
-          <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginBottom:12 }}>
-            <input
-              autoFocus
-              placeholder='Search nodes...'
-              value={query}
-              onChange={e=> setQuery(e.target.value)}
-              style={{ flex:'1 1 240px', background:'#111', color:'#eee', border:'1px solid #333', padding:'6px 10px', borderRadius:6 }}
-            />
-            <button onClick={()=> setSortAsc(s=> !s)} style={{ padding:'6px 10px', background:'#222', color:'#ccc', border:'1px solid #333', borderRadius:6, cursor:'pointer' }}>
-              Sort {sortAsc ? '▲' : '▼'}
-            </button>
-            <div style={{ fontSize:12, opacity:.6, alignSelf:'center' }}>{filtered.length} / {rows.length}</div>
-          </div>
-          <div style={{ overflow:'auto', flex:1, border:'1px solid #2a2a2d', borderRadius:8, padding:12, background:'#18181a' }}>
-            {filtered.length === 0 && (
-              <div style={{ padding:'14px', textAlign:'center', opacity:.6 }}>No matches</div>
+
+          {/* Search */}
+          <input
+            autoFocus
+            placeholder='Search nodes…'
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            style={{ background:'#1a1a20', color:'#e2e8f0', border:'1px solid #333', borderRadius:6, padding:'6px 10px', fontSize:13, marginBottom:14, outline:'none' }}
+          />
+
+          {/* Content */}
+          <div style={{ overflow:'auto', flex:1 }}>
+            {noResults ? (
+              <div style={{ padding:16, textAlign:'center', opacity:.5 }}>No matches</div>
+            ) : (
+              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+
+                {/* ── Audio super-group ── */}
+                <div style={{ background:'#16161a', border:'1px solid #4ade8033', borderRadius:10, padding:'10px 12px 12px' }}>
+                  <div style={{ fontSize:13, fontWeight:800, letterSpacing:'0.08em', textTransform:'uppercase', color:'#4ade80', marginBottom:10 }}>~ Audio Nodes</div>
+                  <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+                    <SubSection title="↑ Audio Sources"      color="#4ade80" keys={AUDIO_SOURCES}      nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
+                    <SubSection title="↓ Audio Destinations" color="#f87171" keys={AUDIO_DESTINATIONS} nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
+                    <SubSection title="↔ Audio Transforming" color="#60a5fa" keys={AUDIO_TRANSFORMING} nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
+                  </div>
+                </div>
+
+                {/* ── Bottom row: Event / MIDI / Logic ── */}
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:10 }}>
+                  <CategoryBlock icon="⚡" title="Event Nodes" color="#facc15" keys={EVENT_NODES} nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
+                  <CategoryBlock icon="♩"  title="MIDI & Seq"  color="#c084fc" keys={MIDI_SEQ}    nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
+                  <CategoryBlock icon="><" title="Logic"       color="#94a3b8" keys={LOGIC}        nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
+                </div>
+
+                {/* ── Other (fallback for future nodes) ── */}
+                {uncategorized.length > 0 && (
+                  <CategoryBlock icon="·" title="Other" color="#6b7280" keys={uncategorized} nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
+                )}
+
+              </div>
             )}
-            <div
-              style={{
-                display:'grid',
-                gridTemplateColumns:'repeat(auto-fill, minmax(110px, 1fr))',
-                gap:10,
-                alignContent:'start'
-              }}
-            >
-              {filtered.map(r => (
-                <button
-                  key={r.key}
-                  onClick={()=> handleSelect(r.key)}
-                  onKeyDown={e=> { if(e.key==='Enter') { e.preventDefault(); handleSelect(r.key);} }}
-                  style={{
-                    position:'relative',
-                    display:'flex',
-                    flexDirection:'column',
-                    justifyContent:'center',
-                    alignItems:'center',
-                    textAlign:'center',
-                    gap:4,
-                    padding:'4px 4px 5px',
-                    minHeight:40,
-                    background:'linear-gradient(135deg,#242428,#1b1b1e)',
-                    border:'1px solid #2e2e32',
-                    borderRadius:10,
-                    cursor:'pointer',
-                    fontSize:12,
-                    color:'#e6e6e6',
-                    boxShadow:'0 2px 4px rgba(0,0,0,0.4)',
-                    transition:'background .15s,border-color .15s,transform .15s'
-                  }}
-                  onMouseEnter={e=> { e.currentTarget.style.background='#303035'; e.currentTarget.style.borderColor='#3d3d42'; }}
-                  onMouseLeave={e=> { e.currentTarget.style.background='linear-gradient(135deg,#242428,#1b1b1e)'; e.currentTarget.style.borderColor='#2e2e32'; }}
-                >
-                  <div style={{ fontWeight:600, lineHeight:1.15, fontSize:14, overflowWrap:'anywhere', wordBreak:'break-word', whiteSpace:'normal' }}>{r.name}</div>
-                </button>
-              ))}
-            </div>
           </div>
-          <div style={{ marginTop:14, display:'flex', justifyContent:'space-between', fontSize:11, opacity:.6 }}>
-            <div>Enter / Click to add. Esc to close.</div>
-            <div>{'Total: ' + rows.length}</div>
-          </div>
+
+          <div style={{ marginTop:10, fontSize:10, opacity:.4 }}>Click to add · Esc to close</div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

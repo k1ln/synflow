@@ -196,16 +196,18 @@ const AudioSignalFreqShifterFlowNode: React.FC<
           Semitones
         </span>
         <input
-          type="number"
-          value={shift}
-          onChange={(e) => {
+          type="text"
+          defaultValue={shift}
+          key={shift}
+          onBlur={(e) => {
             const val = parseInt(e.target.value, 10);
             if (!isNaN(val)) {
-              setShift(
-                Math.max(-96, Math.min(96, val))
-              );
+              setShift(Math.max(-96, Math.min(96, val)));
+            } else {
+              e.target.value = String(shift);
             }
           }}
+          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
           style={{
             width: 45,
             background: "#222",
