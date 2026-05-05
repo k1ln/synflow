@@ -422,7 +422,7 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
           title="Gain (mod)"
           style={{ top: 'auto', bottom: 8, width: 10, height: 10, background: '#fff' }}
         />
-
+ 
         {/* Frequency Input with MIDI-learnable knob */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span>Freq.</span>
