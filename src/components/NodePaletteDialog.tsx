@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+﻿import React, { useState, useMemo, useCallback } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 
 export interface NodePaletteDialogProps {

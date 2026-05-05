@@ -317,6 +317,7 @@ const AutomationFlowNode: React.FC<AutomationFlowNodeProps> = ({ data }) => {
           </div>
           <MidiKnob 
             style={{ display: 'inline-block' }} 
+            accentColor="#facc15"
             min={lengthUnit === 'ms' ? 0 : 0.05} 
             max={lengthUnit === 'ms' ? 2000 : 30} 
             value={lengthUnit === 'ms' ? lengthSec * 1000 : lengthSec} 

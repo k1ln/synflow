@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Knob } from 'react-rotary-knob-react19';
 import MidiManager from './MidiManager';
 
@@ -21,6 +21,8 @@ export interface MidiKnobProps {
   midiSensitivity?: number;
   /** If provided, mapping will be persisted across reloads under this key. */
   persistKey?: string;
+  /** Accent color for the knob border and indicator. Defaults to #4ade80. */
+  accentColor?: string;
 }
 
 export interface MidiMapping {
@@ -40,7 +42,32 @@ function useDebounced<T>(value: T, delay: number) { const [v, setV] = useState(v
 
 const STORAGE_PREFIX = 'midiMap:';
 
-const MidiKnob: React.FC<MidiKnobProps> = ({ value, min, max, detent, onChange, midiMapping, onMidiLearnChange, style, disabled, midiSmoothing = 0.25, midiSensitivity = 2, persistKey }) => {
+function makeKnobSkin(accentColor: string) {
+  return {
+    knobX: 71,
+    knobY: 71,
+    updateAttributes: [],
+    svg: `<svg width="204px" height="204px" viewBox="0 0 204 204" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <defs>
+        <circle id="path-2" cx="98.0400009" cy="98.0400009" r="88.0400009"></circle>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="s13" transform="translate(4.000000, 4.000000)">
+            <g id="container">
+                <use stroke="${accentColor}" stroke-width="7" fill="transparent" fill-rule="evenodd" xlink:href="#path-2"></use>
+                <g id="knob" transform="translate(27.431373, 27.431373)">
+                    <circle fill="transparent" cx="71" cy="71" r="62"></circle>
+                    <line x1="71" y1="46" x2="71" y2="-15" stroke="${accentColor}" stroke-width="11" stroke-linecap="round"></line>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>`
+  };
+}
+
+const MidiKnob: React.FC<MidiKnobProps> = ({ value, min, max, detent, onChange, midiMapping, onMidiLearnChange, style, disabled, midiSmoothing = 0.25, midiSensitivity = 2, persistKey, accentColor = '#4ade80' }) => {
+  const knobSkin = React.useMemo(() => makeKnobSkin(accentColor), [accentColor]);
   const [isLearning, setIsLearning] = useState(false);
   // Track last received MIDI channel (0-based internally). Shows real arrival channel even if mapping fixed.
   const [internalMapping, setInternalMapping] = useState<MidiMapping | null>(midiMapping || null);
@@ -198,6 +225,7 @@ const MidiKnob: React.FC<MidiKnobProps> = ({ value, min, max, detent, onChange, 
           value={displayValue}
           onChange={knobChange}
           disabled={disabled}
+          skin={knobSkin}
         />
         {detent !== undefined && (
           <div style={{ position: 'absolute', top: 0, left: 0 }} />

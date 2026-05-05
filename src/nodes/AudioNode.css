@@ -55,3 +55,48 @@
     width: 10px;
     height: 10px;
   }
+
+/* ── Transparent inputs with category accent color (scoped to flow nodes) ── */
+.react-flow__node input[type="text"],
+.react-flow__node input[type="number"],
+.react-flow__node select,
+.react-flow__node button {
+  background: transparent !important;
+  color: #eeeeee !important;
+  border: 1px solid color-mix(in srgb, var(--node-accent, #555555) 50%, transparent) !important;
+  border-radius: 4px;
+}
+.react-flow__node input[type="text"]:focus,
+.react-flow__node input[type="number"]:focus,
+.react-flow__node select:focus,
+.react-flow__node button:focus {
+  outline: none !important;
+  border-color: var(--node-accent, #aaaaaa) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--node-accent, #555555) 40%, transparent) !important;
+}
+.react-flow__node button:hover {
+  background: color-mix(in srgb, var(--node-accent, #555555) 15%, transparent) !important;
+  border-color: var(--node-accent, #aaaaaa) !important;
+}
+.react-flow__node button:active {
+  background: color-mix(in srgb, var(--node-accent, #555555) 30%, transparent) !important;
+}
+.react-flow__node select option {
+  background: #1a1a1a;
+  color: #eeeeee;
+}
+
+/* ── CodeMirror editor semi-transparent background ──────────────────────── */
+.cm-editor,
+.cm-scroller {
+  background: rgba(10, 10, 18, 0.45) !important;
+  backdrop-filter: blur(2px);
+  text-align: left !important;
+}
+.cm-content {
+  text-align: left !important;
+}
+.cm-gutters {
+  background: rgba(10, 10, 18, 0.55) !important;
+  border-right: 1px solid color-mix(in srgb, var(--node-accent, #555555) 30%, transparent) !important;
+}

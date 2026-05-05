@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+﻿import React, { useEffect, useRef, useState } from "react";
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
 import "./AudioNode.css";
@@ -257,6 +257,7 @@ const DistortionFlowNode: React.FC<DistortionFlowNodeProps> = ({ data }) => {
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span style={{ fontSize: 9, marginBottom: 2 }}>Drive</span>
           <MidiKnob
+            accentColor="#60a5fa"
             min={DRIVE_KNOB_MIN}
             max={DRIVE_KNOB_MAX}
             value={driveKnob}

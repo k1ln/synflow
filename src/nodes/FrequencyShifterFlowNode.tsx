@@ -212,6 +212,7 @@ const FrequencyShifterFlowNode: React.FC<
         }}
       >
         <MidiKnob
+          accentColor="#6b7280"
           min={-24}
           max={24}
           value={shift}

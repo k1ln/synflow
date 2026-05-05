@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
 import "./AudioNode.css";
@@ -95,6 +95,7 @@ const ReverbFlowNode: React.FC<ReverbFlowNodeProps> = ({ data }) => {
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
         <MidiKnob
+          accentColor="#60a5fa"
           min={0}
           max={1}
           value={secondsKnob}
@@ -133,6 +134,7 @@ const ReverbFlowNode: React.FC<ReverbFlowNodeProps> = ({ data }) => {
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, marginTop: 6 }}>
         <MidiKnob
+          accentColor="#60a5fa"
           min={0}
           max={1}
           value={decayKnob}

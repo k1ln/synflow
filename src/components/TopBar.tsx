@@ -57,8 +57,8 @@ const IconBtn: React.FC<{ title: string; onClick?: () => void; disabled?: boolea
       className={`topbar-btn${playing ? ' playing' : ''}`}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        width: 32, height: 32, borderRadius: 6, background: bgColor || '#1f1f1f', color: '#eee',
-        border: '1px solid #333', cursor: disabled ? 'not-allowed' : 'pointer'
+        width: 32, height: 32, borderRadius: 6, background: 'transparent', color: '#eee',
+        border: 'none', cursor: disabled ? 'not-allowed' : 'pointer'
       }}
     >{children}</button>
   );
@@ -125,7 +125,7 @@ export const TopBar: React.FC<TopBarProps> = ({
     };
   }, [ioMenuOpen]);
   return (
-    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: '#0e0e0e', borderBottom: '1px solid #222', zIndex: 1100 }}>
+    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: 'transparent', borderBottom: 'none', zIndex: 1100 }}>
       <div style={{ height: 44, display: 'flex', alignItems: 'center', padding: '0 10px', gap: 8 }}>
         {/* Left cluster: direct flow actions & sidebar toggles */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -141,12 +141,12 @@ export const TopBar: React.FC<TopBarProps> = ({
               <span style={{
                 padding: '2px 10px',
                 borderRadius: 14,
-                background: currentItemType === 'component' ? '#1d2435' : '#152a1d',
-                border: '1px solid ' + (currentItemType === 'component' ? '#2f3b55' : '#244d35'),
+                background: 'transparent',
+                border: 'none',
                 fontWeight: 500,
                 fontSize: 11,
                 letterSpacing: .5,
-                color: '#eee'
+                color: currentItemType === 'component' ? '#7a9fd4' : '#5daa7a'
               }}>{currentItemType === 'component' ? 'Component' : 'Flow'}</span>
               {!editingName && (
                 <span
@@ -204,9 +204,9 @@ export const TopBar: React.FC<TopBarProps> = ({
                 fontSize: 11,
                 opacity: .9,
                 padding: '2px 8px',
-                border: '1px solid #333',
+                border: 'none',
                 borderRadius: 999,
-                background: '#162333',
+                background: 'transparent',
                 color: '#8fd0ff',
                 whiteSpace: 'nowrap'
               }}
@@ -269,7 +269,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               <div className="topbar-spinner" />
             </div>
           )}
-          {statusLabel && <div style={{ fontSize: 11, opacity: .8, padding: '2px 8px', border: '1px solid #333', borderRadius: 999, background: '#1a1a1a' }}>{statusLabel}</div>}
+          {statusLabel && <div style={{ fontSize: 11, opacity: .8, padding: '2px 8px', border: 'none', borderRadius: 999, background: 'transparent' }}>{statusLabel}</div>}
 
           <Divider />
 
@@ -294,12 +294,10 @@ export const TopBar: React.FC<TopBarProps> = ({
                   padding: '0 10px',
                   cursor: 'pointer',
                   userSelect: 'none',
-                  background: '#1f1f1f',
-                  border: '1px solid #2a3139',
+                  background: 'transparent',
+                  border: 'none',
                   borderRadius: 6,
-                  boxShadow:
-                    '0 1px 3px rgba(0,0,0,0.45), ' +
-                    '0 0 8px 2px rgba(0,255,136,0.08)',
+                  boxShadow: 'none',
                   fontSize: 12,
                   fontWeight: 500,
                   color: '#eee',
@@ -329,8 +327,8 @@ export const TopBar: React.FC<TopBarProps> = ({
               style={{
                 display:'flex', alignItems:'center', justifyContent:'center', gap:6,
                 height: 32, padding:'0 12px', cursor:'pointer', userSelect:'none',
-                background:'#221f1f', border:'1px solid #553131', borderRadius:6,
-                boxShadow:'0 1px 4px rgba(0,0,0,0.55), 0 0 10px 2px rgba(255,64,0,0.15)',
+                background:'transparent', border:'none', borderRadius:6,
+                boxShadow:'none',
                 fontSize:12, fontWeight:500, color:'#ffb38a'
               }}
             >
@@ -362,9 +360,9 @@ export const TopBar: React.FC<TopBarProps> = ({
               width: 32,
               height: 32,
               borderRadius: 6,
-              background: '#1f1f1f',
+              background: 'transparent',
               color: '#eee',
-              border: '1px solid #333',
+              border: 'none',
               cursor: 'pointer',
               marginLeft: 4,
             }}
@@ -383,9 +381,9 @@ export const TopBar: React.FC<TopBarProps> = ({
               width: 32,
               height: 32,
               borderRadius: 6,
-              background: '#1f1f1f',
+              background: 'transparent',
               color: '#eee',
-              border: '1px solid #333',
+              border: 'none',
               cursor: 'pointer',
               marginLeft: 4,
             }}

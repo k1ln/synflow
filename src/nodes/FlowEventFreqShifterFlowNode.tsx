@@ -185,6 +185,7 @@ const FlowEventFreqShifterFlowNode: React.FC<
         }}
       >
         <MidiKnob
+          accentColor="#facc15"
           min={-96}
           max={96}
           step={0.001}

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import { Handle, Position } from "@xyflow/react";
 import EventBus from "../sys/EventBus";
@@ -436,6 +436,7 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
             midiSensitivity={0.5}
             onMidiLearnChange={setFreqMidiMapping}
             label="Freq"
+            accentColor="#4ade80"
             persistKey={`osc:${data.flowId || 'default'}:${data.id}:freq`}
           />
           <input
@@ -474,6 +475,7 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
             midiMapping={detuneMidiMapping}
             onMidiLearnChange={setDetuneMidiMapping}
             label="Detune (ct)"
+            accentColor="#4ade80"
             persistKey={`osc:${data.flowId || 'default'}:${data.id}:detune`}
           />
           <input
@@ -519,6 +521,7 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
           midiMapping={gainMidiMapping}
           onMidiLearnChange={setGainMidiMapping}
           label="Gain"
+          accentColor="#4ade80"
           persistKey={`osc:${data.flowId || 'default'}:${data.id}:gain`}
         />
         <input
@@ -581,6 +584,7 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
                 midiMapping={null}
                 onMidiLearnChange={() => {}}
                 label="PW"
+                accentColor="#4ade80"
                 persistKey={`osc:${data.flowId || 'default'}:${data.id}:pw`}
               />
               <span style={{ fontSize: 9, color: '#aaa' }}>{Math.round(pulseWidth * 100)}%</span>

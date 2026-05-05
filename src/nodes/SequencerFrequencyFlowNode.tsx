@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { Knob } from "react-rotary-knob-react19";
 import EventBus from '../sys/EventBus';
@@ -948,6 +948,7 @@ const SequencerFrequencyFlowNode: React.FC<SequencerFrequencyFlowNodeProps> = ({
               </span>
               <MidiKnob
                 style={{ display: 'inline-block' }}
+                accentColor="#c084fc"
                 min={knobMin}
                 max={knobMax}
                 value={knobValues[selectedRow]?.[selectedStep] || 69}

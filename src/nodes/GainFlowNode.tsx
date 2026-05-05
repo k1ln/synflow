@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from "react";
+﻿import React, { useState,useEffect } from "react";
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
 import "./AudioNode.css";
@@ -222,6 +222,7 @@ const GainFlowNode: React.FC<GainFlowNodeProps> = ({ data }) => {
       {/* Gain Input with MIDI-learnable knob */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         <MidiKnob
+          accentColor="#60a5fa"
           min={0}
           max={1}
           value={gainKnob}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
 import "./AudioNode.css";
@@ -175,6 +175,7 @@ const AudioSignalFreqShifterFlowNode: React.FC<
         }}
       >
         <MidiKnob
+          accentColor="#60a5fa"
           min={-96}
           max={96}
           value={shift}

@@ -4,6 +4,7 @@ import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 import EventBus from "../sys/EventBus";
+import "./AudioNode.css";
 
 export type FunctionNodeProps = {
   data: {
@@ -13,6 +14,7 @@ export type FunctionNodeProps = {
     numInputs?: number;
     numOutputs?: number;
     inputDefaults?: string[];
+    style?: React.CSSProperties;
     onChange: (data: any) => void;
   };
 };
@@ -51,9 +53,9 @@ const FunctionFlowNode: React.FC<FunctionNodeProps> = ({ data }) => {
   };
   const inputStyle: React.CSSProperties = {
     width: 40,
-    background: "#222",
+    background: "transparent",
     color: "#eee",
-    border: "1px solid #444",
+    border: "1px solid color-mix(in srgb, var(--node-accent, #555) 50%, transparent)",
     borderRadius: 4,
     padding: "2px 6px",
     fontSize: 11,
@@ -268,7 +270,7 @@ const FunctionFlowNode: React.FC<FunctionNodeProps> = ({ data }) => {
   };
 
   return (
-    <div style={nodeStyle}>
+    <div style={{ ...nodeStyle, ...(data.style || {}) }}>
       {/* Input Handles */}
       <Handle
         type="target"
