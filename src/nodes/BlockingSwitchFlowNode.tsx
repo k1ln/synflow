@@ -60,8 +60,9 @@ const BlockingSwitchFlowNode: React.FC<BlockingSwitchFlowNodeProps> = ({ data })
             color: "#eee",
             position: "relative",
             fontFamily: "Arial, sans-serif",
+            ...(data.style || {}),
         }),
-        [nodeHeight]
+        [nodeHeight, data.style]
     );
     const handleStyle = useMemo(
         () => ({

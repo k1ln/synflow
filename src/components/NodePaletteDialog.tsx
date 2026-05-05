@@ -22,6 +22,18 @@ const EVENT_NODES = ['ADSRFlowNode','AutomationFlowNode','ClockFlowNode','MidiKn
 const MIDI_SEQ = ['MidiFlowNote','MidiButtonFlowNode','MidiFileFlowNode','SequencerFlowNode','SequencerFrequencyFlowNode','ArpeggiatorFlowNode','OrchestratorFlowNode','ScriptSequencerFlowNode'];
 const LOGIC = ['FunctionFlowNode','SwitchFlowNode','BlockingSwitchFlowNode','SpeedDividerFlowNode','FlowNode','InputNode','OutputNode','ButtonFlowNode','OnOffButtonFlowNode','MouseTriggerButton','LogFlowNode','WebRTCInputFlowNode','WebRTCOutputFlowNode'];
 
+/** Category accent colors — used both in the palette dialog and on node tops. */
+export const NODE_CATEGORY_COLORS: Record<string, string> = {};
+const _CATS: [string[], string][] = [
+  [AUDIO_SOURCES,      '#4ade80'], // green  — generators
+  [AUDIO_DESTINATIONS, '#f87171'], // red    — outputs
+  [AUDIO_TRANSFORMING, '#60a5fa'], // blue   — FX
+  [EVENT_NODES,        '#facc15'], // yellow — events/envelopes
+  [MIDI_SEQ,           '#c084fc'], // purple — MIDI/sequencer
+  [LOGIC,              '#94a3b8'], // slate  — logic/utility
+];
+for (const [keys, color] of _CATS) for (const k of keys) NODE_CATEGORY_COLORS[k] = color;
+
 const ALL_CATEGORIZED = new Set([...AUDIO_SOURCES,...AUDIO_DESTINATIONS,...AUDIO_TRANSFORMING,...EVENT_NODES,...MIDI_SEQ,...LOGIC]);
 
 // ── Shared styles ──────────────────────────────────────────────────────────
@@ -135,14 +147,14 @@ const NodePaletteDialog: React.FC<NodePaletteDialogProps> = ({ open, onOpenChang
         }}>
           {/* Header */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-            <Dialog.Title style={{ fontSize:16, fontWeight:700, color:'#f1f5f9', letterSpacing:'0.04em' }}>ADD NODE</Dialog.Title>
+            <Dialog.Title style={{ fontSize:16, fontWeight:700, color:'#f1f5f9', letterSpacing:'0.04em' }}>ADD MODULE</Dialog.Title>
             <button onClick={() => onOpenChange(false)} style={{ background:'transparent', color:'#666', border:'none', fontSize:20, cursor:'pointer', lineHeight:1 }} aria-label='Close'>×</button>
           </div>
 
           {/* Search */}
           <input
             autoFocus
-            placeholder='Search nodes…'
+            placeholder='Search modules…'
             value={query}
             onChange={e => setQuery(e.target.value)}
             style={{ background:'#1a1a20', color:'#e2e8f0', border:'1px solid #333', borderRadius:6, padding:'6px 10px', fontSize:13, marginBottom:14, outline:'none' }}
@@ -157,17 +169,17 @@ const NodePaletteDialog: React.FC<NodePaletteDialogProps> = ({ open, onOpenChang
 
                 {/* ── Audio super-group ── */}
                 <div style={{ background:'#16161a', border:'1px solid #4ade8033', borderRadius:10, padding:'10px 12px 12px' }}>
-                  <div style={{ fontSize:13, fontWeight:800, letterSpacing:'0.08em', textTransform:'uppercase', color:'#4ade80', marginBottom:10 }}>~ Audio Nodes</div>
+                  <div style={{ fontSize:13, fontWeight:800, letterSpacing:'0.08em', textTransform:'uppercase', color:'#4ade80', marginBottom:10 }}>~ Modules</div>
                   <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-                    <SubSection title="↑ Audio Sources"      color="#4ade80" keys={AUDIO_SOURCES}      nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
-                    <SubSection title="↓ Audio Destinations" color="#f87171" keys={AUDIO_DESTINATIONS} nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
-                    <SubSection title="↔ Audio Transforming" color="#60a5fa" keys={AUDIO_TRANSFORMING} nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
+                    <SubSection title="↑ Sources"      color="#4ade80" keys={AUDIO_SOURCES}      nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
+                    <SubSection title="↓ Destinations" color="#f87171" keys={AUDIO_DESTINATIONS} nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
+                    <SubSection title="↔ FX" color="#60a5fa" keys={AUDIO_TRANSFORMING} nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
                   </div>
                 </div>
 
                 {/* ── Bottom row: Event / MIDI / Logic ── */}
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:10 }}>
-                  <CategoryBlock icon="⚡" title="Event Nodes" color="#facc15" keys={EVENT_NODES} nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
+                  <CategoryBlock icon="⚡" title="Event" color="#facc15" keys={EVENT_NODES} nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
                   <CategoryBlock icon="♩"  title="MIDI & Seq"  color="#c084fc" keys={MIDI_SEQ}    nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
                   <CategoryBlock icon="><" title="Logic"       color="#94a3b8" keys={LOGIC}        nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
                 </div>

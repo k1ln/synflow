@@ -134,7 +134,7 @@ const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
             value={label}
             onChange={(e)=> setLabel(e.target.value)}
             style={{ width: 50, background: '#222', color: '#eee', border: '1px solid #444', borderRadius: 4, padding: '1px 3px', fontSize: 10 }}
-            title="Node name (right-click to MIDI learn)"
+            title="Module name (right-click to MIDI learn)"
           />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>

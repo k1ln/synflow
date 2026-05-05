@@ -267,7 +267,7 @@ const AutomationFlowNode: React.FC<AutomationFlowNodeProps> = ({ data }) => {
               }
             }}
             style={{width:50, background:'#111', color:'#eee', border:'1px solid #333', fontSize:11, height:18, padding:'0 4px'}}
-            title="Adjust node width (arrows: ±1, shift+arrows: ±10)"
+            title="Adjust module width (arrows: ±1, shift+arrows: ±10)"
           />
         </div>
         {selectedPointIndex != null && selectedPointIndex !== 0 && selectedPointIndex !== points.length - 1 && (

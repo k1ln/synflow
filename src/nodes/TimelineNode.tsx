@@ -105,7 +105,7 @@ const TimelineNode: React.FC<TimelineNodeProps> = ({ data }) => {
 
   return (
     <div style={{ background: "#222", color: "#fff", padding: 16, borderRadius: 8, minWidth: 420 }}>
-      <h3>Timeline Node</h3>
+      <h3>Timeline Module</h3>
       <canvas
         ref={canvasRef}
         width={CANVAS_WIDTH}
