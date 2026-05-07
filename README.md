@@ -15,7 +15,7 @@
 </p>
 
 <p >
-  <img src="public/screenshot.png" alt="Synflow Screenshot" width="800" />
+  <img src="public/synflow_new_image.png" alt="Synflow Screenshot" width="800" />
 </p>
 
 Visit at https://synflow.org
