@@ -61,7 +61,7 @@
 .react-flow__node input[type="number"],
 .react-flow__node select,
 .react-flow__node button {
-  background: transparent !important;
+  background: transparent;
   color: #eeeeee !important;
   border: 1px solid color-mix(in srgb, var(--node-accent, #555555) 50%, transparent) !important;
   border-radius: 4px;
@@ -99,4 +99,30 @@
 .cm-gutters {
   background: rgba(10, 10, 18, 0.55) !important;
   border-right: 1px solid color-mix(in srgb, var(--node-accent, #555555) 30%, transparent) !important;
+}
+
+/* ── State-indicating buttons (red/green) — override transparent rule ───── */
+.node-state-btn-on {
+  background: #00c44f !important;
+  border-color: #00ff66 !important;
+  box-shadow: 0 0 10px 3px rgba(0,200,80,0.55) !important;
+  color: #fff !important;
+}
+.node-state-btn-off {
+  background: #c41a1a !important;
+  border-color: #ff3333 !important;
+  box-shadow: 0 0 10px 3px rgba(200,30,30,0.55) !important;
+  color: #fff !important;
+}
+.node-state-btn-stop {
+  background: #c41a1a !important;
+  border-color: #ff3333 !important;
+  box-shadow: 0 0 10px 3px rgba(200,30,30,0.55) !important;
+  color: #fff !important;
+}
+.node-state-btn-play {
+  background: #00c44f !important;
+  border-color: #00ff66 !important;
+  box-shadow: 0 0 10px 3px rgba(0,200,80,0.55) !important;
+  color: #fff !important;
 }
