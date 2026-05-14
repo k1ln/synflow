@@ -84,6 +84,7 @@ import { VocoderFlowNodeProps } from "../nodes/VocoderFlowNode";
 import VirtualMidiFileNode from "../virtualNodes/VirtualMidiFileNode";
 import { MidiFileFlowNodeProps } from "../nodes/MidiFileFlowNode";
 import VirtualAudioWorkletOscillatorNode from "../virtualNodes/VirtualAudioWorkletOscillatorNode";
+import VirtualNoiseNode from "../virtualNodes/VirtualNoiseNode";
 import {
     loadRootHandle,
     loadFlowFromDisk,
@@ -1202,23 +1203,16 @@ export class AudioGraphManager {
                     await dynamicWorkletNode.createWorklet();
                     this.virtualNodes.set(node.id, dynamicWorkletNode);
                     break;
-                case "NoiseFlowNode":
-                    // Treat like a specialized audio worklet source (no input), ensure processorCode exists
-                    if (!(node.data as any).processorCode) {
-                        const noiseType = (node.data as any).noiseType || 'white';
-                        const gain = typeof (node.data as any).gain === 'number' ? (node.data as any).gain : 1;
-                        (node.data as any).processorCode = `class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {\n  constructor(){super();this._pinkState=new Float32Array(7);this._brown=0;this._grayLast=0;}\n  static get parameterDescriptors(){return[{name:'gain',defaultValue:${gain},minValue:0,maxValue:4,automationRate:'a-rate'}];}\n  process(inputs,outputs,parameters){const out=outputs[0];if(!out)return true;const gArr=parameters.gain;const gScalar=gArr.length===1?gArr[0]:null;for(let ch=0;ch<out.length;ch++){const buf=out[ch];for(let i=0;i<buf.length;i++){const g=gScalar!==null?gScalar:gArr[i];let sample=0;switch('${noiseType}') {case 'white': sample=(Math.random()*2-1);break;case 'pink':{let ps=this._pinkState;ps[0]=0.99886*ps[0]+Math.random()*0.0555179;ps[1]=0.99332*ps[1]+Math.random()*0.0750759;ps[2]=0.96900*ps[2]+Math.random()*0.1538520;ps[3]=0.86650*ps[3]+Math.random()*0.3104856;ps[4]=0.55000*ps[4]+Math.random()*0.5329522;ps[5]=-0.7616*ps[5]-Math.random()*0.0168980;sample=ps[0]+ps[1]+ps[2]+ps[3]+ps[4]+ps[5]+ps[6]+Math.random()*0.5362;ps[6]=Math.random()*0.115926;sample*=0.11;break;}case 'brown':{this._brown+=(Math.random()*2-1)*0.02;if(this._brown<-1)this._brown=-1;else if(this._brown>1)this._brown=1;sample=this._brown;break;}case 'blue':{const w1=(Math.random()*2-1);const w2=(Math.random()*2-1);sample=(w2-w1);break;}case 'violet':{const w1=(Math.random()*2-1);const w2=(Math.random()*2-1);const w3=(Math.random()*2-1);sample=(w3-2*w2+w1);break;}case 'gray':{const white=(Math.random()*2-1);this._grayLast=0.97*this._grayLast+0.03*white;sample=this._grayLast;break;}}buf[i]=sample*g*0.5;}}return true;}\n}`;
-                    }
-                    //ADDD TODO HERE NEXT TIME ADD NODEMAPS TO CONNECT TO NODES AGAIN AFTER RESETTING NODE.
-                    const noiseWorkletNode = new VirtualAudioWorkletNode(
+                case "NoiseFlowNode": {
+                    const noiseNode = new VirtualNoiseNode(
                         this.audioContext,
                         this.eventBus,
                         node as any,
-                        `noise-worklet-processor-${node.id}`
                     );
-                    await noiseWorkletNode.createWorklet();
-                    this.virtualNodes.set(node.id, noiseWorkletNode);
+                    await noiseNode.init();
+                    this.virtualNodes.set(node.id, noiseNode);
                     break;
+                }
                 case "ButtonFlowNode":
                     const virtualButtonNode = new VirtualButtonNode(
                         this.eventManager,

@@ -79,6 +79,13 @@ function prefix(name, text, c, isErr){
 console.log('Starting dev environment... (set RAW_LOGS=1 for unprefixed streams)');
 console.log(' Frontend:', frontendDir, 'port', FRONTEND_PORT);
 
+// WASM: build hard-sync-oscillator if source changed (MD5-checked)
+try {
+  require('./build-wasm.js');
+} catch(e) {
+  console.warn('\x1b[33m[WASM]\x1b[0m WASM build skipped:', e.message);
+}
+
 // Frontend: vite
 const frontend = run('frontend', 'npm', ['run','start','--','--port', FRONTEND_PORT, '--strictPort'], { cwd: frontendDir, env: {}, color:'green' });
 

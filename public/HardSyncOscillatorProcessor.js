@@ -1,5 +1,3 @@
-// Airbnb JS style guide followed
-
 class HardSyncOscillatorProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() {
     return [
@@ -9,126 +7,111 @@ class HardSyncOscillatorProcessor extends AudioWorkletProcessor {
     ];
   }
 
-  constructor() {
-    super();
+  constructor(options) {
+    super(options);
     this.phase = 0;
     this.lastSync = 0;
-    // We maintain an internal buffer to compute mono output once per block
-    this.internalBuffer = new Float32Array(128); 
     this.oscType = 'sine';
+    this.oscTypeIndex = 0;
     this.customTable = null;
-    
+
+    const wasmModule = options?.processorOptions?.wasmModule;
+    if (wasmModule) {
+      const instance = new WebAssembly.Instance(wasmModule);
+      this.wasm = instance.exports;
+      this._allocWasmBuffers();
+    } else {
+      this.wasm = null;
+    }
+
     this.port.onmessage = (e) => {
-      if (e.data.type === 'settype') {
+      if (e.data.type === 'settype' || e.data.type === 'setType') {
         this.oscType = e.data.value;
+        this.oscTypeIndex = this._oscTypeIndex();
       }
-      if (e.data.type === 'setcustomtable') {
+      if (e.data.type === 'setcustomtable' || e.data.type === 'setCustomTable') {
         this.customTable = e.data.value;
+        this._syncCustomTable();
       }
     };
   }
 
-  sine(phase) {
-    return Math.sin(2 * Math.PI * phase);
+  _allocWasmBuffers() {
+    const w = this.wasm;
+    this.pFreq   = w.alloc_f32(128);
+    this.pDetune = w.alloc_f32(128);
+    this.pSync   = w.alloc_f32(128);
+    this.pFm     = w.alloc_f32(128);
+    this.pCustom = w.alloc_f32(1024);
+    this.pOut    = w.alloc_f32(128);
+    this.pState  = w.alloc_f32(2);
+    this._refreshMemView();
   }
 
-  // Note: These are still naive (aliasing) generators. 
-  // For production, use PolyBLEP or Wavetables.
-  square(phase) {
-    return phase < 0.5 ? 1 : -1;
+  _refreshMemView() {
+    this.wasmMem = new Float32Array(this.wasm.memory.buffer);
   }
 
-  sawtooth(phase) {
-    return 2 * (phase - Math.floor(phase + 0.5));
+  _syncCustomTable() {
+    if (!this.wasm || !this.customTable) return;
+    this._refreshMemView();
+    this.wasmMem.set(this.customTable.subarray(0, 1024), this.pCustom >> 2);
   }
 
-  triangle(phase) {
-    return 1 - 4 * Math.abs(Math.round(phase - 0.25) - (phase - 0.25));
-  }
-
-  custom(phase) {
-    if (!this.customTable) return 0;
-    const idx = Math.floor(phase * 1024) % 1024;
-    return this.customTable[idx] || 0;
+  _oscTypeIndex() {
+    switch (this.oscType) {
+      case 'square':   return 1;
+      case 'sawtooth': return 2;
+      case 'triangle': return 3;
+      case 'custom':   return 4;
+      default:         return 0;
+    }
   }
 
   process(inputs, outputs, parameters) {
-    const output = outputs[0];
-    const fmIn = inputs[0]; // FM modulation input
-    const syncIn = inputs[1]; // Hard Sync input
-    
-    // Parameter typed arrays
-    const freq = parameters.frequency;
-    const detune = parameters.detune;
+    const output      = outputs[0];
+    if (!output || !this.wasm) return true;
 
-    // Use the first channel of sync/FM or null
+    if (this.wasmMem.buffer !== this.wasm.memory.buffer) this._refreshMemView();
+
+    const fmIn        = inputs[0];
+    const syncIn      = inputs[1];
+    const freq        = parameters.frequency;
+    const detune      = parameters.detune;
     const syncChannel = syncIn && syncIn.length > 0 ? syncIn[0] : null;
-    const fmChannel = fmIn && fmIn.length > 0 ? fmIn[0] : null;
-    
-    let { phase, lastSync } = this;
-    const blockSize = output[0].length; // Typically 128
+    const fmChannel   = fmIn  && fmIn.length  > 0 ? fmIn[0]  : null;
+    const blockSize   = output[0].length;
+    const m           = this.wasmMem;
 
-    // 1. Generate the Mono Block
-    for (let i = 0; i < blockSize; i += 1) {
-      const currentSync = syncChannel ? syncChannel[i] : 0;
-      
-      // Calculate Phase Increment (Frequency)
-      const currentFreq = (freq.length > 1 ? freq[i] : freq[0]);
-      const currentDetune = (detune.length > 1 ? detune[i] : detune[0]);
-      const baseFreq = currentFreq * (2 ** (currentDetune / 1200));
-      const fmValue = fmChannel ? fmChannel[i] || 0 : 0;
-      const finalFreq = baseFreq + fmValue;
-      const phaseInc = finalFreq / sampleRate;
+    if (freq.length > 1) { m.set(freq, this.pFreq >> 2); } else { m[this.pFreq >> 2] = freq[0]; }
+    if (detune.length > 1) { m.set(detune, this.pDetune >> 2); } else { m[this.pDetune >> 2] = detune[0]; }
 
-      // HARD SYNC LOGIC (Subsample Accurate)
-      // Detect rising edge: was <= 0, now > 0
-      if (syncChannel && currentSync > 0 && lastSync <= 0) {
-        // Calculate the fraction of time 't' (0 to 1) where the crossing occurred
-        // Linear interpolation: 0 = lastSync, 1 = currentSync
-        // We want to find 'd' where value was 0.
-        // d = -lastSync / (currentSync - lastSync)
-        // Check divisor to avoid NaN if signal is flat 0 (though loop condition prevents this mostly)
-        const range = currentSync - lastSync;
-        const fraction = range !== 0 ? -lastSync / range : 0;
-        
-        // Reset phase. 
-        // Instead of 0, we set it to how much it WOULD have incremented 
-        // in the time remaining AFTER the zero crossing.
-        phase = phaseInc * (1 - fraction);
-      } else {
-        phase += phaseInc;
-      }
+    const hasSync = syncChannel ? (m.set(syncChannel, this.pSync >> 2), 1) : 0;
+    const hasFm   = fmChannel   ? (m.set(fmChannel,   this.pFm   >> 2), 1) : 0;
 
-      // Wrap phase
-      if (phase >= 1) phase -= 1;
-      if (phase < 0) phase += 1; // Handle negative frequencies if necessary
+    this.wasm.process_block(
+      this.phase,
+      this.lastSync,
+      sampleRate,
+      this.pFreq,   freq.length,
+      this.pDetune, detune.length,
+      this.pSync,   hasSync,
+      this.pFm,     hasFm,
+      blockSize,
+      this.oscTypeIndex,
+      this.pCustom,
+      this.pOut,
+      this.pState,
+    );
 
-      lastSync = currentSync;
+    const stOff = this.pState >> 2;
+    this.phase    = m[stOff];
+    this.lastSync = m[stOff + 1];
 
-      // Generate Sample
-      let sample = 0;
-      switch (this.oscType) {
-        case 'sine': sample = this.sine(phase); break;
-        case 'square': sample = this.square(phase); break;
-        case 'sawtooth': sample = this.sawtooth(phase); break;
-        case 'triangle': sample = this.triangle(phase); break;
-        case 'custom': sample = this.custom(phase); break;
-        default: sample = this.sine(phase);
-      }
-      
-      this.internalBuffer[i] = sample;
+    const outOff = this.pOut >> 2;
+    for (let ch = 0; ch < output.length; ch++) {
+      output[ch].set(m.subarray(outOff, outOff + blockSize));
     }
-
-    // 2. Write to all Output Channels
-    // We copy the generated mono block to all output channels (L/R)
-    for (let ch = 0; ch < output.length; ch += 1) {
-      output[ch].set(this.internalBuffer);
-    }
-
-    // 3. Persist State
-    this.phase = phase;
-    this.lastSync = lastSync;
-
     return true;
   }
 }

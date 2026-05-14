@@ -1099,6 +1099,7 @@ function Flow() {
 
     const name = flowNameInput.trim();
     localStorage.setItem('currentFlow', name);
+    localStorage.setItem('currentFlowFolder', currentFlowFolder);
     // Always assign a fresh updated_at so
     // "newest wins" sync logic is straightforward
     const updated_at = new Date().toISOString();
@@ -1196,6 +1197,7 @@ function Flow() {
     const name = saveDialogName.trim();
     if (!name) return;
     localStorage.setItem('currentFlow', name);
+    localStorage.setItem('currentFlowFolder', currentFlowFolder);
     const payloadNodes = strippEverythingButData(nodes);
     const payloadEdges = strippEverythingButData(edges);
     const updated_at = new Date().toISOString();
@@ -2143,6 +2145,7 @@ function Flow() {
     const dbKey = makeFlowDbKey(name, currentFlowFolder);
     db.put(dbKey, { nodes, edges, folder_path: currentFlowFolder });
     localStorage.setItem('currentFlow', name);
+    localStorage.setItem('currentFlowFolder', currentFlowFolder);
     setFlowNameInput(name);
     setFlowItems((prev) => prev.includes(name) ? prev : [...prev, name]);
   }
@@ -2538,7 +2541,10 @@ function Flow() {
               const newKey = makeFlowDbKey(flow.name, targetFolder);
               try { await db.delete(oldKey); } catch {}
               await db.put(newKey, { nodes: r.nodes || r.value?.nodes || [], edges: r.edges || r.value?.edges || [], folder_path: targetFolder, updated_at: r.updated_at });
-              if (flowNameInput === flow.name) { setCurrentFlowFolder(targetFolder); }
+              if (flowNameInput === flow.name) {
+                setCurrentFlowFolder(targetFolder);
+                localStorage.setItem('currentFlowFolder', targetFolder);
+              }
               const refreshed = await db.get('*');
               setLocalFlowMeta(refreshed.map((f: any) => ({ id: f.id, name: (f.id || '').split('/').pop() || f.id, folder_path: f.folder_path || f.value?.folder_path || '', updated_at: f.updated_at, _source: 'local' })));
               const folderSet = new Set<string>();
