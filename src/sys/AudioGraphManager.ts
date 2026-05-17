@@ -960,6 +960,9 @@ export class AudioGraphManager {
                     // Skip nodes whose IDs still carry a voice prefix from the old
                     // mutation bug — their IDs contain "FlowNode-N" segments.
                     if (/FlowNode-\d+/.test(targetNode.id)) continue;
+                    // Dedup: a node reachable via both unison-output and
+                    // detune-output must only be collected (and cloned) once.
+                    if (collected.some((c) => c.id === targetNode.id)) continue;
                     collected.push(targetNode);
                     this.collectUnisonNodes(targetNode.id, collected);
                 }
