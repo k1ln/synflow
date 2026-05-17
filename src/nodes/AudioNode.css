@@ -1,60 +1,75 @@
 .audio-node {
-    padding: 10px;
-    border-radius: 5px;
-    width: 200px;
-    background-color: #222;
-    font-family: Calibri, sans-serif;
+  padding: 10px;
+  border-radius: 5px;
+  width: 200px;
+  background-color: #222;
+  font-family: Calibri, sans-serif;
   color: inherit;
-    /* New: visible border and a subtle glow */
-    border: 1px solid #2a3139;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 0 8px 2px rgba(0, 255, 136, 0.08);
-  }
-  
-  .audio-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 10px;
-  }
-  
-  .audio-label-input {
-    width: 100%;
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 16px;
-    font-weight: bold;
-    font-family: Calibri, sans-serif;
+  /* New: visible border and a subtle glow */
+  border: 1px solid #2a3139;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 0 8px 2px rgba(0, 255, 136, 0.08);
+}
+
+.textInput {
+  width: 55px;
+  background: transparent;
+  color: #eee;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 1px 3px;
+  font-size: 10px;
+  text-align: center;
+  margin-bottom: 3px;
+}
+
+.audio-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.audio-label-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 16px;
+  font-weight: bold;
+  font-family: Calibri, sans-serif;
   color: inherit;
-  }
-  
-  .audio-input {
-    margin-bottom: 10px;
-    width:30%;
-    margin-left:2px;
-    background: transparent;
-    font-family: Calibri, sans-serif;
+}
+
+.audio-input {
+  margin-bottom: 10px;
+  width: 30%;
+  margin-left: 2px;
+  background: transparent;
+  font-family: Calibri, sans-serif;
   color: inherit;
-  }
-  
-  .oscillator-frequency label {
-    display: block;
-    font-size: 14px;
-    margin-bottom: 5px;
-    font-family: Calibri, sans-serif;
+}
+
+.oscillator-frequency label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 5px;
+  font-family: Calibri, sans-serif;
   color: inherit;
-  }
-  .marginLeft20 {
-    margin-left: 20px;
-  }
-  .mainOutput {
-    width: 10px;
-    height: 10px;
-  }
-  .mainInput {
-    width: 10px;
-    height: 10px;
-  }
+}
+
+.marginLeft20 {
+  margin-left: 20px;
+}
+
+.mainOutput {
+  width: 10px;
+  height: 10px;
+}
+
+.mainInput {
+  width: 10px;
+  height: 10px;
+}
 
 /* ── Transparent inputs with category accent color (scoped to flow nodes) ── */
 .react-flow__node input[type="text"],
@@ -66,6 +81,7 @@
   border: 1px solid color-mix(in srgb, var(--node-accent, #555555) 50%, transparent) !important;
   border-radius: 4px;
 }
+
 .react-flow__node input[type="text"]:focus,
 .react-flow__node input[type="number"]:focus,
 .react-flow__node select:focus,
@@ -74,13 +90,16 @@
   border-color: var(--node-accent, #aaaaaa) !important;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--node-accent, #555555) 40%, transparent) !important;
 }
+
 .react-flow__node button:hover {
   background: color-mix(in srgb, var(--node-accent, #555555) 15%, transparent) !important;
   border-color: var(--node-accent, #aaaaaa) !important;
 }
+
 .react-flow__node button:active {
   background: color-mix(in srgb, var(--node-accent, #555555) 30%, transparent) !important;
 }
+
 .react-flow__node select option {
   background: #1a1a1a;
   color: #eeeeee;
@@ -93,9 +112,11 @@
   backdrop-filter: blur(2px);
   text-align: left !important;
 }
+
 .cm-content {
   text-align: left !important;
 }
+
 .cm-gutters {
   background: rgba(10, 10, 18, 0.55) !important;
   border-right: 1px solid color-mix(in srgb, var(--node-accent, #555555) 30%, transparent) !important;
@@ -105,24 +126,27 @@
 .node-state-btn-on {
   background: #00c44f !important;
   border-color: #00ff66 !important;
-  box-shadow: 0 0 10px 3px rgba(0,200,80,0.55) !important;
+  box-shadow: 0 0 10px 3px rgba(0, 200, 80, 0.55) !important;
   color: #fff !important;
 }
+
 .node-state-btn-off {
   background: #c41a1a !important;
   border-color: #ff3333 !important;
-  box-shadow: 0 0 10px 3px rgba(200,30,30,0.55) !important;
+  box-shadow: 0 0 10px 3px rgba(200, 30, 30, 0.55) !important;
   color: #fff !important;
 }
+
 .node-state-btn-stop {
   background: #c41a1a !important;
   border-color: #ff3333 !important;
-  box-shadow: 0 0 10px 3px rgba(200,30,30,0.55) !important;
+  box-shadow: 0 0 10px 3px rgba(200, 30, 30, 0.55) !important;
   color: #fff !important;
 }
+
 .node-state-btn-play {
   background: #00c44f !important;
   border-color: #00ff66 !important;
-  box-shadow: 0 0 10px 3px rgba(0,200,80,0.55) !important;
+  box-shadow: 0 0 10px 3px rgba(0, 200, 80, 0.55) !important;
   color: #fff !important;
 }

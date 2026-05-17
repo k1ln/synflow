@@ -85,11 +85,14 @@ import VirtualMidiFileNode from "../virtualNodes/VirtualMidiFileNode";
 import { MidiFileFlowNodeProps } from "../nodes/MidiFileFlowNode";
 import VirtualAudioWorkletOscillatorNode from "../virtualNodes/VirtualAudioWorkletOscillatorNode";
 import VirtualNoiseNode from "../virtualNodes/VirtualNoiseNode";
+import VirtualUnisonBeginNode from "../virtualNodes/VirtualUnisonBeginNode";
+import VirtualUnisonEndNode from "../virtualNodes/VirtualUnisonEndNode";
 import {
     loadRootHandle,
     loadFlowFromDisk,
     makeFlowDbKey,
 } from "../util/FileSystemAudioStore";
+import { defaultServerMainFields } from "vite";
 
 
 export type DataBaseNode = {
@@ -364,6 +367,48 @@ export class AudioGraphManager {
 
         await this.createVirtualNodes(this.nodesRef.current, null);
         this.connectVirtualNodes(this.edgesRef.current);
+        this.debugDumpUnisonEndConnections();
+    }
+
+    /** Debug: print every tracked connection that targets a UnisonEnd node. */
+    public debugDumpUnisonEndConnections() {
+        const endIds: string[] = [];
+        this.virtualNodes.forEach((_v, id) => {
+            if (id.includes("UnisonEndFlowNode")) endIds.push(id);
+        });
+        console.log(
+            `%c=== UnisonEnd connection dump === (${endIds.length} UnisonEnd node(s))`,
+            "background:#a78bfa;color:#000;font-weight:bold;padding:2px 6px;"
+        );
+        const dump: any[] = [];
+        for (const endId of endIds) {
+            // Tracked virtual edges whose target is this UnisonEnd.
+            const incoming: Edge[] = [];
+            this.virtualEdges.forEach((edges) => {
+                edges.forEach((e) => {
+                    if (e.target === endId) incoming.push(e);
+                });
+            });
+            // Raw React-Flow edges (pre-remap) for cross-checking.
+            const rawIncoming = this.edgesRef.current.filter((e) => e.target === endId);
+            // The actual audio-graph connection map.
+            const mapSources = this.targetNodeMapConnectionTree.get(endId);
+
+            const entry = {
+                unisonEndId: endId,
+                rawEdges: rawIncoming.map((e) => `${e.source} [${e.sourceHandle}] -> [${e.targetHandle}]`),
+                trackedVirtualEdges: incoming.map((e) => `${e.source} [${e.sourceHandle}] -> [${e.targetHandle}]`),
+                audioGraphSourcesConnected: mapSources ? [...mapSources] : [],
+            };
+            dump.push(entry);
+            console.log(`%cUnisonEnd ${endId}`, "color:#a78bfa;font-weight:bold;", entry);
+        }
+        // Stash on window so it survives the React Flow console flood.
+        try { (window as any).__unisonDump = dump; } catch { /* noop */ }
+        console.log(
+            "%c>>> UnisonEnd dump stored. In console, run:  copy(window.__unisonDump)  then paste here. <<<",
+            "background:#a78bfa;color:#000;font-weight:bold;padding:2px 6px;"
+        );
     }
 
     private isAudioParamTargetHandle(
@@ -906,6 +951,23 @@ export class AudioGraphManager {
         });
     }
 
+    collectUnisonNodes(node: string, collected: CustomNode[] = []): CustomNode[] {
+        for (let i = 0; i < this.edgesRef.current.length; i++) {
+            if (this.edgesRef.current[i].source === node) {
+                const targetNode = this.nodesRef.current.find((n: any) => n.id === this.edgesRef.current[i].target);
+                if (targetNode) {
+                    if (targetNode.type === "UnisonEndFlowNode") break;
+                    // Skip nodes whose IDs still carry a voice prefix from the old
+                    // mutation bug — their IDs contain "FlowNode-N" segments.
+                    if (/FlowNode-\d+/.test(targetNode.id)) continue;
+                    collected.push(targetNode);
+                    this.collectUnisonNodes(targetNode.id, collected);
+                }
+            }
+        }
+        return collected;
+    }
+
     handleButtonUpdateParam(node: CustomNode, data: any, key: string) {
         if (key === "assignedKey") {
             (node as ButtonNodeProps).data.assignedKey = data.value;
@@ -1428,11 +1490,23 @@ export class AudioGraphManager {
                         edge.target = node.id + "." + edge.target;
                     }
                     this.connectVirtualNodes(edges);
+                    // Collect each inner OutputNode's GainNode so this FlowNode can expose audio outputs
+                    const outputAudioMap = new Map<number, GainNode>();
+                    for (const n of customNode.nodes) {
+                        if ((n as any).type === 'OutputNode') {
+                            const vOut = this.virtualNodes.get((n as any).id) as any;
+                            if (vOut?.audioNode instanceof GainNode) {
+                                outputAudioMap.set((n as any).data?.index ?? 0, vOut.audioNode as GainNode);
+                            }
+                        }
+                    }
                     const virtualFlowNode = new VirtualFlowNode(
                         this.eventBus,
                         node as CustomNode & FlowNodeProps,
                         this.handleConnectedEdgesFromOutput.bind(this),
                         customNode,
+                        undefined,
+                        outputAudioMap,
                     );
                     // Virtual Flow Node created
                     this.virtualNodes.set(node.id, virtualFlowNode);
@@ -1542,15 +1616,53 @@ export class AudioGraphManager {
                     await virtualWebSocket.render();
                     this.virtualNodes.set(node.id, virtualWebSocket as any);
                     break;
+                case "UnisonBeginFlowNode":
+                    const virtualUnisonBegin = new VirtualUnisonBeginNode(
+                        this.audioContext,
+                        this.eventBus,
+                        node as any,
+                        this.handleConnectedEdges.bind(this),
+                        (nodeId: string) => this.virtualEdges.get(nodeId)
+                    );
+
+                    const unisonNodes = this.collectUnisonNodes(node.id);
+                    // Snapshot original IDs before the loop — unisonNodes are references
+                    // to React state objects and must never be mutated.
+                    const unisonOriginalIds = unisonNodes.map(n => n.id);
+                    const unisonEdges = this.edgesRef.current.filter(e =>
+                        unisonOriginalIds.includes(e.source)
+                    );
+                    virtualUnisonBegin.setUnisonNodes(unisonNodes);
+                    for (let i = 0; i < node.data.numberOfVoices; i++) {
+                        for (let j = 0; j < unisonNodes.length; j++) {
+                            // Clone the node with the voice-specific ID; never mutate the original.
+                            const voiceNode = { ...unisonNodes[j], id:  unisonOriginalIds[j] + "-" + i };
+                            // Pass null as parent — ID is already fully constructed above.
+                            await this.addVirtualNode(voiceNode as any, null);
+                        }
+                        const voiceEdges = unisonEdges.map(e => ({
+                            ...e,
+                            source: e.source + "-" + i,
+                            target: unisonOriginalIds.includes(e.target) ? e.target + "-" + i : e.target,
+                        }));
+                        this.connectVirtualNodes(voiceEdges);
+                    }
+                    this.virtualNodes.set(node.id, virtualUnisonBegin as any);
+                    break;
+                case "UnisonEndFlowNode":
+                    const virtualUnisonEnd = new VirtualUnisonEndNode(
+                        this.audioContext,
+                        this.eventBus,
+                        node as any
+                    );
+                    this.virtualNodes.set(node.id, virtualUnisonEnd as any);
+                    break;
                 default:
                     console.warn(`Unsupported node type: ${node.type}`);
             }
         }
     }
-    /**
-     * Creates Web Audio nodes based on the provided nodes.
-     * @param nodes - Array of React Flow nodes.
-     */
+
     async createVirtualNodes(nodes: Node[], parentNode: CustomNode | null) {
         for (const node of nodes) {
             if (parentNode) {
@@ -1648,14 +1760,26 @@ export class AudioGraphManager {
         let sourceHandle = edge.sourceHandle as string | undefined;
         let targetHandle = edge.targetHandle as string | undefined;
 
-        const isCustom = (id: string | undefined) => !!id && id.split(".").includes("FlowNode");
-        const getNodeType = (id: string | undefined) => id ? id.split(".").slice(-1)[0] : undefined;
+        // A custom-node ID segment is "FlowNode" or a unison voice clone "FlowNode-<n>".
+        const FLOWNODE_SEG = /^FlowNode(-\d+)?$/;
+        const isCustom = (id: string | undefined) =>
+            !!id && id.split(".").some((s) => FLOWNODE_SEG.test(s));
+        const getNodeType = (id: string | undefined) => {
+            if (!id) return undefined;
+            const last = id.split(".").slice(-1)[0];
+            // Normalize a unison voice clone segment ("FlowNode-3") back to "FlowNode".
+            return FLOWNODE_SEG.test(last) ? "FlowNode" : last;
+        };
 
         // Helper: fetch internal definition for a custom node (nodes+edges) from DB cache already expanded in virtual graph
         const getInternalGraph = (customNodeId: string): { nodes: any[]; edges: Edge[] } | null => {
             const virtualCustom = this.virtualNodes.get(customNodeId) as any; // VirtualCustomNode
             if (!virtualCustom) return null;
-            const baseNode = this.nodesRef.current.find((n: any) => n.id === customNodeId);
+            // Voice clones ("...FlowNode-3") are not in React state — fall back to the
+            // original un-suffixed node, which shares the same sub-flow definition.
+            const baseNode =
+                this.nodesRef.current.find((n: any) => n.id === customNodeId) ||
+                this.nodesRef.current.find((n: any) => n.id === customNodeId.replace(/-\d+$/, ""));
             const selectedId = baseNode?.data?.selectedNode;
             if (!selectedId) return null;
             const internalNodes: any[] = [];
@@ -1683,7 +1807,7 @@ export class AudioGraphManager {
             if (isCustom(sourceId) && sourceHandle && sourceHandle.startsWith("output-")) {
                 const outputIndex = parseInt(sourceHandle.replace("output-", ""), 10);
                 const parts = sourceId.split(".");
-                const customIdx = parts.indexOf("FlowNode");
+                const customIdx = parts.findIndex((s) => FLOWNODE_SEG.test(s));
                 const customRootId = customIdx >= 0 ? parts.slice(0, customIdx + 1).join(".") : sourceId;
                 const graph = getInternalGraph(customRootId);
                 if (graph) {
@@ -1709,7 +1833,7 @@ export class AudioGraphManager {
             if (isCustom(targetId) && targetHandle && targetHandle.startsWith("input-")) {
                 const inputIndex = parseInt(targetHandle.replace("input-", ""), 10);
                 const parts = targetId.split(".");
-                const customIdx = parts.indexOf("FlowNode");
+                const customIdx = parts.findIndex((s) => FLOWNODE_SEG.test(s));
                 const customRootId = customIdx >= 0 ? parts.slice(0, customIdx + 1).join(".") : targetId;
                 const graph = getInternalGraph(customRootId);
                 if (graph) {
@@ -1726,7 +1850,8 @@ export class AudioGraphManager {
                                     outEdge.target,
                                     sourceHandle,
                                     outEdge.targetHandle,
-                                    edge
+                                    edge,
+                                    originalEdge
                                 );
                             }
                             return;

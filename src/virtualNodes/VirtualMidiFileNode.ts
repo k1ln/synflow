@@ -540,18 +540,18 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
     const frequency = 440 * Math.pow(2, (transposedNote - 69) / 12);
     const now = performance.now();
 
-    console.log(
+    /*console.log(
       `[emitNoteOff] t=${now.toFixed(1)}ms, note=${noteNumber}, transposed=${transposedNote}, ` +
       `frequency=${frequency.toFixed(2)}, singleVoiceMode=${this.singleVoiceMode}`
-    );
+    );*/
     
     // In single voice mode, only emit note-off if this is the currently playing note
     if (this.singleVoiceMode) {
       if (!this.currentPlayingNote || this.currentPlayingNote.note !== transposedNote) {
-        console.log(
+        /*console.log(
           `[SingleVoice] Skipping note-off for ${transposedNote} ` +
           `(current=${this.currentPlayingNote?.note ?? 'none'})`
-        );
+        ); */
         return;
       }
       // Clear the current playing note
@@ -605,7 +605,7 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
    * node can read it from either field.
    */
   private emitTempoChange(tc: MidiTempoChange) {
-    console.log(`[MidiFile] Tempo change at tick ${tc.tick}: ${tc.bpm} BPM`);
+    /*console.log(`[MidiFile] Tempo change at tick ${tc.tick}: ${tc.bpm} BPM`);*/
     const payload = {
       bpm: tc.bpm,
       value: tc.bpm,
