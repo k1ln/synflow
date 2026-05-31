@@ -13,20 +13,14 @@ import { Connection, Edge, Node } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './Flow.css';
 
+import { Handle, Position } from '@xyflow/react';
 import OscillatorFlowNode from './nodes/OscillatorFlowNode';
 import AudioWorkletOscillatorFlowNode from './nodes/AudioWorkletOscillatorFlowNode';
 import MasterOutFlowNode from './nodes/MasterOutFlowNode';
 import NodePaletteDialog, { NODE_CATEGORY_COLORS } from './components/NodePaletteDialog';
-import BiquadFilterFlowNode from './nodes/BiquadFilterFlowNode';
-import DynamicCompressorFlowNode from './nodes/DynamicCompressorFlowNode';
-import GainFlowNode from './nodes/GainFlowNode';
-import DelayFlowNode from './nodes/DelayFlowNode';
-import ReverbFlowNode from './nodes/ReverbFlowNode';
-import IIRFilterFlowNode from './nodes/IIRFilterFlowNode';
-import DistortionFlowNode from './nodes/DistortionFlowNode';
-import AudioWorkletFlowNode from './nodes/AudioWorkletFlowNode';
 import { useEffect } from 'react';
 import { AudioGraphManager } from './sys/AudioGraphManager';
+import { applyNodeChanges } from '@xyflow/react';
 import ADSRFlowNode from './nodes/ADSRFlowNode';
 import ButtonFlowNode from './nodes/ButtonFlowNode';
 import MidiButtonFlowNode from './nodes/MidiButtonFlowNode';
@@ -40,18 +34,16 @@ import BlockingSwitchFlowNode from './nodes/BlockingSwitchFlowNode';
 import FunctionFlowNode from './nodes/FunctionFlowNode';
 import SampleFlowNode from './nodes/SampleFlowNode';
 import MidiFlowNote from './nodes/MidiFlowNote';
+import { OpenDialog } from './util/OpenDialog';
 import ExplorerDialog, { ExplorerFlowItem } from './components/ExplorerDialog';
 import { v4 as uuidv4 } from 'uuid';
 import { SimpleIndexedDB } from './util/SimpleIndexedDB';
 import * as Dialog from '@radix-ui/react-dialog';
-import OutputNode from './nodes/OutputNode';
 import { measureMicLatency, autoMeasureLatency } from './utils/latencyTest';
 import InputNode from './nodes/InputNode';
 import FlowNode from './nodes/FlowNode';
+import SignalRouterFlowNode from './nodes/SignalRouterFlowNode';
 import EventManager from './sys/EventManager';
-import SequencerFlowNode from './nodes/SequencerFlowNode';
-import SequencerFrequencyFlowNode from './nodes/SequencerFrequencyFlowNode';
-import ScriptSequencerFlowNode from './nodes/ScriptSequencerFlowNode';
 // File System Audio storage utilities
 import {
   loadRootHandle as loadAudioRootHandle,
@@ -71,44 +63,26 @@ import {
 import ImpressumDialog from './components/ImpressumDialog';
 import DatenschutzDialog from './components/DatenschutzDialog';
 import TopBar from './components/TopBar';
-import AutomationFlowNode from './nodes/AutomationFlowNode';
-import ArpeggiatorFlowNode from './nodes/ArpeggiatorFlowNode';
-import MidiKnobFlowNode from './nodes/MidiKnobFlowNode';
-import EventFlowNode from './nodes/EventFlowNode';
 import './sys/exposeFlowSynth';
 import MouseTriggerButton from './nodes/MouseTriggerButton';
 import NoiseFlowNode from './nodes/NoiseFlowNode';
 import LogFlowNode from './nodes/LogFlowNode';
 import RecordingFlowNode from './nodes/RecordingFlowNode';
 import MicFlowNode from './nodes/MicFlowNode';
+import WebRTCInputFlowNode from './nodes/WebRTCInputFlowNode';
+import WebRTCOutputFlowNode from './nodes/WebRTCOutputFlowNode';
 import MiniPlayer from './components/MiniPlayer';
 import AudioExplorer from './components/AudioExplorer';
-import AnalyzerNodeGPT from './nodes/AnalyzerNodeGPT';
-import OscilloscopeFlowNode from './nodes/OscilloscopeFlowNode';
-import SpeedDividerFlowNode from './nodes/SpeedDividerFlowNode';
-import AudioSignalFreqShifterFlowNode from './nodes/AudioSignalFreqShifterFlowNode';
-import FlowEventFreqShifterFlowNode from './nodes/FlowEventFreqShifterFlowNode';
-import EqualizerFlowNode from './nodes/EqualizerFlowNode';
-import VocoderFlowNode from './nodes/VocoderFlowNode';
-import MidiFileFlowNode from './nodes/MidiFileFlowNode';
-import OrchestratorFlowNode from './nodes/OrchestratorFlowNode';
 import OrchestratorDialog from './nodes/OrchestratorDialog';
-import UnisonBeginFlowNode from './nodes/UnisonBeginFlowNode';
-import UnisonEndFlowNode from './nodes/UnisonEndFlowNode';
 import DocsPlayground from './components/DocsPlayground';
-
-function makeDistortionCurve(amount: number) {
-  const k = typeof amount === "number" ? amount : 50;
-  const numSamples = 44100;
-  const curve = new Float32Array(numSamples);
-  const deg = Math.PI / 180;
-
-  for (let i = 0; i < numSamples; i++) {
-    const x = (i * 2) / numSamples - 1;
-    curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
-  }
-  return curve;
-}
+import {
+  makeDistortionCurve,
+  hexToRgb,
+  makeGlow,
+  makeEdgeGlowFilter,
+  normalizeNodeStylesForTheme,
+} from './utils/styleUtils';
+import { nodeTypes, orderedNodeTypes } from './constants/flowNodeTypes';
 
 const timeout = Date.now();
 
@@ -122,7 +96,6 @@ const nodeStyleObj = {
   background: "rgba(18, 19, 36, 0.52)",
   backdropFilter: "blur(6px)",
   color: "#eee",
-  // Subtle glow around nodes for dark theme
   boxShadow: "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
 };
 
@@ -180,7 +153,7 @@ function normalizeNodeStylesForTheme(arr: any[] | undefined): any[] {
     if (!style.backdropFilter) style.backdropFilter = 'blur(6px)';
     // Ensure a consistent border and subtle glow for legacy nodes
     if (!style.border) style.border = '1px solid rgba(80, 95, 130, 0.50)';
-    if (!style.borderRadius) style.borderRadius = '7px';
+    if (!style.borderRadius) style.borderRadius = '5px';
     if (!style.glowColor) style.glowColor = '#00ff88';
     if (!style.boxShadow) style.boxShadow = makeGlow(style.glowColor, 'normal');
     if (!style.color) style.color = '#eeeeee';
@@ -200,56 +173,56 @@ function normalizeNodeStylesForTheme(arr: any[] | undefined): any[] {
 }
 
 const nodeTypes = {
-  MasterOutFlowNode,
-  OscillatorFlowNode,
-  AudioWorkletOscillatorFlowNode,
-  FlowNode,
-  BiquadFilterFlowNode,
-  DynamicCompressorFlowNode,
-  GainFlowNode,
-  DelayFlowNode,
-  ReverbFlowNode,
-  DistortionFlowNode,
-  AudioWorkletFlowNode,
-  IIRFilterFlowNode,
-  ADSRFlowNode,
-  ButtonFlowNode,
-  MidiButtonFlowNode,
-  OnOffButtonFlowNode,
-  ClockFlowNode,
-  FrequencyFlowNode,
-  ConstantFlowNode,
-  SwitchFlowNode,
-  BlockingSwitchFlowNode,
-  FunctionFlowNode,
-  InputNode,
-  OutputNode,
+  MasterOutFlowNode: MasterOutFlowNode,
+  OscillatorFlowNode: OscillatorFlowNode,
+  AudioWorkletOscillatorFlowNode: AudioWorkletOscillatorFlowNode,
+  FlowNode: FlowNode,
+  BiquadFilterFlowNode: BiquadFilterFlowNode,
+  DynamicCompressorFlowNode: DynamicCompressorFlowNode,
+  GainFlowNode: GainFlowNode,
+  DelayFlowNode: DelayFlowNode,
+  ReverbFlowNode: ReverbFlowNode,
+  DistortionFlowNode: DistortionFlowNode,
+  AudioWorkletFlowNode: AudioWorkletFlowNode,
+  IIRFilterFlowNode: IIRFilterFlowNode,
+  ADSRFlowNode: ADSRFlowNode,
+  ButtonFlowNode: ButtonFlowNode,
+  MidiButtonFlowNode: MidiButtonFlowNode,
+  OnOffButtonFlowNode: OnOffButtonFlowNode,
+  ClockFlowNode: ClockFlowNode,
+  FrequencyFlowNode: FrequencyFlowNode,
+  ConstantFlowNode: ConstantFlowNode,
+  SwitchFlowNode: SwitchFlowNode,
+  BlockingSwitchFlowNode: BlockingSwitchFlowNode,
+  FunctionFlowNode: FunctionFlowNode,
+  InputNode: InputNode,
+  OutputNode: OutputNode,
   //SignalRouterFlowNode: SignalRouterFlowNode,
-  SampleFlowNode,
-  MidiFlowNote,
-  SequencerFlowNode,
-  SequencerFrequencyFlowNode,
-  ScriptSequencerFlowNode,
-  AutomationFlowNode,
-  ArpeggiatorFlowNode,
-  AnalyzerNodeGPT,
-  OscilloscopeFlowNode,
-  LogFlowNode,
-  MidiKnobFlowNode,
-  EventFlowNode,
-  MouseTriggerButton,
-  NoiseFlowNode,
-  MicFlowNode,
-  RecordingFlowNode,
-  SpeedDividerFlowNode,
-  AudioSignalFreqShifterFlowNode,
-  FlowEventFreqShifterFlowNode,
-  EqualizerFlowNode,
-  VocoderFlowNode,
-  MidiFileFlowNode,
-  OrchestratorFlowNode,
-  UnisonBeginFlowNode,
-  UnisonEndFlowNode,
+  SampleFlowNode: SampleFlowNode,
+  MidiFlowNote: MidiFlowNote,
+  SequencerFlowNode: SequencerFlowNode,
+  SequencerFrequencyFlowNode: SequencerFrequencyFlowNode,
+  ScriptSequencerFlowNode: ScriptSequencerFlowNode,
+  AutomationFlowNode: AutomationFlowNode,
+  ArpeggiatorFlowNode: ArpeggiatorFlowNode,
+  AnalyzerNodeGPT: AnalyzerNodeGPT,
+  OscilloscopeFlowNode: OscilloscopeFlowNode,
+  LogFlowNode: LogFlowNode,
+  MidiKnobFlowNode: MidiKnobFlowNode,
+  EventFlowNode: EventFlowNode,
+  MouseTriggerButton: MouseTriggerButton,
+  NoiseFlowNode: NoiseFlowNode,
+  MicFlowNode: MicFlowNode,
+  RecordingFlowNode: RecordingFlowNode,
+  SpeedDividerFlowNode: SpeedDividerFlowNode,
+  AudioSignalFreqShifterFlowNode: AudioSignalFreqShifterFlowNode,
+  FlowEventFreqShifterFlowNode: FlowEventFreqShifterFlowNode,
+  EqualizerFlowNode: EqualizerFlowNode,
+  VocoderFlowNode: VocoderFlowNode,
+  MidiFileFlowNode: MidiFileFlowNode,
+  OrchestratorFlowNode: OrchestratorFlowNode,
+  UnisonBeginFlowNode: UnisonBeginFlowNode,
+  UnisonEndFlowNode: UnisonEndFlowNode,
 };
 const orderedNodeTypes = Object.fromEntries(
   Object.entries(nodeTypes).sort(([a], [b]) => a.localeCompare(b))
