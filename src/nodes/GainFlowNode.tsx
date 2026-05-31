@@ -199,9 +199,7 @@ const GainFlowNode: React.FC<GainFlowNodeProps> = ({ data }) => {
   
   return (
     <div style={data.style}>
-      <div style={{ textAlign: "center", marginBottom: "0px" }}>
-        <span><b>GAIN</b></span>
-      </div>
+      <div className="node-title">GAIN</div>
 
       {/* Main Input */}
       <Handle
@@ -220,7 +218,7 @@ const GainFlowNode: React.FC<GainFlowNodeProps> = ({ data }) => {
       />
 
       {/* Gain Input with MIDI-learnable knob */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div className="node-field">
         <MidiKnob
           accentColor="#60a5fa"
           min={0}
@@ -263,17 +261,7 @@ const GainFlowNode: React.FC<GainFlowNodeProps> = ({ data }) => {
               setGainInput(clamped.toFixed(4));
             }
           }}
-          style={{
-            width: 55,
-            background: '#222',
-            color: '#eee',
-            border: '1px solid #444',
-            borderRadius: 4,
-            padding: '1px 3px',
-            fontSize: 10,
-            textAlign: 'center',
-            marginBottom: '3px',
-          }}
+          className="nodrag node-input"
         />
         <Handle
           type="target"

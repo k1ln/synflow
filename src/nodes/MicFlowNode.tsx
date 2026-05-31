@@ -46,7 +46,7 @@ const MicFlowNode: React.FC<MicFlowNodeProps> = ({ data }) => {
   }, [selectedDeviceId]);
 
   // Initial enumerate
-  useEffect(() => { enumerate(); }, [enumerate]);
+  useEffect(() => { void enumerate(); }, [enumerate]);
 
   // Persist changes through onChange so VirtualMicNode can react via params.updateParams
   useEffect(() => {
@@ -71,22 +71,24 @@ const MicFlowNode: React.FC<MicFlowNodeProps> = ({ data }) => {
 
   return (
     <div style={{ ...(data.style || {}), width: 180, padding: 6 }}>
+      <div className="node-title">🎙 MIC</div>
       <Handle type="source" position={Position.Right} id="output" style={{ top: '50%', width: 10, height: 10 }} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <div style={{ fontSize: '0.6rem', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span>Device</span>
+        <div className="node-row" style={{ justifyContent: 'flex-start', gap: 4 }}>
+          <span className="node-label">Device</span>
           <button
             type="button"
             onClick={() => enumerate()}
             title="Refresh devices"
-            style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.65rem', lineHeight: 1, color: '#aaa' }}
+            className="node-btn"
+            style={{ padding: '1px 6px' }}
           >↻</button>
-          {loading && <span style={{ fontSize: '0.5rem', opacity: 0.6 }}>(loading...)</span>}
+          {loading && <span className="node-readout" style={{ opacity: 0.6 }}>(loading...)</span>}
         </div>
         <select
           value={selectedDeviceId || ''}
           onChange={e => setSelectedDeviceId(e.target.value || undefined)}
-          style={{ background: '#1e1e1e', color: '#eee', border: '1px solid #444', borderRadius: 4, padding: '4px 6px', fontSize: '0.65rem' }}
+          className="node-select wide"
         >
           <option value="">(default)</option>
           {devices.map(d => (

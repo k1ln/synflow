@@ -512,7 +512,7 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
       originalNote: note.note,
       velocity: note.velocity,
       channel: note.channel,
-      frequency: frequency,
+      frequency,
       value: frequency,  // Also include as 'value' for compatibility with other nodes
       gate: 1,
       startTick: note.startTick,
@@ -525,7 +525,7 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
     if (this.singleVoiceMode) {
       this.currentPlayingNote = {
         note: transposedNote,
-        frequency: frequency,
+        frequency,
         channel: note.channel
       };
     }
@@ -561,8 +561,8 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
     const payload = {
       note: transposedNote,
       originalNote: noteNumber,
-      channel: channel,
-      frequency: frequency,
+      channel,
+      frequency,
       value: frequency,  // Also include as 'value' for compatibility with other nodes
       gate: 0,
       velocity: 0

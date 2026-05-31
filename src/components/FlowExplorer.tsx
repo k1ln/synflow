@@ -27,12 +27,12 @@ const FlowExplorer: React.FC<{
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('New Flow');
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => { void refresh(); }, []);
 
   async function refresh() {
     try {
       // Try loading from disk first if FS API is available
-      if (hasFsApi()) {
+      if (await hasFsApi()) {
         const rootHandle = await loadRootHandle();
         if (rootHandle) {
           const diskFlows = await listFlowsOnDisk(rootHandle);
@@ -68,7 +68,7 @@ const FlowExplorer: React.FC<{
     };
 
     // Try saving to disk first if FS API is available
-    if (hasFsApi()) {
+    if (await hasFsApi()) {
       const rootHandle = await loadRootHandle();
       if (rootHandle) {
         await saveFlowToDisk(rootHandle, flowData);
@@ -87,7 +87,7 @@ const FlowExplorer: React.FC<{
 
     setCreating(false);
     setNewName('New Flow');
-    refresh();
+    void refresh();
     onCreate(newName);
   }
 

@@ -59,7 +59,7 @@ const WavetablePainter: React.FC<{
     for (let i = 0; i < WAVETABLE_SIZE; i++) {
       const x = (i / (WAVETABLE_SIZE - 1)) * W;
       const y = ((1 - wavetable[i]) / 2) * H;
-      i === 0 ? ctx2.moveTo(x, y) : ctx2.lineTo(x, y);
+      if (i === 0) ctx2.moveTo(x, y); else ctx2.lineTo(x, y);
     }
     ctx2.stroke();
   }, [wavetable]);
@@ -282,14 +282,14 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
 
   function knobToFrequency(knobValue: number) {
     let result: number;
-    if (oscFrequencyType == "midi") {
+    if (oscFrequencyType === "midi") {
       knobValue = Math.round(knobValue);
       const midiNote = midiNoteToNoteName(knobValue);
       setMidiNode(midiNote);
       let frequency = 440 * Math.pow(2, (knobValue - 69) / 12);
       frequency = Math.round(frequency * 1000) / 1000;
       result = frequency;
-    } else if (oscFrequencyType == "lfo") {
+    } else if (oscFrequencyType === "lfo") {
       const minLfoFrequency = 0.01;
       const maxLfoFrequency = 250;
       const scaledValue = knobValue / 250;
@@ -370,13 +370,13 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
 
   function beforeSetOscFrequencyType(value: FrequencyType) {
     setOscFrequencyType(value);
-    if (value == "midi") {
+    if (value === "midi") {
       setKnobMin(24);
       setKnobMax(96);
-    } else if (value == "hz") {
+    } else if (value === "hz") {
       setKnobMin(0);
       setKnobMax(100);
-    } else if (value == "lfo") {
+    } else if (value === "lfo") {
       setKnobMin(0);
       setKnobMax(250);
     }
@@ -404,9 +404,7 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
     <div
       style={data.style}
     >
-      <div style={{ textAlign: "center", marginBottom: "0px" }}>
-        <span><b>OSC</b></span>
-      </div>
+      <div className="node-title">OSC</div>
       {/* Main Output */}
         <Handle
           type="source"
@@ -424,8 +422,8 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
         />
  
         {/* Frequency Input with MIDI-learnable knob */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span>Freq.</span>
+        <div className="node-field">
+          <span className="node-label">Freq.</span>
           <MidiKnob
             min={knobMin}
             max={knobMax}
@@ -443,18 +441,8 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
             type="text"
             value={frequency}
             onChange={(e) => { setFrequency(parseFloat(e.target.value)) }}
-            className=""
-            style={{ 
-              width: 50, 
-              background: '#222', 
-              color: '#eee', 
-              border: '1px solid #444', 
-              borderRadius: 4, 
-              padding: '1px 3px', 
-              fontSize: 10, 
-              textAlign: 'center',
-              marginBottom: '3px' 
-            }}
+            className="node-input"
+            style={{ width: 50 }}
           />
           <Handle
             type="target"
@@ -465,8 +453,8 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
         </div>
 
         {/* Detune Input with MIDI-learnable knob */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span>Detune</span>
+        <div className="node-field">
+          <span className="node-label">Detune</span>
           <MidiKnob
             min={-100}
             max={100}
@@ -482,20 +470,8 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
             type="text"
             value={detune}
             onChange={(e) => setDetune(parseFloat(e.target.value))}
-            className=""
-            style={
-              { 
-                width: 50, 
-                background: '#222', 
-                color: '#eee', 
-                border: '1px solid #444', 
-                borderRadius: 4, 
-                padding: '1px 3px', 
-                fontSize: 10, 
-                textAlign: 'center',
-                marginBottom: '3px' 
-              }
-            }
+            className="node-input"
+            style={{ width: 50 }}
           />
           <Handle
             type="target"
@@ -505,8 +481,8 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
           />
         </div>
       {/* Gain knob — always visible */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 2 }}>
-        <span style={{ fontSize: 10 }}>Gain</span>
+      <div className="node-field">
+        <span className="node-label">Gain</span>
         <MidiKnob
           min={0}
           max={1}
@@ -528,7 +504,7 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
           type="text"
           value={gainInput}
           inputMode="decimal"
-          className="nodrag"
+          className="nodrag node-input"
           onChange={(e) => setGainInput(e.target.value)}
           onBlur={() => {
             const num = parseFloat(gainInput);
@@ -541,16 +517,17 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
               setGainInput(clamped.toFixed(4));
             }
           }}
-          style={{ width: 55, background: '#222', color: '#eee', border: '1px solid #444', borderRadius: 4, padding: '1px 3px', fontSize: 10, textAlign: 'center', marginBottom: '3px' }}
+          style={{ width: 50 }}
         />
       </div>
 
       {/* Type Selector */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div className="node-field">
         <select
           value={waveform}
           onChange={(e) => setWaveform(e.target.value as OscillatorType)}
-          style={{ width: 62, background: '#222', color: '#eee', border: '1px solid #444', borderRadius: 4, padding: '1px 2px', fontSize: 9, textAlign: 'center' }}
+          className="node-select"
+          style={{ width: 56 }}
         >
           {["sine", "square", "sawtooth", "triangle", "custom"].map((t) => (
             <option key={t} value={t}>
@@ -562,20 +539,20 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
 
       {/* Custom mode: pulse OR wavetable painter */}
       {waveform === "custom" && (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 4, gap: 4 }}>
+        <div className="node-field" style={{ marginTop: 4, width: '100%' }}>
           {/* Mode toggle */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%', alignItems: 'stretch' }}>
             {(['pulse', 'wavetable'] as CustomMode[]).map(m => (
               <button key={m}
+                className={`node-btn${customMode === m ? ' active' : ''}`}
                 onClick={() => setCustomMode(m)}
-                style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, cursor: 'pointer', border: '1px solid #444', background: customMode === m ? '#fff' : '#222', color: customMode === m ? '#000' : '#888', textAlign: 'center' }}
               >{m}</button>
             ))}
           </div>
 
           {customMode === 'pulse' && (
             <>
-              <span style={{ fontSize: 10 }}>Pulse W.</span>
+              <span className="node-label">Pulse W.</span>
               <MidiKnob
                 min={1}
                 max={99}
@@ -587,14 +564,14 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
                 accentColor="#4ade80"
                 persistKey={`osc:${data.flowId || 'default'}:${data.id}:pw`}
               />
-              <span style={{ fontSize: 9, color: '#aaa' }}>{Math.round(pulseWidth * 100)}%</span>
-              <div style={{ marginTop: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span style={{ fontSize: 9 }}>Harmonics</span>
+              <span className="node-readout">{Math.round(pulseWidth * 100)}%</span>
+              <div className="node-field" style={{ marginTop: 2, marginBottom: 0 }}>
+                <span className="node-label">Harmonics</span>
                 <input
                   type="number" min={8} max={512} step={8}
                   value={periodicWaveHarmonics}
                   onChange={(e) => setPeriodicWaveHarmonics(Math.max(8, Math.min(512, parseInt(e.target.value) || 128)))}
-                  style={{ width: 42, background: '#222', color: '#eee', border: '1px solid #444', borderRadius: 4, padding: '1px 3px', fontSize: 9, textAlign: 'center' }}
+                  className="node-input sm"
                 />
               </div>
             </>
@@ -612,11 +589,12 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
         </div>
       )}
       {/* Frequency Type Selector */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div className="node-field">
         <select
           value={oscFrequencyType}
           onChange={(e) => beforeSetOscFrequencyType(e.target.value as FrequencyType)}
-          style={{ width: 62, background: '#222', color: '#eee', border: '1px solid #444', borderRadius: 4, padding: '1px 2px', fontSize: 9, textAlign: 'center' }}
+          className="node-select"
+          style={{ width: 56 }}
         >
           {["midi", "hz", "lfo"].map((t) => (
             <option key={t} value={t}>
@@ -625,7 +603,7 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
           ))}
         </select>
       </div>
-      {oscFrequencyType == "midi" && (
+      {oscFrequencyType === "midi" && (
         <div>
           <span>Midi Note: {midiNode}</span>
         </div>

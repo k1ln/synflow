@@ -90,7 +90,7 @@ export class VirtualAudioWorkletNode extends VirtualNode<CustomNode & AudioWorkl
     private subscribeToCodeSaves() {
         this.eventBus.subscribe(this.node.id + '.processor.save', (payload: { code: string }) => {
             if (!payload || typeof payload.code !== 'string') return;
-            this.updateProcessorFromCode(payload.code);
+            void this.updateProcessorFromCode(payload.code);
         });
     }
 
@@ -157,7 +157,7 @@ export class VirtualAudioWorkletNode extends VirtualNode<CustomNode & AudioWorkl
         code = code.replace(/registerProcessor\s*\([\s\S]*?\);?/g, '');
         // Find first class extending AudioWorkletProcessor
         const classMatch = code.match(/class\s+([A-Za-z0-9_]+)\s+extends\s+AudioWorkletProcessor/);
-        let className = classMatch ? classMatch[1] : 'ExtendAudioWorkletProcessor';
+        const className = classMatch ? classMatch[1] : 'ExtendAudioWorkletProcessor';
         if (!classMatch) {
             if (/process\s*\(/.test(code)) {
                 code = `class ${className} extends AudioWorkletProcessor {\n${code}\n}\n`;
@@ -426,7 +426,7 @@ export class VirtualAudioWorkletNode extends VirtualNode<CustomNode & AudioWorkl
             }
             const code = (this.node.data as any).processorCode;
             if (typeof code === 'string') {
-                this.updateProcessorFromCode(code);
+                void this.updateProcessorFromCode(code);
             }
         };
         this.eventBus.subscribe(id + '.processor.paramsChanged', handler);

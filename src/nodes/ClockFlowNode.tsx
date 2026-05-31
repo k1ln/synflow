@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Handle, Position } from "@xyflow/react";
+import { Power, ChevronRight } from "lucide-react";
 import EventBus from "../sys/EventBus";
 import {CustomNumberInput} from "../util/CustomNumberInput";
 
@@ -90,54 +91,91 @@ const ClockFlowNode: React.FC<ClockNodeProps> = ({ id, data }) => {
     ...baseStyle,
     position: 'relative'
   };
+  const sectionLabelStyle: React.CSSProperties = {
+    fontSize: 10,
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase',
+    opacity: 0.7,
+    fontWeight: 600,
+  };
+
   return (
     <div
       style={wrapperStyle}
     >
-      <button
-        className={isEmitting ? 'node-state-btn-on' : 'node-state-btn-off'}
-        style={{
-          position:'absolute',
-          top:3,
-          right:3,
-          width:19,
-          height:19,
-          padding:0,
-          fontSize:12,
-          borderRadius:11,
-          cursor:'pointer'
-        }}
-        onClick={() => setIsEmitting(v => !v)}
-      >
-        ⏻
-      </button>
-      {/* Removed headline per user request */}
-      <div style={{display:'flex', flexDirection:'column', gap:4}}>
-        <div style={{display:'flex', flexDirection:'column', alignItems:'center', fontSize:12}}>
-          <span style={{marginBottom:5}}>BPM</span>
-          <CustomNumberInput style={(baseStyle as any)} value={bpm} min={1} max={20000} step={1} onChange={handleBpmChange} />
+      <div style={{display:'flex', flexDirection:'column', gap:10, padding:'2px 0'}}>
+        {/* ON/OFF pill */}
+        <div style={{display:'flex', justifyContent:'center'}}>
+          <button
+            className={`nodrag nowheel nopan ${isEmitting ? 'node-state-btn-on' : 'node-state-btn-off'}`}
+            draggable={false}
+            onMouseDown={(e) => { e.stopPropagation(); }}
+            onPointerDown={(e) => { e.stopPropagation(); }}
+            onClick={() => setIsEmitting(v => !v)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              padding: '5px 14px',
+              minWidth: 84,
+              fontSize: 14,
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              cursor: 'pointer',
+              borderRadius: 999,
+            }}
+            title='Toggle clock on/off'
+          >
+            <Power size={13} strokeWidth={2.5} />
+            <span>{isEmitting ? 'ON' : 'OFF'}</span>
+          </button>
         </div>
-  <div style={{marginTop:4}}>
-          <div style={{display:'flex', alignItems:'center', cursor:'pointer', fontSize:12, gap:4}} onClick={()=>setShowOffSettings(s=>!s)}>
-            <span style={{display:'inline-block', transform: showOffSettings ? 'rotate(90deg)' : 'rotate(0deg)', transition:'transform 120ms ease'}}>▶</span>
-            <span>OFF events</span>
+
+        {/* BPM */}
+        <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:4}}>
+          <span style={sectionLabelStyle}>BPM</span>
+          <CustomNumberInput value={bpm} min={1} max={20000} step={1} onChange={handleBpmChange} />
+        </div>
+
+        {/* OFF events */}
+        <div style={{
+          borderTop: '1px solid color-mix(in srgb, var(--node-accent, #555) 25%, transparent)',
+          paddingTop: 8,
+        }}>
+          <div
+            style={{display:'flex', alignItems:'center', cursor:'pointer', gap:4, userSelect:'none'}}
+            onClick={()=>setShowOffSettings(s=>!s)}
+          >
+            <ChevronRight
+              size={12}
+              style={{
+                transform: showOffSettings ? 'rotate(90deg)' : 'rotate(0deg)',
+                transition: 'transform 120ms ease',
+                opacity: 0.7,
+              }}
+            />
+            <span style={sectionLabelStyle}>OFF events</span>
           </div>
           {showOffSettings && (
-            <div style={{display:'flex', flexDirection:'column', gap:4, marginTop:4}}>
-              <label style={{display:'flex', alignItems:'center', gap:6, fontSize:12}}>
-                <input type="checkbox" checked={sendOff} onChange={(e)=>setSendOff(e.target.checked)} /> send OFF
+            <div style={{display:'flex', flexDirection:'column', gap:6, marginTop:8, paddingLeft:4}}>
+              <label style={{display:'flex', alignItems:'center', gap:6, fontSize:11, cursor:'pointer'}}>
+                <input type="checkbox" checked={sendOff} onChange={(e)=>setSendOff(e.target.checked)} />
+                <span>send OFF</span>
               </label>
-              <label style={{display:'flex', alignItems:'center', gap:6, fontSize:12, opacity: sendOff ? 1 : 0.4}}>
-                <input type="checkbox" disabled={!sendOff} checked={sendOffBeforeNextOn} onChange={(e)=>setSendOffBeforeNextOn(e.target.checked)} /> OFF before next ON
+              <label style={{display:'flex', alignItems:'center', gap:6, fontSize:11, opacity: sendOff ? 1 : 0.4, cursor: sendOff ? 'pointer' : 'default'}}>
+                <input type="checkbox" disabled={!sendOff} checked={sendOffBeforeNextOn} onChange={(e)=>setSendOffBeforeNextOn(e.target.checked)} />
+                <span>OFF before next ON</span>
               </label>
-              <label style={{display:'flex', flexDirection:'column', fontSize:12, opacity: sendOff ? 1 : 0.4}}>OFF delay ms ({sendOffBeforeNextOn ? 'before next ON' : 'after ON'}):
+              <label style={{display:'flex', flexDirection:'column', fontSize:11, opacity: sendOff ? 1 : 0.4, gap:3}}>
+                <span style={{opacity:0.85}}>delay ms ({sendOffBeforeNextOn ? 'before next ON' : 'after ON'})</span>
                 <input
-                  style={{background:(baseStyle as any).background || '#333', color:(baseStyle as any).color || '#eee', border:'1px solid #555', padding:'2px 4px', borderRadius:3}}
                   type="text"
                   disabled={!sendOff}
                   value={offDelayMs}
                   placeholder={sendOffBeforeNextOn ? 'default 10' : 'default 50'}
                   onChange={handleOffDelayChange}
+                  style={{padding:'3px 6px', fontSize:11, textAlign:'center'}}
                 />
               </label>
             </div>

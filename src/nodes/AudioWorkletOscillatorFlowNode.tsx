@@ -94,9 +94,7 @@ const AudioWorkletOscillatorFlowNode: React.FC<AudioWorkletOscillatorFlowNodePro
   // UI
   return (
     <div style={style}>
-      <div style={{ textAlign: "center", marginBottom: 0 }}>
-        <span><b>AW OSC</b></span>
-      </div>
+      <div className="node-title">AW OSC</div>
       {/* FM Input (for frequency modulation) */}
       <Handle
         type="target"
@@ -126,8 +124,8 @@ const AudioWorkletOscillatorFlowNode: React.FC<AudioWorkletOscillatorFlowNodePro
         className="mainOutput"
       />
       {/* Frequency Knob */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <span>Freq.</span>
+      <div className="node-field">
+        <span className="node-label">Freq.</span>
         <MidiKnob
           accentColor="#4ade80"
           min={oscFrequencyType === "midi" ? 24 : oscFrequencyType === "lfo" ? 0 : 0}
@@ -145,12 +143,13 @@ const AudioWorkletOscillatorFlowNode: React.FC<AudioWorkletOscillatorFlowNodePro
           type="text"
           value={frequency}
           onChange={e => setFrequency(parseFloat(e.target.value))}
-          style={{ width: 50, background: '#222', color: '#eee', border: '1px solid #444', borderRadius: 4, padding: '1px 3px', fontSize: 10, textAlign: 'center', marginBottom: 3 }}
+          className="node-input"
+          style={{ width: 50 }}
         />
       </div>
       {/* Detune Knob */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <span>Detune</span>
+      <div className="node-field">
+        <span className="node-label">Detune</span>
         <MidiKnob
           accentColor="#4ade80"
           min={-100}
@@ -166,15 +165,17 @@ const AudioWorkletOscillatorFlowNode: React.FC<AudioWorkletOscillatorFlowNodePro
           type="text"
           value={detune}
           onChange={e => setDetune(parseFloat(e.target.value))}
-          style={{ width: 50, background: '#222', color: '#eee', border: '1px solid #444', borderRadius: 4, padding: '1px 3px', fontSize: 10, textAlign: 'center', marginBottom: 3 }}
+          className="node-input"
+          style={{ width: 50 }}
         />
       </div>
       {/* Type Selector */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div className="node-field">
         <select
           value={waveform}
           onChange={e => setWaveform(e.target.value as OscillatorType)}
-          style={{ width: 62, background: '#222', color: '#eee', border: '1px solid #444', borderRadius: 4, padding: '1px 2px', fontSize: 9, textAlign: 'center' }}
+          className="node-select"
+          style={{ width: 62 }}
         >
           {oscillatorTypes.map(t => (
             <option key={t} value={t}>{t}</option>
@@ -182,11 +183,12 @@ const AudioWorkletOscillatorFlowNode: React.FC<AudioWorkletOscillatorFlowNodePro
         </select>
       </div>
       {/* Frequency Type Selector */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div className="node-field">
         <select
           value={oscFrequencyType}
           onChange={e => setOscFrequencyType(e.target.value as FrequencyType)}
-          style={{ width: 62, background: '#222', color: '#eee', border: '1px solid #444', borderRadius: 4, padding: '1px 2px', fontSize: 9, textAlign: 'center' }}
+          className="node-select"
+          style={{ width: 62 }}
         >
           {["midi", "hz", "lfo"].map(t => (
             <option key={t} value={t}>{t}</option>

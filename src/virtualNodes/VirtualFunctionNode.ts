@@ -111,13 +111,11 @@ export class VirtualFunctionNode extends VirtualNode<CustomNode & FunctionNodePr
                     //console.log("EMIT MULTI OUTPUT", index, res);
                     this.handleConnectedEdges(this.node, {value: res}, eventStr, index);
                 });
-            }else{
-                if(eventStr=="receiveNodeOn"){
+            }else if(eventStr==="receiveNodeOn"){
                     this.eventBus.emit(`${this.node.id}.main-input.sendNodeOn`, { value: result });
-                }else if (eventStr=="receiveNodeOff"){
+                }else if (eventStr==="receiveNodeOff"){
                     this.eventBus.emit(`${this.node.id}.main-input.sendNodeOff`, { value: result });
                 }
-            }
             
         } catch (error) {
             console.error("Error evaluating function:", error);

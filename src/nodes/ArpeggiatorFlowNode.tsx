@@ -124,18 +124,6 @@ const ArpeggiatorFlowNode: React.FC<ArpeggiatorFlowNodeProps> = ({
     };
   }
 
-  const selectStyle: React.CSSProperties = {
-    width: '100%',
-    background: '#111',
-    color: '#eee',
-    border: '1px solid #333',
-    borderRadius: '3px',
-    padding: '4px 6px',
-    fontSize: 11,
-    fontFamily: 'inherit',
-    cursor: 'pointer'
-  };
-
   const handleStyle: React.CSSProperties = {
     width: '8px',
     height: '8px',
@@ -147,9 +135,7 @@ const ArpeggiatorFlowNode: React.FC<ArpeggiatorFlowNodeProps> = ({
 
   return (
     <div style={data.style}>
-      <div className="audio-header">
-        <label><b>Arpeggiator</b></label>
-      </div>
+      <div className="node-title">ARPEGGIATOR</div>
 
       {/* Clock Input */}
       <Handle
@@ -188,12 +174,12 @@ const ArpeggiatorFlowNode: React.FC<ArpeggiatorFlowNodeProps> = ({
       />
 
       {/* Mode Selection */}
-      <div style={{ marginBottom: 8 }}>
-        <label style={{ fontSize: 10 }}>Pattern</label>
+      <div className="node-field" style={{ alignItems: 'stretch', marginBottom: 8 }}>
+        <label className="node-label">Pattern</label>
         <select
           value={mode}
           onChange={handleModeChange}
-          style={selectStyle}
+          className="node-select wide"
         >
           {Object.entries(modeDescriptions).map(([key, label]) => (
             <option key={key} value={key}>
@@ -204,9 +190,9 @@ const ArpeggiatorFlowNode: React.FC<ArpeggiatorFlowNodeProps> = ({
       </div>
 
       {/* Control Knobs */}
-      <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: 10 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 50 }}>
-          <label style={{ fontSize: 10 }}>Notes</label>
+      <div className="node-row" style={{ marginTop: 10 }}>
+        <div className="node-field" style={{ minWidth: 50, marginBottom: 0 }}>
+          <label className="node-label">Notes</label>
           <MidiKnob
             style={{ display: 'inline-block' }}
             accentColor="#c084fc"
@@ -215,10 +201,10 @@ const ArpeggiatorFlowNode: React.FC<ArpeggiatorFlowNodeProps> = ({
             value={noteCount}
             onChange={handleNoteCountChange}
           />
-          <span style={{ fontSize: 10 }}>{noteCount}</span>
+          <span className="node-readout">{noteCount}</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 50 }}>
-          <label style={{ fontSize: 10 }}>Octaves</label>
+        <div className="node-field" style={{ minWidth: 50, marginBottom: 0 }}>
+          <label className="node-label">Octaves</label>
           <MidiKnob
             style={{ display: 'inline-block' }}
             accentColor="#c084fc"
@@ -227,10 +213,10 @@ const ArpeggiatorFlowNode: React.FC<ArpeggiatorFlowNodeProps> = ({
             value={octaveSpread}
             onChange={handleOctaveSpreadChange}
           />
-          <span style={{ fontSize: 10 }}>{octaveSpread.toFixed(2)}</span>
+          <span className="node-readout">{octaveSpread.toFixed(2)}</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 50 }}>
-          <label style={{ fontSize: 10 }}>Swing</label>
+        <div className="node-field" style={{ minWidth: 50, marginBottom: 0 }}>
+          <label className="node-label">Swing</label>
           <MidiKnob
             style={{ display: 'inline-block' }}
             accentColor="#c084fc"
@@ -239,7 +225,7 @@ const ArpeggiatorFlowNode: React.FC<ArpeggiatorFlowNodeProps> = ({
             value={swing}
             onChange={handleSwingChange}
           />
-          <span style={{ fontSize: 10 }}>{swing.toFixed(2)}</span>
+          <span className="node-readout">{swing.toFixed(2)}</span>
         </div>
       </div>
     </div>

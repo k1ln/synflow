@@ -69,22 +69,12 @@ const ButtonFlowNode: React.FC<ButtonNodeProps> = ({ data }) => {
       {/* Key Assignment */}
       <div>
         <button
-          className="nodrag nowheel nopan"
+          className="nodrag nowheel nopan node-btn"
           draggable={false}
           onMouseDown={(e) => { e.stopPropagation(); }}
           onPointerDown={(e) => { e.stopPropagation(); }}
           onKeyDown={handleKeyPress}
-          style={{
-            padding: "10px",
-            margin: "10px 0",
-            background: "transparent",
-            color: "#fff",
-            border: "1px solid #ddd",
-            borderRadius: "5px",
-            cursor: "pointer",
-            width: 'auto',
-            maxWidth: '100%'
-          }}
+          style={{ padding: 10, margin: "8px 0", width: "auto", maxWidth: "100%" }}
         >
           {assignedKey || "press a key"}
         </button>

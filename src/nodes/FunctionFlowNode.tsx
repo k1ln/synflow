@@ -51,39 +51,6 @@ const FunctionFlowNode: React.FC<FunctionNodeProps> = ({ data }) => {
     borderRadius: 6,
     background: "rgba(10,10,10,0.45)",
   };
-  const inputStyle: React.CSSProperties = {
-    width: 40,
-    background: "transparent",
-    color: "#eee",
-    border: "1px solid color-mix(in srgb, var(--node-accent, #555) 50%, transparent)",
-    borderRadius: 4,
-    padding: "2px 6px",
-    fontSize: 11,
-    textAlign: "center",
-    marginLeft: 8,
-  };
-  const longInputStyle: React.CSSProperties = {
-    ...inputStyle,
-    width: "80%",
-    margin: 2,
-    flex: 1,
-  };
-  const headerStyle: React.CSSProperties = {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 6,
-  };
-  const headerTagStyle: React.CSSProperties = {
-    fontWeight: 600,
-    letterSpacing: 1,
-  };
-  const dividerStyle: React.CSSProperties = {
-    height: 1,
-    background: "linear-gradient(90deg,transparent,#3a3a3a,transparent)",
-    margin: "10px 0",
-  };
-
   // Listen for additional input signals (do not trigger output)
   useEffect(() => {
     const handlers: Array<() => void> = [];
@@ -303,12 +270,12 @@ const FunctionFlowNode: React.FC<FunctionNodeProps> = ({ data }) => {
       <div style={{ display: "flex", gap: 8, marginTop: 2, flexWrap: "wrap" }}>
         <div style={{ ...sectionStyle, flex: "1 1 150px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, textAlign: "right" }}>
-            <span style={{ padding: 5, color: "#fff" }}>No. of Inputs</span>
+            <span className="node-label">No. of Inputs</span>
             <input
               type="text"
               value={numInputsDisplay}
               onChange={handleNumInputsChange}
-              style={{ ...inputStyle, marginLeft: 12, marginTop: 0, marginBottom: 2 }}
+              className="nodrag node-input sm"
               placeholder="1-8"
               onBlur={resetNumInputsDisplay}
               onKeyDown={handleCountKeyDown("inputs")}
@@ -317,12 +284,12 @@ const FunctionFlowNode: React.FC<FunctionNodeProps> = ({ data }) => {
         </div>
         <div style={{ ...sectionStyle, flex: "1 1 150px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ padding: 5, color: "#fff" }}>No. of Outputs</span>
+            <span className="node-label">No. of Outputs</span>
             <input
               type="text"
               value={numOutputsDisplay}
               onChange={handleNumOutputsChange}
-              style={{ ...inputStyle, marginLeft: 0, marginTop: 2, marginBottom: 2 }}
+              className="nodrag node-input sm"
               placeholder="1-8"
               onBlur={resetNumOutputsDisplay}
               onKeyDown={handleCountKeyDown("outputs")}
@@ -342,14 +309,15 @@ const FunctionFlowNode: React.FC<FunctionNodeProps> = ({ data }) => {
               gap: 8,
             }}
           >
-            <span style={{ padding: 5, color: "#8cf", fontSize: 11, minWidth: 60 }}>
+            <span className="node-label" style={{ minWidth: 60 }}>
               Default input{i + 1}
             </span>
             <input
               type="text"
               value={inputDefaults[i] || ""}
               onChange={(e) => handleDefaultChange(i, e.target.value)}
-              style={longInputStyle}
+              className="nodrag node-input"
+              style={{ width: "80%", flex: 1, margin: 2 }}
               placeholder="optional value"
             />
           </div>

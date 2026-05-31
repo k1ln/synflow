@@ -158,30 +158,14 @@ React.FC<FrequencyFlowNodeProps> = ({
   ]);
 
   return (
-    <div
-      style={{
-        padding: 4,
-        border: "1px solid #555",
-        borderRadius: 6,
-        background: "#333",
-        color: "#eee",
-         width: 72,
-      }}
-    >
+    <div className="flow-node-shell" style={{ width: 72, padding: 6 }}>
       <Handle
         type="target"
         position={Position.Left}
         id="main-input"
         style={{ top: 18, width: 8, height: 8 }}
       />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 3,
-        }}
-      >
+      <div className="node-col">
           <div
             style={{
               width: 44,
@@ -199,23 +183,15 @@ React.FC<FrequencyFlowNodeProps> = ({
             onChange={handleKnobChange}
           />
         </div>
-        <div style={{ fontSize: 10, color: "#aaa" }}>
+        <div className="node-readout">
           {frequency.toFixed(3)} Hz
         </div>
         {frequencyType === "midi" && (
-          <div style={{ fontSize: 9, color: "#888" }}>
+          <div className="node-readout" style={{ fontSize: 9 }}>
             {midiNote}
           </div>
         )}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 4,
-            width: "100%",
-          }}
-        >
+        <div className="node-col" style={{ width: "100%" }}>
             <select
               value={frequencyType}
               onChange={(e) =>
@@ -223,16 +199,8 @@ React.FC<FrequencyFlowNodeProps> = ({
                   e.target.value as FrequencyType
                 )
               }
-              style={{
-                width: 50,
-                background: '#222',
-                color: '#eee',
-                border: '1px solid #444',
-                borderRadius: 4,
-                padding: '1px 3px',
-                fontSize: 10,
-                textAlign: 'center',
-              }}
+              className="node-select"
+              style={{ width: 50 }}
             >
               <option value="midi">midi</option>
               <option value="hz">hz</option>
@@ -259,16 +227,8 @@ React.FC<FrequencyFlowNodeProps> = ({
                   );
                 }
               }}
-              style={{
-                width: 50,
-                background: '#222',
-                color: '#eee',
-                border: '1px solid #444',
-                borderRadius: 4,
-                padding: '1px 3px',
-                fontSize: 10,
-                textAlign: 'center',
-              }}
+              className="node-input"
+              style={{ width: 50 }}
             />
         </div>
       </div>

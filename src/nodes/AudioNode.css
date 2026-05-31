@@ -1,27 +1,306 @@
+/* =============================================================================
+   Synflow Node Kit — centralized styling for all flow nodes.
+
+   Goals:
+   - One place to theme every node. Prefer these classes over inline styles.
+   - Honors the per-node category accent exposed as the `--node-accent` CSS var
+     (set in Flow.tsx -> normalizeNodeStylesForTheme).
+   - Backwards compatible: legacy class names (.audio-node, .textInput,
+     .mainInput/.mainOutput, .node-state-btn-*) are preserved.
+
+   Quick reference for node authors:
+     .node-title        node header / name (uppercase, accent colored)
+     .node-sub          secondary header / small caption under the title
+     .node-field        vertical group: label on top, control below (centered)
+     .node-row          horizontal group, centered, gapped
+     .node-label        tiny uppercase caption for a control
+     .node-readout      numeric value display (tabular, muted)
+     .node-input        text / number input  (≈56px)
+     .node-input.wide   wider input variant
+     .node-select       dropdown
+     .node-btn          generic button
+     .node-divider      thin accent hairline separator
+   ============================================================================= */
+
+:root {
+  --node-accent: #6ee7a8;
+  --node-ink: #eef1f8;
+  --node-ink-dim: #9aa3b8;
+  --node-ink-faint: #6b7488;
+  --node-field-bg: rgba(8, 10, 20, 0.55);
+  --node-radius: 7px;
+  --node-radius-sm: 5px;
+}
+
+/* ── Node shell (legacy class, still used by a few nodes) ─────────────────── */
 .audio-node {
   padding: 10px;
-  border-radius: 5px;
+  border-radius: var(--node-radius);
   width: 200px;
-  background-color: #222;
-  font-family: Calibri, sans-serif;
-  color: inherit;
-  /* New: visible border and a subtle glow */
-  border: 1px solid #2a3139;
+  background-color: rgba(18, 19, 36, 0.55);
+  font-family: 'Inter', 'Segoe UI', Calibri, system-ui, sans-serif;
+  color: var(--node-ink);
+  border: 1px solid rgba(80, 95, 130, 0.5);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 0 8px 2px rgba(0, 255, 136, 0.08);
 }
 
-.textInput {
-  width: 55px;
-  background: transparent;
-  color: #eee;
-  border: 1px solid #444;
-  border-radius: 4px;
-  padding: 1px 3px;
-  font-size: 10px;
+/* Self-contained node shell — for nodes that render their own root box
+   instead of consuming the themed data.style from Flow.tsx. Gives them the
+   same dark-glass look so the canvas stays visually consistent. */
+.flow-node-shell {
+  padding: 8px 9px;
+  border: 1px solid rgba(80, 95, 130, 0.5);
+  border-radius: var(--node-radius);
+  background: rgba(18, 19, 36, 0.55);
+  backdrop-filter: blur(6px);
+  color: var(--node-ink);
   text-align: center;
-  margin-bottom: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 0 8px 2px rgba(0, 255, 136, 0.06);
 }
 
+/* Crisp text rendering + sensible defaults for everything inside a node. */
+.react-flow__node {
+  font-family: 'Inter', 'Segoe UI', Calibri, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-size: 11px;
+  transition: box-shadow 160ms ease, transform 80ms ease, filter 160ms ease;
+}
+
+/* ── Node header / title ──────────────────────────────────────────────────── */
+.node-title {
+  display: block;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--node-accent, #cfd6e6);
+  margin: 0 0 7px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid color-mix(in srgb, var(--node-accent, #556) 28%, transparent);
+  user-select: none;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--node-accent, #556) 35%, transparent);
+}
+
+.node-sub {
+  display: block;
+  text-align: center;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--node-ink-dim);
+  margin: -3px 0 6px;
+  user-select: none;
+}
+
+.node-divider {
+  height: 1px;
+  margin: 7px 0;
+  border: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--node-accent, #556) 35%, transparent),
+    transparent
+  );
+}
+
+/* ── Layout helpers ──────────────────────────────────────────────────────── */
+.node-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 7px;
+}
+.node-field:last-child { margin-bottom: 0; }
+
+.node-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.node-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.node-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--node-ink-dim);
+  user-select: none;
+  line-height: 1.2;
+}
+
+/* Numeric / status readout (e.g. "440.000 Hz") */
+.node-readout {
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+  color: var(--node-ink-dim);
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+.node-readout.strong { color: var(--node-ink); font-weight: 600; }
+.node-readout.accent { color: var(--node-accent); }
+
+/* ── Form controls ───────────────────────────────────────────────────────── */
+/* Shared shape for the common text/number input used across nodes. */
+.node-input,
+.textInput {
+  width: 56px;
+  background: var(--node-field-bg);
+  color: var(--node-ink);
+  border: 1px solid color-mix(in srgb, var(--node-accent, #556) 42%, transparent);
+  border-radius: var(--node-radius-sm);
+  padding: 2px 5px;
+  font-size: 10px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.13s ease, box-shadow 0.13s ease, background 0.13s ease;
+}
+.node-input.wide { width: 100%; box-sizing: border-box; }
+.node-input.sm { width: 44px; }
+
+.node-select {
+  width: 64px;
+  background: var(--node-field-bg);
+  color: var(--node-ink);
+  border: 1px solid color-mix(in srgb, var(--node-accent, #556) 42%, transparent);
+  border-radius: var(--node-radius-sm);
+  padding: 2px 4px;
+  font-size: 10px;
+  text-align: center;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.13s ease, box-shadow 0.13s ease;
+}
+.node-select.wide { width: 100%; box-sizing: border-box; }
+
+.node-btn {
+  background: var(--node-field-bg);
+  color: var(--node-ink);
+  border: 1px solid color-mix(in srgb, var(--node-accent, #556) 42%, transparent);
+  border-radius: var(--node-radius-sm);
+  padding: 3px 9px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.13s ease, border-color 0.13s ease, box-shadow 0.13s ease, transform 0.06s ease;
+}
+.node-btn:active { transform: translateY(1px); }
+
+/* ── Global theming for raw controls (kept; refined) ─────────────────────────
+   These !important rules guarantee a consistent look even for nodes that still
+   carry legacy inline styles, so the whole canvas stays coherent. */
+.react-flow__node input[type="text"],
+.react-flow__node input[type="number"],
+.react-flow__node input[type="search"],
+.react-flow__node textarea,
+.react-flow__node select,
+.react-flow__node button {
+  /* background is a non-important default so stateful nodes can override it
+     inline (e.g. active toggles, colored status buttons). */
+  background: var(--node-field-bg);
+  color: var(--node-ink) !important;
+  border: 1px solid color-mix(in srgb, var(--node-accent, #555) 42%, transparent) !important;
+  border-radius: var(--node-radius-sm);
+  transition: border-color 0.13s ease, box-shadow 0.13s ease, background 0.13s ease, transform 0.06s ease;
+}
+
+/* Active / selected toggle button — accent filled. */
+.react-flow__node button.node-btn.active,
+.react-flow__node button.active {
+  background: var(--node-accent, #6ee7a8) !important;
+  border-color: var(--node-accent, #6ee7a8) !important;
+  color: #0b0f16 !important;
+  font-weight: 700;
+}
+
+/* Destructive button (remove / delete). */
+.react-flow__node button.node-btn-danger {
+  background: rgba(120, 30, 30, 0.35) !important;
+  border-color: #7a3a3a !important;
+  color: #ffb3b3 !important;
+}
+.react-flow__node button.node-btn-danger:hover {
+  background: rgba(170, 45, 45, 0.5) !important;
+  border-color: #c25555 !important;
+}
+
+.react-flow__node input[type="text"]:hover,
+.react-flow__node input[type="number"]:hover,
+.react-flow__node textarea:hover,
+.react-flow__node select:hover {
+  border-color: color-mix(in srgb, var(--node-accent, #777) 65%, transparent) !important;
+}
+
+.react-flow__node input[type="text"]:focus,
+.react-flow__node input[type="number"]:focus,
+.react-flow__node input[type="search"]:focus,
+.react-flow__node textarea:focus,
+.react-flow__node select:focus,
+.react-flow__node button:focus-visible {
+  outline: none !important;
+  border-color: var(--node-accent, #aaa) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--node-accent, #555) 30%, transparent),
+              0 0 10px color-mix(in srgb, var(--node-accent, #555) 25%, transparent) !important;
+}
+
+.react-flow__node button:hover {
+  background: color-mix(in srgb, var(--node-accent, #555) 16%, var(--node-field-bg)) !important;
+  border-color: var(--node-accent, #aaa) !important;
+}
+
+.react-flow__node button:active {
+  background: color-mix(in srgb, var(--node-accent, #555) 30%, var(--node-field-bg)) !important;
+  transform: translateY(1px);
+}
+
+.react-flow__node select option {
+  background: #14151f;
+  color: var(--node-ink);
+}
+
+/* ── Handles (ports) ─────────────────────────────────────────────────────────
+   Nodes that set an inline background keep their custom color; uncolored
+   handles inherit a tasteful accent-tinted default with a hover glow. */
+.react-flow__handle {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #cfd6e6;
+  border: 1.5px solid #11131f;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+  /* Grow on hover via width/height (NOT transform): React Flow uses
+     transform: translate(±50%, -50%) to center handles on the node edge, so
+     overriding transform would knock them off-center. Since that translate is
+     relative to the handle's own size, growing width/height keeps it centered. */
+  transition: box-shadow 0.14s ease, width 0.1s ease, height 0.1s ease, background 0.14s ease;
+}
+.react-flow__handle:hover {
+  width: 14px !important;
+  height: 14px !important;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4),
+              0 0 8px 2px color-mix(in srgb, var(--node-accent, #6ee7a8) 70%, transparent);
+}
+.react-flow__handle.connExtraClass,
+.react-flow__handle-connecting { background: var(--node-accent, #6ee7a8); }
+.react-flow__handle-valid {
+  background: #4ade80 !important;
+  box-shadow: 0 0 8px 2px rgba(74, 222, 128, 0.6);
+}
+
+/* ── Legacy / specific class names (preserved) ───────────────────────────── */
 .audio-header {
   display: flex;
   align-items: center;
@@ -36,7 +315,7 @@
   background: transparent;
   font-size: 16px;
   font-weight: bold;
-  font-family: Calibri, sans-serif;
+  font-family: 'Inter', 'Segoe UI', Calibri, sans-serif;
   color: inherit;
 }
 
@@ -45,7 +324,7 @@
   width: 30%;
   margin-left: 2px;
   background: transparent;
-  font-family: Calibri, sans-serif;
+  font-family: 'Inter', 'Segoe UI', Calibri, sans-serif;
   color: inherit;
 }
 
@@ -53,59 +332,18 @@
   display: block;
   font-size: 14px;
   margin-bottom: 5px;
-  font-family: Calibri, sans-serif;
   color: inherit;
 }
 
-.marginLeft20 {
-  margin-left: 20px;
-}
+.marginLeft20 { margin-left: 20px; }
 
-.mainOutput {
-  width: 10px;
-  height: 10px;
-}
-
+.mainOutput,
 .mainInput {
   width: 10px;
   height: 10px;
 }
 
-/* ── Transparent inputs with category accent color (scoped to flow nodes) ── */
-.react-flow__node input[type="text"],
-.react-flow__node input[type="number"],
-.react-flow__node select,
-.react-flow__node button {
-  background: transparent;
-  color: #eeeeee !important;
-  border: 1px solid color-mix(in srgb, var(--node-accent, #555555) 50%, transparent) !important;
-  border-radius: 4px;
-}
-
-.react-flow__node input[type="text"]:focus,
-.react-flow__node input[type="number"]:focus,
-.react-flow__node select:focus,
-.react-flow__node button:focus {
-  outline: none !important;
-  border-color: var(--node-accent, #aaaaaa) !important;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--node-accent, #555555) 40%, transparent) !important;
-}
-
-.react-flow__node button:hover {
-  background: color-mix(in srgb, var(--node-accent, #555555) 15%, transparent) !important;
-  border-color: var(--node-accent, #aaaaaa) !important;
-}
-
-.react-flow__node button:active {
-  background: color-mix(in srgb, var(--node-accent, #555555) 30%, transparent) !important;
-}
-
-.react-flow__node select option {
-  background: #1a1a1a;
-  color: #eeeeee;
-}
-
-/* ── CodeMirror editor semi-transparent background ──────────────────────── */
+/* ── CodeMirror editor (used by script/function nodes) ───────────────────── */
 .cm-editor,
 .cm-scroller {
   background: rgba(10, 10, 18, 0.45) !important;
@@ -113,40 +351,27 @@
   text-align: left !important;
 }
 
-.cm-content {
-  text-align: left !important;
-}
+.cm-content { text-align: left !important; }
 
 .cm-gutters {
   background: rgba(10, 10, 18, 0.55) !important;
-  border-right: 1px solid color-mix(in srgb, var(--node-accent, #555555) 30%, transparent) !important;
+  border-right: 1px solid color-mix(in srgb, var(--node-accent, #555) 30%, transparent) !important;
 }
 
-/* ── State-indicating buttons (red/green) — override transparent rule ───── */
-.node-state-btn-on {
-  background: #00c44f !important;
-  border-color: #00ff66 !important;
-  box-shadow: 0 0 10px 3px rgba(0, 200, 80, 0.55) !important;
-  color: #fff !important;
-}
-
-.node-state-btn-off {
-  background: #c41a1a !important;
-  border-color: #ff3333 !important;
-  box-shadow: 0 0 10px 3px rgba(200, 30, 30, 0.55) !important;
-  color: #fff !important;
-}
-
-.node-state-btn-stop {
-  background: #c41a1a !important;
-  border-color: #ff3333 !important;
-  box-shadow: 0 0 10px 3px rgba(200, 30, 30, 0.55) !important;
-  color: #fff !important;
-}
-
+/* ── State-indicating buttons (override the transparent rule above) ──────── */
+.node-state-btn-on,
 .node-state-btn-play {
-  background: #00c44f !important;
-  border-color: #00ff66 !important;
-  box-shadow: 0 0 10px 3px rgba(0, 200, 80, 0.55) !important;
+  background: linear-gradient(180deg, #18d864, #00b347) !important;
+  border-color: #2bff7e !important;
+  box-shadow: 0 0 10px 3px rgba(0, 200, 80, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+  color: #062b14 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.node-state-btn-off,
+.node-state-btn-stop {
+  background: linear-gradient(180deg, #e23b3b, #b01717) !important;
+  border-color: #ff5a5a !important;
+  box-shadow: 0 0 10px 3px rgba(200, 30, 30, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
   color: #fff !important;
 }

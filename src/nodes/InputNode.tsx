@@ -36,21 +36,20 @@ const InputNode: React.FC<InputNodeProps> = ({ id, data }) => {
   const dec = () => setIndex(i => (i > 0 ? i - 1 : 0));
 
   return (
-    <div style={containerStyle}>
-      <div style={badgeStyle}>
-        <span><b>IN</b></span>
-      </div>
+    <div className="flow-node-shell" style={{ width: 70, padding: 6 }}>
+      <div className="node-title">IN</div>
 
-      <div style={stackStyle}>
-        <div style={buttonRowStyle}>
-          <button type="button" onClick={dec} style={btnStyle}>-</button>
-          <button type="button" onClick={inc} style={btnStyle}>+</button>
+      <div className="node-col">
+        <div className="node-row" style={{ gap: 4 }}>
+          <button type="button" onClick={dec} className="node-btn" style={btnSize}>-</button>
+          <button type="button" onClick={inc} className="node-btn" style={btnSize}>+</button>
         </div>
         <input
           readOnly
           type="text"
           value={index}
-          style={inputStyle}
+          className="nodrag node-input"
+          style={{ width: 50 }}
         />
       </div>
 
@@ -64,55 +63,11 @@ const InputNode: React.FC<InputNodeProps> = ({ id, data }) => {
   );
 };
 
-const containerStyle: React.CSSProperties = {
-  padding: 6,
-  border: "1px solid #555",
-  borderRadius: 6,
-  width: 70,
-  background: "#1f1f1f",
-  color: "#eee",
-  textAlign: "center",
-};
-
-const badgeStyle: React.CSSProperties = {
-  textAlign: "center",
-  marginBottom: 4,
-};
-
-const stackStyle: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  gap: 4,
-};
-
-const buttonRowStyle: React.CSSProperties = {
-  display: "flex",
-  gap: 4,
-};
-
-const btnStyle: React.CSSProperties = {
-  background: "#222",
-  color: "#ddd",
-  border: "1px solid #555",
+const btnSize: React.CSSProperties = {
   width: 20,
   height: 20,
-  lineHeight: "16px",
   padding: 0,
-  cursor: "pointer",
   fontSize: 14,
-  borderRadius: 4,
-};
-
-const inputStyle: React.CSSProperties = {
-  width: 50,
-  background: "#222",
-  color: "#eee",
-  border: "1px solid #444",
-  borderRadius: 4,
-  padding: "2px 4px",
-  fontSize: 12,
-  textAlign: "center",
 };
 
 export default InputNode;

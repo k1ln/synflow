@@ -98,20 +98,16 @@ const MidiButtonFlowNode: React.FC<MidiButtonNodeProps> = ({ data }) => {
       <Handle type="source" position={Position.Right} id="output" className="mainOutput" />
       <div>
         <button
-          className="nodrag nowheel nopan"
           draggable={false}
           onMouseDown={(e) => { e.stopPropagation(); }}
           onPointerDown={(e) => { e.stopPropagation(); }}
           onContextMenu={handleContextMenu}
+          className="nodrag nowheel nopan node-btn"
           style={{
             position: 'relative',
             padding: '10px',
             margin: '10px 0',
-            background: isMidiLearning ? '#7a5b00' : '#444',
-            color: '#fff',
-            border: '1px solid #ddd',
-            borderRadius: '5px',
-            cursor: 'pointer',
+            background: isMidiLearning ? '#7a5b00' : undefined,
             width: 'auto',
             maxWidth: '100%'
           }}

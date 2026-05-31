@@ -6,7 +6,7 @@ const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 
 const [major, minor, patch] = pkg.version.split('.').map(Number);
 
-let newMajor = major;
+const newMajor = major;
 let newMinor = minor;
 let newPatch = patch + 1;
 

@@ -38,10 +38,7 @@ import NoiseFlowNode from '../nodes/NoiseFlowNode';
 import MicFlowNode from '../nodes/MicFlowNode';
 import RecordingFlowNode from '../nodes/RecordingFlowNode';
 import SpeedDividerFlowNode from '../nodes/SpeedDividerFlowNode';
-import AudioSignalFreqShifterFlowNode from '../nodes/AudioSignalFreqShifterFlowNode';
-import FlowEventFreqShifterFlowNode from '../nodes/FlowEventFreqShifterFlowNode';
 import EqualizerFlowNode from '../nodes/EqualizerFlowNode';
-import VocoderFlowNode from '../nodes/VocoderFlowNode';
 
 export type ControlType = 'string' | 'number' | 'boolean' | 'select';
 
@@ -760,7 +757,7 @@ const FrequencyPreview: React.FC<{
       <FrequencyFlowNode
         data={{
           value: frequency,
-          frequency: frequency,
+          frequency,
           frequencyType,
           knobValue,
           id: 'freq-doc',
@@ -3132,7 +3129,7 @@ export const docs: DocItem[] = [
       '',
       'Outputs',
       '- output (right, top 55%): Pass-through audio output. Signal is tapped for analysis but continues unchanged to downstream nodes.',
-      '- Event bus: Emits analysis data every 33ms to \'\${nodeId}.analyser.data\' with payload {fftSize, freq: Uint8Array, wave: Uint8Array, timestamp}.',
+      '- Event bus: Emits analysis data every 33ms to \'${nodeId}.analyser.data\' with payload {fftSize, freq: Uint8Array, wave: Uint8Array, timestamp}.',
       '',
       'Display Modes',
       '- bars: LED-style frequency spectrum with 52 columns and 24 rows. Color-coded by level (blue < 20%, green 20-75%, orange 75-90%, red > 90%).',
@@ -3200,7 +3197,7 @@ export const docs: DocItem[] = [
       '- Empty state: Shows "no events" message when no data has been received.',
       '',
       'Technical Details',
-      '- Event subscription: Listens to \'\${nodeId}.main-input.receiveNodeOn\' and \'\${nodeId}.main-input.receiveNodeOff\' on EventBus.',
+      '- Event subscription: Listens to \'${nodeId}.main-input.receiveNodeOn\' and \'${nodeId}.main-input.receiveNodeOff\' on EventBus.',
       '- Console logging: All events also logged to browser console with [LogFlowNode ON/OFF] prefix and node ID.',
       '- State management: Recent entries stored in React state array, automatically trimmed to maxEntries length.',
       '- No audio connection: VirtualLogNode does not create or connect any Web Audio nodes.',

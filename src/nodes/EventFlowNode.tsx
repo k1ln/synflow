@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Handle, Position } from "@xyflow/react";
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
@@ -65,28 +65,29 @@ const EventFlowNode: React.FC<EventNodeProps> = ({ data }) => {
   };
 
   return (
-    <div style={{ padding: 10, border: "1px solid #2a3139", borderRadius: 5, width: 360, background: "#1f1f1f", color: "#eee" }}>
+    <div className="flow-node-shell" style={{ width: 360, padding: 10, textAlign: "left" }}>
+      <div className="node-title">EVENT</div>
       <Handle type="target" position={Position.Left} id="main-input" style={{ top: 32, width: 10, height: 10 }} />
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-        <label style={{ minWidth: 80 }}>Listener</label>
-        <select value={listener} onChange={(e)=> setListener(e.target.value)} style={{ flex:1, background:'#111', color:'#eee', border:'1px solid #333', padding:'6px 8px', borderRadius:6 }}>
+        <label className="node-label" style={{ minWidth: 80 }}>Listener</label>
+        <select value={listener} onChange={(e)=> setListener(e.target.value)} className="node-select" style={{ flex:1, width: 'auto', padding:'6px 8px' }}>
           <option value="">-- choose --</option>
           {available.map(n => (
             <option key={n} value={n}>{n}</option>
           ))}
         </select>
-        <button onClick={refresh} title="Refresh listeners" style={{ padding:'6px 10px', background:'#222', color:'#ccc', border:'1px solid #333', borderRadius:6, cursor:'pointer' }}>↻</button>
+        <button onClick={refresh} title="Refresh listeners" className="node-btn" style={{ padding:'6px 10px' }}>↻</button>
       </div>
 
       <div style={{ marginBottom: 8 }}>
-        <div style={{ fontSize:12, opacity:.8, marginBottom:4 }}>Last payload</div>
-        <div style={{ fontFamily:'monospace', fontSize:12, background:'#141414', border:'1px solid #333', borderRadius:4, padding:6, maxHeight:120, overflow:'auto' }}>
+        <div className="node-label" style={{ marginBottom:4 }}>Last payload</div>
+        <div style={{ fontFamily:'monospace', fontSize:12, background:'rgba(8,10,20,0.55)', border:'1px solid #333', borderRadius:4, padding:6, maxHeight:120, overflow:'auto' }}>
           {lastPayload ? JSON.stringify(lastPayload, null, 2) : '—'}
         </div>
       </div>
 
       <div>
-        <label style={{ color: "#fff", marginBottom: 5, display: "block" }}>Function Editor:</label>
+        <label className="node-label" style={{ marginBottom: 5, display: "block" }}>Function Editor:</label>
         <CodeMirror
           value={functionCode}
           extensions={[javascript()]}
@@ -97,7 +98,7 @@ const EventFlowNode: React.FC<EventNodeProps> = ({ data }) => {
       </div>
 
       <div style={{ display:'flex', gap:8, marginTop:10 }}>
-        <button onClick={emitPreview} style={{ padding:'6px 12px', background:'#333', color:'#eee', border:'1px solid #444', borderRadius:6, cursor:'pointer' }}>Test transform</button>
+        <button onClick={emitPreview} className="node-btn" style={{ padding:'6px 12px' }}>Test transform</button>
         <div style={{ fontSize:12, opacity:.7, alignSelf:'center' }}>External trigger via window.flowSynth?.emit(eventName, payload)</div>
       </div>
 

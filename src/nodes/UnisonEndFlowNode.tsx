@@ -1,6 +1,5 @@
-﻿import React, { useState,useEffect } from "react";
+﻿import React from "react";
 import { Handle, Position } from "@xyflow/react";
-import MidiKnob, { MidiMapping } from "../components/MidiKnob";
 import "./AudioNode.css";
 
 
@@ -16,9 +15,7 @@ export type UnisonEndFlowNodeProps = {
 const UnisonEndFlowNode: React.FC<UnisonEndFlowNodeProps> = ({ data }) => {
   return (
     <div style={data.style}>
-      <div style={{ textAlign: "center", marginBottom: "0px" }}>
-        <span><b>  Unison End  </b></span>
-      </div>
+      <div className="node-title">UNISON END</div>
 
       {/* Main Input */}
       <Handle

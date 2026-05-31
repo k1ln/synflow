@@ -55,13 +55,15 @@ export function LogFlowNode(props: NodeProps<any>) {
 
   return (
   <div style={{ ...(data.style || {}), padding: 6 }}>
+      <div className="node-title">LOG</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
         <input
           type="text"
           value={label}
           placeholder="log name"
           onChange={(e) => updateData({ label: e.target.value })}
-          style={{ flex: 1, background: '#222', color: '#eee', border: '1px solid #444', borderRadius: 3, fontSize: 11, padding: '2px 4px' }}
+          className="nodrag node-input"
+          style={{ flex: 1, width: 'auto' }}
         />
         <input
           type="text"
@@ -72,7 +74,8 @@ export function LogFlowNode(props: NodeProps<any>) {
             const v = parseInt(e.target.value, 10);
             if (!isNaN(v)) updateData({ maxEntries: v });
           }}
-          style={{ width: 50, background: '#222', color: '#eee', border: '1px solid #444', borderRadius: 3, fontSize: 11, padding: '2px 4px' }}
+          className="nodrag node-input"
+          style={{ width: 50 }}
           title="max entries"
         />
       </div>
@@ -81,7 +84,7 @@ export function LogFlowNode(props: NodeProps<any>) {
         lineHeight: '14px',
         maxHeight: 200,
         overflowY: 'auto',
-        background: '#181818',
+        background: 'rgba(8,10,20,0.55)',
         border: '1px solid #333',
         padding: 4,
         borderRadius: 3

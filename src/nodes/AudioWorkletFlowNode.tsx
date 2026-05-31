@@ -244,7 +244,7 @@ class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {
   }, []);
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       const loaded = await loadScripts();
       // Priority 1: existing node data (saved with flow) wins
       if (data.processorCode) {
@@ -290,7 +290,7 @@ class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {
     if (!finalName) finalName = 'unnamed';
     setScriptName(finalName);
     const existingIdx = scripts.findIndex(s => s.name === finalName);
-    let remoteId = existingIdx >= 0 ? scripts[existingIdx].remoteId : undefined;
+    const remoteId = existingIdx >= 0 ? scripts[existingIdx].remoteId : undefined;
     let hasDisk = existingIdx >= 0 ? scripts[existingIdx].hasDisk : false;
     try {
       const root = await loadRootHandle();
@@ -534,11 +534,11 @@ class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {
         id="output"
         style={{ top: 18, width: 10, height: 10, background: '#444', border: '1px solid #888' }}
       />
-      <div className="audio-header" style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <label><b>Audio Worklet:</b></label>
+      <div className="node-row" style={{ justifyContent:'space-between' }}>
+        <span className="node-title" style={{ margin: 0, padding: 0, border: 0, textShadow: 'none' }}>Audio Worklet</span>
         <div style={{ display:'flex', gap:4 }}>
-          <button onClick={toggleHidden} style={{padding:'2px 8px', background:'#1e1e1e', color:'#eee', border:'1px solid #444', borderRadius:4}}>{isHidden ? 'Show' : 'Hide'}</button>
-          <button onClick={toggleExpanded} style={{padding:'2px 8px', background:'#1e1e1e', color:'#eee', border:'1px solid #444', borderRadius:4}} disabled={isHidden}>{isExpanded ? 'Shrink' : 'Expand'}</button>
+          <button onClick={toggleHidden} className="node-btn" style={{ padding:'2px 8px' }}>{isHidden ? 'Show' : 'Hide'}</button>
+          <button onClick={toggleExpanded} className="node-btn" style={{ padding:'2px 8px' }} disabled={isHidden}>{isExpanded ? 'Shrink' : 'Expand'}</button>
         </div>
       </div>
       {/* Minimal inline controls */}
@@ -559,7 +559,8 @@ class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {
           {params.map(p => (
             <div key={p.id} style={{display:'flex', alignItems:'center', gap:4}}>
               <input
-                style={{flex:1, minWidth:40, fontSize:'0.55rem', background:'#262a2f', color:'#eee', border:'1px solid #444', borderRadius:4, padding:'2px 4px'}}
+                className="nodrag node-input"
+                style={{ flex:1, minWidth:40, width:'auto' }}
                 value={p.name}
                 onChange={e=> updateParam(p.id, { name: e.target.value })}
                 title="Parameter name (used for reference)"
@@ -567,7 +568,8 @@ class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {
               <select
                 value={resolveMode(p)}
                 onChange={e => updateParam(p.id, { mode: e.target.value as ParamMode })}
-                style={{width:64, fontSize:'0.55rem', background:'#262a2f', color:'#eee', border:'1px solid #444', borderRadius:4, padding:'2px 2px'}}
+                className="node-select"
+                style={{ width:64 }}
                 title="Parameter mode"
               >
                 <option value="flow">flow</option>
@@ -575,12 +577,13 @@ class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {
               </select>
               <input
                 type="number"
-                style={{width:54, fontSize:'0.55rem', background:'#262a2f', color:'#eee', border:'1px solid #444', borderRadius:4, padding:'2px 4px'}}
+                className="nodrag node-input"
+                style={{ width:54 }}
                 value={p.value}
                 onChange={e=> updateParam(p.id, { value: Number(e.target.value) })}
                 title="Parameter value"
               />
-              <button onClick={()=> deleteParam(p.id)} style={{width:20, height:20, fontSize:'0.6rem', background:'#3a1d1d', color:'#ffaaaa', border:'1px solid #633', borderRadius:4}} title="Delete parameter">×</button>
+              <button onClick={()=> deleteParam(p.id)} className="node-btn node-btn-danger" style={{ width:20, height:20, padding:0 }} title="Delete parameter">×</button>
             </div>
           ))}
         </div>
@@ -624,7 +627,7 @@ class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {
                       </div>
                       <div style={{display:'flex', gap:4}}>
                         <button style={{padding:'0 4px', background:'#222', color:'#ddd', border:'1px solid #444', borderRadius:3}} onClick={(e)=>{e.stopPropagation(); loadScript(s.name);}}>Load</button>
-                        <button style={{padding:'0 4px', background:'#401b1b', color:'#ffb4b4', border:'1px solid #633', borderRadius:3}} onClick={(e)=>{e.stopPropagation(); deleteScriptEntry(s);}}>Delete</button>
+                        <button style={{padding:'0 4px', background:'#401b1b', color:'#ffb4b4', border:'1px solid #633', borderRadius:3}} onClick={(e)=>{e.stopPropagation(); void deleteScriptEntry(s);}}>Delete</button>
                       </div>
                     </div>
                   ))}

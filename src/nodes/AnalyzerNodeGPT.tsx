@@ -244,36 +244,14 @@ const AnalyzerNodeGPT: React.FC<AnalyzerNodeGPTProps> = ({
 
   return (
     <div style={panelStyle}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "6px",
-          gap: "6px",
-        }}
-      >
+      <div className="node-row" style={{ justifyContent: "space-between", marginBottom: 6, gap: 6 }}>
         <input
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          style={{
-            flex: 1,
-            background: "#070a16",
-            border: "1px solid #1f2b46",
-            borderRadius: "8px",
-            padding: "4px 8px",
-            color: "#f4f6ff",
-            fontSize: "12px",
-          }}
+          className="nodrag node-input"
+          style={{ flex: 1, width: "auto" }}
         />
-        <span
-          style={{
-            minWidth: "44px",
-            textAlign: "right",
-            fontSize: "12px",
-            color: "#9db0ff",
-          }}
-        >
+        <span className="node-readout" style={{ minWidth: 44, textAlign: "right" }}>
           {peakText}
         </span>
       </div>
@@ -319,15 +297,7 @@ const AnalyzerNodeGPT: React.FC<AnalyzerNodeGPTProps> = ({
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as Mode)}
-          style={{
-            width: "100%",
-            background: "#070a16",
-            border: "1px solid #1f2b46",
-            borderRadius: "8px",
-            padding: "4px",
-            color: "#f4f6ff",
-            fontSize: "12px",
-          }}
+          className="node-select wide"
         >
           <option value="bars">Bars</option>
           <option value="scope">Scope</option>
@@ -337,15 +307,7 @@ const AnalyzerNodeGPT: React.FC<AnalyzerNodeGPTProps> = ({
           onChange={(e) =>
             setColorPreset(e.target.value as Preset)
           }
-          style={{
-            width: "100%",
-            background: "#070a16",
-            border: "1px solid #1f2b46",
-            borderRadius: "8px",
-            padding: "4px",
-            color: "#f4f6ff",
-            fontSize: "12px",
-          }}
+          className="node-select wide"
         >
           <option value="aurora">Aurora</option>
           <option value="ember">Ember</option>
@@ -356,15 +318,7 @@ const AnalyzerNodeGPT: React.FC<AnalyzerNodeGPTProps> = ({
           onChange={(e) =>
             setFftSize(parseInt(e.target.value, 10))
           }
-          style={{
-            width: "100%",
-            background: "#070a16",
-            border: "1px solid #1f2b46",
-            borderRadius: "8px",
-            padding: "4px",
-            color: "#f4f6ff",
-            fontSize: "12px",
-          }}
+          className="node-select wide"
         >
           {[256, 512, 1024, 2048, 4096].map((size) => (
             <option key={size} value={size}>
@@ -373,12 +327,8 @@ const AnalyzerNodeGPT: React.FC<AnalyzerNodeGPTProps> = ({
           ))}
         </select>
         <label
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            fontSize: "11px",
-            color: "#9db0ff",
-          }}
+          className="node-label"
+          style={{ display: "flex", flexDirection: "column" }}
         >
           Smooth {smooth.toFixed(2)}
           <input
@@ -401,12 +351,8 @@ const AnalyzerNodeGPT: React.FC<AnalyzerNodeGPTProps> = ({
         }}
       >
         <label
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            fontSize: "11px",
-            color: "#9db0ff",
-          }}
+          className="node-label"
+          style={{ display: "flex", flexDirection: "column" }}
         >
           Min dB
           <input
@@ -415,23 +361,12 @@ const AnalyzerNodeGPT: React.FC<AnalyzerNodeGPTProps> = ({
             onChange={(e) =>
               setMinDb(parseInt(e.target.value, 10))
             }
-            style={{
-              background: "#070a16",
-              border: "1px solid #1f2b46",
-              borderRadius: "8px",
-              padding: "4px",
-              color: "#f4f6ff",
-              fontSize: "12px",
-            }}
+            className="nodrag node-input wide"
           />
         </label>
         <label
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            fontSize: "11px",
-            color: "#9db0ff",
-          }}
+          className="node-label"
+          style={{ display: "flex", flexDirection: "column" }}
         >
           Max dB
           <input
@@ -440,14 +375,7 @@ const AnalyzerNodeGPT: React.FC<AnalyzerNodeGPTProps> = ({
             onChange={(e) =>
               setMaxDb(parseInt(e.target.value, 10))
             }
-            style={{
-              background: "#070a16",
-              border: "1px solid #1f2b46",
-              borderRadius: "8px",
-              padding: "4px",
-              color: "#f4f6ff",
-              fontSize: "12px",
-            }}
+            className="nodrag node-input wide"
           />
         </label>
       </div>

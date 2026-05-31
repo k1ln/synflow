@@ -75,9 +75,7 @@ const ReverbFlowNode: React.FC<ReverbFlowNodeProps> = ({ data }) => {
 
   return (
     <div style={data.style}>
-      <div style={{ textAlign: "center", marginBottom: "0px", fontSize: "10px" }}>
-        <span><b>{label?.toUpperCase() ?? "REVERB"}</b></span>
-      </div>
+      <div className="node-title">{label?.toUpperCase() ?? "REVERB"}</div>
 
       <Handle
         type="target"
@@ -93,7 +91,7 @@ const ReverbFlowNode: React.FC<ReverbFlowNodeProps> = ({ data }) => {
         className="mainOutput"
       />
 
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+      <div className="node-field">
         <MidiKnob
           accentColor="#60a5fa"
           min={0}
@@ -111,7 +109,7 @@ const ReverbFlowNode: React.FC<ReverbFlowNodeProps> = ({ data }) => {
           midiSensitivity={0.8}
           midiSmoothing={0.4}
         />
-        <span style={{ fontSize: 10 }}>Time (s)</span>
+        <span className="node-label">Time (s)</span>
         <input
           type="text"
           value={Number.isFinite(seconds) ? seconds.toFixed(2) : ""}
@@ -122,7 +120,8 @@ const ReverbFlowNode: React.FC<ReverbFlowNodeProps> = ({ data }) => {
             setSeconds(clamped);
             setSecondsKnob(secondsToKnob(clamped));
           }}
-          style={fieldStyle}
+          className="node-input"
+          style={{ width: 60 }}
         />
         <Handle
           type="target"
@@ -132,7 +131,7 @@ const ReverbFlowNode: React.FC<ReverbFlowNodeProps> = ({ data }) => {
         />
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, marginTop: 6 }}>
+      <div className="node-field">
         <MidiKnob
           accentColor="#60a5fa"
           min={0}
@@ -150,7 +149,7 @@ const ReverbFlowNode: React.FC<ReverbFlowNodeProps> = ({ data }) => {
           midiSensitivity={0.8}
           midiSmoothing={0.4}
         />
-        <span style={{ fontSize: 10 }}>Decay</span>
+        <span className="node-label">Decay</span>
         <input
           type="text"
           value={Number.isFinite(decay) ? decay.toFixed(2) : ""}
@@ -161,7 +160,8 @@ const ReverbFlowNode: React.FC<ReverbFlowNodeProps> = ({ data }) => {
             setDecay(clamped);
             setDecayKnob(decayToKnob(clamped));
           }}
-          style={fieldStyle}
+          className="node-input"
+          style={{ width: 60 }}
         />
         <Handle
           type="target"
@@ -171,8 +171,8 @@ const ReverbFlowNode: React.FC<ReverbFlowNodeProps> = ({ data }) => {
         />
       </div>
 
-      <div style={{ marginTop: 6, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-        <label style={{ fontSize: 10, display: "flex", alignItems: "center", gap: 4 }}>
+      <div className="node-field">
+        <label className="node-label" style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <input
             type="checkbox"
             checked={reverse}
@@ -189,8 +189,8 @@ const ReverbFlowNode: React.FC<ReverbFlowNodeProps> = ({ data }) => {
 
         <button
           type="button"
+          className="node-btn"
           onClick={() => setShowFormula((prev) => !prev)}
-          style={formulaToggleStyle}
         >
           {showFormula ? "Hide Formula" : "Show Formula"}
         </button>
@@ -198,7 +198,8 @@ const ReverbFlowNode: React.FC<ReverbFlowNodeProps> = ({ data }) => {
           <textarea
             value={formula}
             onChange={(event) => setFormula(event.target.value)}
-            style={formulaAreaStyle}
+            className="nodrag"
+            style={{ width: "100%", minHeight: 60, fontSize: 10, padding: 4, resize: "vertical", boxSizing: "border-box" }}
           />
         )}
         <Handle
@@ -243,38 +244,5 @@ function knobToDecay(value: number) {
   const logValue = logMin + value * (logMax - logMin);
   return Math.pow(10, logValue);
 }
-
-const fieldStyle: React.CSSProperties = {
-  width: 60,
-  background: "#222",
-  color: "#eee",
-  border: "1px solid #444",
-  borderRadius: 4,
-  padding: "2px 3px",
-  fontSize: 11,
-  textAlign: "center",
-};
-
-const formulaToggleStyle: React.CSSProperties = {
-  background: "#2a2a2a",
-  color: "#bbb",
-  border: "1px solid #444",
-  borderRadius: 4,
-  fontSize: 9,
-  padding: "2px 6px",
-  cursor: "pointer",
-};
-
-const formulaAreaStyle: React.CSSProperties = {
-  width: "100%",
-  minHeight: 60,
-  background: "#111",
-  color: "#ccf",
-  border: "1px solid #333",
-  borderRadius: 4,
-  fontSize: 10,
-  padding: 4,
-  resize: "vertical",
-};
 
 export default ReverbFlowNode;

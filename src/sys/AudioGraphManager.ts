@@ -9,35 +9,26 @@ import { SimpleIndexedDB } from "../util/SimpleIndexedDB";
 import VirtualOscillatorNode from "../virtualNodes/VirtualOscillatorNode";
 import EventManager from "./EventManager";
 import VirtualLogNode from "../virtualNodes/VirtualLogNode";
-import ADSRFlowNode, { ADSRFlowNodeProps } from "../nodes/ADSRFlowNode";
-import SampleFlowNode, { SampleFlowNodeProps } from "../nodes/SampleFlowNode";
-import { MasterOutFlowNodeProps } from "../nodes/MasterOutFlowNode";
+import { ADSRFlowNodeProps } from "../nodes/ADSRFlowNode";
 import { AudioWorkletFlowNodeProps } from "../nodes/AudioWorkletFlowNode";
-import { ChannelMergerFlowNodeProps } from "../nodes/ChannelMergerFlowNode";
 import { BiquadFilterFlowNodeProps } from "../nodes/BiquadFilterFlowNode";
-import { GainFlowNodeProps } from "../nodes/GainFlowNode";
 import { DelayFlowNodeProps } from "../nodes/DelayFlowNode";
 import { ReverbFlowNodeProps } from "../nodes/ReverbFlowNode";
 import { IIRFilterFlowNodeProps } from "../nodes/IIRFilterFlowNode";
 import { OscillatorFlowNodeProps } from "../nodes/OscillatorFlowNode";
-import { DistortionFlowNodeProps } from "../nodes/DistortionFlowNode";
-import { ChannelSplitterFlowNodeProps } from "../nodes/ChannelSplitterFlowNode";
 import { DynamicCompressorFlowNodeProps } from "../nodes/DynamicCompressorFlowNode";
 import { ClockNodeProps } from "../nodes/ClockFlowNode";
 import { ConstantNodeProps } from "../nodes/ConstantFlowNode";
-import { ConvolverFlowNodeProps } from "../nodes/ConvolverFlowNode";
 import { FlowNodeProps } from "../nodes/FlowNode";
-import FrequencyFlowNode, { FrequencyFlowNodeProps } from "../nodes/FrequencyFlowNode";
+import { FrequencyFlowNodeProps } from "../nodes/FrequencyFlowNode";
 import { FunctionNodeProps } from "../nodes/FunctionFlowNode";
 import { InputNodeProps } from "../nodes/InputNode";
 import { OutputNodeProps } from "../nodes/OutputNode";
-import { SignalRouterNodeProps } from "../nodes/SignalRouterFlowNode";
-import { Switch } from "radix-ui";
 import { SwitchFlowNodeProps } from "../nodes/SwitchFlowNode";
 import { ButtonNodeProps } from "../nodes/ButtonFlowNode";
 import { MidiButtonNodeProps } from "../nodes/MidiButtonFlowNode";
-import virtualGainNode, { VirtualGainNode } from "../virtualNodes/VirtualGainNode";
-import virtualDelayNode, { VirtualDelayNode } from "../virtualNodes/VirtualDelayNode";
+import { VirtualGainNode } from "../virtualNodes/VirtualGainNode";
+import { VirtualDelayNode } from "../virtualNodes/VirtualDelayNode";
 import VirtualReverbNode from "../virtualNodes/VirtualReverbNode";
 import VirtualBiquadFilterNode from "../virtualNodes/VirtualBiquadFilterNode";
 import VirtualIIRFilterNode from "../virtualNodes/VirtualIIRFilterNode";
@@ -92,7 +83,6 @@ import {
     loadFlowFromDisk,
     makeFlowDbKey,
 } from "../util/FileSystemAudioStore";
-import { defaultServerMainFields } from "vite";
 
 
 export type DataBaseNode = {
@@ -133,7 +123,7 @@ export interface ExtendedOscillatorNode extends OscillatorNode {
     playbackState?: string;
 }
 
-const webAudioApiFlowNodes = [
+const webAudioApiFlowNodes = new Set<string>([
     "MasterOutFlowNode",
     "OscillatorFlowNode",
     "BiquadFilterFlowNode",
@@ -158,7 +148,7 @@ const webAudioApiFlowNodes = [
     "AudioWorkletOscillatorFlowNode",
     "EqualizerFlowNode",
     "VocoderFlowNode",
-];
+]);
 
 export type VirtualNodeType = VirtualFlowNode |
     AudioContext |
@@ -200,6 +190,8 @@ export type VirtualNodeType = VirtualFlowNode |
 export class AudioGraphManager {
     private audioContext: AudioContext;
     public virtualEdges: Map<string, Edge[]>;
+    // Parallel id-set for O(1) dedup on push (replaces .some()).
+    private virtualEdgeIds: Map<string, Set<string>> = new Map();
     private eventBus: EventBus;
     private eventManager: EventManager;
     private nodesRef: React.RefObject<Node[]>;
@@ -212,6 +204,15 @@ export class AudioGraphManager {
     >;
     // Remember original parameter value per nodeId+handle for automation restarts
     private automationBaseParamValues: Map<string, number> = new Map();
+    // Cache parsed node type ("X.Y.OscillatorFlowNode" -> "OscillatorFlowNode")
+    // to avoid repeated string splits on event-emit and connect hot paths.
+    private nodeTypeCache: Map<string, string> = new Map();
+    // Cache audio-param handle resolution per virtual node instance.
+    // WeakMap so it auto-clears when a virtual node is replaced/GCed.
+    private audioParamHandleCache: WeakMap<object, Map<string, boolean>> = new WeakMap();
+    // Cached adjacency built lazily for collectUnisonNodes per call.
+    // Toggle for verbose unison-end debug dump (was always-on in initialize).
+    public static debugUnisonDump = false;
 
     constructor(
         audioContext: AudioContext,
@@ -358,16 +359,27 @@ export class AudioGraphManager {
         // Clear all internal state.
         try { this.virtualNodes.clear(); } catch { /* noop */ }
         try { this.virtualEdges = new Map<string, Edge[]>(); } catch { /* noop */ }
+        try { this.virtualEdgeIds.clear(); } catch { /* noop */ }
         try { this.sourceNodeMapConnectionTree.clear(); } catch { /* noop */ }
         try { this.targetNodeMapConnectionTree.clear(); } catch { /* noop */ }
         try { this.automationBaseParamValues.clear(); } catch { /* noop */ }
+        try { this.nodeTypeCache.clear(); } catch { /* noop */ }
+        try { this.audioParamHandleCache = new WeakMap(); } catch { /* noop */ }
     }
 
     async initialize() {
 
         await this.createVirtualNodes(this.nodesRef.current, null);
         this.connectVirtualNodes(this.edgesRef.current);
-        this.debugDumpUnisonEndConnections();
+        if (AudioGraphManager.debugUnisonDump) {
+            this.debugDumpUnisonEndConnections();
+        }
+        // Start clocks last, so their first tick fires after all edges exist.
+        this.virtualNodes.forEach((v) => {
+            if (v instanceof VirtualClockNode) {
+                v.startIfEmitting();
+            }
+        });
     }
 
     /** Debug: print every tracked connection that targets a UnisonEnd node. */
@@ -411,6 +423,20 @@ export class AudioGraphManager {
         );
     }
 
+    /**
+     * Extract the trailing segment of a dotted node id (the node "type") with caching.
+     * Used in hot paths; the type for a given id never changes during a node's lifetime.
+     */
+    private getNodeTypeFromId(id: string | undefined | null): string | undefined {
+        if (!id) return undefined;
+        const cached = this.nodeTypeCache.get(id);
+        if (cached !== undefined) return cached;
+        const idx = id.lastIndexOf(".");
+        const type = idx === -1 ? id : id.slice(idx + 1);
+        this.nodeTypeCache.set(id, type);
+        return type;
+    }
+
     private isAudioParamTargetHandle(
         targetNodeId: string,
         targetNodeHandle: string | null | undefined
@@ -422,14 +448,27 @@ export class AudioGraphManager {
         const audioNode: any = virtualTarget?.audioNode;
         if (!audioNode) return false;
 
-        if (targetNodeHandle in audioNode) return true;
-
-        const params: any = audioNode.parameters;
-        if (params && typeof params.has === 'function') {
-            return params.has(targetNodeHandle);
+        // Memoize per virtual-node-instance + handle.
+        let handleMap = this.audioParamHandleCache.get(audioNode);
+        if (handleMap) {
+            const cached = handleMap.get(targetNodeHandle);
+            if (cached !== undefined) return cached;
+        } else {
+            handleMap = new Map();
+            this.audioParamHandleCache.set(audioNode, handleMap);
         }
 
-        return false;
+        let result = false;
+        if (targetNodeHandle in audioNode) {
+            result = true;
+        } else {
+            const params: any = audioNode.parameters;
+            if (params && typeof params.has === 'function') {
+                result = params.has(targetNodeHandle);
+            }
+        }
+        handleMap.set(targetNodeHandle, result);
+        return result;
     }
 
     emitEventsForConnectedEdges(
@@ -472,10 +511,9 @@ export class AudioGraphManager {
 
             // Check if target is a WebAudio node that needs updateParams
             if (targetNodeId != null) {
-                const typeSplit = targetNodeId.split(".");
-                if (typeSplit) {
-                    const type = typeSplit[typeSplit.length - 1];
-                    if (webAudioApiFlowNodes.includes(type)) {
+                const type = this.getNodeTypeFromId(targetNodeId);
+                if (type) {
+                    if (webAudioApiFlowNodes.has(type)) {
                         if (!this.isAudioParamTargetHandle(
                             targetNodeId,
                             targetNodeHandle
@@ -524,16 +562,15 @@ export class AudioGraphManager {
             return;
         }
         connectedEdges.forEach((edge) => {
-            if (activeOutput == edge.sourceHandle) {
+            if (activeOutput === edge.sourceHandle) {
                 const targetNodeId = edge.target;
                 if (targetNodeId != null) {
-                    const typeSplit = targetNodeId.split(".");
-                    if (typeSplit) {
-                        const type = typeSplit[typeSplit.length - 1];
-                        if (webAudioApiFlowNodes.includes(type)) {
+                    const type = this.getNodeTypeFromId(targetNodeId);
+                    if (type) {
+                        if (webAudioApiFlowNodes.has(type)) {
                             const targetNodeHandle = edge.targetHandle;
-                            let targetNodeHandleData = data.value;
-                            let targetDataObject = {
+                            const targetNodeHandleData = data.value;
+                            const targetDataObject = {
                                 nodeId: targetNodeId,
                                 source: node.id,
                                 data: {
@@ -586,9 +623,8 @@ export class AudioGraphManager {
             if (!targetNodeId) return;
 
             // WebAudio param routing (same logic as handleSendNodeEventSwitch)
-            const typeSplit = targetNodeId.split(".");
-            const type = typeSplit[typeSplit.length - 1];
-            if (webAudioApiFlowNodes.includes(type)) {
+            const type = this.getNodeTypeFromId(targetNodeId);
+            if (type && webAudioApiFlowNodes.has(type)) {
                 if (this.isAudioParamTargetHandle(targetNodeId, targetNodeHandle)) {
                     if (eventType !== "receiveNodeOff") {
                         this.eventBus.emit(`${targetNodeId}.params.updateParams`, {
@@ -821,10 +857,9 @@ export class AudioGraphManager {
             const edge = connectedEdges[i];
             const targetNodeId = edge.target;
             if (targetNodeId !== null) {
-                const typeSplit = targetNodeId.split(".");
-                if (typeSplit) {
-                    const type = typeSplit[typeSplit.length - 1];
-                    if (webAudioApiFlowNodes.includes(type) && type !== "SampleFlowNode") {
+                const type = this.getNodeTypeFromId(targetNodeId);
+                if (type) {
+                    if (webAudioApiFlowNodes.has(type) && type !== "SampleFlowNode") {
                         const targetNodeHandle = edge.targetHandle;
                         let targetNodeHandleData = data.value;
                         if (Array.isArray(data) && index !== null) {
@@ -893,13 +928,30 @@ export class AudioGraphManager {
     }
 
     sortEdges(connectedEdges: Edge[]) {
-        // Sort edges: those with 'reset' in targetHandle first
-        const sortedEdges = connectedEdges.sort((a, b) => {
-            const aReset = (a.targetHandle || '').toLowerCase().includes('reset') ? -1 : 0;
-            const bReset = (b.targetHandle || '').toLowerCase().includes('reset') ? -1 : 0;
-            return bReset - aReset;
-        });
-        return sortedEdges;
+        // Reset-targeted edges must fire first. The vast majority of edge groups
+        // have no reset handle at all, so skip the sort entirely in that case.
+        // We also scan once to decide; if needed, partition into reset/non-reset
+        // and concat — this avoids the O(n log n) sort and the random-comparator
+        // cost on large fan-outs without mutating the input array's stored copy.
+        let hasReset = false;
+        for (let i = 0; i < connectedEdges.length; i++) {
+            const h = connectedEdges[i].targetHandle;
+            if (h && h.toLowerCase().indexOf('reset') !== -1) {
+                hasReset = true;
+                break;
+            }
+        }
+        if (!hasReset) return connectedEdges;
+
+        const resetEdges: Edge[] = [];
+        const otherEdges: Edge[] = [];
+        for (let i = 0; i < connectedEdges.length; i++) {
+            const e = connectedEdges[i];
+            const h = e.targetHandle;
+            if (h && h.toLowerCase().indexOf('reset') !== -1) resetEdges.push(e);
+            else otherEdges.push(e);
+        }
+        return resetEdges.concat(otherEdges);
     }
 
     // Filtered version used when a specific output index fired
@@ -916,12 +968,11 @@ export class AudioGraphManager {
             if (edge.sourceHandle !== sourceHandle) return;
             const targetNodeId = edge.target;
             if (targetNodeId != null) {
-                const typeSplit = targetNodeId.split(".");
-                if (typeSplit) {
-                    const type = typeSplit[typeSplit.length - 1];
+                const type = this.getNodeTypeFromId(targetNodeId);
+                if (type) {
                     // Exclude SampleFlowNode from updateParams path
                     // since its segment handles are event triggers
-                    if (webAudioApiFlowNodes.includes(type) &&
+                    if (webAudioApiFlowNodes.has(type) &&
                         type !== "SampleFlowNode") {
                         const targetNodeHandle = edge.targetHandle;
                         const targetNodeHandleData = data.value;
@@ -952,20 +1003,38 @@ export class AudioGraphManager {
     }
 
     collectUnisonNodes(node: string, collected: CustomNode[] = []): CustomNode[] {
-        for (let i = 0; i < this.edgesRef.current.length; i++) {
-            if (this.edgesRef.current[i].source === node) {
-                const targetNode = this.nodesRef.current.find((n: any) => n.id === this.edgesRef.current[i].target);
-                if (targetNode) {
-                    if (targetNode.type === "UnisonEndFlowNode") break;
-                    // Skip nodes whose IDs still carry a voice prefix from the old
-                    // mutation bug — their IDs contain "FlowNode-N" segments.
-                    if (/FlowNode-\d+/.test(targetNode.id)) continue;
-                    // Dedup: a node reachable via both unison-output and
-                    // detune-output must only be collected (and cloned) once.
-                    if (collected.some((c) => c.id === targetNode.id)) continue;
-                    collected.push(targetNode);
-                    this.collectUnisonNodes(targetNode.id, collected);
-                }
+        // Build adjacency + node lookup ONCE per call (was O(E·N·depth) before).
+        const edges = this.edgesRef.current;
+        const nodes = this.nodesRef.current;
+        const adj = new Map<string, string[]>();
+        for (let i = 0; i < edges.length; i++) {
+            const e = edges[i];
+            const list = adj.get(e.source);
+            if (list) list.push(e.target);
+            else adj.set(e.source, [e.target]);
+        }
+        const nodeById = new Map<string, any>();
+        for (let i = 0; i < nodes.length; i++) nodeById.set(nodes[i].id, nodes[i]);
+
+        const seen = new Set<string>();
+        const stack: string[] = [node];
+        while (stack.length) {
+            const cur = stack.pop()!;
+            const targets = adj.get(cur);
+            if (!targets) continue;
+            for (let i = 0; i < targets.length; i++) {
+                const targetId = targets[i];
+                const targetNode = nodeById.get(targetId);
+                if (!targetNode) continue;
+                // Original behavior: hitting a UnisonEnd stops processing the
+                // CURRENT source's remaining edges, not the whole traversal.
+                if (targetNode.type === "UnisonEndFlowNode") break;
+                // Skip voice clones from the old mutation bug.
+                if (/FlowNode-\d+/.test(targetNode.id)) continue;
+                if (seen.has(targetId)) continue;
+                seen.add(targetId);
+                collected.push(targetNode);
+                stack.push(targetId);
             }
         }
         return collected;
@@ -999,10 +1068,10 @@ export class AudioGraphManager {
             if (parentNode) {
                 node.id = parentNode.id + "." + node.id;
             }
-            let nodeData = node.data as AudioNodeData;
+            const nodeData = node.data as AudioNodeData;
             //console.log(node);
             switch (node.type) {
-                case "AudioWorkletOscillatorFlowNode":
+                case "AudioWorkletOscillatorFlowNode": {
                     // New AudioWorklet-based oscillator node
                     const virtualAWOscNode = new VirtualAudioWorkletOscillatorNode(
                         this.audioContext,
@@ -1015,7 +1084,8 @@ export class AudioGraphManager {
                     );
                     this.virtualNodes.set(node.id, virtualAWOscNode);
                     break;
-                case "SampleFlowNode":
+                }
+                case "SampleFlowNode": {
                     const virtualSampleFlowNode = new VirtualSampleFlowNode(
                         this.audioContext,
                         this.eventBus,
@@ -1024,7 +1094,8 @@ export class AudioGraphManager {
                     virtualSampleFlowNode.render();
                     this.virtualNodes.set(node.id, virtualSampleFlowNode);
                     break;
-                case "OscillatorFlowNode":
+                }
+                case "OscillatorFlowNode": {
                     const oscNode = new VirtualOscillatorNode(
                         this.audioContext,
                         this.eventBus,
@@ -1040,7 +1111,8 @@ export class AudioGraphManager {
                     );
                     this.virtualNodes.set(node.id, oscNode);
                     break;
-                case "GainFlowNode":
+                }
+                case "GainFlowNode": {
                     const virtualGainNode = new VirtualGainNode(
                         this.audioContext,
                         this.eventBus,
@@ -1049,8 +1121,9 @@ export class AudioGraphManager {
                     virtualGainNode.render(nodeData.gain ?? 1);
                     this.virtualNodes.set(node.id, virtualGainNode);
                     break;
+                }
 
-                case "CrossfaderFlowNode":
+                case "CrossfaderFlowNode": {
                     const crossfaderNode = new VirtualCrossfaderNode(
                         this.audioContext,
                         this.eventBus,
@@ -1059,8 +1132,9 @@ export class AudioGraphManager {
                     crossfaderNode.render(nodeData.crossfade || 0);
                     this.virtualNodes.set(node.id, crossfaderNode);
                     break;
+                }
 
-                case "DelayFlowNode":
+                case "DelayFlowNode": {
                     const delayNode = new VirtualDelayNode(
                         this.audioContext,
                         this.eventBus,
@@ -1071,7 +1145,8 @@ export class AudioGraphManager {
                     delayNode.render(initialDelayMs);
                     this.virtualNodes.set(node.id, delayNode);
                     break;
-                case "ReverbFlowNode":
+                }
+                case "ReverbFlowNode": {
                     const reverbNode = new VirtualReverbNode(
                         this.audioContext,
                         this.eventBus,
@@ -1084,7 +1159,8 @@ export class AudioGraphManager {
                     reverbNode.render(initialSeconds, initialDecay, initialReverse, initialFormula);
                     this.virtualNodes.set(node.id, reverbNode);
                     break;
-                case "BiquadFilterFlowNode":
+                }
+                case "BiquadFilterFlowNode": {
                     const virtualBiquadFilterNode = new VirtualBiquadFilterNode(
                         this.audioContext,
                         this.eventBus,
@@ -1099,7 +1175,8 @@ export class AudioGraphManager {
                     );
                     this.virtualNodes.set(node.id, virtualBiquadFilterNode);
                     break;
-                case "IIRFilterFlowNode":
+                }
+                case "IIRFilterFlowNode": {
                     const virtualIIRFilterNode = new VirtualIIRFilterNode(
                         this.audioContext,
                         this.eventBus,
@@ -1108,7 +1185,8 @@ export class AudioGraphManager {
                     );
                     this.virtualNodes.set(node.id, virtualIIRFilterNode);
                     break;
-                case "DynamicCompressorFlowNode":
+                }
+                case "DynamicCompressorFlowNode": {
                     const compressor = new VirtualDynamicCompressorNode(
                         this.audioContext,
                         this.eventBus,
@@ -1123,7 +1201,8 @@ export class AudioGraphManager {
                     );
                     this.virtualNodes.set(node.id, compressor);
                     break;
-                case "SequencerFlowNode":
+                }
+                case "SequencerFlowNode": {
                     const virtualSequencerNode = new VirtualSequencerNode(
                         this.audioContext,
                         this.eventBus,
@@ -1133,7 +1212,8 @@ export class AudioGraphManager {
                     virtualSequencerNode.setSendNodeOff((data) => this.emitEventsForConnectedEdges(node, data, 'receiveNodeOff'));
                     this.virtualNodes.set(node.id, virtualSequencerNode);
                     break;
-                case "ScriptSequencerFlowNode":
+                }
+                case "ScriptSequencerFlowNode": {
                     const virtualScriptSequencerNode = new VirtualScriptSequencerNode(
                         this.audioContext,
                         this.eventBus,
@@ -1143,7 +1223,8 @@ export class AudioGraphManager {
                     virtualScriptSequencerNode.setSendNodeOff((data) => this.emitEventsForConnectedEdges(node, data, 'receiveNodeOff'));
                     this.virtualNodes.set(node.id, virtualScriptSequencerNode as any);
                     break;
-                case "SequencerFrequencyFlowNode":
+                }
+                case "SequencerFrequencyFlowNode": {
                     const virtualSequencerFrequencyNode = new VirtualSequencerFrequencyNode(
                         this.audioContext,
                         this.eventBus,
@@ -1153,7 +1234,8 @@ export class AudioGraphManager {
                     virtualSequencerFrequencyNode.setSendNodeOff((data) => this.emitEventsForConnectedEdges(node, data, 'receiveNodeOff'));
                     this.virtualNodes.set(node.id, virtualSequencerFrequencyNode);
                     break;
-                case "MidiFileFlowNode":
+                }
+                case "MidiFileFlowNode": {
                     const virtualMidiFileNode = new VirtualMidiFileNode(
                         this.eventBus,
                         node as CustomNode & MidiFileFlowNodeProps,
@@ -1162,7 +1244,8 @@ export class AudioGraphManager {
                     );
                     this.virtualNodes.set(node.id, virtualMidiFileNode as any);
                     break;
-                case "DistortionFlowNode":
+                }
+                case "DistortionFlowNode": {
                     const virtualDistortionNode = new VirtualDistortionNode(
                         this.audioContext,
                         this.eventBus,
@@ -1180,7 +1263,8 @@ export class AudioGraphManager {
                     );
                     this.virtualNodes.set(node.id, virtualDistortionNode);
                     break;
-                case "AutomationFlowNode":
+                }
+                case "AutomationFlowNode": {
                     const virtualAutomationNode = new VirtualAutomationNode(
                         this.eventBus,
                         node as any
@@ -1194,7 +1278,8 @@ export class AudioGraphManager {
                     });
                     this.virtualNodes.set(node.id, virtualAutomationNode as any);
                     break;
-                case "ArpeggiatorFlowNode":
+                }
+                case "ArpeggiatorFlowNode": {
                     const virtualArpeggiatorNode = new VirtualArpeggiatorNode(
                         this.audioContext,
                         this.eventBus,
@@ -1206,7 +1291,8 @@ export class AudioGraphManager {
                     });
                     this.virtualNodes.set(node.id, virtualArpeggiatorNode as any);
                     break;
-                case "AnalyzerNodeGPT":
+                }
+                case "AnalyzerNodeGPT": {
                     const virtualAnalyzer = new VirtualAnalyzerNodeGPT(
                         this.audioContext,
                         this.eventBus,
@@ -1215,7 +1301,8 @@ export class AudioGraphManager {
                     virtualAnalyzer.render(nodeData);
                     this.virtualNodes.set(node.id, virtualAnalyzer as any);
                     break;
-                case "OscilloscopeFlowNode":
+                }
+                case "OscilloscopeFlowNode": {
                     const virtualOscilloscope = new VirtualOscilloscopeNode(
                         this.audioContext,
                         this.eventBus,
@@ -1224,7 +1311,8 @@ export class AudioGraphManager {
                     virtualOscilloscope.render(nodeData);
                     this.virtualNodes.set(node.id, virtualOscilloscope as any);
                     break;
-                case "EqualizerFlowNode":
+                }
+                case "EqualizerFlowNode": {
                     const virtualEqualizer = new VirtualEqualizerNode(
                         this.audioContext,
                         this.eventBus,
@@ -1233,7 +1321,8 @@ export class AudioGraphManager {
                     virtualEqualizer.render(nodeData);
                     this.virtualNodes.set(node.id, virtualEqualizer as any);
                     break;
-                case "VocoderFlowNode":
+                }
+                case "VocoderFlowNode": {
                     const virtualVocoder = new VirtualVocoderNode(
                         this.audioContext,
                         this.eventBus,
@@ -1252,12 +1341,14 @@ export class AudioGraphManager {
                     });
                     this.virtualNodes.set(node.id, virtualVocoder as any);
                     break;
-                case "MasterOutFlowNode":
+                }
+                case "MasterOutFlowNode": {
                     // Use a virtual master out wrapper instead of the raw AudioContext
                     const virtualMasterOut = new VirtualMasterOut(this.audioContext, this.eventBus, node);
                     this.virtualNodes.set(node.id, virtualMasterOut);
                     break;
-                case "AudioWorkletFlowNode":
+                }
+                case "AudioWorkletFlowNode": {
                     // Dynamic inline processor creation (nodeData.processorCode optional)
                     const dynamicWorkletNode = new VirtualAudioWorkletNode(
                         this.audioContext,
@@ -1268,6 +1359,7 @@ export class AudioGraphManager {
                     await dynamicWorkletNode.createWorklet();
                     this.virtualNodes.set(node.id, dynamicWorkletNode);
                     break;
+                }
                 case "NoiseFlowNode": {
                     const noiseNode = new VirtualNoiseNode(
                         this.audioContext,
@@ -1278,7 +1370,7 @@ export class AudioGraphManager {
                     this.virtualNodes.set(node.id, noiseNode);
                     break;
                 }
-                case "ButtonFlowNode":
+                case "ButtonFlowNode": {
                     const virtualButtonNode = new VirtualButtonNode(
                         this.eventManager,
                         this.eventBus,
@@ -1291,7 +1383,8 @@ export class AudioGraphManager {
                     );
                     this.virtualNodes.set(node.id, virtualButtonNode);
                     break;
-                case "MidiButtonFlowNode":
+                }
+                case "MidiButtonFlowNode": {
                     const virtualMidiButtonNode = new VirtualMidiButtonNode(
                         this.eventManager,
                         this.eventBus,
@@ -1304,7 +1397,8 @@ export class AudioGraphManager {
                     );
                     this.virtualNodes.set(node.id, virtualMidiButtonNode);
                     break;
-                case "OnOffButtonFlowNode":
+                }
+                case "OnOffButtonFlowNode": {
                     // Virtual gating node: passes main-input events only when toggle gate is ON
                     const virtualOnOff = new VirtualOnOffButtonNode(
                         this.audioContext,
@@ -1316,7 +1410,8 @@ export class AudioGraphManager {
                     virtualOnOff.setSendNodeOff((data) => this.emitEventsForConnectedEdges(node, data, 'receiveNodeOff'));
                     this.virtualNodes.set(node.id, virtualOnOff);
                     break;
-                case "SpeedDividerFlowNode":
+                }
+                case "SpeedDividerFlowNode": {
                     const virtualSpeedDivider = new VirtualSpeedDividerNode(
                         this.eventBus,
                         node as any
@@ -1326,17 +1421,18 @@ export class AudioGraphManager {
                     // Listen for incoming value objects and forward to correct handle
                     this.eventBus.subscribe(node.id + '.divider-input.receiveNodeOn', (payload: any) => {
                         // Only forward value to divider
-                        virtualSpeedDivider['divider'] = typeof payload.value === 'number' ? Math.max(1, Math.min(10, payload.value)) : virtualSpeedDivider['divider'];
-                        virtualSpeedDivider['hitCount'] = 0;
-                        virtualSpeedDivider['emitHitCount'] && virtualSpeedDivider['emitHitCount']();
+                        virtualSpeedDivider.divider = typeof payload.value === 'number' ? Math.max(1, Math.min(10, payload.value)) : virtualSpeedDivider.divider;
+                        virtualSpeedDivider.hitCount = 0;
+                        if (virtualSpeedDivider.emitHitCount) virtualSpeedDivider.emitHitCount();
                     });
                     this.eventBus.subscribe(node.id + '.multiplier-input.receiveNodeOn', (payload: any) => {
                         // Only forward value to multiplier
-                        virtualSpeedDivider['multiplier'] = typeof payload.value === 'number' ? Math.max(1, Math.min(10, payload.value)) : virtualSpeedDivider['multiplier'];
+                        virtualSpeedDivider.multiplier = typeof payload.value === 'number' ? Math.max(1, Math.min(10, payload.value)) : virtualSpeedDivider.multiplier;
                     });
                     this.virtualNodes.set(node.id, virtualSpeedDivider);
                     break;
-                case "AudioSignalFreqShifterFlowNode":
+                }
+                case "AudioSignalFreqShifterFlowNode": {
                     const virtualAudioFreqShifter = new VirtualAudioSignalFreqShifterNode(
                         this.audioContext,
                         this.eventBus,
@@ -1345,7 +1441,8 @@ export class AudioGraphManager {
                     virtualAudioFreqShifter.render(nodeData.shift || 0);
                     this.virtualNodes.set(node.id, virtualAudioFreqShifter);
                     break;
-                case "FlowEventFreqShifterFlowNode":
+                }
+                case "FlowEventFreqShifterFlowNode": {
                     const virtualFlowEventFreqShifter = new VirtualFlowEventFreqShifterNode(
                         this.eventBus,
                         node as CustomNode & FlowEventFreqShifterFlowNodeProps
@@ -1355,7 +1452,8 @@ export class AudioGraphManager {
                     virtualFlowEventFreqShifter.render(nodeData.shift || 0);
                     this.virtualNodes.set(node.id, virtualFlowEventFreqShifter);
                     break;
-                case "ClockFlowNode":
+                }
+                case "ClockFlowNode": {
                     const virtualClockNode = new VirtualClockNode(
                         this.eventBus,
                         node,
@@ -1364,7 +1462,8 @@ export class AudioGraphManager {
                     virtualClockNode.render((node as ClockNodeProps).data.bpm);
                     this.virtualNodes.set(node.id, virtualClockNode);
                     break;
-                case "SwitchFlowNode":
+                }
+                case "SwitchFlowNode": {
                     const virtualSwitchNode = new VirtualSwitchNode(
                         this.eventBus,
                         node
@@ -1375,7 +1474,8 @@ export class AudioGraphManager {
                     });
                     this.virtualNodes.set(node.id, virtualSwitchNode);
                     break;
-                case "BlockingSwitchFlowNode":
+                }
+                case "BlockingSwitchFlowNode": {
                     const virtualBlockingSwitchNode = new VirtualBlockingSwitchNode(
                         this.eventBus,
                         node
@@ -1388,8 +1488,9 @@ export class AudioGraphManager {
                     });
                     this.virtualNodes.set(node.id, virtualBlockingSwitchNode);
                     break;
+                }
 
-                case "ConstantFlowNode":
+                case "ConstantFlowNode": {
                     const virtualConstantNode = new VirtualConstantNode(
                         this.eventBus,
                         node as CustomNode & ConstantNodeProps,
@@ -1398,7 +1499,8 @@ export class AudioGraphManager {
                     );
                     this.virtualNodes.set(node.id, virtualConstantNode);
                     break;
-                case "FrequencyFlowNode":
+                }
+                case "FrequencyFlowNode": {
                     const virtualFrequencyNode = new VirtualFrequencyNode(
                         this.eventBus,
                         node as CustomNode & FrequencyFlowNodeProps,
@@ -1409,7 +1511,8 @@ export class AudioGraphManager {
                     );
                     this.virtualNodes.set(node.id, virtualFrequencyNode);
                     break;
-                case "MidiFlowNote":
+                }
+                case "MidiFlowNote": {
                     const virtualMidiNode = new VirtualMidiNode(node.id, node.id);
                     // Listen to virtual node emission and forward to connected edges
                     this.eventBus.subscribe(`${node.id}.main-input.sendNodeOn`, (payload: any) => {
@@ -1432,7 +1535,8 @@ export class AudioGraphManager {
                     ['note-on', 'note-off', 'control-change', 'program-change', 'poly-aftertouch', 'channel-aftertouch', 'pitch-bend', 'sysex', 'mtc', 'song-position', 'song-select', 'tune-request', 'clock'].forEach(forward);
                     this.virtualNodes.set(node.id, virtualMidiNode as any);
                     break;
-                case "FunctionFlowNode":
+                }
+                case "FunctionFlowNode": {
                     const virtualFunctionNode = new VirtualFunctionNode(
                         this.eventBus,
                         node as CustomNode & FunctionNodeProps,
@@ -1440,7 +1544,8 @@ export class AudioGraphManager {
                     );
                     this.virtualNodes.set(node.id, virtualFunctionNode);
                     break;
-                case "EventFlowNode":
+                }
+                case "EventFlowNode": {
                     const virtualEventNode = new VirtualEventNode(
                         this.eventBus,
                         node as any,
@@ -1448,7 +1553,8 @@ export class AudioGraphManager {
                     );
                     this.virtualNodes.set(node.id, virtualEventNode as any);
                     break;
-                case "MidiKnobFlowNode":
+                }
+                case "MidiKnobFlowNode": {
                     const virtualMidiKnob = new VirtualMidiKnobNode(
                         this.eventBus,
                         node as any,
@@ -1456,14 +1562,16 @@ export class AudioGraphManager {
                     );
                     this.virtualNodes.set(node.id, virtualMidiKnob as any);
                     break;
-                case "LogFlowNode":
+                }
+                case "LogFlowNode": {
                     const virtualLogNode = new VirtualLogNode(
                         this.eventBus,
                         node as any
                     );
                     this.virtualNodes.set(node.id, virtualLogNode as any);
                     break;
-                case "ADSRFlowNode":
+                }
+                case "ADSRFlowNode": {
                     const virtualADSRNode = new VirtualADSRNode(
                         this.eventBus,
                         node as CustomNode & ADSRFlowNodeProps,
@@ -1472,7 +1580,8 @@ export class AudioGraphManager {
                     );
                     this.virtualNodes.set(node.id, virtualADSRNode);
                     break;
-                case "FlowNode":
+                }
+                case "FlowNode": {
                     const customNode = await this.loadFlowByName(
                         (node as any).data.selectedNode,
                         (node as any).data.selectedNodeFolderPath || ''
@@ -1514,7 +1623,8 @@ export class AudioGraphManager {
                     // Virtual Flow Node created
                     this.virtualNodes.set(node.id, virtualFlowNode);
                     break;
-                case "InputNode":
+                }
+                case "InputNode": {
                     const virtualInputNode = new VirtualInputNode(
                         this.eventBus,
                         node as CustomNode & InputNodeProps,
@@ -1522,7 +1632,8 @@ export class AudioGraphManager {
                     );
                     this.virtualNodes.set(node.id, virtualInputNode);
                     break;
-                case "OutputNode":
+                }
+                case "OutputNode": {
 
                     const virtualOutputNode = new VirtualOutputNode(
                         this.eventBus,
@@ -1548,7 +1659,8 @@ export class AudioGraphManager {
                     );
 
                     break;
-                case "MouseTriggerButton":
+                }
+                case "MouseTriggerButton": {
                     const virtualMouseTrigger = new VirtualMouseTriggerButtonNode(
                         this.eventBus,
                         node as any
@@ -1563,7 +1675,8 @@ export class AudioGraphManager {
                     });
                     this.virtualNodes.set(node.id, virtualMouseTrigger as any);
                     break;
-                case "RecordingFlowNode":
+                }
+                case "RecordingFlowNode": {
                     const virtualRecording = new VirtualRecordingNode(
                         this.audioContext,
                         this.eventBus,
@@ -1572,7 +1685,8 @@ export class AudioGraphManager {
                     virtualRecording.render();
                     this.virtualNodes.set(node.id, virtualRecording as any);
                     break;
-                case "MicFlowNode":
+                }
+                case "MicFlowNode": {
                     const virtualMic = new VirtualMicNode(
                         this.audioContext,
                         this.eventBus,
@@ -1581,7 +1695,8 @@ export class AudioGraphManager {
                     await virtualMic.render();
                     this.virtualNodes.set(node.id, virtualMic as any);
                     break;
-                case "WebRTCInputFlowNode":
+                }
+                case "WebRTCInputFlowNode": {
                     const virtualWebRTCIn = new VirtualWebRTCInputNode(
                         this.audioContext,
                         this.eventBus,
@@ -1590,7 +1705,8 @@ export class AudioGraphManager {
                     await virtualWebRTCIn.render();
                     this.virtualNodes.set(node.id, virtualWebRTCIn as any);
                     break;
-                case "WebRTCOutputFlowNode":
+                }
+                case "WebRTCOutputFlowNode": {
                     const virtualWebRTCOut = new VirtualWebRTCOutputNode(
                         this.audioContext,
                         this.eventBus,
@@ -1599,7 +1715,8 @@ export class AudioGraphManager {
                     await virtualWebRTCOut.render();
                     this.virtualNodes.set(node.id, virtualWebRTCOut as any);
                     break;
-                case "WebRTCPulseNode":
+                }
+                case "WebRTCPulseNode": {
                     // Creating VirtualWebRTCPulseNode
                     const virtualWebRTC = new VirtualWebRTCPulseNode(
                         this.audioContext,
@@ -1610,7 +1727,8 @@ export class AudioGraphManager {
                     this.virtualNodes.set(node.id, virtualWebRTC as any);
                     // VirtualWebRTCPulseNode created and stored
                     break;
-                case "WebSocketAudioNode":
+                }
+                case "WebSocketAudioNode": {
                     const virtualWebSocket = new VirtualWebSocketAudioNode(
                         this.audioContext,
                         this.eventBus,
@@ -1619,7 +1737,8 @@ export class AudioGraphManager {
                     await virtualWebSocket.render();
                     this.virtualNodes.set(node.id, virtualWebSocket as any);
                     break;
-                case "UnisonBeginFlowNode":
+                }
+                case "UnisonBeginFlowNode": {
                     const virtualUnisonBegin = new VirtualUnisonBeginNode(
                         this.audioContext,
                         this.eventBus,
@@ -1652,7 +1771,8 @@ export class AudioGraphManager {
                     }
                     this.virtualNodes.set(node.id, virtualUnisonBegin as any);
                     break;
-                case "UnisonEndFlowNode":
+                }
+                case "UnisonEndFlowNode": {
                     const virtualUnisonEnd = new VirtualUnisonEndNode(
                         this.audioContext,
                         this.eventBus,
@@ -1660,6 +1780,7 @@ export class AudioGraphManager {
                     );
                     this.virtualNodes.set(node.id, virtualUnisonEnd as any);
                     break;
+                }
                 default:
                     console.warn(`Unsupported node type: ${node.type}`);
             }
@@ -1687,6 +1808,7 @@ export class AudioGraphManager {
 
         // Reset virtualEdges correctly as a Map (was incorrectly set to an array, breaking .get/.set usage)
         this.virtualEdges = new Map<string, Edge[]>();
+        this.virtualEdgeIds.clear();
 
         for (let i = 0; i < this.nodesRef.current.length; i++) {
             const node = this.nodesRef.current[i] as CustomNode;
@@ -1757,11 +1879,11 @@ export class AudioGraphManager {
         // We'll allow remapping when a CustomNode is involved so external connections actually wire the
         // internal audio nodes adjacent to Input/Output nodes of the custom template.
         //console.log('[AudioGraphManager] addConnection called for edge:', edge);
-        let originalEdge = edge
+        const originalEdge = edge
         let sourceId = edge.source;;
-        let targetId = edge.target;
+        const targetId = edge.target;
         let sourceHandle = edge.sourceHandle as string | undefined;
-        let targetHandle = edge.targetHandle as string | undefined;
+        const targetHandle = edge.targetHandle as string | undefined;
 
         // A custom-node ID segment is "FlowNode" or a unison voice clone "FlowNode-<n>".
         const FLOWNODE_SEG = /^FlowNode(-\d+)?$/;
@@ -2063,13 +2185,19 @@ export class AudioGraphManager {
         if (wasRemapped) {
             const originalSourceEdges = this.virtualEdges.get(originalEdge.source);
             if (originalSourceEdges) {
-                const filteredEdges = originalSourceEdges.filter(
-                    (e) => !(e.source === originalEdge.source && e.target === originalEdge.target && e.sourceHandle === originalEdge.sourceHandle && e.targetHandle === originalEdge.targetHandle)
-                );
+                const removedIds: string[] = [];
+                const filteredEdges = originalSourceEdges.filter((e) => {
+                    const drop = e.source === originalEdge.source && e.target === originalEdge.target && e.sourceHandle === originalEdge.sourceHandle && e.targetHandle === originalEdge.targetHandle;
+                    if (drop) removedIds.push(e.id);
+                    return !drop;
+                });
                 if (filteredEdges.length > 0) {
                     this.virtualEdges.set(originalEdge.source, filteredEdges);
+                    const idSet = this.virtualEdgeIds.get(originalEdge.source);
+                    if (idSet) for (const rid of removedIds) idSet.delete(rid);
                 } else {
                     this.virtualEdges.delete(originalEdge.source);
+                    this.virtualEdgeIds.delete(originalEdge.source);
                 }
             }
         }
@@ -2077,11 +2205,23 @@ export class AudioGraphManager {
         const existingEdges = this.virtualEdges.get(sourceId);
         if (!existingEdges) {
             this.virtualEdges.set(sourceId, [normalizedEdge]);
+            let idSet = this.virtualEdgeIds.get(sourceId);
+            if (!idSet) {
+                idSet = new Set<string>();
+                this.virtualEdgeIds.set(sourceId, idSet);
+            }
+            idSet.add(normalizedEdge.id);
         } else {
-
-            const alreadyTracked = existingEdges.some((storedEdge) => storedEdge.id === normalizedEdge.id);
-            if (!alreadyTracked) {
+            let idSet = this.virtualEdgeIds.get(sourceId);
+            if (!idSet) {
+                // Backfill if the set was not populated for an existing array.
+                idSet = new Set<string>();
+                for (let i = 0; i < existingEdges.length; i++) idSet.add(existingEdges[i].id);
+                this.virtualEdgeIds.set(sourceId, idSet);
+            }
+            if (!idSet.has(normalizedEdge.id)) {
                 existingEdges.push(normalizedEdge);
+                idSet.add(normalizedEdge.id);
                 this.virtualEdges.set(sourceId, this.sortEdges(existingEdges));
             }
         }
@@ -2127,6 +2267,8 @@ export class AudioGraphManager {
             (audioNode as any).disconnect?.();
             this.disconnectFromMaps(nodeId);
             this.virtualNodes.delete(nodeId);
+            this.nodeTypeCache.delete(nodeId);
+            // WeakMap entry for the old audioNode self-clears on GC.
             //console.log("Deleted node:", nodeId);
         } else {
             console.warn(`Node with ID ${nodeId} not found.`);

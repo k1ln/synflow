@@ -68,9 +68,7 @@ const DelayFlowNode: React.FC<DelayFlowNodeProps> = ({ data }) => {
   
   return (
     <div style={data.style}>
-      <div style={{ textAlign: "center", marginBottom: "0px", fontSize: "10px" }}>
-        <span><b>DELAY</b></span>
-      </div>
+      <div className="node-title">DELAY</div>
 
       {/* Main Input */}
       <Handle
@@ -89,7 +87,7 @@ const DelayFlowNode: React.FC<DelayFlowNodeProps> = ({ data }) => {
       />
 
       {/* Delay Time Input with MIDI-learnable knob */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div className="node-field">
         <MidiKnob
           accentColor="#60a5fa"
           min={0}
@@ -117,17 +115,8 @@ const DelayFlowNode: React.FC<DelayFlowNodeProps> = ({ data }) => {
             setDelayTime(clamped);
             setKnobValue(msToKnob(clamped));
           }}
-          style={{ 
-            width: 60, 
-            background: '#222', 
-            color: '#eee', 
-            border: '1px solid #444', 
-            borderRadius: 4, 
-            padding: '2px 3px', 
-            fontSize: 11, 
-            textAlign: 'center',
-            marginBottom: '3px' 
-          }}
+          className="nodrag node-input"
+          style={{ width: 60 }}
         />
         <Handle
           type="target"

@@ -78,15 +78,7 @@ const AudioSignalFreqShifterFlowNode: React.FC<
   return (
     <div style={{ ...defaultStyle, ...style }}>
       {/* Header */}
-      <div
-        style={{
-          textAlign: "center",
-          marginBottom: "2px",
-          fontSize: "10px",
-        }}
-      >
-        <b>🔊 AUDIO SHIFT</b>
-      </div>
+      <div className="node-title">🔊 Audio Shift</div>
 
       {/* Audio Input Handle (top left) */}
       <Handle
@@ -165,15 +157,7 @@ const AudioSignalFreqShifterFlowNode: React.FC<
       </div>
 
       {/* Shift Knob */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          marginTop: "15px",
-          paddingBottom: "8px",
-        }}
-      >
+      <div className="node-field" style={{ marginTop: 15 }}>
         <MidiKnob
           accentColor="#60a5fa"
           min={-96}
@@ -188,14 +172,7 @@ const AudioSignalFreqShifterFlowNode: React.FC<
             `audioFreqShifter:${flowId}:${nodeId}:shift`
           }
         />
-        <span
-          style={{
-            fontSize: "9px",
-            marginTop: "2px",
-          }}
-        >
-          Semitones
-        </span>
+        <span className="node-label">Semitones</span>
         <input
           type="text"
           defaultValue={shift}
@@ -209,17 +186,8 @@ const AudioSignalFreqShifterFlowNode: React.FC<
             }
           }}
           onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-          style={{
-            width: 45,
-            background: "#222",
-            color: "#eee",
-            border: "1px solid #444",
-            borderRadius: 4,
-            padding: "1px 3px",
-            fontSize: 10,
-            textAlign: "center",
-            marginTop: "2px",
-          }}
+          className="nodrag node-input"
+          style={{ width: 45 }}
         />
       </div>
     </div>

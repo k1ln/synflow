@@ -899,7 +899,7 @@ const WaveformSelector: React.FC<WaveformSelectorProps> = ({
       sourceRef.current = null;
     }
     if (audioContextRef.current) {
-      audioContextRef.current.close();
+      void audioContextRef.current.close();
       audioContextRef.current = null;
     }
     setIsPlaying(false);
@@ -1834,7 +1834,7 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
   useEffect(() => {
     if (decodedBuffer || !diskFileName || prefetchingRef.current) return;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         prefetchingRef.current = true;
         const {
@@ -1854,7 +1854,7 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
             setDecodedBuffer(decoded);
             setDuration(decoded.duration);
           }
-          ctx.close();
+          void ctx.close();
         } catch (err) {
           console.warn('Waveform decode failed in safety net', err);
         }
@@ -1904,7 +1904,7 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
         console.warn('Failed to decode audio for waveform:', err);
       })
       .finally(() => {
-        audioCtx.close();
+        void audioCtx.close();
       });
     return () => { cancelled = true; };
   }, [arrayBuffer]);
@@ -2081,7 +2081,7 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
     }
 
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         prefetchingRef.current = true;
         initialLoadRef.current = true;
@@ -2107,7 +2107,7 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
                     setDecodedBuffer(decoded);
                     setDuration(decoded.duration);
                   }
-                  ctx.close();
+                  void ctx.close();
                 } catch(err){
                   console.warn('Waveform decode failed after disk load', err);
                 }
@@ -2146,7 +2146,7 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
     };
     // Detect pitch for this segment
     if (decodedBuffer) {
-      import('../util/pitchDetection').then(({ detectPitch }) => {
+      void import('../util/pitchDetection').then(({ detectPitch }) => {
         const freq = detectPitch(decodedBuffer, start, end);
         if (freq) {
           updateSegment(seg.id, { detectedFrequency: freq });
@@ -2174,7 +2174,7 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
     };
     // Detect pitch for this segment
     if (decodedBuffer) {
-      import('../util/pitchDetection').then(({ detectPitch }) => {
+      void import('../util/pitchDetection').then(({ detectPitch }) => {
         const freq = detectPitch(decodedBuffer, start, end);
         if (freq) {
           updateSegment(seg.id, { detectedFrequency: freq });
@@ -2295,7 +2295,7 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
     
     // Asynchronously detect pitch for each segment
     if (decodedBuffer) {
-      import('../util/pitchDetection').then(({ detectPitch }) => {
+      void import('../util/pitchDetection').then(({ detectPitch }) => {
         newSegments.forEach(seg => {
           const freq = detectPitch(decodedBuffer, seg.start, seg.end);
           if (freq) {
@@ -2462,7 +2462,7 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
     source.onended = () => {
       setPlayingSegmentId(null);
       if (segmentAudioCtxRef.current) {
-        segmentAudioCtxRef.current.close();
+        void segmentAudioCtxRef.current.close();
         segmentAudioCtxRef.current = null;
       }
     };
@@ -2478,7 +2478,7 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
       grainIntervalRef.current = null;
     }
     if (grainCtxRef.current) {
-      grainCtxRef.current.close();
+      void grainCtxRef.current.close();
       grainCtxRef.current = null;
     }
     // Stop regular playback
@@ -2491,7 +2491,7 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
       segmentSourceRef.current = null;
     }
     if (segmentAudioCtxRef.current) {
-      segmentAudioCtxRef.current.close();
+      void segmentAudioCtxRef.current.close();
       segmentAudioCtxRef.current = null;
     }
     setPlayingSegmentId(null);
@@ -2519,15 +2519,11 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
 
   return (
     <div style={style}>
-      <div className='audio-header' style={{ display: 'flex', justifyContent: 'center' }}>
-        <label >
-          <b>SAMPLE</b>
-        </label>
-      </div>
+      <div className="node-title">SAMPLE</div>
 
       <div style={{ marginBottom:6 ,width:'97%'}}>
-          <input type='file' accept='.wav,.mp3,.ogg,.flac' ref={fileInputRef} onChange={onFileSelected} style={{ background:'#111', color:'#eee', border:'1px solid #555', padding:4, width:'100%' }} />
-        {fileName && <div style={{ fontSize:12, opacity:0.8 }}>{fileName}{duration ? ` (${duration.toFixed(2)}s)` : ''}{fileId ? ' • saved' : ''}</div>}
+          <input type='file' accept='.wav,.mp3,.ogg,.flac' ref={fileInputRef} onChange={onFileSelected} className="nodrag node-input wide" style={{ padding:4 }} />
+        {fileName && <div className="node-readout" style={{ opacity:0.8 }}>{fileName}{duration ? ` (${duration.toFixed(2)}s)` : ''}{fileId ? ' • saved' : ''}</div>}
       </div>
 
       {/* Select Button - Opens Waveform Selector */}

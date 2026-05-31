@@ -62,11 +62,11 @@ export class VirtualSampleFlowNode extends VirtualNode<CustomNode & SampleFlowNo
     this.speed = typeof initialData.speed === 'number' ? initialData.speed : this.speed;
     const initialBuf = toArrayBuffer(initialData.arrayBuffer);
     if (initialBuf) {
-      this.decodeArrayBuffer(initialBuf);
+      void this.decodeArrayBuffer(initialBuf);
     } else if (initialData.diskFileName) {
-      this.loadFromDisk(initialData.diskFileName);
+      void this.loadFromDisk(initialData.diskFileName);
     } else if (initialData.fileUrl) {
-      this.fetchAndDecode(initialData.fileUrl);
+      void this.fetchAndDecode(initialData.fileUrl);
     }
     // Initial segments (from restored flow) -> subscribe now
     const initialSegs = initialData.segments;
@@ -82,11 +82,11 @@ export class VirtualSampleFlowNode extends VirtualNode<CustomNode & SampleFlowNo
       const d = payload?.data || {};
       const buf = toArrayBuffer(d.arrayBuffer);
       if (buf) {
-        this.decodeArrayBuffer(buf);
+        void this.decodeArrayBuffer(buf);
       } else if (!this.decodedBuffer && d.diskFileName) {
-        this.loadFromDisk(d.diskFileName);
+        void this.loadFromDisk(d.diskFileName);
       } else if (!this.decodedBuffer && d.fileUrl) {
-        this.fetchAndDecode(d.fileUrl);
+        void this.fetchAndDecode(d.fileUrl);
       }
       if(Array.isArray(d.segments)){
         // Before updating, check which looping segments are playing and have changed boundaries

@@ -26,9 +26,9 @@ export class VirtualSampleFlowNode extends VirtualNode<CustomNode & SampleFlowNo
     // Eagerly decode if the restored node already has data (avoids null decodedBuffer on first triggers)
     const initialData: any = (node as any)?.data || {};
     if(initialData.arrayBuffer instanceof ArrayBuffer){
-      this.decodeArrayBuffer(initialData.arrayBuffer);
+      void this.decodeArrayBuffer(initialData.arrayBuffer);
     } else if(initialData.fileUrl){
-      this.fetchAndDecode(initialData.fileUrl);
+      void this.fetchAndDecode(initialData.fileUrl);
     }
     // Initial segments (from restored flow) -> subscribe now
     const initialSegs = initialData.segments;
@@ -41,8 +41,8 @@ export class VirtualSampleFlowNode extends VirtualNode<CustomNode & SampleFlowNo
     // Listen for param updates (segments changes, new buffer sources, etc.)
     this.eventBus.subscribe(this.node.id + '.params.updateParams', (payload:any)=>{
       const d = payload?.data || {};
-      if(d.arrayBuffer instanceof ArrayBuffer){ this.decodeArrayBuffer(d.arrayBuffer); }
-      else if(!this.decodedBuffer && d.fileUrl){ this.fetchAndDecode(d.fileUrl); }
+      if(d.arrayBuffer instanceof ArrayBuffer){ void this.decodeArrayBuffer(d.arrayBuffer); }
+      else if(!this.decodedBuffer && d.fileUrl){ void this.fetchAndDecode(d.fileUrl); }
       if(Array.isArray(d.segments)){
         this.updateSegmentSubscriptions(d.segments);
       }

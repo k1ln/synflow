@@ -6,8 +6,7 @@ import {
   AudioSegmentEvent,
   FrequencyGateEvent,
   MusicNote,
-  OrchestratorRow,
-  GRANULARITY_DIVISOR
+  OrchestratorRow
 } from '../types/OrchestratorTypes';
 
 export type OrchestratorRuntimeNode = CustomNode & { data: OrchestratorData; id: string };
@@ -282,7 +281,7 @@ export class VirtualOrchestratorNode extends VirtualNode<OrchestratorRuntimeNode
       this.node.id + '.' + eventHandle + '.sendNodeOn',
       { 
         gate: 1, 
-        frequency: frequency, 
+        frequency, 
         velocity: note.velocity ?? 100
       }
     );

@@ -164,7 +164,7 @@ setTimeout(() => {
 // Graceful shutdown
 function shutdown(){
   console.log('Shutting down dev processes...');
-  frontend && frontend.kill();
+  if (frontend) frontend.kill();
   process.exit(0);
 }
 process.on('SIGINT', shutdown);

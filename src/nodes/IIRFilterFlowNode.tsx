@@ -102,18 +102,14 @@ const IIRFilterFlowNode: React.FC<IIRFilterFlowNodeProps> = ({ data }) => {
 
   return (
     <div style={data.style}>
-      <div className="audio-header" style={{ justifyContent: "center", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <label>
-            <b>IIR Filter</b>
-          </label>
-          <span
-            title="Feedforward coefficients shape the immediate response; feedback coefficients loop energy back for resonance."
-            style={{ cursor: 'help', fontSize: '0.7rem', opacity: 0.7 }}
-          >
-            ?
-          </span>
-        </div>
+      <div className="node-row" style={{ gap: 4, marginBottom: 8 }}>
+        <span className="node-title" style={{ margin: 0, padding: 0, border: 0, textShadow: "none" }}>IIR FILTER</span>
+        <span
+          title="Feedforward coefficients shape the immediate response; feedback coefficients loop energy back for resonance."
+          style={{ cursor: 'help', fontSize: '0.7rem', opacity: 0.7 }}
+        >
+          ?
+        </span>
       </div>
 
       {/* Main Input */}
@@ -134,17 +130,16 @@ const IIRFilterFlowNode: React.FC<IIRFilterFlowNodeProps> = ({ data }) => {
 
       {/* Feedforward Coefficients */}
       <div style={{ marginTop: 6 }}>
-        <div style={{ display:'flex', justifyContent:'center', alignItems:'center' }}>
-          <label style={{ textAlign: 'center' }}>Feedforward</label>
-        </div>
+        <div className="node-label" style={{ textAlign: 'center' }}>Feedforward</div>
         <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginTop:4 }}>
           {feedforward.map((v,i)=>(
-            <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+            <div key={i} className="node-field" style={{ marginBottom: 0 }}>
               <input
                 type="number"
                 value={Math.round(v*1000)/1000}
                 onChange={(e)=> updateCoeff(feedforward, i, parseFloat(e.target.value)||0, setFeedforward)}
-                style={{ width:50, fontSize:10, background:'#222', color:'#eee', border:'1px solid #555', borderRadius:4, marginBottom:2 }}
+                className="nodrag node-input"
+                style={{ width: 50 }}
               />
               <MidiKnob
                 accentColor="#60a5fa"
@@ -158,12 +153,12 @@ const IIRFilterFlowNode: React.FC<IIRFilterFlowNodeProps> = ({ data }) => {
                 midiSensitivity={0.8}
                 midiSmoothing={0.4}
               />
-              <button onClick={()=> removeCoeff('ff', i)} style={{ marginTop:4, fontSize:9, background:'#3a1d1d', color:'#ffaaaa', border:'1px solid #633', borderRadius:12, cursor:'pointer', width: '100%' }}>x</button>
+              <button onClick={()=> removeCoeff('ff', i)} className="node-btn node-btn-danger" style={{ marginTop:4, width: '100%' }}>x</button>
             </div>
           ))}
         </div>
         <div style={{ marginTop:6 }}>
-          <button style={{ fontSize:10, padding:'2px 6px', background:'#000', color:'#eee', border:'1px solid #444', cursor:'pointer', width:'100%' }} onClick={()=> addCoeff('ff')}>Add coefficient</button>
+          <button className="node-btn" style={{ width:'100%' }} onClick={()=> addCoeff('ff')}>Add coefficient</button>
         </div>
         <Handle
           type="target"
@@ -175,17 +170,16 @@ const IIRFilterFlowNode: React.FC<IIRFilterFlowNodeProps> = ({ data }) => {
 
       {/* Feedback Coefficients */}
       <div style={{ marginTop: 10 }}>
-        <div style={{ display:'flex', justifyContent:'center', alignItems:'center' }}>
-          <label style={{ textAlign: 'center' }}>Feedback</label>
-        </div>
+        <div className="node-label" style={{ textAlign: 'center' }}>Feedback</div>
         <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginTop:4 }}>
           {feedback.map((v,i)=>(
-            <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+            <div key={i} className="node-field" style={{ marginBottom: 0 }}>
               <input
                 type="number"
                 value={Math.round(v*1000)/1000}
                 onChange={(e)=> updateCoeff(feedback, i, parseFloat(e.target.value)||0, setFeedback)}
-                style={{ width:50, fontSize:10, background:'#222', color:'#eee', border:'1px solid #555', borderRadius:4, marginBottom:2 }}
+                className="nodrag node-input"
+                style={{ width: 50 }}
               />
               <MidiKnob
                 accentColor="#60a5fa"
@@ -199,12 +193,12 @@ const IIRFilterFlowNode: React.FC<IIRFilterFlowNodeProps> = ({ data }) => {
                 midiSensitivity={0.8}
                 midiSmoothing={0.4}
               />
-              <button onClick={()=> removeCoeff('fb', i)} style={{ marginTop:4, fontSize:9, background:'#3a1d1d', color:'#ffaaaa', border:'1px solid #633', borderRadius:12, cursor:'pointer', width: '100%' }}>x</button>
+              <button onClick={()=> removeCoeff('fb', i)} className="node-btn node-btn-danger" style={{ marginTop:4, width: '100%' }}>x</button>
             </div>
           ))}
         </div>
         <div style={{ marginTop:6 }}>
-          <button style={{ fontSize:10, padding:'2px 6px', background:'#000', color:'#eee', border:'1px solid #444', cursor:'pointer', width:'100%' }} onClick={()=> addCoeff('fb')}>Add coefficient</button>
+          <button className="node-btn" style={{ width:'100%' }} onClick={()=> addCoeff('fb')}>Add coefficient</button>
         </div>
         <Handle
           type="target"

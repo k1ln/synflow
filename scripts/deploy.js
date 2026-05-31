@@ -53,7 +53,8 @@ try {
 
 // --- Interactive remote config overrides ------------------------------------
 // Support sshHost (private IP) distinct from domain (public URL) while keeping backward compatibility.
-let { host, user, port, basePath, sshHost, domain } = cfg.remote;
+const { host, port, basePath, sshHost } = cfg.remote;
+let { user, domain } = cfg.remote;
 if(!domain && host) domain = host; // fallback
 let sshConnectHost = sshHost || host;
 if(!sshConnectHost || !user){
@@ -104,7 +105,7 @@ function findKeyPath(){
   return null;
 }
 
-let keyPath = findKeyPath();
+const keyPath = findKeyPath();
 let sshPassword = process.env.DEPLOY_SSH_PASSWORD || '';
 // If no key path & no password env, ask user now (later logic would also prompt, but we want to guarantee availability)
 if(!findKeyPath() && !sshPassword){

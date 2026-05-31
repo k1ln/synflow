@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Save, Upload, Download, LogIn, LogOut, User, FolderOpen, Share2, RefreshCw, Plus, Settings, HardDriveDownload, Database, FilePlus, FileInput, FileOutput, Play, Square, MoreHorizontal, Mic, Music, BookOpen, Github, Youtube, HelpCircle, Shield, Trash2 } from 'lucide-react';
+import { Save, Upload, Download, FolderOpen, Plus, Settings, HardDriveDownload, FilePlus, FileInput, FileOutput, Play, Square, MoreHorizontal, Music, BookOpen, Github, Youtube, HelpCircle, Shield, Trash2 } from 'lucide-react';
 
 export interface TopBarProps {
   // Left cluster (sidebar-related)
@@ -17,6 +17,8 @@ export interface TopBarProps {
   onImportAllJsonClick?: () => void;
   onInitAudio?: () => void;
   onStopAudio?: () => void;
+  latencyHint?: AudioContextLatencyCategory; // audio output latency mode
+  onLatencyHintChange?: (hint: AudioContextLatencyCategory) => void;
   isPlaying?: boolean; // indicates audio graph started
   isLoading?: boolean; // indicates flow/nodes are loading
   onOpenImpressum?: () => void;
@@ -77,9 +79,11 @@ export const TopBar: React.FC<TopBarProps> = ({
   onExportAllJson, 
   onImportFlowJsonClick, 
   onImportAllJsonClick, 
-  onInitAudio, 
+  onInitAudio,
   onStopAudio,
-  isPlaying, 
+  latencyHint,
+  onLatencyHintChange,
+  isPlaying,
   isLoading,
   onOpenImpressum, 
   onOpenDatenschutz, 
@@ -320,6 +324,22 @@ export const TopBar: React.FC<TopBarProps> = ({
           <Divider />
           {onInitAudio && <IconBtn title={isPlaying ? 'Audio Started' : 'Initialize AudioGraph'} onClick={onInitAudio} playing={!!isPlaying}><Play size={18} /></IconBtn>}
           {onStopAudio && isPlaying && <IconBtn title="Stop Audio" onClick={onStopAudio}><Square size={18} /></IconBtn>}
+          {onLatencyHintChange && (
+            <select
+              title="Audio latency mode. Lower = more responsive; higher = more buffer headroom (fewer dropouts under heavy load). Applied on (re)start."
+              value={latencyHint ?? 'interactive'}
+              onChange={(e) => onLatencyHintChange(e.target.value as AudioContextLatencyCategory)}
+              style={{
+                height: 28, background: '#171717', color: '#ddd',
+                border: '1px solid #2a2a2a', borderRadius: 6, fontSize: 11,
+                padding: '0 6px', cursor: 'pointer',
+              }}
+            >
+              <option value="interactive">Latency: Low</option>
+              <option value="balanced">Latency: Balanced</option>
+              <option value="playback">Latency: High</option>
+            </select>
+          )}
           {isLoading && (
             <div className="topbar-loading" title="Loading flow">
               <div className="topbar-spinner" />

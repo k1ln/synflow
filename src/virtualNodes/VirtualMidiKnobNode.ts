@@ -39,7 +39,7 @@ export default class VirtualMidiKnobNode extends VirtualNode<CustomNode & MidiKn
     this.midiMapping = d.midiMapping ?? null;
 
     this.subscribeAll();
-    this.setupMidi();
+    void this.setupMidi();
     // Initial render-like emission to align with oscillator pattern
     this.render(this.value, this.min, this.max, this.curve, this.midiMapping);
   }

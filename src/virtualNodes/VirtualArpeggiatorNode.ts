@@ -375,7 +375,7 @@ export class VirtualArpeggiatorNode extends VirtualNode<
         }
         break;
 
-      case 'random-walk':
+      case 'random-walk': {
         let current = this.currentStep;
         for (let i = 0; i < this.noteCount; i++) {
           sequence.push(current);
@@ -385,6 +385,7 @@ export class VirtualArpeggiatorNode extends VirtualNode<
           if (current < 0) current = 0;
         }
         break;
+      }
 
       case 'converge':
         // Plays outer notes first, then moves inward
@@ -529,12 +530,13 @@ export class VirtualArpeggiatorNode extends VirtualNode<
         this.currentStep = Math.floor(Math.random() * this.noteCount);
         return this.currentStep;
 
-      case 'random-walk': // Random walk - move up or down by 1 step randomly
+      case 'random-walk': { // Random walk - move up or down by 1 step randomly
         const change = Math.random() > 0.5 ? 1 : -1;
         this.currentStep += change;
         if (this.currentStep > maxIndex) this.currentStep = maxIndex;
         if (this.currentStep < 0) this.currentStep = 0;
         return this.currentStep;
+      }
 
       case 'converge': {
         // Alternate between low and high, moving inward

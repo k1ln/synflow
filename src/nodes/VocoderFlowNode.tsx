@@ -194,27 +194,13 @@ const VocoderFlowNode: React.FC<VocoderFlowNodeProps> = ({ data }) => {
   return (
     <div style={style}>
       {/* Header */}
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: "6px",
-        borderBottom: "1px solid #3a3a5a",
-        paddingBottom: "4px"
-      }}>
-        <span style={{ fontWeight: "bold", fontSize: "11px", color: "#b388ff" }}>🎤 VOCODER</span>
+      <div className="node-row" style={{ justifyContent: "space-between", marginBottom: 6, borderBottom: "1px solid #3a3a5a", paddingBottom: 4 }}>
+        <span className="node-title" style={{ margin: 0, padding: 0, border: 0, textShadow: 'none' }}>🎤 Vocoder</span>
         <select
           value={selectedPreset}
           onChange={(e) => applyPreset(e.target.value)}
-          style={{
-            width: 70,
-            background: '#1a1a2e',
-            color: '#b388ff',
-            border: '1px solid #3a3a5a',
-            borderRadius: 4,
-            padding: '1px 3px',
-            fontSize: 9,
-          }}
+          className="node-select"
+          style={{ width: 70 }}
         >
           <option value="custom">Custom</option>
           {Object.keys(PRESETS).map((name) => (
@@ -267,9 +253,9 @@ const VocoderFlowNode: React.FC<VocoderFlowNodeProps> = ({ data }) => {
       />
 
       {/* Main Controls Row 1 - Bands & Q */}
-      <div style={{ display: "flex", justifyContent: "space-around", gap: 4, marginBottom: 4 }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: 9 }}>Bands</span>
+      <div className="node-row" style={{ gap: 4, marginBottom: 4 }}>
+        <div className="node-field" style={{ marginBottom: 0 }}>
+          <span className="node-label">Bands</span>
           <MidiKnob
             min={4}
             max={32}
@@ -281,11 +267,11 @@ const VocoderFlowNode: React.FC<VocoderFlowNodeProps> = ({ data }) => {
             label="Bands"
             persistKey={`vocoder:${flowId}:${nodeId}:bands`}
           />
-          <span style={{ fontSize: 9, color: '#888' }}>{bandCount}</span>
+          <span className="node-readout">{bandCount}</span>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: 9 }}>Q</span>
+        <div className="node-field" style={{ marginBottom: 0 }}>
+          <span className="node-label">Q</span>
           <MidiKnob
             min={1}
             max={20}
@@ -297,11 +283,11 @@ const VocoderFlowNode: React.FC<VocoderFlowNodeProps> = ({ data }) => {
             label="Q"
             persistKey={`vocoder:${flowId}:${nodeId}:q`}
           />
-          <span style={{ fontSize: 9, color: '#888' }}>{qFactor.toFixed(1)}</span>
+          <span className="node-readout">{qFactor.toFixed(1)}</span>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: 9 }}>Output</span>
+        <div className="node-field" style={{ marginBottom: 0 }}>
+          <span className="node-label">Output</span>
           <MidiKnob
             min={0}
             max={2}
@@ -313,14 +299,14 @@ const VocoderFlowNode: React.FC<VocoderFlowNodeProps> = ({ data }) => {
             label="Output"
             persistKey={`vocoder:${flowId}:${nodeId}:output`}
           />
-          <span style={{ fontSize: 9, color: '#888' }}>{(outputGain * 100).toFixed(0)}%</span>
+          <span className="node-readout">{(outputGain * 100).toFixed(0)}%</span>
         </div>
       </div>
 
       {/* Main Controls Row 2 - Attack & Release */}
-      <div style={{ display: "flex", justifyContent: "space-around", gap: 4, marginBottom: 4 }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: 9 }}>Attack</span>
+      <div className="node-row" style={{ gap: 4, marginBottom: 4 }}>
+        <div className="node-field" style={{ marginBottom: 0 }}>
+          <span className="node-label">Attack</span>
           <MidiKnob
             min={0.5}
             max={100}
@@ -332,11 +318,11 @@ const VocoderFlowNode: React.FC<VocoderFlowNodeProps> = ({ data }) => {
             label="Attack"
             persistKey={`vocoder:${flowId}:${nodeId}:attack`}
           />
-          <span style={{ fontSize: 9, color: '#888' }}>{attackTime.toFixed(1)}ms</span>
+          <span className="node-readout">{attackTime.toFixed(1)}ms</span>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: 9 }}>Release</span>
+        <div className="node-field" style={{ marginBottom: 0 }}>
+          <span className="node-label">Release</span>
           <MidiKnob
             min={1}
             max={200}
@@ -348,7 +334,7 @@ const VocoderFlowNode: React.FC<VocoderFlowNodeProps> = ({ data }) => {
             label="Release"
             persistKey={`vocoder:${flowId}:${nodeId}:release`}
           />
-          <span style={{ fontSize: 9, color: '#888' }}>{releaseTime.toFixed(1)}ms</span>
+          <span className="node-readout">{releaseTime.toFixed(1)}ms</span>
         </div>
       </div>
 
@@ -372,48 +358,32 @@ const VocoderFlowNode: React.FC<VocoderFlowNodeProps> = ({ data }) => {
       {showAdvanced && (
         <div style={{ marginTop: '4px', padding: '4px', background: '#0a0a15', borderRadius: '4px' }}>
           {/* Frequency Range */}
-          <div style={{ display: "flex", justifyContent: "space-around", gap: 4, marginBottom: 4 }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <span style={{ fontSize: 8 }}>Low Hz</span>
+          <div className="node-row" style={{ gap: 4, marginBottom: 4 }}>
+            <div className="node-field" style={{ marginBottom: 0 }}>
+              <span className="node-label">Low Hz</span>
               <input
                 type="number"
                 value={lowFreq}
                 onChange={(e) => { setLowFreq(Math.max(20, parseInt(e.target.value) || 100)); setSelectedPreset("custom"); }}
-                style={{
-                  width: 50,
-                  background: '#1a1a2e',
-                  color: '#eee',
-                  border: '1px solid #3a3a5a',
-                  borderRadius: 4,
-                  padding: '2px',
-                  fontSize: 9,
-                  textAlign: 'center'
-                }}
+                className="nodrag node-input"
+                style={{ width: 50 }}
               />
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <span style={{ fontSize: 8 }}>High Hz</span>
+            <div className="node-field" style={{ marginBottom: 0 }}>
+              <span className="node-label">High Hz</span>
               <input
                 type="number"
                 value={highFreq}
                 onChange={(e) => { setHighFreq(Math.min(20000, parseInt(e.target.value) || 8000)); setSelectedPreset("custom"); }}
-                style={{
-                  width: 50,
-                  background: '#1a1a2e',
-                  color: '#eee',
-                  border: '1px solid #3a3a5a',
-                  borderRadius: 4,
-                  padding: '2px',
-                  fontSize: 9,
-                  textAlign: 'center'
-                }}
+                className="nodrag node-input"
+                style={{ width: 50 }}
               />
             </div>
           </div>
 
           {/* Input Gains */}
-          <div style={{ display: "flex", justifyContent: "space-around", gap: 4 }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div className="node-row" style={{ gap: 4 }}>
+            <div className="node-field" style={{ marginBottom: 0 }}>
               <span style={{ fontSize: 8, color: '#7c4dff' }}>Carrier</span>
               <MidiKnob
                 min={0}
@@ -426,7 +396,7 @@ const VocoderFlowNode: React.FC<VocoderFlowNodeProps> = ({ data }) => {
                 label="Carrier"
                 persistKey={`vocoder:${flowId}:${nodeId}:carrierGain`}
               />
-              <span style={{ fontSize: 8, color: '#888' }}>{(carrierGain * 100).toFixed(0)}%</span>
+              <span className="node-readout">{(carrierGain * 100).toFixed(0)}%</span>
               <Handle
                 type="target"
                 position={Position.Left}
@@ -434,7 +404,7 @@ const VocoderFlowNode: React.FC<VocoderFlowNodeProps> = ({ data }) => {
                 style={{ top: 'auto', bottom: 80 }}
               />
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div className="node-field" style={{ marginBottom: 0 }}>
               <span style={{ fontSize: 8, color: '#00e5ff' }}>Modulator</span>
               <MidiKnob
                 min={0}
@@ -447,7 +417,7 @@ const VocoderFlowNode: React.FC<VocoderFlowNodeProps> = ({ data }) => {
                 label="Modulator"
                 persistKey={`vocoder:${flowId}:${nodeId}:modulatorGain`}
               />
-              <span style={{ fontSize: 8, color: '#888' }}>{(modulatorGain * 100).toFixed(0)}%</span>
+              <span className="node-readout">{(modulatorGain * 100).toFixed(0)}%</span>
               <Handle
                 type="target"
                 position={Position.Left}

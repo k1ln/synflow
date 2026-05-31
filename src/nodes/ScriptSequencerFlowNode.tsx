@@ -155,7 +155,7 @@ const ssqStreamParser = {
     if (stream.match(/-?\d+(?:\.\d+)?(?:ms|s|t|b)\b/)) return 'number';
     if (stream.match(/-?\d+(?:\.\d+)?/)) return 'number';
     // Punctuation
-    if (stream.match(/[;,()\[\]]/)) return 'punctuation';
+    if (stream.match(/[;,()[\]]/)) return 'punctuation';
     // Identifier / keyword
     if (stream.match(/[A-Za-z_][\w-]*/)) {
       const word = (stream.current() as string).toLowerCase();

@@ -1,6 +1,6 @@
 import VirtualNode from "./VirtualNode";
 import { CustomNode } from "../sys/AudioGraphManager";
-import EventBus, { EventCallback } from "../sys/EventBus";
+import EventBus from "../sys/EventBus";
 import { ADSRFlowNodeProps } from "../nodes/ADSRFlowNode";
 
 /**

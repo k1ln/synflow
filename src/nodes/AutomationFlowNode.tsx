@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { Knob } from 'react-rotary-knob-react19';
 import EventBus from '../sys/EventBus';
 import './AudioNode.css';
 import MidiKnob from '../components/MidiKnob';
@@ -237,9 +236,10 @@ const AutomationFlowNode: React.FC<AutomationFlowNodeProps> = ({ data }) => {
 
   return (
     <div style={nodeStyle} onContextMenu={stopContextMenuBubble}>
-      <div className="audio-header" style={{marginBottom:4, display:'flex', alignItems:'center', gap:8}}>
-        <div style={{display:'flex',alignItems:'center',gap:4}}>
-          <label style={{fontSize:11}}>Width</label>
+      <div className="node-title">AUTOMATION</div>
+      <div className="node-row" style={{ justifyContent: 'flex-start', gap: 8, marginBottom: 4 }}>
+        <div className="node-row" style={{ gap: 4 }}>
+          <label className="node-label">Width</label>
           <input
             type="text"
             value={nodeWidth}
@@ -266,7 +266,7 @@ const AutomationFlowNode: React.FC<AutomationFlowNodeProps> = ({ data }) => {
                 });
               }
             }}
-            style={{width:50, background:'#111', color:'#eee', border:'1px solid #333', fontSize:11, height:18, padding:'0 4px'}}
+            className="nodrag node-input sm"
             title="Adjust module width (arrows: ±1, shift+arrows: ±10)"
           />
         </div>
@@ -274,18 +274,8 @@ const AutomationFlowNode: React.FC<AutomationFlowNodeProps> = ({ data }) => {
           <button
             title="Delete point"
             onClick={(e)=> { e.stopPropagation(); setPoints(ps => ps.filter((_,i)=> i!== selectedPointIndex)); setSelectedPointIndex(null); }}
-            style={{
-              marginLeft: 6,
-              background: '#331111',
-              color: '#ff8888',
-              border: '1px solid #552222',
-              borderRadius: 4,
-              cursor: 'pointer',
-              fontSize: 12,
-              display: 'flex',
-              alignItems: 'center',
-              padding: '1px 5px'
-            }}
+            className="node-btn node-btn-danger"
+            style={{ marginLeft: 6, padding: '1px 6px' }}
           >🗑</button>
         )}
       </div>
@@ -295,21 +285,13 @@ const AutomationFlowNode: React.FC<AutomationFlowNodeProps> = ({ data }) => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop:4 }}>
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-            <label style={{fontSize:11, lineHeight:'14px'}}>
+            <label className="node-label">
               Len {lengthUnit === 'ms' ? (lengthSec * 1000).toFixed(0) : lengthSec.toFixed(2)}{lengthUnit}
             </label>
             <button
               onClick={() => setLengthUnit(u => u === 's' ? 'ms' : 's')}
-              style={{
-                background: '#2a3a4a',
-                color: '#aabbcc',
-                border: '1px solid #445566',
-                borderRadius: 3,
-                cursor: 'pointer',
-                fontSize: 9,
-                padding: '1px 4px',
-                lineHeight: '12px'
-              }}
+              className="node-btn"
+              style={{ fontSize: 9, padding: '1px 5px' }}
               title="Toggle between seconds and milliseconds"
             >
               {lengthUnit === 's' ? 'ms' : 's'}
@@ -327,10 +309,10 @@ const AutomationFlowNode: React.FC<AutomationFlowNodeProps> = ({ data }) => {
             }} 
           />
         </div>
-        <div style={{ display:'flex', flexDirection:'column', fontSize:11, gap:2 }}>
-          <label style={{display:'flex',alignItems:'center',gap:4}}>Loop <input style={{margin:0}} type="checkbox" checked={loop} onChange={(e)=> setLoop(e.target.checked)} /></label>
-          <label style={{lineHeight:'14px'}}>Active {activePercent.toFixed(0)}%</label>
-          <label style={{display:'flex',gap:4,alignItems:'center', lineHeight:'14px'}}>Range
+        <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
+          <label className="node-label" style={{display:'flex',alignItems:'center',gap:4}}>Loop <input style={{margin:0}} type="checkbox" checked={loop} onChange={(e)=> setLoop(e.target.checked)} /></label>
+          <label className="node-label">Active {activePercent.toFixed(0)}%</label>
+          <label className="node-label" style={{display:'flex',gap:4,alignItems:'center'}}>Range
             <input
               type="text"
               value={minVal}
@@ -355,7 +337,8 @@ const AutomationFlowNode: React.FC<AutomationFlowNodeProps> = ({ data }) => {
                   });
                 }
               }}
-              style={{width:48, background:'#111', color:'#eee', border:'1px solid #333', padding:'0 2px', height:18, fontSize:11}}
+              className="nodrag node-input"
+              style={{ width: 48 }}
             />
             -
             <input
@@ -382,7 +365,8 @@ const AutomationFlowNode: React.FC<AutomationFlowNodeProps> = ({ data }) => {
                   });
                 }
               }}
-              style={{width:48, background:'#111', color:'#eee', border:'1px solid #333', padding:'0 2px', height:18, fontSize:11}}
+              className="nodrag node-input"
+              style={{ width: 48 }}
             />%
           </label>
         </div>
