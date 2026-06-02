@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { SynNode as Node, SynEdge as Edge } from "./types";
 import EventBus from "./EventBus";
+import type { EngineOptions } from "./env";
 import { SimpleIndexedDB } from "../../../src/util/SimpleIndexedDB";
 import EventManager from "../../../src/sys/EventManager";
 import { VirtualAudioWorkletNode } from "./virtualNodes/VirtualAudioWorkletNode";
@@ -65,15 +66,24 @@ export class AudioGraphManager {
     private audioParamHandleCache: WeakMap<object, Map<string, boolean>> = new WeakMap();
     // Toggle for the verbose unison-end debug dump (was always-on in initialize).
     public static debugUnisonDump = false;
+    /** Engine options (bus, destination, injected host adapters). */
+    public options: EngineOptions;
+    /** Where the master output connects (defaults to audioContext.destination). */
+    private outputNode: AudioNode;
 
     constructor(
         audioContext: AudioContext,
         nodesRef: React.RefObject<any[]>,
         edgesRef: React.RefObject<any[]>,
+        options: EngineOptions = {},
     ) {
         this.audioContext = audioContext;
+        this.options = options;
         this.virtualNodes = new Map();
-        this.eventBus = EventBus.getInstance();
+        // Shared bus: injected per host/session, or the singleton for the editor.
+        this.eventBus = options.bus ?? EventBus.getInstance();
+        // Master output target: injected (e.g. a DAW mixer channel) or ctx.destination.
+        this.outputNode = options.destination ?? audioContext.destination;
         this.eventManager = EventManager.getInstance();
         this.db = new SimpleIndexedDB("FlowSynthDB", "flows");
         this.nodesRef = nodesRef;
@@ -654,7 +664,7 @@ export class AudioGraphManager {
             } else if (targetParamHandle === "destination-input") {
                 if (targetNodeForParams instanceof AudioContext && sourceNode instanceof AudioNode) {
                     try {
-                        sourceNode.connect(targetNodeForParams.destination);
+                        sourceNode.connect(this.outputNode);
                         this.addMapConnections(sourceId, targetId);
                     } catch (e) {
                         console.warn('[connect] failed node->context.destination', { sourceId, e });
