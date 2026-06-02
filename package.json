@@ -15,6 +15,9 @@
   "name": "flowsynth",
   "version": "0.4.7",
   "main": "index.js",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "node scripts/dev.js",
     "start": "vite",
