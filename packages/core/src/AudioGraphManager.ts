@@ -911,4 +911,23 @@ export class AudioGraphManager {
         }
         return out;
     }
+
+    // ─── Direct node event injection (drive a node's handle from outside) ───────
+    // A node reacts to `${id}.${handle}.receiveNodeOn/Off`; source/trigger nodes
+    // (Button, Mouse, Midi) react to `${id}.${handle}.sendNodeOn/Off`.
+
+    /** Drive a node as if an upstream edge fired it (e.g. an ADSR/Input main-input). */
+    public receiveNodeOn(nodeId: string, handle = 'main-input', payload: Record<string, any> = {}): void {
+        this.eventBus.emit(`${nodeId}.${handle}.receiveNodeOn`, { nodeid: nodeId, ...payload });
+    }
+    public receiveNodeOff(nodeId: string, handle = 'main-input', payload: Record<string, any> = {}): void {
+        this.eventBus.emit(`${nodeId}.${handle}.receiveNodeOff`, { nodeid: nodeId, ...payload });
+    }
+    /** Fire a source/trigger node's own output (Button/Mouse/Midi style). */
+    public sendNodeOn(nodeId: string, handle = 'main-input', payload: Record<string, any> = {}): void {
+        this.eventBus.emit(`${nodeId}.${handle}.sendNodeOn`, { nodeid: nodeId, ...payload });
+    }
+    public sendNodeOff(nodeId: string, handle = 'main-input', payload: Record<string, any> = {}): void {
+        this.eventBus.emit(`${nodeId}.${handle}.sendNodeOff`, { nodeid: nodeId, ...payload });
+    }
 }

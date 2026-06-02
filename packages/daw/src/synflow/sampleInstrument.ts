@@ -15,7 +15,6 @@ export interface SampleInstrumentOpts {
  * host with just an AudioContext. Triggered via engine.command('trigger').
  */
 export function makeSampleInstrument(opts: SampleInstrumentOpts): Flow {
-  const cmd = 'cmd.CommandInFlowNode';
   const samp = 'samp.SampleFlowNode';
   const master = 'master.MasterOutFlowNode';
 
@@ -26,17 +25,18 @@ export function makeSampleInstrument(opts: SampleInstrumentOpts): Flow {
     end: opts.end,
     loopEnabled: !!opts.loop,
     loopMode: 'hold' as const,
-    holdEnabled: false,
+    holdEnabled: !!opts.loop, // looped samples respond to note-off (gate)
   };
 
   const nodes = [
-    { id: cmd, type: 'CommandInFlowNode', data: { commandName: 'trigger', kind: 'trigger' } },
-    { id: samp, type: 'SampleFlowNode', data: { arrayBuffer: opts.base64, segments: [segment] } },
+    {
+      id: samp, type: 'SampleFlowNode',
+      // The DAW triggers the segment directly: receiveNodeOn(samp, 'seg1').
+      data: { arrayBuffer: opts.base64, segments: [segment], isTrigger: true, triggerHandle: 'seg1' },
+    },
     { id: master, type: 'MasterOutFlowNode', data: {} },
   ];
   const edges = [
-    // Command-In drives the segment's own input handle (seg id) → plays it.
-    { id: 'e-cmd-seg', source: cmd, target: samp, sourceHandle: 'main-output', targetHandle: 'seg1' },
     { id: 'e-samp-master', source: samp, target: master, sourceHandle: 'output', targetHandle: 'destination-input' },
   ];
   return { nodes, edges };
