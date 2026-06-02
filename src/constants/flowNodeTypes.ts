@@ -47,6 +47,8 @@ import MidiFileFlowNode from '../nodes/MidiFileFlowNode';
 import OrchestratorFlowNode from '../nodes/OrchestratorFlowNode';
 import UnisonBeginFlowNode from '../nodes/UnisonBeginFlowNode';
 import UnisonEndFlowNode from '../nodes/UnisonEndFlowNode';
+import CommandInFlowNode from '../nodes/CommandInFlowNode';
+import CommandOutFlowNode from '../nodes/CommandOutFlowNode';
 
 export const nodeTypes = {
   MasterOutFlowNode,
@@ -98,6 +100,8 @@ export const nodeTypes = {
   OrchestratorFlowNode,
   UnisonBeginFlowNode,
   UnisonEndFlowNode,
+  CommandInFlowNode,
+  CommandOutFlowNode,
 };
 
 export const orderedNodeTypes = Object.fromEntries(

@@ -171,6 +171,16 @@ function Flow() {
     (window as any).flowSynth.off = (eventName: string, cb: (d: any) => void) => {
       try { eventBus.unsubscribe(eventName, cb); } catch { /* noop */ }
     };
+    // Command API: drive CommandIn nodes / read CommandOut nodes from outside.
+    (window as any).flowSynth.command = (name: string, payload: any = {}) => {
+      try { eventBus.emit(`command.${name}`, { type: 'on', ...payload }); } catch { /* noop */ }
+    };
+    (window as any).flowSynth.commandOff = (name: string, payload: any = {}) => {
+      try { eventBus.emit(`command.${name}`, { type: 'off', ...payload }); } catch { /* noop */ }
+    };
+    (window as any).flowSynth.onCommand = (name: string, cb: (d: any) => void) => {
+      try { eventBus.subscribe(`commandOut.${name}`, cb); return () => eventBus.unsubscribe(`commandOut.${name}`, cb); } catch { return () => {}; }
+    };
   }, [eventBus]);
 
   // Ensure all flow handles have a helpful title on hover.
