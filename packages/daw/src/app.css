@@ -49,3 +49,28 @@ body { margin: 0; background: var(--bg); color: var(--text);
 .step.playhead { outline: 2px solid #fff6; outline-offset: -2px; }
 
 .hint { opacity: 0.55; margin-top: 18px; line-height: 1.5; }
+
+.toolbar { margin: 0 0 12px; }
+.toolbar button {
+  background: var(--panel); color: var(--text); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer;
+}
+
+.sampler-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center; z-index: 50;
+}
+.sampler { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.sampler-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.sampler-head .x { background: transparent; border: none; color: #999; font-size: 20px; cursor: pointer; }
+.sampler-row { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+.sampler-row input { background: #111; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; }
+.sampler-row button { background: #2a2a31; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+.sampler-row button.primary { background: var(--accent); color: #06210f; font-weight: 700; }
+.sampler-row button.primary:disabled { opacity: 0.4; cursor: default; }
+.sampler-row .dur { opacity: 0.7; margin-left: auto; }
+.sampler-row .hint2 { opacity: 0.55; font-size: 11px; }
+.loopchk { display: flex; align-items: center; gap: 4px; opacity: 0.85; }
+.wave-wrap { position: relative; user-select: none; }
+.loop-handle { position: absolute; top: 0; width: 2px; height: 100%; background: #fff; cursor: ew-resize; }
+.loop-handle::after { content: ''; position: absolute; top: 0; left: -4px; width: 10px; height: 10px; background: #fff; border-radius: 2px; }
