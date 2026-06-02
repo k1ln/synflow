@@ -21,5 +21,7 @@ export type {
   AssetStore,
 } from './env';
 
+export { setHostAdapters, getInput, getMidi, getFlowLoader, getAssetStore } from './hostBindings';
+
 export { buildPulsePeriodicWave, buildWavetablePeriodicWave } from './oscillatorWaves';
 export { compileWasmModule } from './wasmUtils';

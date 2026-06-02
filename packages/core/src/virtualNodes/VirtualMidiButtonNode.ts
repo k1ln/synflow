@@ -1,19 +1,19 @@
 import VirtualNode from './VirtualNode';
 import { CustomNode } from '../AudioGraphManager';
 import EventBus from '../EventBus';
-import EventManager from '../../../../src/sys/EventManager';
+import type { ButtonInput } from '../env';
 import { MidiButtonNodeProps, MidiButtonMapping } from '../nodeData';
-import MidiManager from '../../../../src/components/MidiManager';
+import { getMidiOrNoop } from '../hostBindings';
 
 export class VirtualMidiButtonNode extends VirtualNode<CustomNode & MidiButtonNodeProps, undefined> {
-  private eventManager: EventManager;
+  private eventManager: ButtonInput | undefined;
   private oldButton: string | null;
   private midiMapping: MidiButtonMapping | null = null;
   private isLearning = false;
   private unsubscribeMidi: (() => void) | null = null;
   private pressed = false;
 
-  constructor(eventManager: EventManager, eventBus: EventBus, node: CustomNode & MidiButtonNodeProps) {
+  constructor(eventManager: ButtonInput | undefined, eventBus: EventBus, node: CustomNode & MidiButtonNodeProps) {
     super(undefined, undefined, eventBus, node);
     this.eventManager = eventManager;
     this.oldButton = this.node.data.assignedKey;
@@ -23,14 +23,14 @@ export class VirtualMidiButtonNode extends VirtualNode<CustomNode & MidiButtonNo
 
   render() {
     if (this.oldButton) {
-      this.eventManager.removeButtonDownCallback(this.oldButton, this.node.id);
-      this.eventManager.removeButtonUpCallback(this.oldButton, this.node.id);
+      this.eventManager?.removeButtonDownCallback(this.oldButton, this.node.id);
+      this.eventManager?.removeButtonUpCallback(this.oldButton, this.node.id);
     }
     if (this.node.data.assignedKey) {
-      this.eventManager.addButtonDownCallback(this.node.data.assignedKey, this.node.id, () => {
+      this.eventManager?.addButtonDownCallback(this.node.data.assignedKey, this.node.id, () => {
         this.eventBus.emit(this.node.id + '.main-input.sendNodeOn', { nodeid: this.node.id });
       });
-      this.eventManager.addButtonUpCallback(this.node.data.assignedKey, this.node.id, () => {
+      this.eventManager?.addButtonUpCallback(this.node.data.assignedKey, this.node.id, () => {
         this.eventBus.emit(this.node.id + '.main-input.sendNodeOff', { nodeid: this.node.id });
       });
     }
@@ -58,7 +58,7 @@ export class VirtualMidiButtonNode extends VirtualNode<CustomNode & MidiButtonNo
 
   private async setupMidi() {
     try {
-      const midi = MidiManager.getInstance();
+      const midi = getMidiOrNoop();
       await midi.ensureAccess();
       if (this.unsubscribeMidi) this.unsubscribeMidi();
       this.unsubscribeMidi = midi.onMessage(({ status, channel, data1, data2 }) => {
@@ -84,7 +84,7 @@ export class VirtualMidiButtonNode extends VirtualNode<CustomNode & MidiButtonNo
     this.isLearning = true;
     // startMidiLearn
     this.eventBus.emit(this.node.id + '.style.background', { color: '#7a5b00' });
-    const midi = MidiManager.getInstance();
+    const midi = getMidiOrNoop();
     midi.startButtonLearn(this.node.id, (mapping) => {
       this.midiMapping = mapping as any;
       this.finishLearn();

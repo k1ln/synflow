@@ -1,5 +1,6 @@
 import VirtualNode from './VirtualNode';
 import EventBus from '../EventBus';
+import { getAssetStore } from '../hostBindings';
 import { CustomNode } from '../AudioGraphManager';
 import { SampleFlowNodeProps, AudioBufferSegment } from '../nodeData';
 
@@ -320,22 +321,12 @@ export class VirtualSampleFlowNode extends VirtualNode<CustomNode & SampleFlowNo
 
   private async loadFromDisk(diskFileName: string) {
     try {
-      const {
-        loadRootHandle,
-        verifyPermission,
-        loadSampleFromDisk
-      } = await import('../../../../src/util/FileSystemAudioStore');
-      const root = await loadRootHandle();
-      if (!root) {
-        console.warn('[VirtualSampleFlowNode] no disk root handle');
+      const store = getAssetStore();
+      if (!store) {
+        console.warn('[VirtualSampleFlowNode] no asset store bound');
         return;
       }
-      const hasPermission = await verifyPermission(root, 'read');
-      if (!hasPermission) {
-        console.warn('[VirtualSampleFlowNode] no disk permission');
-        return;
-      }
-      const buf = await loadSampleFromDisk(root, diskFileName);
+      const buf = await store.loadAudio(diskFileName);
       if (buf) {
         await this.decodeArrayBuffer(buf);
       }

@@ -2,7 +2,7 @@ import VirtualNode from './VirtualNode';
 import EventBus from '../EventBus';
 import { CustomNode } from '../AudioGraphManager';
 // Static imports (requested): use direct imports instead of dynamic import/then chains
-import { loadRootHandle, writeAudioBlob } from '../../../../src/util/FileSystemAudioStore';
+import { getAssetStore } from '../hostBindings';
 
 interface RecordingData {
   label?: string;
@@ -188,10 +188,10 @@ registerProcessor('RecorderProcessor', RecorderProcessor);
         let wroteFs = false;
         // Use IIFE to allow await without making stopRecording async
         try {
-          const root = await loadRootHandle();
-          if (root) {
-            const res = await writeAudioBlob(root, 'recording', wavBlob, name);
-            wroteFs = res.ok;
+          const store = getAssetStore();
+          if (store) {
+            const res = await store.saveAudio('recording', wavBlob, name);
+            wroteFs = !!res?.ok;
           }
         } catch (e) { console.warn('[VirtualRecordingNode] FS write failed', e); }
         if (!wroteFs) {
