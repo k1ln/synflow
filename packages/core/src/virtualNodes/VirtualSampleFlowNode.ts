@@ -9,6 +9,17 @@ const toArrayBuffer = (buf: unknown): ArrayBuffer | null => {
   if (buf instanceof ArrayBuffer) {
     return buf;
   }
+  if (typeof buf === 'string') {
+    // Portable flows embed sample bytes as a base64 string.
+    try {
+      const binary = atob(buf);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return bytes.buffer;
+    } catch {
+      return null;
+    }
+  }
   if (buf && typeof buf === 'object' && buf !== null) {
     // Handle serialized ArrayBuffer (e.g., from JSON persistence)
     try {

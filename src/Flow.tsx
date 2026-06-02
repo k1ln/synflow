@@ -607,6 +607,17 @@ function Flow() {
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
 
+  // Expose "export portable flow" (inline sub-flows + embed samples) so the
+  // current flow can be saved as a single self-contained JSON for external hosts.
+  useEffect(() => {
+    (window as any).flowSynth = (window as any).flowSynth || {};
+    (window as any).flowSynth.exportPortableFlow = async (filename?: string) => {
+      const { downloadPortableFlow } = await import('./host/exportPortableFlow');
+      const flow = JSON.parse(JSON.stringify({ nodes: nodesRef.current, edges: edgesRef.current }));
+      await downloadPortableFlow(flow, filename || `${currentFlow || 'flow'}.portable.json`);
+    };
+  }, []);
+
   // Keep refs in sync with state
   useEffect(() => {
     nodesRef.current = nodes;
