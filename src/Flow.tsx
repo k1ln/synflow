@@ -181,6 +181,16 @@ function Flow() {
     (window as any).flowSynth.onCommand = (name: string, cb: (d: any) => void) => {
       try { eventBus.subscribe(`commandOut.${name}`, cb); return () => eventBus.unsubscribe(`commandOut.${name}`, cb); } catch { return () => {}; }
     };
+    // Parameter automation API (control-rate set + audio-rate connect + discovery).
+    (window as any).flowSynth.setParam = (nodeId: string, key: string, value: number | string) => {
+      try { eventBus.emit(`${nodeId}.params.updateParams`, { nodeid: nodeId, data: { [key]: value } }); } catch { /* noop */ }
+    };
+    (window as any).flowSynth.getAudioParam = (nodeId: string, key: string) =>
+      managerRef.current?.getAudioParam?.(nodeId, key);
+    (window as any).flowSynth.connectToParam = (source: AudioNode, nodeId: string, key: string) =>
+      managerRef.current?.connectToParam?.(source, nodeId, key) ?? false;
+    (window as any).flowSynth.listParams = (nodeId: string) =>
+      managerRef.current?.listParams?.(nodeId) ?? [];
   }, [eventBus]);
 
   // Ensure all flow handles have a helpful title on hover.

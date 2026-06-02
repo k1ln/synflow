@@ -845,4 +845,70 @@ export class AudioGraphManager {
             .filter((n: any) => n.type === 'CommandOutFlowNode' || String(n.id).endsWith('CommandOutFlowNode'))
             .map((n: any) => ({ id: n.id, name: n.data?.commandName || '' }));
     }
+
+    // ─── Host parameter API (automation from outside the core) ──────────────────
+
+    /** Resolve the AudioNode a node exposes its params on (same order as connect). */
+    private resolveParamTarget(nodeId: string): any {
+        const v: any = this.virtualNodes.get(nodeId);
+        if (!v) return undefined;
+        if (typeof v.getParamNode === 'function') return v.getParamNode();
+        if (typeof v.getInputNode === 'function') return v.getInputNode();
+        return v.audioNode;
+    }
+
+    /** Resolve a node's AudioParam by name (e.g. 'frequency', 'gain'), or undefined. */
+    public getAudioParam(nodeId: string, key: string): AudioParam | undefined {
+        const v: any = this.virtualNodes.get(nodeId);
+        if (v && typeof v.getParameterByName === 'function') {
+            const p = v.getParameterByName(key);
+            if (p instanceof AudioParam) return p;
+        }
+        const target: any = this.resolveParamTarget(nodeId);
+        if (!target) return undefined;
+        if (target[key] instanceof AudioParam) return target[key];
+        if (target.parameters && typeof target.parameters.get === 'function') {
+            const wp = target.parameters.get(key);
+            if (wp instanceof AudioParam) return wp;
+        }
+        return undefined;
+    }
+
+    /** Control-rate param set (uses the engine's built-in smoothing/ramping). */
+    public setParam(nodeId: string, key: string, value: number | string): void {
+        this.eventBus.emit(`${nodeId}.params.updateParams`, { nodeid: nodeId, data: { [key]: value } });
+    }
+
+    /** Audio-rate automation: connect a host-owned signal to a node's AudioParam. */
+    public connectToParam(source: AudioNode, nodeId: string, key: string): boolean {
+        const param = this.getAudioParam(nodeId, key);
+        if (!param) return false;
+        try { source.connect(param); return true; } catch { return false; }
+    }
+
+    /** Disconnect a previously connected host signal from a node's AudioParam. */
+    public disconnectFromParam(source: AudioNode, nodeId: string, key: string): void {
+        const param = this.getAudioParam(nodeId, key);
+        if (param) { try { source.disconnect(param); } catch { /* noop */ } }
+    }
+
+    /** List a node's automatable params (AudioParam names + current value). */
+    public listParams(nodeId: string): Array<{ name: string; value?: number }> {
+        const out: Array<{ name: string; value?: number }> = [];
+        const seen = new Set<string>();
+        const node: any = (this.nodesRef.current || []).find((n: any) => n.id === nodeId);
+        if (node?.data) {
+            for (const k of Object.keys(node.data)) {
+                const p = this.getAudioParam(nodeId, k);
+                if (p) { out.push({ name: k, value: p.value }); seen.add(k); }
+            }
+        }
+        const target: any = this.resolveParamTarget(nodeId);
+        if (target?.parameters && typeof target.parameters.forEach === 'function') {
+            target.parameters.forEach((p: AudioParam, name: string) => {
+                if (!seen.has(name)) { out.push({ name, value: p.value }); seen.add(name); }
+            });
+        }
+        return out;
+    }
 }
