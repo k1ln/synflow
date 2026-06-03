@@ -1,11 +1,12 @@
 // Editor side of the Mothscilla (DAW) ↔ Synflow editor bridge.
 //
-// When the editor is opened by the DAW in a separate window (URL hash
-// `#mothscilla`), this component receives the flow to edit, loads it into the
-// canvas, and shows a "Send to Mothscilla" button that posts the edited flow
-// back to the DAW window. DAW side: packages/daw/src/synflow/editorBridge.ts.
+// When the editor is opened by the DAW (URL hash `#mothscilla`) — either as a
+// same-origin/cross-origin IFRAME (host = window.parent) or a separate WINDOW
+// (host = window.opener) — this component receives the flow to edit, loads it
+// into the canvas, and shows a "Send to Mothscilla" button that posts the edited
+// flow back to the DAW. DAW side: packages/daw/src/ui/SynflowEditor.tsx.
 //
-// In any normal editor session (no opener / no hash) this renders nothing and
+// In any normal editor session (no host / no hash) this renders nothing and
 // attaches no listeners, so it has zero effect on standalone use.
 import React, { useEffect } from 'react';
 
@@ -13,8 +14,12 @@ import React, { useEffect } from 'react';
 // the payload is only flow JSON, so '*' is acceptable here.
 const TARGET = '*';
 
-function isBridge(): boolean {
-  return typeof window !== 'undefined' && !!window.opener && window.location.hash.includes('mothscilla');
+/** The DAW window hosting us: the opener (popup) or the parent (iframe), if any. */
+function bridgeHost(): Window | null {
+  if (typeof window === 'undefined' || !window.location.hash.includes('mothscilla')) return null;
+  if (window.opener) return window.opener as Window;
+  if (window.parent && window.parent !== window) return window.parent;
+  return null;
 }
 
 type AnyArr = any[];
@@ -25,12 +30,13 @@ export function DawEditorBridge({ nodes, edges, setNodes, setEdges }: {
   setNodes: (n: AnyArr) => void;
   setEdges: (e: AnyArr) => void;
 }) {
-  const active = isBridge();
+  const host = bridgeHost();
+  const active = !!host;
 
   useEffect(() => {
-    if (!active) return;
+    if (!host) return;
     const onMessage = (e: MessageEvent) => {
-      if (e.source !== window.opener) return;
+      if (e.source !== host) return;
       const d = e.data;
       if (!d || typeof d !== 'object' || d.type !== 'mothscilla:load' || !d.flow) return;
       // Ensure every node has a position so the graph is readable.
@@ -40,18 +46,18 @@ export function DawEditorBridge({ nodes, edges, setNodes, setEdges }: {
       }));
       setNodes(incoming);
       setEdges(d.flow.edges ?? []);
-      try { window.opener?.postMessage({ type: 'mothscilla:loaded' }, TARGET); } catch { /* noop */ }
+      try { host.postMessage({ type: 'mothscilla:loaded' }, TARGET); } catch { /* noop */ }
     };
     window.addEventListener('message', onMessage);
-    try { window.opener?.postMessage({ type: 'mothscilla:ready' }, TARGET); } catch { /* noop */ }
+    try { host.postMessage({ type: 'mothscilla:ready' }, TARGET); } catch { /* noop */ }
     return () => window.removeEventListener('message', onMessage);
-  }, [active, setNodes, setEdges]);
+  }, [host, setNodes, setEdges]);
 
   if (!active) return null;
 
   const send = () => {
     const flow = JSON.parse(JSON.stringify({ nodes, edges }));
-    try { window.opener?.postMessage({ type: 'mothscilla:save', flow }, TARGET); } catch { /* noop */ }
+    try { host!.postMessage({ type: 'mothscilla:save', flow }, TARGET); } catch { /* noop */ }
   };
 
   return (

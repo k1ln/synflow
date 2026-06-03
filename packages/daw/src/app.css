@@ -216,3 +216,14 @@ body {
 .pp-wave-btns { display: flex; gap: 4px; flex-wrap: wrap; max-width: 150px; }
 .pp-wb { font-size: 10px; padding: 4px 8px; border-radius: 5px; cursor: pointer; border: 1px solid var(--border-default); background: var(--glass-field); color: var(--ink-2); }
 .pp-div { height: 1px; background: var(--border-strong); }
+
+/* Embedded "Edit in Synflow" iframe panel */
+.syn-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(4,6,10,.62); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; padding: 28px; }
+.syn-modal { width: min(1280px, 96vw); height: min(820px, 92vh); display: flex; flex-direction: column; background: var(--surface-1, #0c0f16); border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border-strong)); border-radius: var(--r-md, 12px); overflow: hidden; box-shadow: var(--shadow-modal, 0 24px 80px rgba(0,0,0,.6)), 0 0 36px color-mix(in srgb, var(--accent) 16%, transparent); }
+.syn-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border-strong); background: var(--glass-field, rgba(255,255,255,.03)); }
+.syn-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.syn-title { font-size: 13px; font-weight: 600; color: var(--accent); text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 40%, transparent); }
+.syn-hint { font-size: 11px; color: var(--ink-3); }
+.syn-close { margin-left: auto; width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center; background: transparent; border: none; color: var(--ink-2); cursor: pointer; }
+.syn-close:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.syn-frame { flex: 1; width: 100%; border: none; background: #07070d; }
