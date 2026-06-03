@@ -11,13 +11,12 @@
       "type": "OscillatorFlowNode",
       "data": {
         "frequency": 220,
-        "detune": 110,
         "type": "sawtooth",
         "isPitch": true,
         "pitchParam": "frequency"
       },
       "position": {
-        "x": 80,
+        "x": 100,
         "y": 80
       }
     },
@@ -66,8 +65,8 @@
         ]
       },
       "position": {
-        "x": 80,
-        "y": 250
+        "x": 100,
+        "y": 280
       }
     },
     {
@@ -77,8 +76,8 @@
         "gain": 1
       },
       "position": {
-        "x": 380,
-        "y": 80
+        "x": 440,
+        "y": 180
       }
     },
     {
@@ -86,8 +85,8 @@
       "type": "MasterOutFlowNode",
       "data": {},
       "position": {
-        "x": 680,
-        "y": 80
+        "x": 780,
+        "y": 180
       }
     }
   ],

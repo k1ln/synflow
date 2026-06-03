@@ -50,10 +50,15 @@ function exposeKnobs(node: any): any {
 
 // Clean left→right signal-flow layout: x = longest path from a source (layer),
 // y stacks nodes within a layer. Readable + stable when opened in the editor.
+// Columns follow the AUDIO signal path only (main-input / destination-input).
+// Modulation edges (envelope → a param like gain/frequency) don't push a node to
+// the right, so sources + their envelopes share the left column and the chain
+// reads osc → gain → master left→right.
+const AUDIO_IN = new Set(['main-input', 'destination-input']);
 function layout(flow: Flow): Flow {
   const incoming = new Map<string, string[]>();
   for (const n of flow.nodes) incoming.set(n.id, []);
-  for (const e of flow.edges) incoming.get(e.target)?.push(e.source);
+  for (const e of flow.edges) if (AUDIO_IN.has(e.targetHandle)) incoming.get(e.target)?.push(e.source);
   const cache = new Map<string, number>();
   const depth = (id: string, seen = new Set<string>()): number => {
     if (cache.has(id)) return cache.get(id)!;
@@ -65,8 +70,9 @@ function layout(flow: Flow): Flow {
     return d;
   };
   const byDepth = new Map<number, any[]>();
+  // Audio source(s) first in each column so the signal path stays a straight line.
   for (const n of flow.nodes) { const d = depth(n.id); (byDepth.get(d) ?? byDepth.set(d, []).get(d)!).push(n); }
-  const X0 = 80, GX = 300, Y0 = 80, GY = 170;
+  const X0 = 100, GX = 340, Y0 = 80, GY = 200;
   const nodes = flow.nodes.map((n) => {
     const d = depth(n.id);
     const row = byDepth.get(d)!.indexOf(n);

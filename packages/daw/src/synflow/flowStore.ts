@@ -66,6 +66,7 @@ async function dir(root: any, ...parts: string[]) { let d = root; for (const p o
 export interface FlowFileMeta { group: 'instrument' | 'effect'; id: string; name: string; category: string; kind?: string; flow: Flow }
 
 export async function writeFlow(root: any, e: FlowFileMeta): Promise<void> {
+  if (!(await ensurePermission(root, 'readwrite'))) throw new Error('write permission denied for the flow folder');
   const d = await dir(root, 'flows', sub(e.group));
   const fh = await d.getFileHandle(`${e.id}.json`, { create: true });
   const w = await fh.createWritable();
