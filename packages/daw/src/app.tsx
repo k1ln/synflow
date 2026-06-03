@@ -4,12 +4,15 @@ import { Transport } from './audio/Transport';
 import { Scheduler } from './audio/Scheduler';
 import { InstrumentHost } from './audio/InstrumentHost';
 import { VoicePool } from './audio/VoicePool';
+import { Mixer } from './audio/Mixer';
 import { defaultProject, newNoteId, type Channel, type Project } from './model/project';
 import { midiToFreq } from './model/pitch';
 import type { Flow } from './synflow/instruments';
+import { FX_LIBRARY } from './synflow/effects';
 import { TransportBar } from './ui/TransportBar';
 import { ChannelRack } from './ui/ChannelRack';
 import { PianoRoll } from './ui/PianoRoll';
+import { MixerPanel } from './ui/MixerPanel';
 import { SamplerEditor } from './ui/SamplerEditor';
 
 export function App() {
@@ -24,19 +27,28 @@ export function App() {
   const schedulerRef = useRef<Scheduler | null>(null);
   const hostsRef = useRef<Map<string, InstrumentHost>>(new Map()); // step channels
   const poolsRef = useRef<Map<string, VoicePool>>(new Map());      // piano channels
+  const mixerRef = useRef<Mixer | null>(null);
   const projectRef = useRef(project);
   projectRef.current = project;
 
   const buildChannelAudio = useCallback(async (ch: Channel) => {
     const ctx = ctxRef.current;
-    if (!ctx) return;
+    const mixer = mixerRef.current;
+    if (!ctx || !mixer) return;
+    const already = ch.kind === 'piano' ? poolsRef.current.has(ch.id) : hostsRef.current.has(ch.id);
+    if (already) return;
+    // Build this channel's mixer strip (volume + FX inserts) and route instruments into it.
+    const strip = mixer.strip(ch.id, ch.volume ?? 0.8);
+    for (const fxId of ch.fx ?? []) {
+      const def = FX_LIBRARY.find((f) => f.id === fxId);
+      if (def) await strip.addFx(def.name, def.make());
+    }
+    const dest = strip.destination;
     if (ch.kind === 'piano') {
-      if (poolsRef.current.has(ch.id)) return;
-      const pool = await VoicePool.create(() => new InstrumentHost(ctx, ch.flow, ctx.destination), ch.voices ?? 6);
+      const pool = await VoicePool.create(() => new InstrumentHost(ctx, ch.flow, dest), ch.voices ?? 6);
       poolsRef.current.set(ch.id, pool);
     } else {
-      if (hostsRef.current.has(ch.id)) return;
-      const host = new InstrumentHost(ctx, ch.flow, ctx.destination);
+      const host = new InstrumentHost(ctx, ch.flow, dest);
       await host.load();
       hostsRef.current.set(ch.id, host);
     }
@@ -46,6 +58,7 @@ export function App() {
     if (ctxRef.current) return;
     const ctx = new AudioContext();
     ctxRef.current = ctx;
+    mixerRef.current = new Mixer(ctx);
     const clock = new RealtimeClock(ctx);
     const transport = new Transport(clock);
     transport.stepsPerBeat = projectRef.current.stepsPerBeat;
@@ -122,6 +135,21 @@ export function App() {
       channels: p.channels.map((c) => (c.id === chId ? { ...c, notes: (c.notes ?? []).filter((n) => n.id !== noteId) } : c)),
     }));
 
+  const setChannelVolume = (chId: string, v: number) => {
+    setProject((p) => ({ ...p, channels: p.channels.map((c) => (c.id === chId ? { ...c, volume: v } : c)) }));
+    mixerRef.current?.get(chId)?.setVolume(v);
+  };
+  const addFx = async (chId: string, fxId: string) => {
+    setProject((p) => ({ ...p, channels: p.channels.map((c) => (c.id === chId ? { ...c, fx: [...(c.fx ?? []), fxId] } : c)) }));
+    const def = FX_LIBRARY.find((f) => f.id === fxId);
+    const strip = mixerRef.current?.get(chId);
+    if (def && strip) await strip.addFx(def.name, def.make());
+  };
+  const removeFx = (chId: string, index: number) => {
+    setProject((p) => ({ ...p, channels: p.channels.map((c) => (c.id === chId ? { ...c, fx: (c.fx ?? []).filter((_, i) => i !== index) } : c)) }));
+    mixerRef.current?.get(chId)?.removeFx(index);
+  };
+
   const addSampleChannel = useCallback((name: string, flow: Flow) => {
     const ch: Channel = { id: crypto.randomUUID(), name, kind: 'step', flow, steps: Array(projectRef.current.totalSteps).fill(false) };
     setProject((p) => ({ ...p, channels: [...p.channels, ch] }));
@@ -148,6 +176,7 @@ export function App() {
           currentStep={currentStep} noteLength={noteLength} onAddNote={addNote} onRemoveNote={removeNote}
         />
       ))}
+      <MixerPanel project={project} onVolume={setChannelVolume} onAddFx={addFx} onRemoveFx={removeFx} />
       <p className="hint">
         Step channels (drums) up top; piano-roll channels below (polyphonic via a voice pool).
         Click cells to program; ▶ Play. Notes send receiveNodeOn at start and receiveNodeOff at end.

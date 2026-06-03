@@ -18,6 +18,8 @@ export interface Channel {
   notes?: PianoNote[];     // used by piano channels
   voices?: number;         // polyphony (piano channels)
   muted?: boolean;
+  volume?: number;         // 0..1 mixer level (default 0.8)
+  fx?: string[];           // FX_LIBRARY ids inserted on this channel
 }
 
 export interface Project {
