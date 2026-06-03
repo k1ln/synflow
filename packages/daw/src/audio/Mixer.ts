@@ -1,96 +1,117 @@
 import { AudioGraphManager, EventBus } from '@synflow/core';
 import type { Flow } from '../synflow/instruments';
 
-interface FxInsert { engine: AudioGraphManager; inId?: string; outId?: string; name: string; }
+export interface ResolvedFx { name: string; flow: Flow }
+interface Insert { engine: AudioGraphManager; inId?: string; outId?: string; name: string }
 
-/** One mixer channel: instruments → input → [FX chain] → volume → master. */
-export class ChannelStrip {
+/** A rebuildable FX chain: input → [synflow FX engines] → output. */
+export class FxChain {
   readonly input: GainNode;
-  private vol: GainNode;
-  private fx: FxInsert[] = [];
+  readonly output: GainNode;
+  private fx: Insert[] = [];
 
-  constructor(private ctx: AudioContext, private master: GainNode, volume = 0.8) {
+  constructor(private ctx: AudioContext) {
     this.input = ctx.createGain();
-    this.vol = ctx.createGain();
-    this.vol.gain.value = volume;
+    this.output = ctx.createGain();
     this.rewire();
   }
 
-  /** Instruments connect their output here. */
-  get destination(): AudioNode { return this.input; }
-  get fxNames(): string[] { return this.fx.map((f) => f.name); }
-  setVolume(v: number): void { this.vol.gain.value = v; }
+  get count(): number { return this.fx.length; }
+  get names(): string[] { return this.fx.map((f) => f.name); }
+  setParam(i: number, nodeId: string, param: string, value: number): void { this.fx[i]?.engine.setParam(nodeId, param, value); }
 
-  /** Automate an FX insert's param (control-rate, via the FX flow's engine). */
-  setFxParam(fxIndex: number, nodeId: string, param: string, value: number): void {
-    this.fx[fxIndex]?.engine.setParam(nodeId, param, value);
-  }
-
-  async addFx(name: string, flow: Flow): Promise<void> {
-    const engine = new AudioGraphManager(this.ctx as any, { current: flow.nodes } as any, { current: flow.edges } as any, { bus: new EventBus() });
-    await engine.initialize();
-    const inId = flow.nodes.find((n) => n.data?.isInput)?.id;
-    const outId = flow.nodes.find((n) => n.data?.isOutput)?.id;
-    this.fx.push({ engine, inId, outId, name });
-    this.rewire();
-  }
-
-  removeFx(index: number): void {
-    const f = this.fx[index];
-    if (!f) return;
-    try { f.engine.dispose(); } catch { /* noop */ }
-    this.fx.splice(index, 1);
-    this.rewire();
-  }
-
-  /** Swap an insert's flow in place (used when its flow is edited in Synflow). */
-  async replaceFx(index: number, name: string, flow: Flow): Promise<void> {
-    const old = this.fx[index];
-    if (!old) { await this.addFx(name, flow); return; }
-    const engine = new AudioGraphManager(this.ctx as any, { current: flow.nodes } as any, { current: flow.edges } as any, { bus: new EventBus() });
-    await engine.initialize();
-    const inId = flow.nodes.find((n) => n.data?.isInput)?.id;
-    const outId = flow.nodes.find((n) => n.data?.isOutput)?.id;
-    try { old.engine.dispose(); } catch { /* noop */ }
-    this.fx[index] = { engine, inId, outId, name };
+  /** Rebuild the whole chain from resolved inserts (FX = @synflow/core engines). */
+  async setChain(inserts: ResolvedFx[]): Promise<void> {
+    for (const f of this.fx) { try { f.engine.dispose(); } catch { /* noop */ } }
+    this.fx = [];
+    for (const ins of inserts) {
+      const engine = new AudioGraphManager(this.ctx as any, { current: ins.flow.nodes } as any, { current: ins.flow.edges } as any, { bus: new EventBus() });
+      await engine.initialize();
+      this.fx.push({
+        engine, name: ins.name,
+        inId: ins.flow.nodes.find((n: any) => n.data?.isInput)?.id,
+        outId: ins.flow.nodes.find((n: any) => n.data?.isOutput)?.id,
+      });
+    }
     this.rewire();
   }
 
   private rewire(): void {
     try { this.input.disconnect(); } catch { /* noop */ }
-    try { this.vol.disconnect(); } catch { /* noop */ }
-    for (const f of this.fx) {
-      const o = f.outId && f.engine.getAudioOutput(f.outId);
-      if (o) { try { o.disconnect(); } catch { /* noop */ } }
-    }
+    for (const f of this.fx) { const o = f.outId && f.engine.getAudioOutput(f.outId); if (o) { try { o.disconnect(); } catch { /* noop */ } } }
     let node: AudioNode = this.input;
     for (const f of this.fx) {
       const inN = f.inId ? f.engine.getAudioInput(f.inId) : undefined;
       const outN = f.outId ? f.engine.getAudioOutput(f.outId) : undefined;
       if (inN && outN) { node.connect(inN); node = outN; }
     }
-    node.connect(this.vol);
-    this.vol.connect(this.master);
+    node.connect(this.output); // passthrough when empty
   }
 
-  dispose(): void { for (const f of this.fx) { try { f.engine.dispose(); } catch { /* noop */ } } }
+  dispose(): void {
+    for (const f of this.fx) { try { f.engine.dispose(); } catch { /* noop */ } }
+    this.fx = [];
+    try { this.input.disconnect(); } catch { /* noop */ }
+    try { this.output.disconnect(); } catch { /* noop */ }
+  }
 }
 
-/** Master bus + per-channel strips. */
+/**
+ * Three-level mixer:
+ *   instrument-use → use FX chain → track sum → track FX chain → track vol →
+ *   master sum → master FX chain → master vol → destination.
+ */
 export class Mixer {
-  readonly master: GainNode;
-  private strips = new Map<string, ChannelStrip>();
+  readonly masterSum: GainNode;
+  readonly masterChain: FxChain;
+  private masterVol: GainNode;
+  private tracks = new Map<string, { sum: GainNode; chain: FxChain; vol: GainNode }>();
+  private uses = new Map<string, FxChain>();
 
   constructor(private ctx: AudioContext) {
-    this.master = ctx.createGain();
-    this.master.connect(ctx.destination);
+    this.masterSum = ctx.createGain();
+    this.masterChain = new FxChain(ctx);
+    this.masterVol = ctx.createGain();
+    this.masterSum.connect(this.masterChain.input);
+    this.masterChain.output.connect(this.masterVol);
+    this.masterVol.connect(ctx.destination);
   }
 
-  strip(channelId: string, volume?: number): ChannelStrip {
-    let s = this.strips.get(channelId);
-    if (!s) { s = new ChannelStrip(this.ctx, this.master, volume); this.strips.set(channelId, s); }
-    return s;
+  /** Get/create a track strip (sum → track FX → vol → master sum). */
+  track(trackId: string, volume = 0.8): { sum: GainNode; chain: FxChain; vol: GainNode } {
+    let t = this.tracks.get(trackId);
+    if (!t) {
+      const sum = this.ctx.createGain();
+      const chain = new FxChain(this.ctx);
+      const vol = this.ctx.createGain(); vol.gain.value = volume;
+      sum.connect(chain.input);
+      chain.output.connect(vol);
+      vol.connect(this.masterSum);
+      t = { sum, chain, vol };
+      this.tracks.set(trackId, t);
+    }
+    return t;
   }
-  get(channelId: string): ChannelStrip | undefined { return this.strips.get(channelId); }
-  setMaster(v: number): void { this.master.gain.value = v; }
+
+  /** The node an instrument-use connects its output into (use FX chain → track sum). */
+  use(useId: string, trackId: string): AudioNode {
+    let chain = this.uses.get(useId);
+    if (!chain) {
+      chain = new FxChain(this.ctx);
+      chain.output.connect(this.track(trackId).sum);
+      this.uses.set(useId, chain);
+    }
+    return chain.input;
+  }
+
+  trackChain(trackId: string): FxChain | undefined { return this.tracks.get(trackId)?.chain; }
+  useChain(useId: string): FxChain | undefined { return this.uses.get(useId); }
+  setTrackVolume(trackId: string, v: number): void { const t = this.tracks.get(trackId); if (t) t.vol.gain.value = v; }
+  setMaster(v: number): void { this.masterVol.gain.value = v; }
+
+  removeUse(useId: string): void { const c = this.uses.get(useId); if (c) { c.dispose(); this.uses.delete(useId); } }
+  removeTrack(trackId: string): void {
+    const t = this.tracks.get(trackId);
+    if (t) { t.chain.dispose(); try { t.sum.disconnect(); t.vol.disconnect(); } catch { /* noop */ } this.tracks.delete(trackId); }
+  }
 }

@@ -1,66 +1,76 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Plus, Trash2, Drum, Music2 } from 'lucide-react';
 import { RealtimeClock } from './audio/ClockSource';
 import { Transport } from './audio/Transport';
 import { Scheduler } from './audio/Scheduler';
 import { InstrumentHost } from './audio/InstrumentHost';
 import { VoicePool } from './audio/VoicePool';
-import { Mixer } from './audio/Mixer';
-import { defaultProject, newNoteId, uid, type Instrument, type Project, type Track } from './model/project';
+import { Mixer, type ResolvedFx } from './audio/Mixer';
+import {
+  defaultProject, newNoteId, uid, fxInsert, blankSteps,
+  type Project, type Track, type PoolItem, type FxInsert,
+} from './model/project';
 import { midiToFreq } from './model/pitch';
-import { makeBlip, makeSynthVoice, type Flow } from './synflow/instruments';
+import { type Flow } from './synflow/instruments';
 import { LIBRARY, findEntry, cloneFlow, type LibraryEntry } from './synflow/library';
-import { fsSupported, restoreFolder, seedLibrary, readAllFlows, writeFlow } from './synflow/flowStore';
+import { fsSupported, restoreFolder, seedLibrary, readAllFlows, writeFlow, pickFolder } from './synflow/flowStore';
+import { TopBar, type ViewId } from './ui/TopBar';
+import { Pool } from './ui/Pool';
+import { TrackEditor, type TrackEditorHandlers } from './ui/TrackEditor';
+import { FxBar } from './ui/FxBar';
+import { Live } from './ui/Live';
 import { SynflowEditor } from './ui/SynflowEditor';
 import { StorageSetup } from './ui/StorageSetup';
-import { TopBar, type ViewId } from './ui/TopBar';
-import { Browser } from './ui/Browser';
-import { Arrange } from './ui/Arrange';
-import { Mixer as MixerView } from './ui/Mixer';
-import { FXChain } from './ui/FXChain';
-import { PluginPanel } from './ui/PluginPanel';
-import { TrackList, type TrackHandlers } from './ui/TrackList';
-import { SamplerEditor } from './ui/SamplerEditor';
 
 export function App() {
   const [project, setProject] = useState<Project>(() => defaultProject());
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(-1);
-  const [noteLength, setNoteLength] = useState(2);
-  const [samplerTrack, setSamplerTrack] = useState<string | null>(null);
-  const [view, setView] = useState<ViewId>('arrange');
+  const [view, setView] = useState<ViewId>('tracks');
   const [browserOpen, setBrowserOpen] = useState(true);
   const [armed, setArmed] = useState(false);
   const [selTrack, setSelTrack] = useState<string>(() => defaultProject().tracks[0]?.id ?? '');
-  const [openPlugin, setOpenPlugin] = useState<string | null>(null);
+  const [liveSynth, setLiveSynth] = useState<string>('');
+  const [armedPool, setArmedPool] = useState<string | null>(null);
   const [editor, setEditor] = useState<{ flow: Flow; title: string; onSaved: (f: Flow) => void } | null>(null);
-  // Flow library: built-in catalog, optionally backed by an on-disk folder (File System Access).
   const [library, setLibrary] = useState<LibraryEntry[]>(LIBRARY);
   const [folder, setFolder] = useState<FileSystemDirectoryHandle | null>(null);
   const [storageSetup, setStorageSetup] = useState(false);
-  const folderRef = useRef<FileSystemDirectoryHandle | null>(null);
-  folderRef.current = folder;
 
   const ctxRef = useRef<AudioContext | null>(null);
   const transportRef = useRef<Transport | null>(null);
   const schedulerRef = useRef<Scheduler | null>(null);
-  const hostsRef = useRef<Map<string, InstrumentHost>>(new Map()); // step instruments
-  const poolsRef = useRef<Map<string, VoicePool>>(new Map());      // piano instruments
-  const mixerRef = useRef<Mixer | null>(null);                      // strips keyed by track id
-  const projectRef = useRef(project);
-  projectRef.current = project;
+  const hostsRef = useRef<Map<string, InstrumentHost>>(new Map());      // drum uses, keyed by use.id
+  const poolsRef = useRef<Map<string, VoicePool>>(new Map());           // synth uses, keyed by use.id
+  const liveSynthsRef = useRef<Map<string, VoicePool>>(new Map());      // live synths, keyed by poolId
+  const liveDrumsRef = useRef<Map<string, InstrumentHost>>(new Map());  // live drums, keyed by poolId
+  const mixerRef = useRef<Mixer | null>(null);
+  const projectRef = useRef(project); projectRef.current = project;
+  const folderRef = useRef<FileSystemDirectoryHandle | null>(null); folderRef.current = folder;
 
-  // Adopt an on-disk flow folder: seed it with the built-ins, then load its catalog.
-  const adoptFolder = useCallback(async (handle: FileSystemDirectoryHandle) => {
+  const effects = library.filter((e) => e.group === 'effect');
+  const selectedTrack = project.tracks.find((t) => t.id === selTrack) ?? project.tracks[0];
+
+  // ─── flow folder (File System Access) ──────────────────────────────────────
+  const adoptFolder = useCallback(async (handle: FileSystemDirectoryHandle, intoPool = false) => {
     try {
       await seedLibrary(handle);
       const entries = await readAllFlows(handle);
       setLibrary(entries.length ? entries : LIBRARY);
       setFolder(handle);
+      if (intoPool) {
+        setProject((p) => {
+          const have = new Set(p.pool.map((pi) => pi.libId ?? pi.id));
+          const add: PoolItem[] = entries
+            .filter((e) => e.group === 'instrument' && !have.has(e.id))
+            .map((e) => ({ id: uid('pool'), name: e.name, libId: e.id, kind: e.kind === 'piano' ? 'synth' : 'drum', flow: cloneFlow(e.flow) }));
+          return add.length ? { ...p, pool: [...p.pool, ...add] } : p;
+        });
+      }
     } catch (e) { console.warn('[Mothscilla] flow folder load failed', e); }
     setStorageSetup(false);
   }, []);
 
-  // On startup: restore a previously chosen folder, else prompt (if supported).
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -72,309 +82,288 @@ export function App() {
     return () => { cancelled = true; };
   }, [adoptFolder]);
 
-  // Persist an edited flow back to the folder (best-effort).
-  const persistFlow = useCallback((meta: { group: 'instrument' | 'effect'; id: string; name: string; category: string; kind?: string; flow: Flow }) => {
-    const root = folderRef.current;
-    if (root) void writeFlow(root, meta).catch((e) => console.warn('[Mothscilla] save flow failed', e));
-  }, []);
+  const addFromFolder = useCallback(async () => {
+    const h = await pickFolder().catch(() => null);
+    if (h) await adoptFolder(h, true);
+  }, [adoptFolder]);
 
-  const buildInstrumentAudio = useCallback(async (inst: Instrument, dest: AudioNode) => {
+  const persistFx = useCallback((insert: FxInsert, flow: Flow) => {
+    const root = folderRef.current; if (!root) return;
+    const def = findEntry(insert.fxId);
+    void writeFlow(root, { group: 'effect', id: insert.fxId, name: insert.name, category: def?.category ?? 'Effects', flow }).catch(() => {});
+  }, []);
+  // ─── audio build (3-level FX) ──────────────────────────────────────────────
+  const resolveFx = (inserts: FxInsert[]): ResolvedFx[] =>
+    inserts
+      .map((ins) => ({ name: ins.name, flow: ins.flow ?? findEntry(ins.fxId)?.flow }))
+      .filter((x): x is { name: string; flow: Flow } => !!x.flow)
+      .map((x) => ({ name: x.name, flow: cloneFlow(x.flow) }));
+
+  const buildUse = useCallback(async (useId: string, pool: PoolItem, dest: AudioNode, voices?: number) => {
     const ctx = ctxRef.current!;
-    if (inst.kind === 'piano') {
-      if (poolsRef.current.has(inst.id)) return;
-      poolsRef.current.set(inst.id, await VoicePool.create(() => new InstrumentHost(ctx, inst.flow, dest), inst.voices ?? 6));
+    if (pool.kind === 'synth') {
+      if (poolsRef.current.has(useId)) return;
+      poolsRef.current.set(useId, await VoicePool.create(() => new InstrumentHost(ctx, pool.flow, dest), voices ?? 6));
     } else {
-      if (hostsRef.current.has(inst.id)) return;
-      const host = new InstrumentHost(ctx, inst.flow, dest);
-      await host.load();
-      hostsRef.current.set(inst.id, host);
+      if (hostsRef.current.has(useId)) return;
+      const host = new InstrumentHost(ctx, pool.flow, dest); await host.load();
+      hostsRef.current.set(useId, host);
     }
   }, []);
 
-  const buildTrackAudio = useCallback(async (track: Track) => {
-    const mixer = mixerRef.current;
-    if (!mixer || !ctxRef.current) return;
-    const strip = mixer.strip(track.id, track.volume);
-    for (let i = 0; i < track.fx.length; i++) {
-      const def = findEntry(track.fx[i]);
-      const flow = track.fxFlows?.[i] ?? def?.flow; // edited-in-Synflow override wins
-      if (flow && strip.fxNames.length <= i) await strip.addFx(def?.name ?? track.fx[i], cloneFlow(flow));
+  const buildAudio = useCallback(async () => {
+    const mixer = mixerRef.current; if (!mixer || !ctxRef.current) return;
+    const proj = projectRef.current;
+    await mixer.masterChain.setChain(resolveFx(proj.masterFx));
+    for (const track of proj.tracks) {
+      const t = mixer.track(track.id, track.volume);
+      await t.chain.setChain(resolveFx(track.fx));
+      for (const use of track.uses) {
+        const dest = mixer.use(use.id, track.id);
+        await mixer.useChain(use.id)!.setChain(resolveFx(use.fx));
+        const pool = proj.pool.find((p) => p.id === use.poolId);
+        if (pool) await buildUse(use.id, pool, dest, use.voices);
+      }
     }
-    for (const inst of track.instruments) await buildInstrumentAudio(inst, strip.destination);
-  }, [buildInstrumentAudio]);
+  }, [buildUse]);
 
   const ensureAudio = useCallback(async () => {
     if (ctxRef.current) return;
-    const ctx = new AudioContext();
-    ctxRef.current = ctx;
+    const ctx = new AudioContext(); ctxRef.current = ctx;
     mixerRef.current = new Mixer(ctx);
     const clock = new RealtimeClock(ctx);
     const transport = new Transport(clock);
     transport.stepsPerBeat = projectRef.current.stepsPerBeat;
     transportRef.current = transport;
-
-    for (const track of projectRef.current.tracks) await buildTrackAudio(track);
-
+    await buildAudio();
     const scheduler = new Scheduler(clock, transport, (step, time) => {
       const proj = projectRef.current;
-      const mixer = mixerRef.current!;
       const lead = Math.max(0, (time - clock.currentTime) * 1000);
       const stepMs = transport.secondsPerStep * 1000;
       const gateMs = Math.min(transport.secondsPerStep * 0.9, 0.5) * 1000;
       for (const track of proj.tracks) {
-        // instruments
-        for (const inst of track.instruments) {
-          if (inst.muted) continue;
-          if (inst.kind === 'piano') {
-            const pool = poolsRef.current.get(inst.id);
-            if (!pool || !inst.notes) continue;
-            for (const n of inst.notes) {
+        for (const use of track.uses) {
+          if (use.muted) continue;
+          if (track.type === 'synth' && use.notes) {
+            const vp = poolsRef.current.get(use.id); if (!vp) continue;
+            for (const n of use.notes) {
               if (n.start !== step) continue;
-              const freq = midiToFreq(n.midi);
-              window.setTimeout(() => pool.noteOn(n.id, freq), lead);
-              window.setTimeout(() => pool.noteOff(n.id), lead + n.length * stepMs);
+              const f = midiToFreq(n.midi);
+              window.setTimeout(() => vp.noteOn(n.id, f), lead);
+              window.setTimeout(() => vp.noteOff(n.id), lead + n.length * stepMs);
             }
-          } else if (inst.steps[step]) {
-            const host = hostsRef.current.get(inst.id);
-            if (!host) continue;
+          } else if (track.type === 'drums' && use.steps?.[step]) {
+            const host = hostsRef.current.get(use.id); if (!host) continue;
             window.setTimeout(() => host.trigger(), lead);
             window.setTimeout(() => host.release(), lead + gateMs);
           }
-        }
-        // automation lanes → @synflow/core setParam (control-rate)
-        for (const lane of track.automation) {
-          const v = lane.values[step];
-          if (v == null) continue;
-          window.setTimeout(() => {
-            if (lane.fxIndex != null) mixer.get(track.id)?.setFxParam(lane.fxIndex, lane.nodeId, lane.param, v);
-            else if (lane.instrumentId) {
-              hostsRef.current.get(lane.instrumentId)?.setParam(lane.nodeId, lane.param, v);
-              poolsRef.current.get(lane.instrumentId)?.setParam(lane.nodeId, lane.param, v);
-            }
-          }, lead);
         }
       }
       window.setTimeout(() => setCurrentStep(step), lead);
     });
     scheduler.totalSteps = projectRef.current.totalSteps;
     schedulerRef.current = scheduler;
-  }, [buildTrackAudio]);
+  }, [buildAudio]);
 
   const play = useCallback(async () => {
     await ensureAudio();
     await ctxRef.current!.resume();
     transportRef.current!.bpm = projectRef.current.bpm;
     schedulerRef.current!.totalSteps = projectRef.current.totalSteps;
-    transportRef.current!.start();
-    schedulerRef.current!.start();
+    transportRef.current!.start(); schedulerRef.current!.start();
     setIsPlaying(true);
   }, [ensureAudio]);
 
   const stop = useCallback(() => {
-    schedulerRef.current?.stop();
-    transportRef.current?.stop();
-    for (const p of poolsRef.current.values()) p.allOff();
-    setIsPlaying(false);
-    setCurrentStep(-1);
+    schedulerRef.current?.stop(); transportRef.current?.stop();
+    for (const vp of poolsRef.current.values()) vp.allOff();
+    setIsPlaying(false); setCurrentStep(-1);
   }, []);
 
-  // Audition: trigger an instrument immediately on click (builds/resumes audio on
-  // the user gesture). Gives instant feedback that the controls are live.
-  const audition = useCallback(async (instId: string, payload?: { frequency: number }) => {
-    await ensureAudio();
-    await ctxRef.current?.resume();
-    const pool = poolsRef.current.get(instId);
-    if (pool) {
-      const nid = -Math.floor(performance.now());
-      pool.noteOn(nid, payload?.frequency ?? 440);
-      window.setTimeout(() => pool.noteOff(nid), 350);
-      return;
-    }
-    const host = hostsRef.current.get(instId);
-    if (host) { host.trigger(payload ?? {}); window.setTimeout(() => host.release(payload ?? {}), 220); }
-  }, [ensureAudio]);
-
-  // ─── project edits ──────────────────────────────────────────────────────────
   const setBpm = (bpm: number) => { setProject((p) => ({ ...p, bpm })); if (transportRef.current) transportRef.current.bpm = bpm; };
 
-  const mapInstrument = (instId: string, fn: (i: Instrument) => Instrument) =>
-    setProject((p) => ({ ...p, tracks: p.tracks.map((t) => ({ ...t, instruments: t.instruments.map((i) => (i.id === instId ? fn(i) : i)) })) }));
+  // ─── audition (click feedback) + live performance ──────────────────────────
+  const audition = useCallback(async (useId: string, payload?: { frequency: number }) => {
+    await ensureAudio(); await ctxRef.current?.resume();
+    if (!hostsRef.current.has(useId) && !poolsRef.current.has(useId)) await buildAudio();
+    const vp = poolsRef.current.get(useId);
+    if (vp) { const id = -Math.floor(performance.now()); vp.noteOn(id, payload?.frequency ?? 440); window.setTimeout(() => vp.noteOff(id), 350); return; }
+    const host = hostsRef.current.get(useId);
+    if (host) { host.trigger(); window.setTimeout(() => host.release(), 220); }
+  }, [ensureAudio, buildAudio]);
+
+  const buildLive = useCallback(async (poolId: string) => {
+    await ensureAudio(); await ctxRef.current?.resume();
+    const ctx = ctxRef.current!; const mixer = mixerRef.current!;
+    const pool = projectRef.current.pool.find((p) => p.id === poolId); if (!pool) return;
+    if (pool.kind === 'synth') {
+      if (!liveSynthsRef.current.has(poolId)) liveSynthsRef.current.set(poolId, await VoicePool.create(() => new InstrumentHost(ctx, pool.flow, mixer.masterSum), 8));
+    } else if (!liveDrumsRef.current.has(poolId)) {
+      const h = new InstrumentHost(ctx, pool.flow, mixer.masterSum); await h.load();
+      liveDrumsRef.current.set(poolId, h);
+    }
+  }, [ensureAudio]);
+
+  const liveNoteOn = useCallback(async (poolId: string, midi: number) => { await buildLive(poolId); liveSynthsRef.current.get(poolId)?.noteOn(midi, midiToFreq(midi)); }, [buildLive]);
+  const liveNoteOff = useCallback((poolId: string, midi: number) => { liveSynthsRef.current.get(poolId)?.noteOff(midi); }, []);
+  const liveDrumDown = useCallback(async (poolId: string) => { await buildLive(poolId); const h = liveDrumsRef.current.get(poolId); h?.trigger(); window.setTimeout(() => h?.release(), 220); }, [buildLive]);
+  const liveDrumUp = useCallback(() => {}, []);
+
+  const onLive = (poolId: string) => {
+    const pool = project.pool.find((p) => p.id === poolId);
+    setArmedPool(poolId);
+    if (pool?.kind === 'synth') setLiveSynth(poolId);
+    setView('live');
+    void buildLive(poolId);
+  };
+
+  // ─── project edits ─────────────────────────────────────────────────────────
   const mapTrack = (trackId: string, fn: (t: Track) => Track) =>
     setProject((p) => ({ ...p, tracks: p.tracks.map((t) => (t.id === trackId ? fn(t) : t)) }));
+  const mapUse = (useId: string, fn: (u: Track['uses'][number]) => Track['uses'][number]) =>
+    setProject((p) => ({ ...p, tracks: p.tracks.map((t) => ({ ...t, uses: t.uses.map((u) => (u.id === useId ? fn(u) : u)) })) }));
+  const trackOfUse = (useId: string) => projectRef.current.tracks.find((t) => t.uses.some((u) => u.id === useId));
+  const useById = (useId: string) => projectRef.current.tracks.flatMap((t) => t.uses).find((u) => u.id === useId);
 
-  const h: TrackHandlers = {
-    onVolume: (trackId, v) => { mapTrack(trackId, (t) => ({ ...t, volume: v })); mixerRef.current?.get(trackId)?.setVolume(v); },
-    onAddFx: async (trackId, fxId) => {
-      mapTrack(trackId, (t) => ({ ...t, fx: [...t.fx, fxId] }));
-      const def = findEntry(fxId);
-      const strip = mixerRef.current?.get(trackId);
-      if (def && strip) await strip.addFx(def.name, cloneFlow(def.flow));
-    },
-    onRemoveFx: (trackId, index) => { mapTrack(trackId, (t) => ({ ...t, fx: t.fx.filter((_, i) => i !== index) })); mixerRef.current?.get(trackId)?.removeFx(index); },
-    onToggleStep: (instId, step) => mapInstrument(instId, (i) => {
-      if (!i.steps[step]) void audition(instId); // audition when turning a step ON
-      return { ...i, steps: i.steps.map((s, n) => (n === step ? !s : s)) };
+  const rebuildUseChain = (useId: string, fx: FxInsert[]) => void mixerRef.current?.useChain(useId)?.setChain(resolveFx(fx));
+  const rebuildTrackChain = (trackId: string, fx: FxInsert[]) => void mixerRef.current?.trackChain(trackId)?.setChain(resolveFx(fx));
+  const rebuildMaster = (fx: FxInsert[]) => void mixerRef.current?.masterChain.setChain(resolveFx(fx));
+
+  // Open a flow in Synflow; on save, set the override + live-reload + persist.
+  const editFxFlow = (insert: FxInsert, apply: (flow: Flow) => void) => {
+    const flow = insert.flow ?? findEntry(insert.fxId)?.flow;
+    if (flow) setEditor({ flow, title: insert.name, onSaved: (f) => { apply(f); persistFx(insert, f); } });
+  };
+
+  const h: TrackEditorHandlers = {
+    onToggleStep: (useId, step) => mapUse(useId, (u) => {
+      if (!(u.steps ?? [])[step]) void audition(useId);
+      return { ...u, steps: (u.steps ?? blankSteps(projectRef.current.totalSteps)).map((s, i) => (i === step ? !s : s)) };
     }),
-    onMute: (instId) => mapInstrument(instId, (i) => ({ ...i, muted: !i.muted })),
-    onAddNote: (instId, midi, start) => { void audition(instId, { frequency: midiToFreq(midi) }); mapInstrument(instId, (i) => ({ ...i, notes: [...(i.notes ?? []), { id: newNoteId(), midi, start, length: noteLength }] })); },
-    onRemoveNote: (instId, noteId) => mapInstrument(instId, (i) => ({ ...i, notes: (i.notes ?? []).filter((n) => n.id !== noteId) })),
-    onAddInstrument: (trackId, kind) => {
-      const total = projectRef.current.totalSteps;
-      const inst: Instrument = kind === 'piano'
-        ? { id: uid('inst'), name: 'Synth', kind: 'piano', flow: makeSynthVoice('square'), steps: [], notes: [], voices: 6 }
-        : { id: uid('inst'), name: 'Drum', kind: 'step', flow: makeBlip(660), steps: Array(total).fill(false) };
-      mapTrack(trackId, (t) => ({ ...t, instruments: [...t.instruments, inst] }));
-      const strip = mixerRef.current?.get(trackId);
-      if (strip) void buildInstrumentAudio(inst, strip.destination);
+    onMuteUse: (useId) => mapUse(useId, (u) => ({ ...u, muted: !u.muted })),
+    onAddNote: (useId, midi, start) => { void audition(useId, { frequency: midiToFreq(midi) }); mapUse(useId, (u) => ({ ...u, notes: [...(u.notes ?? []), { id: newNoteId(), midi, start, length: 2 }] })); },
+    onRemoveNote: (useId, noteId) => mapUse(useId, (u) => ({ ...u, notes: (u.notes ?? []).filter((n) => n.id !== noteId) })),
+    onAddUse: (poolId) => {
+      const track = selectedTrack; if (!track) return;
+      const pool = project.pool.find((p) => p.id === poolId); if (!pool) return;
+      const use = pool.kind === 'drum'
+        ? { id: uid('use'), poolId, fx: [], steps: blankSteps(project.totalSteps) }
+        : { id: uid('use'), poolId, fx: [], notes: [], voices: 6 };
+      mapTrack(track.id, (t) => ({ ...t, uses: [...t.uses, use] }));
+      const dest = mixerRef.current?.use(use.id, track.id);
+      if (dest) void buildUse(use.id, pool, dest, use.voices);
     },
-    onAddSample: (trackId) => setSamplerTrack(trackId),
-    onAddAutomation: (trackId) =>
-      mapTrack(trackId, (t) => ({
-        ...t,
-        automation: [...t.automation, { id: uid('auto'), fxIndex: 0, nodeId: 'filt.BiquadFilterFlowNode', param: 'frequency', min: 200, max: 6000, values: Array(projectRef.current.totalSteps).fill(null) }],
-      })),
-    onSetAutomation: (laneId, step, value) =>
-      setProject((p) => ({
-        ...p,
-        tracks: p.tracks.map((t) => ({ ...t, automation: t.automation.map((l) => (l.id === laneId ? { ...l, values: l.values.map((v, i) => (i === step ? value : v)) } : l)) })),
-      })),
-    onAddTrack: () => setProject((p) => ({ ...p, tracks: [...p.tracks, { id: uid('track'), name: `Track ${p.tracks.length + 1}`, volume: 0.8, fx: [], instruments: [], automation: [] }] })),
+    onRemoveUse: (useId) => {
+      mapTrack(trackOfUse(useId)?.id ?? '', (t) => ({ ...t, uses: t.uses.filter((u) => u.id !== useId) }));
+      hostsRef.current.get(useId)?.dispose(); hostsRef.current.delete(useId);
+      poolsRef.current.get(useId)?.dispose(); poolsRef.current.delete(useId);
+      mixerRef.current?.removeUse(useId);
+    },
+    onUseFxAdd: (useId, fxId) => { const ins = fxInsert(fxId); const cur = useById(useId)?.fx ?? []; mapUse(useId, (u) => ({ ...u, fx: [...u.fx, ins] })); rebuildUseChain(useId, [...cur, ins]); },
+    onUseFxRemove: (useId, i) => { const cur = (useById(useId)?.fx ?? []).filter((_, j) => j !== i); mapUse(useId, (u) => ({ ...u, fx: u.fx.filter((_, j) => j !== i) })); rebuildUseChain(useId, cur); },
+    onUseFxEdit: (useId, i) => {
+      const insert = useById(useId)?.fx[i]; if (!insert) return;
+      editFxFlow(insert, (f) => { mapUse(useId, (u) => ({ ...u, fx: u.fx.map((x, j) => (j === i ? { ...x, flow: f } : x)) })); rebuildUseChain(useId, (useById(useId)?.fx ?? []).map((x, j) => (j === i ? { ...x, flow: f } : x))); });
+    },
+    onTrackFxAdd: (fxId) => { const t = selectedTrack; if (!t) return; const ins = fxInsert(fxId); mapTrack(t.id, (x) => ({ ...x, fx: [...x.fx, ins] })); rebuildTrackChain(t.id, [...t.fx, ins]); },
+    onTrackFxRemove: (i) => { const t = selectedTrack; if (!t) return; const next = t.fx.filter((_, j) => j !== i); mapTrack(t.id, (x) => ({ ...x, fx: next })); rebuildTrackChain(t.id, next); },
+    onTrackFxEdit: (i) => {
+      const t = selectedTrack; const insert = t?.fx[i]; if (!t || !insert) return;
+      editFxFlow(insert, (f) => { const next = t.fx.map((x, j) => (j === i ? { ...x, flow: f } : x)); mapTrack(t.id, (x) => ({ ...x, fx: next })); rebuildTrackChain(t.id, next); });
+    },
   };
 
-  // Browser → add a library flow (instrument or effect) to the selected track.
-  const addFromLibrary = (entry: LibraryEntry) => {
-    const trackId = selTrack || projectRef.current.tracks[0]?.id;
-    if (!trackId) return;
-    if (entry.group === 'effect') { void h.onAddFx(trackId, entry.id); return; }
-    const total = projectRef.current.totalSteps;
-    const inst: Instrument = entry.kind === 'piano'
-      ? { id: uid('inst'), name: entry.name, libId: entry.id, kind: 'piano', flow: cloneFlow(entry.flow), steps: [], notes: [], voices: 6 }
-      : { id: uid('inst'), name: entry.name, libId: entry.id, kind: 'step', flow: cloneFlow(entry.flow), steps: Array(total).fill(false) };
-    mapTrack(trackId, (t) => ({ ...t, instruments: [...t.instruments, inst] }));
-    const strip = mixerRef.current?.get(trackId);
-    if (strip) void buildInstrumentAudio(inst, strip.destination);
+  const addTrack = (type: 'drums' | 'synth') => {
+    const id = uid('track');
+    setProject((p) => ({ ...p, tracks: [...p.tracks, { id, name: `${type === 'drums' ? 'Drums' : 'Synth'} ${p.tracks.length + 1}`, type, volume: 0.8, uses: [], fx: [], automation: [] }] }));
+    setSelTrack(id);
+  };
+  const removeTrack = (trackId: string) => {
+    setProject((p) => ({ ...p, tracks: p.tracks.filter((t) => t.id !== trackId) }));
+    for (const u of projectRef.current.tracks.find((t) => t.id === trackId)?.uses ?? []) {
+      hostsRef.current.get(u.id)?.dispose(); hostsRef.current.delete(u.id);
+      poolsRef.current.get(u.id)?.dispose(); poolsRef.current.delete(u.id);
+    }
+    mixerRef.current?.removeTrack(trackId);
+  };
+  const setTrackVolume = (trackId: string, v: number) => { mapTrack(trackId, (t) => ({ ...t, volume: v })); mixerRef.current?.setTrackVolume(trackId, v); };
+
+  const onMasterFxAdd = (fxId: string) => { const ins = fxInsert(fxId); setProject((p) => ({ ...p, masterFx: [...p.masterFx, ins] })); rebuildMaster([...project.masterFx, ins]); };
+  const onMasterFxRemove = (i: number) => { const next = project.masterFx.filter((_, j) => j !== i); setProject((p) => ({ ...p, masterFx: next })); rebuildMaster(next); };
+  const onMasterFxEdit = (i: number) => {
+    const insert = project.masterFx[i]; if (!insert) return;
+    editFxFlow(insert, (f) => { const next = projectRef.current.masterFx.map((x, j) => (j === i ? { ...x, flow: f } : x)); setProject((p) => ({ ...p, masterFx: next })); rebuildMaster(next); });
   };
 
-  // Replace an instrument's flow (e.g. after editing it in Synflow) and rebuild
-  // its live engine in place, keeping it routed to the same track strip.
-  const reloadInstrument = (instId: string, flow: Flow) => {
-    mapInstrument(instId, (i) => ({ ...i, flow }));
-    const track = projectRef.current.tracks.find((t) => t.instruments.some((i) => i.id === instId));
-    const inst = track?.instruments.find((i) => i.id === instId);
-    if (inst) persistFlow({ group: 'instrument', id: inst.libId ?? inst.id, name: inst.name, category: inst.kind === 'piano' ? 'Synths' : 'Drums', kind: inst.kind, flow });
-    const strip = track ? mixerRef.current?.get(track.id) : undefined;
-    if (!inst || !strip || !ctxRef.current) return;
-    hostsRef.current.get(instId)?.dispose(); hostsRef.current.delete(instId);
-    poolsRef.current.get(instId)?.dispose(); poolsRef.current.delete(instId);
-    void buildInstrumentAudio({ ...inst, flow }, strip.destination);
-  };
-
-  // Replace a track FX flow (after editing in Synflow): persist as an override
-  // and swap the live insert in place.
-  const reloadFx = (trackId: string, fxIndex: number, flow: Flow) => {
-    mapTrack(trackId, (t) => {
-      const fxFlows = [...(t.fxFlows ?? [])];
-      fxFlows[fxIndex] = flow;
-      return { ...t, fxFlows };
-    });
-    const fxId = projectRef.current.tracks.find((t) => t.id === trackId)?.fx[fxIndex] ?? '';
-    const def = findEntry(fxId);
-    if (fxId) persistFlow({ group: 'effect', id: fxId, name: def?.name ?? fxId, category: def?.category ?? 'Effects', flow });
-    void mixerRef.current?.get(trackId)?.replaceFx(fxIndex, def?.name ?? 'FX', cloneFlow(flow));
-  };
-
-  // "Edit in Synflow" — open the flow in the embedded editor panel; reload on save.
-  const editInstrument = (inst: Instrument) =>
-    setEditor({ flow: inst.flow, title: inst.name, onSaved: (f) => reloadInstrument(inst.id, f) });
-  const editFx = (track: Track, fxIndex: number) => {
-    const flow = track.fxFlows?.[fxIndex] ?? findEntry(track.fx[fxIndex])?.flow;
-    if (flow) setEditor({ flow, title: findEntry(track.fx[fxIndex])?.name ?? 'FX', onSaved: (f) => reloadFx(track.id, fxIndex, f) });
-  };
-
-  const addSampleInstrument = useCallback((name: string, flow: Flow) => {
-    const trackId = samplerTrack;
-    if (!trackId) return;
-    const inst: Instrument = { id: uid('inst'), name, kind: 'step', flow, steps: Array(projectRef.current.totalSteps).fill(false) };
-    mapTrack(trackId, (t) => ({ ...t, instruments: [...t.instruments, inst] }));
-    const strip = mixerRef.current?.get(trackId);
-    if (strip) void buildInstrumentAudio(inst, strip.destination);
-    setSamplerTrack(null);
-  }, [samplerTrack, buildInstrumentAudio]);
-
+  // ─── position readout ──────────────────────────────────────────────────────
   const sib = currentStep < 0 ? 0 : currentStep % project.totalSteps;
   const pos = `001.${Math.floor(sib / project.stepsPerBeat) + 1}.${String((sib % project.stepsPerBeat) * 25).padStart(2, '0')}`;
-  const selectedTrack = project.tracks.find((t) => t.id === selTrack) ?? project.tracks[0];
-  const openInst = openPlugin ? project.tracks.flatMap((t) => t.instruments).find((i) => i.id === openPlugin) : null;
-
-  // Plugin knob → the instrument's real @synflow/core param (live), by node+param
-  // (the flow declares which params are exposed; see Synflow Host Interface).
-  const setInstrumentParam = (instId: string) => (nodeId: string, param: string, value: number) => {
-    hostsRef.current.get(instId)?.setParam(nodeId, param, value);
-    poolsRef.current.get(instId)?.setParam(nodeId, param, value);
-  };
-  // FX-chain knobs → the FX flow's real params (live).
-  const fxParam = (track: Track) => (fxIndex: number, knobIndex: number, value: number) => {
-    const fxId = track.fx[fxIndex];
-    const strip = mixerRef.current?.get(track.id);
-    if (!strip) return;
-    if (fxId === 'lowpass' || fxId === 'highpass') {
-      if (knobIndex === 0) strip.setFxParam(fxIndex, 'filt.BiquadFilterFlowNode', 'frequency', 60 * Math.pow(2, value * 7.6)); // ~60..12k Hz
-      else if (knobIndex === 1) strip.setFxParam(fxIndex, 'filt.BiquadFilterFlowNode', 'Q', 0.1 + value * 18);
-    } else if (fxId === 'delay' && knobIndex === 0) {
-      strip.setFxParam(fxIndex, 'dly.DelayFlowNode', 'delayTime', 10 + value * 990);
-    }
-  };
 
   return (
     <div className="app-shell">
       <TopBar
-        view={view} setView={setView} isPlaying={isPlaying} onPlay={play} onStop={stop}
+        view={view} setView={setView} isPlaying={isPlaying} onPlay={isPlaying ? stop : play} onStop={stop}
         armed={armed} onArm={() => setArmed((a) => !a)} bpm={project.bpm} onBpm={setBpm} position={pos}
         browserOpen={browserOpen} setBrowserOpen={setBrowserOpen}
       />
       <div className="workspace">
-        {browserOpen && <Browser onAdd={addFromLibrary} entries={library} source={folder ? `disk · ${folder.name}` : undefined} />}
+        {browserOpen && <Pool pool={project.pool} effects={effects} armed={armedPool} onLive={onLive} onAddFromFolder={addFromFolder} source={folder ? `disk · ${folder.name}` : 'built-in'} />}
         <div className="main">
-          {view === 'arrange' && (
-            <Arrange
-              project={project} selId={selTrack} onSelect={setSelTrack} currentStep={currentStep}
-              onOpen={(id) => {
-                setSelTrack(id);
-                const t = project.tracks.find((tr) => tr.id === id);
-                setView(t?.instruments.some((i) => i.kind === 'piano') ? 'piano' : 'rack');
-              }}
-            />
-          )}
-          {(view === 'rack' || view === 'piano') && (
-            <div className="editor-scroll">
-              <div className="toolbar">
-                <label className="notelen">note length
-                  <select value={noteLength} onChange={(e) => setNoteLength(parseInt(e.target.value, 10))}>
-                    <option value={1}>1</option><option value={2}>2</option><option value={4}>4</option><option value={8}>8</option>
-                  </select>
-                </label>
+          {view === 'tracks' && (
+            <div className="tracks-view">
+              <div className="tracks-rail">
+                {project.tracks.map((t) => (
+                  <div key={t.id} className={`trk ${t.id === selTrack ? 'sel' : ''}`} onClick={() => setSelTrack(t.id)}>
+                    {t.type === 'drums' ? <Drum size={13} /> : <Music2 size={13} />}
+                    <span className="trk-name">{t.name}</span>
+                    <span className="trk-count">{t.uses.length}</span>
+                    <button className="trk-del" title="Delete track" onClick={(e) => { e.stopPropagation(); removeTrack(t.id); }}><Trash2 size={12} /></button>
+                  </div>
+                ))}
+                <div className="trk-add">
+                  <button onClick={() => addTrack('drums')}><Plus size={12} /> Drums</button>
+                  <button onClick={() => addTrack('synth')}><Plus size={12} /> Synth</button>
+                </div>
               </div>
-              <TrackList project={project} currentStep={currentStep} noteLength={noteLength} h={h} />
+              <div className="track-editor-wrap">
+                {selectedTrack
+                  ? <TrackEditor project={project} track={selectedTrack} effects={effects} currentStep={currentStep} h={h} />
+                  : <div className="te-empty">No track — add one.</div>}
+              </div>
             </div>
           )}
-          {view === 'mix' && (
-            <MixerView project={project} selId={selTrack} onSelect={setSelTrack} onVolume={h.onVolume} />
-          )}
-          {view !== 'mix' && selectedTrack && (
-            <FXChain
-              track={selectedTrack} onOpenInstrument={setOpenPlugin} onFxParam={fxParam(selectedTrack)}
-              onEditInstrument={(id) => { const inst = selectedTrack.instruments.find((i) => i.id === id); if (inst) editInstrument(inst); }}
-              onEditFx={(i) => editFx(selectedTrack, i)}
+
+          {view === 'live' && (
+            <Live
+              project={project} synthId={liveSynth} onSelectSynth={setLiveSynth}
+              onNoteOn={liveNoteOn} onNoteOff={liveNoteOff} onDrumDown={liveDrumDown} onDrumUp={liveDrumUp}
             />
           )}
+
+          {view === 'mix' && (
+            <div className="mixer-view">
+              <div className="mx-master">
+                <FxBar label="Master FX" color="var(--cat-master, var(--accent))" fx={project.masterFx} effects={effects} onAdd={onMasterFxAdd} onRemove={onMasterFxRemove} onEdit={onMasterFxEdit} />
+              </div>
+              <div className="mx-tracks">
+                {project.tracks.map((t) => (
+                  <div className="mx-strip" key={t.id}>
+                    <div className="mx-strip-head">{t.type === 'drums' ? <Drum size={13} /> : <Music2 size={13} />} {t.name}</div>
+                    <input className="mx-vol" type="range" min={0} max={1} step={0.01} value={t.volume} onChange={(e) => setTrackVolume(t.id, parseFloat(e.target.value))} />
+                    <FxBar label="Track FX" fx={t.fx} effects={effects} compact
+                      onAdd={(fx) => { const ins = fxInsert(fx); mapTrack(t.id, (x) => ({ ...x, fx: [...x.fx, ins] })); rebuildTrackChain(t.id, [...t.fx, ins]); }}
+                      onRemove={(i) => { const next = t.fx.filter((_, j) => j !== i); mapTrack(t.id, (x) => ({ ...x, fx: next })); rebuildTrackChain(t.id, next); }}
+                      onEdit={(i) => { const insert = t.fx[i]; if (insert) editFxFlow(insert, (f) => { const next = t.fx.map((x, j) => (j === i ? { ...x, flow: f } : x)); mapTrack(t.id, (x) => ({ ...x, fx: next })); rebuildTrackChain(t.id, next); }); }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-        {openInst && <PluginPanel instrument={openInst} onClose={() => setOpenPlugin(null)} onSetParam={setInstrumentParam(openInst.id)} onEdit={() => editInstrument(openInst)} />}
       </div>
-      {samplerTrack && <SamplerEditor onCreate={addSampleInstrument} onClose={() => setSamplerTrack(null)} />}
-      {editor && (
-        <SynflowEditor flow={editor.flow} title={editor.title} onSaved={editor.onSaved} onClose={() => setEditor(null)} />
-      )}
-      {storageSetup && <StorageSetup onFolder={adoptFolder} onSkip={() => setStorageSetup(false)} />}
+      {editor && <SynflowEditor flow={editor.flow} title={editor.title} onSaved={editor.onSaved} onClose={() => setEditor(null)} />}
+      {storageSetup && <StorageSetup onFolder={(h2) => adoptFolder(h2, true)} onSkip={() => setStorageSetup(false)} />}
     </div>
   );
 }

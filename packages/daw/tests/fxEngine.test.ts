@@ -43,31 +43,29 @@ describe('the effects are really rendered by @synflow/core', () => {
     filtersCreated = 0;
     const ctx = mockCtx();
     const mixer = new Mixer(ctx);
-    const strip = mixer.strip('track-1', 0.8);
+    const t = mixer.track('track-1', 0.8);
 
-    // The DAW adds the Lowpass FLOW as an insert — exactly the production path.
-    await strip.addFx('Lowpass', { nodes: lowpass.nodes, edges: lowpass.edges } as any);
+    // The DAW builds the track FX chain from the Lowpass FLOW — the production path.
+    await t.chain.setChain([{ name: 'Lowpass', flow: { nodes: lowpass.nodes, edges: lowpass.edges } as any }]);
 
-    const insert = (strip as any).fx[0];
+    const insert = (t.chain as any).fx[0];
     const engine = insert.engine; // an AudioGraphManager
 
     // 1. The engine built a REAL Web Audio filter from the flow's BiquadFilter node.
     expect(filtersCreated).toBeGreaterThan(0);
 
-    // 2. The FX exposes audio in/out (tagged isInput/isOutput) that the strip wires
-    //    into the channel signal path.
+    // 2. The FX exposes audio in/out (tagged isInput/isOutput) wired into the chain.
     expect(insert.inId).toBe('in.GainFlowNode');
     expect(insert.outId).toBe('out.GainFlowNode');
     expect(engine.getAudioInput(insert.inId)).toBeInstanceOf(MockAudioNode);
     expect(engine.getAudioOutput(insert.outId)).toBeInstanceOf(MockAudioNode);
 
-    // 3. The signal really flows in → filter → out inside the engine (edges become
-    //    real .connect() calls on the rendered nodes).
+    // 3. The signal really flows in → filter → out inside the engine.
     const filterParam = engine.getAudioParam('filt.BiquadFilterFlowNode', 'frequency') as unknown as FakeParam;
     expect(filterParam).toBeInstanceOf(FakeParam);
 
-    // 4. The DAW drives the rendered filter live (setFxParam → engine.setParam).
-    strip.setFxParam(0, 'filt.BiquadFilterFlowNode', 'frequency', 800);
+    // 4. The DAW drives the rendered filter live (setParam on the chain).
+    t.chain.setParam(0, 'filt.BiquadFilterFlowNode', 'frequency', 800);
     await tick();
     expect(filterParam.value).toBe(800);
   });
