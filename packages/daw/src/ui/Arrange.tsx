@@ -14,11 +14,13 @@ function clipsFor(i: number, name: string): Array<[number, number, string]> {
 }
 
 export function Arrange({
-  project, selId, onSelect, currentStep, totalBars = BARS,
+  project, selId, onSelect, onOpen, currentStep, totalBars = BARS,
 }: {
   project: Project;
   selId: string | null;
   onSelect: (trackId: string) => void;
+  /** Open a track's editor (Sequencer/Piano) — clicking a clip drills in. */
+  onOpen?: (trackId: string) => void;
   currentStep: number;
   totalBars?: number;
 }) {
@@ -45,11 +47,13 @@ export function Arrange({
                 <span className="arr-track-name">{track.name}</span>
                 <span className="arr-track-sub">{track.instruments.length} inst · {track.fx.length} fx</span>
               </div>
-              <div className="arr-lane">
-                {clipsFor(i, track.name).map(([start, len, label], k) => (
+              <div className="arr-lane" onDoubleClick={() => onOpen?.(track.id)} title="Double-click to edit">
+                {track.instruments.length === 0 && <span className="arr-empty">empty — double-click to add</span>}
+                {track.instruments.length > 0 && clipsFor(i, track.name).map(([start, len, label], k) => (
                   <div
                     key={k}
                     className="arr-clip"
+                    onClick={(e) => { e.stopPropagation(); onSelect(track.id); onOpen?.(track.id); }}
                     style={{
                       left: `${(start / totalBars) * 100}%`,
                       width: `${(len / totalBars) * 100}%`,
