@@ -19,6 +19,8 @@ export interface TrackEditorHandlers {
   onTrackFxAdd: (fxId: string) => void;
   onTrackFxRemove: (index: number) => void;
   onTrackFxEdit: (index: number) => void;
+  onUseFxKnob: (useId: string, index: number, nodeId: string, param: string, value: number) => void;
+  onTrackFxKnob: (index: number, nodeId: string, param: string, value: number) => void;
 }
 
 export function TrackEditor({ project, track, effects, currentStep, h }: {
@@ -78,6 +80,7 @@ export function TrackEditor({ project, track, effects, currentStep, h }: {
             <FxBar
               label="Instrument FX" color="var(--cat-mod)" fx={use.fx} effects={effects} compact
               onAdd={(fx) => h.onUseFxAdd(use.id, fx)} onRemove={(i) => h.onUseFxRemove(use.id, i)} onEdit={(i) => h.onUseFxEdit(use.id, i)}
+              onKnob={(i, nodeId, param, v) => h.onUseFxKnob(use.id, i, nodeId, param, v)}
             />
           </div>
         ))}
@@ -85,7 +88,7 @@ export function TrackEditor({ project, track, effects, currentStep, h }: {
 
       <FxBar
         label="Track FX" fx={track.fx} effects={effects}
-        onAdd={h.onTrackFxAdd} onRemove={h.onTrackFxRemove} onEdit={h.onTrackFxEdit}
+        onAdd={h.onTrackFxAdd} onRemove={h.onTrackFxRemove} onEdit={h.onTrackFxEdit} onKnob={h.onTrackFxKnob}
       />
     </div>
   );

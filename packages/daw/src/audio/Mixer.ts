@@ -106,6 +106,8 @@ export class Mixer {
 
   trackChain(trackId: string): FxChain | undefined { return this.tracks.get(trackId)?.chain; }
   useChain(useId: string): FxChain | undefined { return this.uses.get(useId); }
+  /** Instrument-level gain: scales a use's signal at its chain input (pre-FX). */
+  setUseGain(useId: string, v: number): void { const c = this.uses.get(useId); if (c) c.input.gain.value = v; }
   setTrackVolume(trackId: string, v: number): void { const t = this.tracks.get(trackId); if (t) t.vol.gain.value = v; }
   setMaster(v: number): void { this.masterVol.gain.value = v; }
 

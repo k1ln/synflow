@@ -14,11 +14,12 @@ const SECTION = {
  * (click → live mode) and the effects available to add. "Add from folder" pulls
  * more flows in from the on-disk library.
  */
-export function Pool({ pool, effects, armed, onLive, onAddFromFolder, source }: {
+export function Pool({ pool, effects, armed, onOpenInstrument, onEditEffect, onAddFromFolder, source }: {
   pool: PoolItem[];
   effects: LibraryEntry[];
   armed?: string | null;
-  onLive: (poolId: string) => void;
+  onOpenInstrument: (poolId: string) => void;
+  onEditEffect: (effectId: string) => void;
   onAddFromFolder: () => void;
   source?: string;
 }) {
@@ -41,8 +42,8 @@ export function Pool({ pool, effects, armed, onLive, onAddFromFolder, source }: 
     );
   };
 
-  const Item = ({ id, name, color, live, onClick, tag }: { id: string; name: string; color: string; live?: boolean; onClick?: () => void; tag?: string }) => (
-    <div className={`browser-item ${live ? 'live' : ''}`} onClick={onClick} title={onClick ? 'Click to play live' : name}>
+  const Item = ({ name, color, live, onClick, tag, title }: { name: string; color: string; live?: boolean; onClick?: () => void; tag?: string; title?: string }) => (
+    <div className={`browser-item ${live ? 'live' : ''}`} onClick={onClick} title={title}>
       <span className="bi-dot" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
       <span className="bi-name">{name}</span>
       {live && <Radio size={11} className="bi-live" />}
@@ -58,15 +59,15 @@ export function Pool({ pool, effects, armed, onLive, onAddFromFolder, source }: 
       </div>
       <div className="browser-list">
         <Section name="Instruments" count={synths.length}>
-          {synths.map((p) => <Item key={p.id} id={p.id} name={p.name} color={SECTION.Instruments.color} live={armed === p.id} onClick={() => onLive(p.id)} />)}
+          {synths.map((p) => <Item key={p.id} name={p.name} color={SECTION.Instruments.color} live={armed === p.id} onClick={() => onOpenInstrument(p.id)} title="Open instrument (live + knobs)" />)}
           {synths.length === 0 && <div className="browser-empty">none — add from folder</div>}
         </Section>
         <Section name="Drums" count={drums.length}>
-          {drums.map((p) => <Item key={p.id} id={p.id} name={p.name} color={SECTION.Drums.color} live={armed === p.id} onClick={() => onLive(p.id)} />)}
+          {drums.map((p) => <Item key={p.id} name={p.name} color={SECTION.Drums.color} live={armed === p.id} onClick={() => onOpenInstrument(p.id)} title="Open instrument (live + knobs)" />)}
           {drums.length === 0 && <div className="browser-empty">none — add from folder</div>}
         </Section>
         <Section name="Effects" count={effects.length}>
-          {effects.map((e) => <Item key={e.id} id={e.id} name={e.name} color={SECTION.Effects.color} tag="fx" />)}
+          {effects.map((e) => <Item key={e.id} name={e.name} color={SECTION.Effects.color} tag="edit" onClick={() => onEditEffect(e.id)} title="Edit effect in Synflow" />)}
           {effects.length === 0 && <div className="browser-empty">none — add from folder</div>}
         </Section>
       </div>
