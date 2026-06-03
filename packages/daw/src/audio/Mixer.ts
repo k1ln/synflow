@@ -21,6 +21,11 @@ export class ChannelStrip {
   get fxNames(): string[] { return this.fx.map((f) => f.name); }
   setVolume(v: number): void { this.vol.gain.value = v; }
 
+  /** Automate an FX insert's param (control-rate, via the FX flow's engine). */
+  setFxParam(fxIndex: number, nodeId: string, param: string, value: number): void {
+    this.fx[fxIndex]?.engine.setParam(nodeId, param, value);
+  }
+
   async addFx(name: string, flow: Flow): Promise<void> {
     const engine = new AudioGraphManager(this.ctx as any, { current: flow.nodes } as any, { current: flow.edges } as any, { bus: new EventBus() });
     await engine.initialize();

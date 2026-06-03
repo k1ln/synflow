@@ -45,5 +45,10 @@ export class VoicePool {
     this.queue = [];
   }
 
+  /** Automate a param across all voices (control-rate). */
+  setParam(nodeId: string, param: string, value: number): void {
+    for (const v of this.voices) (v as any).setParam?.(nodeId, param, value);
+  }
+
   get activeCount(): number { return this.active.size; }
 }
