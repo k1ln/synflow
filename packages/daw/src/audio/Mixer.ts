@@ -43,6 +43,19 @@ export class ChannelStrip {
     this.rewire();
   }
 
+  /** Swap an insert's flow in place (used when its flow is edited in Synflow). */
+  async replaceFx(index: number, name: string, flow: Flow): Promise<void> {
+    const old = this.fx[index];
+    if (!old) { await this.addFx(name, flow); return; }
+    const engine = new AudioGraphManager(this.ctx as any, { current: flow.nodes } as any, { current: flow.edges } as any, { bus: new EventBus() });
+    await engine.initialize();
+    const inId = flow.nodes.find((n) => n.data?.isInput)?.id;
+    const outId = flow.nodes.find((n) => n.data?.isOutput)?.id;
+    try { old.engine.dispose(); } catch { /* noop */ }
+    this.fx[index] = { engine, inId, outId, name };
+    this.rewire();
+  }
+
   private rewire(): void {
     try { this.input.disconnect(); } catch { /* noop */ }
     try { this.vol.disconnect(); } catch { /* noop */ }

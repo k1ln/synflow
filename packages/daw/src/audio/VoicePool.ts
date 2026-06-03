@@ -51,4 +51,11 @@ export class VoicePool {
   }
 
   get activeCount(): number { return this.active.size; }
+
+  /** Release all notes and tear down every voice's engine (for flow reload). */
+  dispose(): void {
+    this.allOff();
+    for (const v of this.voices) (v as any).dispose?.();
+    this.voices = [];
+  }
 }

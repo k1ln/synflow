@@ -1,0 +1,85 @@
+{
+  "name": "Delay",
+  "daw": {
+    "id": "delay",
+    "category": "Filter"
+  },
+  "nodes": [
+    {
+      "id": "in.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": {
+        "gain": 1,
+        "isInput": true
+      },
+      "position": {
+        "x": 80,
+        "y": 120
+      }
+    },
+    {
+      "id": "dly.DelayFlowNode",
+      "type": "DelayFlowNode",
+      "data": {
+        "delayTime": 250
+      },
+      "position": {
+        "x": 320,
+        "y": 250
+      }
+    },
+    {
+      "id": "wet.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": {
+        "gain": 0.4
+      },
+      "position": {
+        "x": 560,
+        "y": 120
+      }
+    },
+    {
+      "id": "out.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": {
+        "gain": 1,
+        "isOutput": true
+      },
+      "position": {
+        "x": 800,
+        "y": 250
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "dx-in-out",
+      "source": "in.GainFlowNode",
+      "target": "out.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "dx-in-dly",
+      "source": "in.GainFlowNode",
+      "target": "dly.DelayFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "dx-dly-wet",
+      "source": "dly.DelayFlowNode",
+      "target": "wet.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "dx-wet-out",
+      "source": "wet.GainFlowNode",
+      "target": "out.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    }
+  ]
+}
