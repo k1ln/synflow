@@ -6,8 +6,9 @@ import { Knob } from './Knob';
 
 const CATS = ['var(--cat-source)', 'var(--cat-gain)', 'var(--cat-mod)', 'var(--cat-fx)', 'var(--cat-midi)'];
 
-function Device({ name, cat, knobs, onClick, isInstrument }: {
+function Device({ name, cat, knobs, onClick, isInstrument, onKnob }: {
   name: string; cat: string; knobs: { label: string; val: number }[]; onClick?: () => void; isInstrument?: boolean;
+  onKnob?: (i: number, value: number) => void;
 }) {
   return (
     <div
@@ -19,14 +20,19 @@ function Device({ name, cat, knobs, onClick, isInstrument }: {
         <span className="fxc-dev-name" style={{ color: cat, textShadow: `0 0 10px color-mix(in srgb, ${cat} 40%, transparent)` }}>{name}</span>
         {isInstrument && <span className="fxc-inst">inst</span>}
       </div>
-      <div className="fxc-knobs">{knobs.map((k, i) => <Knob key={i} value={k.val} color={cat} size={40} label={k.label} />)}</div>
+      <div className="fxc-knobs">{knobs.map((k, i) => <Knob key={i} value={k.val} color={cat} size={40} label={k.label} onChange={onKnob ? (v) => onKnob(i, v) : undefined} />)}</div>
     </div>
   );
 }
 
-export function FXChain({ track, onOpenInstrument }: { track: Track; onOpenInstrument: (id: string) => void }) {
+export function FXChain({ track, onOpenInstrument, onFxParam }: {
+  track: Track;
+  onOpenInstrument: (id: string) => void;
+  /** (fxIndex, knobIndex, 0..1) — the app maps it to the FX flow's real param. */
+  onFxParam?: (fxIndex: number, knobIndex: number, value: number) => void;
+}) {
   const instKnobs = [{ label: 'Cutoff', val: .6 }, { label: 'Reso', val: .35 }, { label: 'Drive', val: .45 }];
-  const fxKnobs = [{ label: 'Drive', val: .5 }, { label: 'Tone', val: .55 }, { label: 'Mix', val: .45 }];
+  const fxKnobs = [{ label: 'Cutoff', val: .6 }, { label: 'Reso', val: .4 }, { label: 'Mix', val: .45 }];
   const deviceCount = track.instruments.length + track.fx.length;
   return (
     <div className="fxchain">
@@ -47,7 +53,7 @@ export function FXChain({ track, onOpenInstrument }: { track: Track; onOpenInstr
           const def = FX_LIBRARY.find((f) => f.id === fxId);
           return (
             <React.Fragment key={i}>
-              <Device name={def?.name ?? fxId} cat="var(--cat-fx)" knobs={fxKnobs} />
+              <Device name={def?.name ?? fxId} cat="var(--cat-fx)" knobs={fxKnobs} onKnob={onFxParam ? (ki, v) => onFxParam(i, ki, v) : undefined} />
               {i < track.fx.length - 1 && <ChevronRight size={16} className="fxc-chev" />}
             </React.Fragment>
           );

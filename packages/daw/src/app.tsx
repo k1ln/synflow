@@ -197,6 +197,34 @@ export function App() {
   const selectedTrack = project.tracks.find((t) => t.id === selTrack) ?? project.tracks[0];
   const openInst = openPlugin ? project.tracks.flatMap((t) => t.instruments).find((i) => i.id === openPlugin) : null;
 
+  // Plugin knobs → the instrument's real @synflow/core params (live).
+  const pluginParam = (inst: Instrument) => (role: string, value: number) => {
+    const setP = (nodeId?: string, param?: string, v?: number) => {
+      if (!nodeId || !param || v == null) return;
+      hostsRef.current.get(inst.id)?.setParam(nodeId, param, v);
+      poolsRef.current.get(inst.id)?.setParam(nodeId, param, v);
+    };
+    const osc = inst.flow.nodes.find((n) => n.type === 'OscillatorFlowNode')?.id;
+    const adsr = inst.flow.nodes.find((n) => n.type === 'ADSRFlowNode')?.id;
+    if (role === 'tune') setP(osc, 'detune', (value - 0.5) * 4800);
+    else if (role === 'ampA') setP(adsr, 'attackTime', value);
+    else if (role === 'ampD') setP(adsr, 'decayTime', value);
+    else if (role === 'ampS') setP(adsr, 'sustainLevel', value);
+    else if (role === 'ampR') setP(adsr, 'releaseTime', value);
+  };
+  // FX-chain knobs → the FX flow's real params (live).
+  const fxParam = (track: Track) => (fxIndex: number, knobIndex: number, value: number) => {
+    const fxId = track.fx[fxIndex];
+    const strip = mixerRef.current?.get(track.id);
+    if (!strip) return;
+    if (fxId === 'lowpass' || fxId === 'highpass') {
+      if (knobIndex === 0) strip.setFxParam(fxIndex, 'filt.BiquadFilterFlowNode', 'frequency', 60 * Math.pow(2, value * 7.6)); // ~60..12k Hz
+      else if (knobIndex === 1) strip.setFxParam(fxIndex, 'filt.BiquadFilterFlowNode', 'Q', 0.1 + value * 18);
+    } else if (fxId === 'delay' && knobIndex === 0) {
+      strip.setFxParam(fxIndex, 'dly.DelayFlowNode', 'delayTime', 10 + value * 990);
+    }
+  };
+
   return (
     <div className="app-shell">
       <TopBar
@@ -226,10 +254,10 @@ export function App() {
             <MixerView project={project} selId={selTrack} onSelect={setSelTrack} onVolume={h.onVolume} />
           )}
           {view !== 'mix' && selectedTrack && (
-            <FXChain track={selectedTrack} onOpenInstrument={setOpenPlugin} />
+            <FXChain track={selectedTrack} onOpenInstrument={setOpenPlugin} onFxParam={fxParam(selectedTrack)} />
           )}
         </div>
-        {openInst && <PluginPanel instrument={openInst} onClose={() => setOpenPlugin(null)} />}
+        {openInst && <PluginPanel instrument={openInst} onClose={() => setOpenPlugin(null)} onParam={pluginParam(openInst)} />}
       </div>
       {samplerTrack && <SamplerEditor onCreate={addSampleInstrument} onClose={() => setSamplerTrack(null)} />}
     </div>

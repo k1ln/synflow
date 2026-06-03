@@ -27,9 +27,15 @@ function Scope({ color }: { color: string }) {
   );
 }
 
-export function PluginPanel({ instrument, onClose }: { instrument: Instrument; onClose: () => void }) {
+export function PluginPanel({ instrument, onClose, onParam }: {
+  instrument: Instrument;
+  onClose: () => void;
+  /** role -> 0..1 value; the app maps the role to a real engine param. */
+  onParam?: (role: string, value: number) => void;
+}) {
   const cat = 'var(--cat-source)';
   const [wave, setWave] = useState('saw');
+  const P = (role: string) => (v: number) => onParam?.(role, v);
   const [pos, setPos] = useState<{ x: number | null; y: number }>({ x: null, y: 90 });
   const W = 380;
   const left = pos.x == null ? `calc(50% - ${W / 2}px)` : pos.x;
@@ -56,7 +62,9 @@ export function PluginPanel({ instrument, onClose }: { instrument: Instrument; o
         <div className="pp-section">
           <div className="pp-sec-title">Source</div>
           <div className="pp-knobs">
-            {([['Tune', .5], ['Spread', .5], ['Sub', .3]] as const).map(([l, v]) => <Knob key={l} value={v} color={cat} size={44} label={l} />)}
+            <Knob value={.5} color={cat} size={44} label="Tune" onChange={P('tune')} />
+            <Knob value={.5} color={cat} size={44} label="Spread" onChange={P('spread')} />
+            <Knob value={.3} color={cat} size={44} label="Sub" onChange={P('sub')} />
             <div className="pp-wave">
               <span className="knob-label">Wave</span>
               <div className="pp-wave-btns">
@@ -71,12 +79,20 @@ export function PluginPanel({ instrument, onClose }: { instrument: Instrument; o
         <div className="pp-div" />
         <div className="pp-section">
           <div className="pp-sec-title">Filter</div>
-          <div className="pp-knobs">{([['Cutoff', .6], ['Reso', .4]] as const).map(([l, v]) => <Knob key={l} value={v} color="var(--cat-fx)" size={44} label={l} />)}</div>
+          <div className="pp-knobs">
+            <Knob value={.6} color="var(--cat-fx)" size={44} label="Cutoff" onChange={P('cutoff')} />
+            <Knob value={.4} color="var(--cat-fx)" size={44} label="Reso" onChange={P('reso')} />
+          </div>
         </div>
         <div className="pp-div" />
         <div className="pp-section">
           <div className="pp-sec-title">Amp Envelope</div>
-          <div className="pp-knobs">{([['A', .2], ['D', .5], ['S', .7], ['R', .35]] as const).map(([l, v]) => <Knob key={l} value={v} color="var(--cat-mod)" size={40} label={l} />)}</div>
+          <div className="pp-knobs">
+            <Knob value={.2} color="var(--cat-mod)" size={40} label="A" onChange={P('ampA')} />
+            <Knob value={.5} color="var(--cat-mod)" size={40} label="D" onChange={P('ampD')} />
+            <Knob value={.7} color="var(--cat-mod)" size={40} label="S" onChange={P('ampS')} />
+            <Knob value={.35} color="var(--cat-mod)" size={40} label="R" onChange={P('ampR')} />
+          </div>
         </div>
       </div>
     </div>
