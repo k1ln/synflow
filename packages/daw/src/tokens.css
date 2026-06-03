@@ -1,0 +1,275 @@
+/* ============================================================================
+   MOTHSCILLA — Design Tokens
+   A cutting-edge modular DAW for the web. Dark-glass surfaces, phosphor-green
+   accents, glowing signal paths. Visual language extracted from the Synflow
+   node-graph workstation (github.com/k1ln/synflow) and fused with a Bitwig-
+   style arrangement/mixer/device layout.
+
+   Load order in any HTML file:
+     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+     <link rel="stylesheet" href="colors_and_type.css">
+   ============================================================================ */
+
+:root {
+  /* ── CANVAS & SURFACES ─────────────────────────────────────────────────
+     The app lives on near-black. Panels step up in lightness; floating
+     modules are translucent "dark glass" over the canvas grid.            */
+  --bg-void:        #0a0b0f;   /* deepest app canvas (arrangement/grid bg) */
+  --bg-base:        #111114;   /* base panel behind chrome (Synflow body #111) */
+  --bg-panel:       #16171c;   /* toolbars, side panels, track headers      */
+  --bg-elevated:    #1c1d24;   /* menus, popovers, dialogs (Synflow #1a1a1a)*/
+  --bg-inset:       #0d0e13;   /* sunken wells, timeline lanes              */
+
+  --glass-module:   rgba(18, 19, 36, 0.55);  /* dark-glass node / device box */
+  --glass-field:    rgba(8, 10, 20, 0.55);   /* input / readout well         */
+  --glass-blur:     blur(6px);
+
+  /* dot-grid canvas texture (use as background-image on the void) */
+  --grid-dot:       rgba(255, 255, 255, 0.05);
+  --grid-size:      22px;
+
+  /* ── BORDERS / HAIRLINES ──────────────────────────────────────────────── */
+  --border-subtle:  rgba(80, 95, 130, 0.28);
+  --border-default: rgba(80, 95, 130, 0.50);  /* node border                */
+  --border-strong:  #2a2a2a;                   /* panel dividers (Synflow)   */
+  --hairline:       #333333;                   /* toolbar divider            */
+
+  /* ── INK (text) ───────────────────────────────────────────────────────── */
+  --ink-hi:    #ffffff;
+  --ink-1:     #eef1f8;   /* primary text (--node-ink)        */
+  --ink-2:     #9aa3b8;   /* secondary / labels (--node-ink-dim) */
+  --ink-3:     #6b7488;   /* faint / disabled (--node-ink-faint) */
+  --ink-on-accent: #0b0f16;  /* text on a filled accent surface */
+
+  /* ── PRIMARY ACCENT — PHOSPHOR GREEN ──────────────────────────────────────
+     The oscilloscope-trace green. Moths drawn to light. This is Mothscilla's
+     signature; it carries focus rings, active states, brand glow.          */
+  --accent:        #6ee7a8;   /* default module accent (--node-accent)      */
+  --accent-bright: #4ade80;   /* hover / valid connection                   */
+  --accent-deep:   #00b347;   /* gradient bottom / pressed                  */
+  --accent-neon:   #00ff88;   /* pure glow source                           */
+  --accent-glow-soft: rgba(0, 255, 136, 0.08);
+  --accent-glow:      rgba(0, 255, 120, 0.28);
+  --accent-glow-hot:  rgba(0, 255, 110, 0.60);
+
+  /* ── CATEGORY ACCENTS ─────────────────────────────────────────────────────
+     Every track / module / device type carries a hue. Knob rings, titles,
+     port handles and clip blocks inherit it via --node-accent.             */
+  --cat-source:  #4ade80;   /* oscillators, instruments, audio sources (green) */
+  --cat-gain:    #4aa3ff;   /* gain, level, utility (blue)                     */
+  --cat-mod:     #f5b73c;   /* modulation, envelopes, event-shift (amber)      */
+  --cat-fx:      #c850c0;   /* effects, filters, spatial (magenta)             */
+  --cat-midi:    #ff8c42;   /* MIDI, triggers, sequencing (orange)             */
+  --cat-master:  #eef1f8;   /* master bus / output (white)                     */
+
+  /* Port-handle colors (the little circles on modules) */
+  --port-a: #ff8c42;  /* orange  */
+  --port-b: #4aa3ff;  /* blue    */
+  --port-c: #4ade80;  /* green   */
+  --port-d: #c850c0;  /* magenta */
+  --port-e: #9ca3af;  /* gray (unassigned) */
+
+  /* ── SEMANTIC STATE ───────────────────────────────────────────────────── */
+  --ok:       #18d864;   --ok-deep:   #00b347;
+  --danger:   #e23b3b;   --danger-br: #ff5a5a;   --danger-bg: rgba(120,30,30,0.35);
+  --warn:     #f5b73c;
+  --info:     #4aa3ff;
+  --rec:      #ff3b3b;   /* record-arm / transport record */
+
+  /* ── SIGNAL EDGE (connection cables) ──────────────────────────────────── */
+  --edge:        #ffffff;
+  --edge-glow:   drop-shadow(0 0 2px rgba(255,255,255,0.6)) drop-shadow(0 0 4px rgba(255,255,255,0.3));
+  --edge-width:  1.5px;
+
+  /* ── RADII ────────────────────────────────────────────────────────────── */
+  --r-xs:  4px;
+  --r-sm:  5px;   /* inputs / small controls (--node-radius-sm)  */
+  --r:     7px;   /* module / device box (--node-radius)         */
+  --r-md:  8px;   /* menus, dialogs, cards                        */
+  --r-lg:  14px;  /* pills, badges                               */
+  --r-full: 999px;
+
+  /* ── SHADOWS & GLOW ───────────────────────────────────────────────────── */
+  --shadow-node:  0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px var(--accent-glow-soft);
+  --shadow-pop:   0 4px 14px rgba(0,0,0,0.5);
+  --shadow-modal: 0 4px 20px rgba(0,0,0,0.7);
+  --glow-accent:  0 0 9px 3px var(--accent-glow);
+  --glow-accent-press: 0 0 7px 2px var(--accent-glow-hot);
+  --glow-focus:   0 0 0 2px rgba(0,255,136,0.30), 0 0 10px rgba(0,255,136,0.25);
+  --inset-top:    inset 0 1px 0 rgba(255,255,255,0.06);
+
+  /* ── SPACING (4px base) ───────────────────────────────────────────────── */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px;
+
+  /* ── MOTION ───────────────────────────────────────────────────────────────
+     Snappy + precise. Short eases; glow grows on hover, presses sink 1px.  */
+  --ease:        cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast:    80ms;
+  --dur:         140ms;
+  --dur-slow:    220ms;
+
+  /* ── TYPE FAMILIES ────────────────────────────────────────────────────────
+     Orbitron — brand wordmark, transport/section display (techy, geometric).
+     Inter    — all UI text, labels, body (the Synflow node font).
+     JetBrains Mono — timecode, BPM, numeric readouts (tabular DAW values).  */
+  --font-display: 'Orbitron', 'Arial Black', system-ui, sans-serif;
+  --font-ui:      'Inter', 'Segoe UI', Calibri, system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* ── TYPE SCALE ─────────────────────────────────────────────────────────── */
+  --fs-9:  9px;    /* micro caption / port label   */
+  --fs-10: 10px;   /* readout / dense control      */
+  --fs-11: 11px;   /* module title / dense UI      */
+  --fs-12: 12px;   /* toolbar / default control    */
+  --fs-13: 13px;   /* body small                   */
+  --fs-14: 14px;   /* body                         */
+  --fs-16: 16px;   /* lead / section label         */
+  --fs-20: 20px;   /* h4                           */
+  --fs-28: 28px;   /* h3                           */
+  --fs-40: 40px;   /* h2                           */
+  --fs-64: 64px;   /* h1 / hero                    */
+  --fs-96: 96px;   /* display                      */
+
+  --lh-tight: 1.05;
+  --lh-snug:  1.25;
+  --lh-body:  1.55;
+  --tracking-caps: 0.09em;   /* uppercase module titles      */
+  --tracking-wide: 0.05em;   /* labels                       */
+  --tracking-brand: 0.18em;  /* Orbitron wordmark spacing     */
+}
+
+/* ============================================================================
+   SEMANTIC ELEMENT STYLES — opt in by adding colors_and_type.css and using
+   these classes, or copy the rules. Defaults assume the dark canvas.
+   ============================================================================ */
+
+.ms-display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--fs-96);
+  line-height: var(--lh-tight);
+  letter-spacing: 0.02em;
+  color: var(--ink-hi);
+}
+
+.ms-h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-64);
+  line-height: var(--lh-tight);
+  letter-spacing: 0.01em;
+  color: var(--ink-hi);
+  text-wrap: balance;
+}
+
+.ms-h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--fs-40);
+  line-height: var(--lh-snug);
+  color: var(--ink-1);
+  text-wrap: balance;
+}
+
+.ms-h3 {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: var(--fs-28);
+  line-height: var(--lh-snug);
+  color: var(--ink-1);
+}
+
+.ms-h4 {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--fs-20);
+  line-height: var(--lh-snug);
+  color: var(--ink-1);
+}
+
+.ms-lead {
+  font-family: var(--font-ui);
+  font-weight: 400;
+  font-size: var(--fs-16);
+  line-height: var(--lh-body);
+  color: var(--ink-2);
+}
+
+.ms-body {
+  font-family: var(--font-ui);
+  font-weight: 400;
+  font-size: var(--fs-14);
+  line-height: var(--lh-body);
+  color: var(--ink-2);
+}
+
+.ms-body-sm {
+  font-family: var(--font-ui);
+  font-weight: 400;
+  font-size: var(--fs-13);
+  line-height: var(--lh-body);
+  color: var(--ink-2);
+}
+
+/* Section eyebrow / kicker — uppercase, tracked, accent. */
+.ms-eyebrow {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--fs-11);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* Module / device title — the canonical DAW header. */
+.ms-module-title {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: var(--fs-11);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--node-accent, var(--accent));
+  text-shadow: 0 0 10px color-mix(in srgb, var(--node-accent, var(--accent)) 35%, transparent);
+}
+
+/* Tiny control label. */
+.ms-label {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--fs-9);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+/* Numeric readout — tabular, mono, for values/timecode/BPM. */
+.ms-readout {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-10);
+  letter-spacing: 0.02em;
+  color: var(--ink-2);
+}
+.ms-readout--strong { color: var(--ink-1); font-weight: 600; }
+.ms-readout--accent { color: var(--accent); }
+
+/* Brand wordmark utility. */
+.ms-wordmark {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: var(--tracking-brand);
+  text-transform: uppercase;
+  color: var(--ink-hi);
+}
+
+/* Inline code / monospace. */
+.ms-code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  background: var(--glass-field);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-xs);
+  padding: 0.1em 0.4em;
+  color: var(--accent-bright);
+}

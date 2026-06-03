@@ -9,7 +9,10 @@ import { defaultProject, newNoteId, uid, type Instrument, type Project, type Tra
 import { midiToFreq } from './model/pitch';
 import { makeBlip, makeSynthVoice, type Flow } from './synflow/instruments';
 import { FX_LIBRARY } from './synflow/effects';
-import { TransportBar } from './ui/TransportBar';
+import { TopBar, type ViewId } from './ui/TopBar';
+import { Browser } from './ui/Browser';
+import { Arrange } from './ui/Arrange';
+import { Mixer as MixerView } from './ui/Mixer';
 import { TrackList, type TrackHandlers } from './ui/TrackList';
 import { SamplerEditor } from './ui/SamplerEditor';
 
@@ -19,6 +22,10 @@ export function App() {
   const [currentStep, setCurrentStep] = useState(-1);
   const [noteLength, setNoteLength] = useState(2);
   const [samplerTrack, setSamplerTrack] = useState<string | null>(null);
+  const [view, setView] = useState<ViewId>('arrange');
+  const [browserOpen, setBrowserOpen] = useState(true);
+  const [armed, setArmed] = useState(false);
+  const [selTrack, setSelTrack] = useState<string>(() => defaultProject().tracks[0]?.id ?? '');
 
   const ctxRef = useRef<AudioContext | null>(null);
   const transportRef = useRef<Transport | null>(null);
@@ -182,21 +189,39 @@ export function App() {
     setSamplerTrack(null);
   }, [samplerTrack, buildInstrumentAudio]);
 
+  const sib = currentStep < 0 ? 0 : currentStep % project.totalSteps;
+  const pos = `001.${Math.floor(sib / project.stepsPerBeat) + 1}.${String((sib % project.stepsPerBeat) * 25).padStart(2, '0')}`;
+
   return (
-    <div className="app">
-      <TransportBar isPlaying={isPlaying} bpm={project.bpm} onPlay={play} onStop={stop} onBpm={setBpm} />
-      <div className="toolbar">
-        <label className="notelen">note length
-          <select value={noteLength} onChange={(e) => setNoteLength(parseInt(e.target.value, 10))}>
-            <option value={1}>1</option><option value={2}>2</option><option value={4}>4</option><option value={8}>8</option>
-          </select>
-        </label>
+    <div className="app-shell">
+      <TopBar
+        view={view} setView={setView} isPlaying={isPlaying} onPlay={play} onStop={stop}
+        armed={armed} onArm={() => setArmed((a) => !a)} bpm={project.bpm} onBpm={setBpm} position={pos}
+        browserOpen={browserOpen} setBrowserOpen={setBrowserOpen}
+      />
+      <div className="workspace">
+        {browserOpen && <Browser />}
+        <div className="main">
+          {view === 'arrange' && (
+            <Arrange project={project} selId={selTrack} onSelect={setSelTrack} currentStep={currentStep} />
+          )}
+          {(view === 'rack' || view === 'piano') && (
+            <div className="editor-scroll">
+              <div className="toolbar">
+                <label className="notelen">note length
+                  <select value={noteLength} onChange={(e) => setNoteLength(parseInt(e.target.value, 10))}>
+                    <option value={1}>1</option><option value={2}>2</option><option value={4}>4</option><option value={8}>8</option>
+                  </select>
+                </label>
+              </div>
+              <TrackList project={project} currentStep={currentStep} noteLength={noteLength} h={h} />
+            </div>
+          )}
+          {view === 'mix' && (
+            <MixerView project={project} selId={selTrack} onSelect={setSelTrack} onVolume={h.onVolume} />
+          )}
+        </div>
       </div>
-      <TrackList project={project} currentStep={currentStep} noteLength={noteLength} h={h} />
-      <p className="hint">
-        Tracks group instruments (drums + piano roll) through one FX chain + volume; automation lanes
-        drive params over time via @synflow/core (setParam / FX). ▶ Play.
-      </p>
       {samplerTrack && <SamplerEditor onCreate={addSampleInstrument} onClose={() => setSamplerTrack(null)} />}
     </div>
   );

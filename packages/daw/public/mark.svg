@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Mothscilla mark">
+  <defs>
+    <linearGradient id="msWing" x1="32" y1="10" x2="32" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6ee7a8"></stop>
+      <stop offset="1" stop-color="#00b347"></stop>
+    </linearGradient>
+    <filter id="msGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="1.1" result="b"></feGaussianBlur>
+      <feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+    </filter>
+  </defs>
+  
+  <path d="M3 34 Q8 30 12 34 T20 34 T28 34 T36 34 T44 34 T52 34 T61 34" stroke="#6ee7a8" stroke-opacity="0.28" stroke-width="1.2" stroke-linecap="round"></path>
+  <g filter="url(#msGlow)">
+    
+    <path d="M32 18 C28 12 25 9 21 7" stroke="url(#msWing)" stroke-width="2" stroke-linecap="round"></path>
+    <path d="M32 18 C36 12 39 9 43 7" stroke="url(#msWing)" stroke-width="2" stroke-linecap="round"></path>
+    <circle cx="20.5" cy="6.5" r="1.6" fill="#6ee7a8"></circle>
+    <circle cx="43.5" cy="6.5" r="1.6" fill="#6ee7a8"></circle>
+    
+    <path d="M32 21 C24 17 12 18 7 26 C4 31 7 36 14 37 C22 38 30 34 32 29 Z" fill="#6ee7a8" fill-opacity="0.12" stroke="url(#msWing)" stroke-width="2" stroke-linejoin="round"></path>
+    <path d="M32 21 C40 17 52 18 57 26 C60 31 57 36 50 37 C42 38 34 34 32 29 Z" fill="#6ee7a8" fill-opacity="0.12" stroke="url(#msWing)" stroke-width="2" stroke-linejoin="round"></path>
+    
+    <path d="M32 34 C27 36 18 39 15 45 C13 49 17 52 22 51 C28 50 31 45 32 41 Z" fill="#6ee7a8" fill-opacity="0.10" stroke="url(#msWing)" stroke-width="2" stroke-linejoin="round"></path>
+    <path d="M32 34 C37 36 46 39 49 45 C51 49 47 52 42 51 C36 50 33 45 32 41 Z" fill="#6ee7a8" fill-opacity="0.10" stroke="url(#msWing)" stroke-width="2" stroke-linejoin="round"></path>
+    
+    <path d="M32 18 L32 52" stroke="url(#msWing)" stroke-width="3.4" stroke-linecap="round"></path>
+    <circle cx="32" cy="16.5" r="2.6" fill="#6ee7a8"></circle>
+  </g>
+</svg>

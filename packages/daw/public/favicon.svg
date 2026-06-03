@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Mothscilla">
+  <rect width="64" height="64" rx="14" fill="#0a0b0f"></rect>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="13.5" fill="none" stroke="#6ee7a8" stroke-opacity="0.25"></rect>
+  <g transform="translate(0,1)">
+    <path d="M32 18 C28 13 25 10 21 8" stroke="#6ee7a8" stroke-width="2.2" stroke-linecap="round" fill="none"></path>
+    <path d="M32 18 C36 13 39 10 43 8" stroke="#6ee7a8" stroke-width="2.2" stroke-linecap="round" fill="none"></path>
+    <path d="M32 22 C24 18 12 19 7 27 C4 32 7 37 14 38 C22 39 30 35 32 30 Z" fill="#6ee7a8" fill-opacity="0.16" stroke="#6ee7a8" stroke-width="2.2" stroke-linejoin="round"></path>
+    <path d="M32 22 C40 18 52 19 57 27 C60 32 57 37 50 38 C42 39 34 35 32 30 Z" fill="#6ee7a8" fill-opacity="0.16" stroke="#6ee7a8" stroke-width="2.2" stroke-linejoin="round"></path>
+    <path d="M32 35 C27 37 18 40 15 46 C13 50 17 52 22 51 C28 50 31 46 32 42 Z" fill="#6ee7a8" fill-opacity="0.12" stroke="#6ee7a8" stroke-width="2.2" stroke-linejoin="round"></path>
+    <path d="M32 35 C37 37 46 40 49 46 C51 50 47 52 42 51 C36 50 33 46 32 42 Z" fill="#6ee7a8" fill-opacity="0.12" stroke="#6ee7a8" stroke-width="2.2" stroke-linejoin="round"></path>
+    <path d="M32 18 L32 52" stroke="#6ee7a8" stroke-width="3.6" stroke-linecap="round"></path>
+  </g>
+</svg>
