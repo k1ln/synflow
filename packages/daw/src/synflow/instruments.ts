@@ -22,7 +22,8 @@ export function makeBasicSynth(opts: SynthOpts = {}): Flow {
   const master = 'master.MasterOutFlowNode';
 
   const nodes = [
-    { id: osc, type: 'OscillatorFlowNode', data: { frequency: opts.frequency ?? 220, type: opts.type ?? 'sine' } },
+    // isPitch: the DAW sets this oscillator's frequency from a note before triggering.
+    { id: osc, type: 'OscillatorFlowNode', data: { frequency: opts.frequency ?? 220, type: opts.type ?? 'sine', isPitch: true, pitchParam: 'frequency' } },
     {
       id: adsr, type: 'ADSRFlowNode', isTrigger: true,
       data: {
@@ -69,4 +70,9 @@ export function makeKick(): Flow {
 /** Bright short blip (hat-ish). */
 export function makeBlip(frequency = 880): Flow {
   return makeBasicSynth({ frequency, type: 'square', attack: 0.001, decay: 0.05, release: 0.02 });
+}
+
+/** Sustaining melodic voice for the piano roll (holds until note-off, glides to pitch). */
+export function makeSynthVoice(type: OscillatorType = 'sawtooth'): Flow {
+  return makeBasicSynth({ frequency: 220, type, attack: 0.005, decay: 0.12, sustain: 0.7, release: 0.14 });
 }

@@ -74,3 +74,21 @@ body { margin: 0; background: var(--bg); color: var(--text);
 .wave-wrap { position: relative; user-select: none; }
 .loop-handle { position: absolute; top: 0; width: 2px; height: 100%; background: #fff; cursor: ew-resize; }
 .loop-handle::after { content: ''; position: absolute; top: 0; left: -4px; width: 10px; height: 10px; background: #fff; border-radius: 2px; }
+
+.toolbar { display: flex; align-items: center; gap: 8px; }
+.notelen { display: flex; align-items: center; gap: 6px; opacity: 0.85; margin-left: 8px; font-size: 12px; }
+.notelen select { background: #111; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+
+.pianoroll { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-top: 10px; }
+.pr-title { font-size: 11px; opacity: 0.7; margin-bottom: 6px; letter-spacing: 0.05em; }
+.pr-poly { opacity: 0.5; margin-left: 8px; }
+.pr-grid { display: flex; flex-direction: column; }
+.pr-row { display: flex; align-items: center; height: 14px; }
+.pr-key { width: 42px; flex: 0 0 42px; font-size: 9px; opacity: 0.6; }
+.pr-key.black { opacity: 0.35; }
+.pr-cells { display: grid; grid-template-columns: repeat(16, 1fr); gap: 2px; flex: 1; }
+.pr-cell { height: 12px; border: 1px solid #1c1c22; background: #141418; cursor: pointer; padding: 0; border-radius: 2px; }
+.pr-cell.beat { border-left-color: #393f4a; }
+.pr-cell.on { background: var(--accent); border-color: var(--accent); }
+.pr-cell.note-start { box-shadow: inset 2px 0 0 #fff8; }
+.pr-cell.playhead { outline: 1px solid #fff5; outline-offset: -1px; }
