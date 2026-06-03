@@ -22,6 +22,7 @@ export interface Instrument {
   id: string;
   name: string;
   flow: Flow;
+  libId?: string;          // source library flow id (for saving edits back to disk)
   kind: 'step' | 'piano';
   steps: boolean[];        // step instruments
   notes?: PianoNote[];     // piano instruments
@@ -82,16 +83,16 @@ export function defaultProject(): Project {
       {
         id: 'drums', name: 'Drums', volume: 0.8, fx: [], automation: [],
         instruments: [
-          { id: 'kick', name: 'Kick', kind: 'step', flow: libFlow('kick', makeKick), steps: steps(total, [0, 4, 8, 12]) },
-          { id: 'snare', name: 'Snare', kind: 'step', flow: libFlow('snare', () => makeBasicSynth({ frequency: 180, type: 'triangle', decay: 0.12 })), steps: steps(total, [4, 12]) },
-          { id: 'hat', name: 'Hat', kind: 'step', flow: libFlow('hat', () => makeBlip(1200)), steps: steps(total, [2, 6, 10, 14]) },
+          { id: 'kick', name: 'Kick', libId: 'kick', kind: 'step', flow: libFlow('kick', makeKick), steps: steps(total, [0, 4, 8, 12]) },
+          { id: 'snare', name: 'Snare', libId: 'snare', kind: 'step', flow: libFlow('snare', () => makeBasicSynth({ frequency: 180, type: 'triangle', decay: 0.12 })), steps: steps(total, [4, 12]) },
+          { id: 'hat', name: 'Hat', libId: 'hat', kind: 'step', flow: libFlow('hat', () => makeBlip(1200)), steps: steps(total, [2, 6, 10, 14]) },
         ],
       },
       {
         id: 'synth', name: 'Synth', volume: 0.8, fx: ['lowpass'],
         instruments: [
           {
-            id: 'lead', name: 'Lead', kind: 'piano', flow: libFlow('saw-lead', () => makeSynthVoice('sawtooth')), steps: [], voices: 6,
+            id: 'lead', name: 'Lead', libId: 'saw-lead', kind: 'piano', flow: libFlow('saw-lead', () => makeSynthVoice('sawtooth')), steps: [], voices: 6,
             notes: [
               { id: 1, midi: 60, start: 0, length: 4 },
               { id: 2, midi: 63, start: 4, length: 4 },

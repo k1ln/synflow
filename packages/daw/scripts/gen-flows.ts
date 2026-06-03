@@ -48,16 +48,37 @@ function exposeKnobs(node: any): any {
   return knobs.length ? { ...node, data: { ...node.data, knobs } } : node;
 }
 
-// Lay nodes out left→right (readable in the editor) + expose default host knobs.
-function withPositions(flow: Flow): Flow {
-  const nodes = flow.nodes.map((n, i) => exposeKnobs({ ...n, position: n.position ?? { x: 80 + i * 240, y: 120 + (i % 2) * 130 } }));
+// Clean left→right signal-flow layout: x = longest path from a source (layer),
+// y stacks nodes within a layer. Readable + stable when opened in the editor.
+function layout(flow: Flow): Flow {
+  const incoming = new Map<string, string[]>();
+  for (const n of flow.nodes) incoming.set(n.id, []);
+  for (const e of flow.edges) incoming.get(e.target)?.push(e.source);
+  const cache = new Map<string, number>();
+  const depth = (id: string, seen = new Set<string>()): number => {
+    if (cache.has(id)) return cache.get(id)!;
+    if (seen.has(id)) return 0;
+    seen.add(id);
+    const ins = incoming.get(id) ?? [];
+    const d = ins.length ? Math.max(...ins.map((s) => depth(s, seen) + 1)) : 0;
+    cache.set(id, d);
+    return d;
+  };
+  const byDepth = new Map<number, any[]>();
+  for (const n of flow.nodes) { const d = depth(n.id); (byDepth.get(d) ?? byDepth.set(d, []).get(d)!).push(n); }
+  const X0 = 80, GX = 300, Y0 = 80, GY = 170;
+  const nodes = flow.nodes.map((n) => {
+    const d = depth(n.id);
+    const row = byDepth.get(d)!.indexOf(n);
+    return exposeKnobs({ ...n, position: { x: X0 + d * GX, y: Y0 + row * GY } });
+  });
   return { nodes, edges: flow.edges };
 }
 
 function writeAll(subdir: string, entries: Entry[]) {
   mkdirSync(join(flowsDir, subdir), { recursive: true });
   for (const e of entries) {
-    const flow = withPositions(e.flow);
+    const flow = layout(e.flow);
     // Top-level nodes/edges + name => directly importable by the synflow editor.
     // `daw` carries DAW-only metadata (ignored by the editor).
     const file = { name: e.name, daw: { id: e.id, category: e.category, kind: e.kind }, nodes: flow.nodes, edges: flow.edges };

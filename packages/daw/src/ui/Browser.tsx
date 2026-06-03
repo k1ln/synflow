@@ -7,7 +7,11 @@ const CAT_COLOR: Record<string, string> = {
 };
 
 /** Library browser: lists the editable flow files; click adds to the selected track. */
-export function Browser({ onAdd }: { onAdd?: (entry: LibraryEntry) => void }) {
+export function Browser({ onAdd, entries = LIBRARY, source }: {
+  onAdd?: (entry: LibraryEntry) => void;
+  entries?: LibraryEntry[];
+  source?: string;
+}) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState<Record<string, boolean>>({ Drums: true, Synths: true, Filter: true });
   const [sel, setSel] = useState('');
@@ -15,12 +19,12 @@ export function Browser({ onAdd }: { onAdd?: (entry: LibraryEntry) => void }) {
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
     const byCat: Record<string, LibraryEntry[]> = {};
-    for (const e of LIBRARY) {
+    for (const e of entries) {
       if (q && !e.name.toLowerCase().includes(q)) continue;
       (byCat[e.category] ??= []).push(e);
     }
     return Object.entries(byCat);
-  }, [query]);
+  }, [query, entries]);
 
   return (
     <div className="browser">
@@ -57,7 +61,7 @@ export function Browser({ onAdd }: { onAdd?: (entry: LibraryEntry) => void }) {
           );
         })}
       </div>
-      <div className="browser-foot"><Music size={14} /><span>flows/ · {LIBRARY.length} flows</span></div>
+      <div className="browser-foot"><Music size={14} /><span>{source ?? 'flows/'} · {entries.length} flows</span></div>
     </div>
   );
 }
