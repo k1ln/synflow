@@ -22,6 +22,15 @@ function bridgeHost(): Window | null {
   return null;
 }
 
+/**
+ * True when the editor is embedded by Mothscilla for flow editing. In this mode
+ * the app should hide its chrome (top bar, panels) and NOT restore the last
+ * opened flow — the DAW is the source of the flow.
+ */
+export function isDawEditMode(): boolean {
+  return bridgeHost() !== null;
+}
+
 type AnyArr = any[];
 
 export function DawEditorBridge({ nodes, edges, setNodes, setEdges }: {
