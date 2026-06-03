@@ -54,6 +54,7 @@ import AudioExplorer from './components/AudioExplorer';
 import OrchestratorDialog from './nodes/OrchestratorDialog';
 import DocsPlayground from './components/DocsPlayground';
 import { DawEditorBridge, isDawEditMode } from './host/dawEditorBridge';
+import { HostInterfacePanel } from './host/hostInterface';
 import {
   makeDistortionCurve,
   hexToRgb,
@@ -2153,6 +2154,8 @@ function Flow() {
     <div style={{ display: 'flex', height: "100vh", width: "100%", paddingTop: dawEdit ? 0 : 44, background: '#07070d' }} onContextMenu={(e) => { e.preventDefault(); setNodePaletteOpen(prev => !prev); }}>
       {/* DAW bridge: when opened by Mothscilla (#mothscilla), load the incoming flow + show "Send to Mothscilla". No-op otherwise. */}
       <DawEditorBridge nodes={nodes} edges={edges} setNodes={setNodes as any} setEdges={setEdges as any} />
+      {/* Host interface editor (edit mode only): expose audio I/O, trigger, pitch + knobs to Mothscilla. */}
+      <HostInterfacePanel nodes={nodes} setNodes={setNodes as any} active={dawEdit} />
       {/* Flow container */}
       <div style={{ flex: 1, display: orchestratorEditorOpen ? 'none' : 'flex', flexDirection: 'column', minWidth: 0 }}>
       {/* Inline controls: color pickers for selected node and edge */}

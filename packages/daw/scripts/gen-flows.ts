@@ -24,9 +24,33 @@ const instruments: Entry[] = [
 
 const effects: Entry[] = FX_LIBRARY.map((f) => ({ id: f.id, name: f.name, category: 'Filter', flow: f.make() }));
 
-// Lay nodes out left→right so the graph is readable when opened in the editor.
+// Default knobs exposed to the host (Mothscilla) per node type. The author can
+// edit/remove these in Synflow's Host Interface panel.
+const KNOB_SPEC: Record<string, Record<string, { label: string; min: number; max: number }>> = {
+  ADSRFlowNode: {
+    attackTime: { label: 'Attack', min: 0, max: 2 }, decayTime: { label: 'Decay', min: 0, max: 2 },
+    sustainLevel: { label: 'Sustain', min: 0, max: 1 }, releaseTime: { label: 'Release', min: 0, max: 2 },
+  },
+  BiquadFilterFlowNode: { frequency: { label: 'Cutoff', min: 20, max: 18000 }, Q: { label: 'Reso', min: 0.1, max: 24 } },
+  DelayFlowNode: { delayTime: { label: 'Time', min: 0, max: 1000 } },
+};
+const GENERIC_PREFIX = new Set(['adsr', 'filt', 'dly', 'osc', 'gain', 'master', 'in', 'out', 'wet']);
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+function exposeKnobs(node: any): any {
+  const spec = KNOB_SPEC[node.type];
+  if (!spec) return node;
+  const prefix = String(node.id).split('.')[0];
+  const pfx = GENERIC_PREFIX.has(prefix) ? '' : cap(prefix) + ' '; // e.g. amp/pitch ADSR on the kick
+  const knobs = Object.keys(spec)
+    .filter((k) => typeof node.data?.[k] === 'number')
+    .map((k) => ({ param: k, label: pfx + spec[k].label, min: spec[k].min, max: spec[k].max, default: node.data[k] }));
+  return knobs.length ? { ...node, data: { ...node.data, knobs } } : node;
+}
+
+// Lay nodes out left→right (readable in the editor) + expose default host knobs.
 function withPositions(flow: Flow): Flow {
-  const nodes = flow.nodes.map((n, i) => ({ ...n, position: n.position ?? { x: 80 + i * 240, y: 120 + (i % 2) * 130 } }));
+  const nodes = flow.nodes.map((n, i) => exposeKnobs({ ...n, position: n.position ?? { x: 80 + i * 240, y: 120 + (i % 2) * 130 } }));
   return { nodes, edges: flow.edges };
 }
 

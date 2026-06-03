@@ -23,7 +23,23 @@
       "data": {
         "filterType": "highpass",
         "frequency": 400,
-        "Q": 1
+        "Q": 1,
+        "knobs": [
+          {
+            "param": "frequency",
+            "label": "Cutoff",
+            "min": 20,
+            "max": 18000,
+            "default": 400
+          },
+          {
+            "param": "Q",
+            "label": "Reso",
+            "min": 0.1,
+            "max": 24,
+            "default": 1
+          }
+        ]
       },
       "position": {
         "x": 320,

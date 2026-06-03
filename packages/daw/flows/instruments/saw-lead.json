@@ -32,7 +32,37 @@
         "maxTime": 10,
         "minPercent": 0,
         "maxPercent": 100,
-        "isTrigger": true
+        "isTrigger": true,
+        "knobs": [
+          {
+            "param": "attackTime",
+            "label": "Attack",
+            "min": 0,
+            "max": 2,
+            "default": 0.005
+          },
+          {
+            "param": "decayTime",
+            "label": "Decay",
+            "min": 0,
+            "max": 2,
+            "default": 0.12
+          },
+          {
+            "param": "sustainLevel",
+            "label": "Sustain",
+            "min": 0,
+            "max": 1,
+            "default": 0.7
+          },
+          {
+            "param": "releaseTime",
+            "label": "Release",
+            "min": 0,
+            "max": 2,
+            "default": 0.14
+          }
+        ]
       },
       "position": {
         "x": 320,

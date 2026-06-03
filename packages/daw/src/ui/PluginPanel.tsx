@@ -1,9 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { X, Pencil } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { X, Pencil, Sliders } from 'lucide-react';
 import type { Instrument } from '../model/project';
 import { Knob } from './Knob';
 
-const WAVES = ['sine', 'saw', 'square', 'tri', 'noise'];
+interface ExposedKnob { nodeId: string; param: string; label: string; min: number; max: number; default?: number }
+
+/** Collect the flow's host-exposed knobs (declared in Synflow → node.data.knobs). */
+function exposedKnobs(inst: Instrument): ExposedKnob[] {
+  return (inst.flow.nodes ?? []).flatMap((n: any) =>
+    Array.isArray(n.data?.knobs)
+      ? n.data.knobs.map((k: any) => ({ nodeId: n.id, param: k.param, label: k.label || k.param, min: k.min ?? 0, max: k.max ?? 1, default: k.default }))
+      : [],
+  );
+}
 
 function Scope({ color }: { color: string }) {
   const [ph, setPh] = useState(0);
@@ -27,17 +36,16 @@ function Scope({ color }: { color: string }) {
   );
 }
 
-export function PluginPanel({ instrument, onClose, onParam, onEdit }: {
+export function PluginPanel({ instrument, onClose, onSetParam, onEdit }: {
   instrument: Instrument;
   onClose: () => void;
-  /** role -> 0..1 value; the app maps the role to a real engine param. */
-  onParam?: (role: string, value: number) => void;
+  /** Set a real engine param live: (nodeId, param, value) on the running instrument. */
+  onSetParam?: (nodeId: string, param: string, value: number) => void;
   /** Open this instrument's flow in the synflow editor. */
   onEdit?: () => void;
 }) {
   const cat = 'var(--cat-source)';
-  const [wave, setWave] = useState('saw');
-  const P = (role: string) => (v: number) => onParam?.(role, v);
+  const knobs = useMemo(() => exposedKnobs(instrument), [instrument.flow]);
   const [pos, setPos] = useState<{ x: number | null; y: number }>({ x: null, y: 90 });
   const W = 380;
   const left = pos.x == null ? `calc(50% - ${W / 2}px)` : pos.x;
@@ -51,6 +59,8 @@ export function PluginPanel({ instrument, onClose, onParam, onEdit }: {
     window.addEventListener('pointerup', up);
   };
 
+  const norm = (k: ExposedKnob) => { const v = k.default ?? k.min; const r = k.max - k.min || 1; return Math.max(0, Math.min(1, (v - k.min) / r)); };
+
   return (
     <div className="plugin" style={{ left, top: pos.y, width: W, borderColor: `color-mix(in srgb, ${cat} 45%, var(--border-strong))`, boxShadow: `var(--shadow-modal), 0 0 30px color-mix(in srgb, ${cat} 18%, transparent)` }}>
       <div className="pp-title" onPointerDown={onDown}>
@@ -62,41 +72,26 @@ export function PluginPanel({ instrument, onClose, onParam, onEdit }: {
       </div>
       <div className="pp-body">
         <Scope color={cat} />
-        <div className="pp-section">
-          <div className="pp-sec-title">Source</div>
-          <div className="pp-knobs">
-            <Knob value={.5} color={cat} size={44} label="Tune" onChange={P('tune')} />
-            <Knob value={.5} color={cat} size={44} label="Spread" onChange={P('spread')} />
-            <Knob value={.3} color={cat} size={44} label="Sub" onChange={P('sub')} />
-            <div className="pp-wave">
-              <span className="knob-label">Wave</span>
-              <div className="pp-wave-btns">
-                {WAVES.map((w) => (
-                  <button key={w} className={`pp-wb ${wave === w ? 'on' : ''}`} onClick={() => setWave(w)}
-                    style={wave === w ? { borderColor: cat, background: `color-mix(in srgb, ${cat} 18%, transparent)`, color: cat } : undefined}>{w}</button>
-                ))}
-              </div>
+        {knobs.length > 0 ? (
+          <div className="pp-section">
+            <div className="pp-sec-title">Controls</div>
+            <div className="pp-knobs">
+              {knobs.map((k) => (
+                <Knob
+                  key={`${k.nodeId}.${k.param}`} value={norm(k)} color={cat} size={46} label={k.label}
+                  onChange={(v) => onSetParam?.(k.nodeId, k.param, k.min + v * (k.max - k.min))}
+                />
+              ))}
             </div>
           </div>
-        </div>
-        <div className="pp-div" />
-        <div className="pp-section">
-          <div className="pp-sec-title">Filter</div>
-          <div className="pp-knobs">
-            <Knob value={.6} color="var(--cat-fx)" size={44} label="Cutoff" onChange={P('cutoff')} />
-            <Knob value={.4} color="var(--cat-fx)" size={44} label="Reso" onChange={P('reso')} />
+        ) : (
+          <div className="pp-empty">
+            <Sliders size={18} />
+            <div>No exposed controls yet.</div>
+            <div className="pp-empty-sub">Open <b>Edit flow</b> and, in Synflow’s Host Interface panel, expose params (filter cutoff, ADSR, …) as knobs.</div>
+            {onEdit && <button className="pp-empty-btn" onClick={onEdit}><Pencil size={13} /> Edit flow</button>}
           </div>
-        </div>
-        <div className="pp-div" />
-        <div className="pp-section">
-          <div className="pp-sec-title">Amp Envelope</div>
-          <div className="pp-knobs">
-            <Knob value={.2} color="var(--cat-mod)" size={40} label="A" onChange={P('ampA')} />
-            <Knob value={.5} color="var(--cat-mod)" size={40} label="D" onChange={P('ampD')} />
-            <Knob value={.7} color="var(--cat-mod)" size={40} label="S" onChange={P('ampS')} />
-            <Knob value={.35} color="var(--cat-mod)" size={40} label="R" onChange={P('ampR')} />
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
