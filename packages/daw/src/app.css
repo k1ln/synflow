@@ -165,3 +165,45 @@ body {
 .wave-wrap { position: relative; user-select: none; }
 .loop-handle { position: absolute; top: 0; width: 2px; height: 100%; background: #fff; cursor: ew-resize; }
 .loop-handle::after { content: ''; position: absolute; top: 0; left: -4px; width: 10px; height: 10px; background: #fff; border-radius: 2px; }
+
+/* ── Knob ───────────────────────────────────────────────────────────────── */
+.knob-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; user-select: none; }
+.knob { border-radius: 50%; cursor: ns-resize; position: relative; background: var(--glass-field); border: 2px solid var(--accent); }
+.knob-rot { position: absolute; inset: 0; }
+.knob-ptr { position: absolute; top: 3px; left: 50%; transform: translateX(-50%); width: 2.6px; border-radius: 2px; }
+.knob-label { font-family: var(--font-ui); font-weight: 600; font-size: 9px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--ink-2); }
+.knob-readout { font-family: var(--font-mono); font-size: 10px; color: var(--ink-1); font-variant-numeric: tabular-nums; }
+
+/* ── FX chain (device bar) ──────────────────────────────────────────────── */
+.fxchain { height: 186px; flex-shrink: 0; background: var(--bg-base); border-top: 1px solid var(--border-strong); display: flex; flex-direction: column; }
+.fxc-head { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-bottom: 1px solid var(--border-strong); }
+.fxc-bar { width: 4px; height: 14px; border-radius: 2px; background: var(--accent); box-shadow: 0 0 7px var(--accent); }
+.fxc-track { font-size: 11px; font-weight: 700; color: var(--ink-1); }
+.fxc-label { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+.fxc-count { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--ink-3); }
+.fxc-row { flex: 1; display: flex; align-items: center; gap: 12px; padding: 0 16px; overflow-x: auto; }
+.fxc-chev { color: var(--ink-3); flex-shrink: 0; }
+.fxc-device { position: relative; flex-shrink: 0; min-width: 148px; background: var(--glass-module); backdrop-filter: var(--glass-blur); border: 1px solid var(--border-default); border-radius: var(--r); padding: 9px 12px 12px; }
+.fxc-dev-head { display: flex; align-items: center; gap: 6px; padding-bottom: 7px; margin-bottom: 9px; border-bottom: 1px solid var(--border-subtle); }
+.fxc-dot { width: 7px; height: 7px; border-radius: 50%; }
+.fxc-dev-name { font-size: 11px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; white-space: nowrap; }
+.fxc-inst { margin-left: 6px; font-size: 8px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+.fxc-knobs { display: flex; gap: 14px; justify-content: center; }
+.fxc-add { width: 44px; height: 44px; border-radius: var(--r); flex-shrink: 0; display: grid; place-items: center; background: var(--glass-field); border: 1px dashed var(--border-default); color: var(--ink-3); cursor: pointer; }
+.fxc-add:hover { box-shadow: var(--glow-accent); }
+
+/* ── Plugin window (Synflow-style instrument) ───────────────────────────── */
+.plugin { position: absolute; z-index: 200; background: var(--bg-elevated); border: 1px solid var(--border-default); border-radius: var(--r-md); overflow: hidden; }
+.pp-title { display: flex; align-items: center; gap: 9px; padding: 10px 12px; cursor: grab; background: var(--bg-panel); border-bottom: 1px solid color-mix(in srgb, var(--cat-source) 28%, transparent); }
+.pp-dot { width: 9px; height: 9px; border-radius: 50%; }
+.pp-name { font-size: 13px; font-weight: 700; letter-spacing: .06em; }
+.pp-kind { font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+.pp-close { margin-left: auto; width: 26px; height: 26px; border-radius: 5px; display: grid; place-items: center; background: transparent; border: none; color: var(--ink-2); cursor: pointer; }
+.pp-body { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.pp-scope { height: 60px; border-radius: 6px; background: var(--bg-void); border: 1px solid var(--border-strong); overflow: hidden; background-image: radial-gradient(var(--grid-dot) 1px, transparent 1px); background-size: 14px 14px; }
+.pp-sec-title { font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px; }
+.pp-knobs { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+.pp-wave { display: flex; flex-direction: column; gap: 6px; justify-content: center; }
+.pp-wave-btns { display: flex; gap: 4px; flex-wrap: wrap; max-width: 150px; }
+.pp-wb { font-size: 10px; padding: 4px 8px; border-radius: 5px; cursor: pointer; border: 1px solid var(--border-default); background: var(--glass-field); color: var(--ink-2); }
+.pp-div { height: 1px; background: var(--border-strong); }
