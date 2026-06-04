@@ -70,6 +70,7 @@ export interface Track {
 }
 
 export interface Project {
+  name: string;
   bpm: number;
   stepsPerBeat: number;
   totalSteps: number;      // steps per pattern (one slot/bar)
@@ -108,6 +109,7 @@ export function defaultProject(): Project {
   ];
   const loopClip = (): Clip => ({ id: uid('clip'), start: 0, length: 1, loop: true });
   return {
+    name: 'Untitled Song',
     bpm: 120,
     stepsPerBeat: 4,
     totalSteps: total,

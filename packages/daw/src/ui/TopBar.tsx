@@ -1,5 +1,5 @@
-import React from 'react';
-import { Play, Pause, Square, Circle, SkipBack, Grid3x3, Music2, Layers, SlidersHorizontal, PanelLeft, Save, Settings, Piano } from 'lucide-react';
+import React, { useState } from 'react';
+import { Play, Pause, Square, Circle, SkipBack, Grid3x3, Music2, Layers, SlidersHorizontal, PanelLeft, Save, FolderOpen, Settings, Piano, Check } from 'lucide-react';
 
 export type ViewId = 'tracks' | 'song' | 'live' | 'mix';
 
@@ -12,6 +12,7 @@ const TABS: [ViewId, string, React.ComponentType<any>][] = [
 
 export function TopBar({
   view, setView, isPlaying, onPlay, onStop, armed, onArm, bpm, onBpm, position, browserOpen, setBrowserOpen,
+  projectName, onProjectName, onSave, saved, songs, onOpenSong,
 }: {
   view: ViewId;
   setView: (v: ViewId) => void;
@@ -25,7 +26,14 @@ export function TopBar({
   position: string;
   browserOpen: boolean;
   setBrowserOpen: (v: boolean) => void;
+  projectName: string;
+  onProjectName: (v: string) => void;
+  onSave: () => void;
+  saved: boolean;
+  songs: Array<{ file: string; name: string }>;
+  onOpenSong: (file: string) => void;
 }) {
+  const [openMenu, setOpenMenu] = useState(false);
   return (
     <div className="topbar">
       <div className="brand">
@@ -34,8 +42,17 @@ export function TopBar({
       </div>
       <div className="tb-divider" />
       <div className="project">
-        <span className="project-pill">Project</span>
-        <span className="project-name">Nocturne Set</span>
+        <span className="project-pill">Song</span>
+        <input className="project-name-input" value={projectName} onChange={(e) => onProjectName(e.target.value)} spellCheck={false} title="Song name" />
+        <div className="project-open">
+          <button className="icon-btn" title="Open song" onClick={() => setOpenMenu((o) => !o)}><FolderOpen size={16} /></button>
+          {openMenu && (
+            <div className="open-menu" onMouseLeave={() => setOpenMenu(false)}>
+              {songs.length === 0 && <span className="open-none">no saved songs</span>}
+              {songs.map((s) => <button key={s.file} onClick={() => { onOpenSong(s.file); setOpenMenu(false); }}>{s.name}</button>)}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="viewtabs">
@@ -67,7 +84,7 @@ export function TopBar({
       <div className="tb-tools">
         <span className="tb-status">{isPlaying ? 'Playing' : 'Stopped'}</span>
         <button className={`icon-btn ${browserOpen ? 'active' : ''}`} title="Browser" onClick={() => setBrowserOpen(!browserOpen)}><PanelLeft size={18} /></button>
-        <button className="icon-btn" title="Save"><Save size={18} /></button>
+        <button className={`icon-btn ${saved ? 'saved' : ''}`} title="Save song" onClick={onSave}>{saved ? <Check size={18} /> : <Save size={18} />}</button>
         <button className="icon-btn" title="Settings"><Settings size={18} /></button>
       </div>
     </div>
