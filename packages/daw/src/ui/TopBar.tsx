@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Play, Pause, Square, Circle, SkipBack, Grid3x3, Music2, Layers, SlidersHorizontal, PanelLeft, Save, FolderOpen, Settings, Piano, Check } from 'lucide-react';
 
 export type ViewId = 'tracks' | 'song' | 'live' | 'mix';
@@ -30,10 +30,8 @@ export function TopBar({
   onProjectName: (v: string) => void;
   onSave: () => void;
   saved: boolean;
-  songs: Array<{ file: string; name: string }>;
-  onOpenSong: (file: string) => void;
+  onOpenSong: () => void;
 }) {
-  const [openMenu, setOpenMenu] = useState(false);
   return (
     <div className="topbar">
       <div className="brand">
@@ -44,15 +42,7 @@ export function TopBar({
       <div className="project">
         <span className="project-pill">Song</span>
         <input className="project-name-input" value={projectName} onChange={(e) => onProjectName(e.target.value)} spellCheck={false} title="Song name" />
-        <div className="project-open">
-          <button className="icon-btn" title="Open song" onClick={() => setOpenMenu((o) => !o)}><FolderOpen size={16} /></button>
-          {openMenu && (
-            <div className="open-menu" onMouseLeave={() => setOpenMenu(false)}>
-              {songs.length === 0 && <span className="open-none">no saved songs</span>}
-              {songs.map((s) => <button key={s.file} onClick={() => { onOpenSong(s.file); setOpenMenu(false); }}>{s.name}</button>)}
-            </div>
-          )}
-        </div>
+        <button className="icon-btn" title="Open song (choose a .json from the songs folder)" onClick={onOpenSong}><FolderOpen size={16} /></button>
       </div>
 
       <div className="viewtabs">
