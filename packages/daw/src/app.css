@@ -311,8 +311,9 @@ body {
 .fxbar-icon { width: 18px; height: 18px; display: grid; place-items: center; border: none; background: transparent; color: var(--ink-3); cursor: pointer; border-radius: 4px; }
 .fxbar-icon:hover { color: var(--accent); }
 .fxbar-add { position: relative; }
-.fxbar-addbtn { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent); }
-.fxbar-addbtn:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.fxbar-addbtn { width: 24px; height: 24px; padding: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent); }
+.fxbar-addbtn svg { display: block; }
+.fxbar-addbtn:hover { filter: brightness(1.25); }
 
 /* Mixer view */
 .mixer-view { display: flex; flex-direction: column; gap: 14px; padding: 16px; overflow: auto; height: 100%; }
