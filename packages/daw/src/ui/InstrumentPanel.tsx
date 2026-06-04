@@ -8,6 +8,13 @@ import { Knob } from './Knob';
 const KEYMAP: Record<string, number> = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12, o: 13, l: 14, p: 15 };
 const VISIBLE = 17;
 
+// Pretty group name from a node id prefix (kick/synth flows use amp/pitch/filt/…).
+const NICE: Record<string, string> = { osc: 'Oscillator', amp: 'Amp', pitch: 'Pitch', filt: 'Filter', dly: 'Delay', gain: 'Gain', adsr: 'Envelope', in: 'Input', out: 'Output', wet: 'Wet' };
+const nodeGroupName = (id: string, type?: string) => {
+  const p = String(id).split('.')[0];
+  return NICE[p] ?? (p ? p.charAt(0).toUpperCase() + p.slice(1) : (type ?? '').replace('FlowNode', '') || 'Params');
+};
+
 /**
  * Full-page live view for a pool item (NOT a popup): play it live (synth keyboard
  * / drum pad), tweak every knob exported from Synflow, set its gain, edit the flow.
@@ -51,6 +58,19 @@ export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onEdit
   const midis = Array.from({ length: VISIBLE }, (_, i) => base + i);
   const whites = midis.filter((m) => !isBlackKey(m));
 
+  // Group exposed knobs by their source node (so e.g. Amp / Pitch / Filter knobs
+  // each get their own group).
+  const groups: Array<{ id: string; label: string; knobs: typeof knobs }> = [];
+  for (const k of knobs) {
+    const node = flow.nodes.find((n: any) => n.id === k.nodeId);
+    const label = node?.data?.label || nodeGroupName(k.nodeId, node?.type);
+    let g = groups.find((x) => x.id === k.nodeId);
+    if (!g) { g = { id: k.nodeId, label, knobs: [] }; groups.push(g); }
+    g.knobs.push(k);
+  }
+  // Drop a redundant group-name prefix from a knob's label (e.g. "Amp Decay" → "Decay").
+  const knobLabel = (groupLabel: string, label: string) => (label.toLowerCase().startsWith(groupLabel.toLowerCase() + ' ') ? label.slice(groupLabel.length + 1) : label);
+
   return (
     <div className="live-page">
       <div className="lp-head">
@@ -58,25 +78,32 @@ export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onEdit
         <span className="inst-dot" style={{ background: cat, boxShadow: `0 0 8px ${cat}` }} />
         <span className="lp-name" style={{ color: cat }}>{name}</span>
         <span className="inst-kind">{kind}</span>
-        {kind !== 'effect' && onGain && (
-          <label className="inst-gain" title="Instrument gain">
-            <span>Gain</span>
-            <input type="range" min={0} max={1.5} step={0.01} value={gain ?? 1} onChange={(e) => onGain(parseFloat(e.target.value))} />
-            <b>{Math.round((gain ?? 1) * 100)}</b>
-          </label>
-        )}
         <button className="pp-edit" onClick={onEdit} title="Edit this flow in Synflow"><Pencil size={13} /> Edit flow</button>
       </div>
 
       <div className="lp-body">
-        <div className="lp-section-title">Knobs from Synflow</div>
-        <div className="inst-knobs">
-          {knobs.length === 0 && <div className="inst-noknobs">No knobs exported. Open <b>Edit flow</b> and expose params in Synflow’s Host Interface.</div>}
-          {knobs.map((k) => (
-            <Knob key={`${k.nodeId}.${k.param}`} value={knob01(k)} color={cat} size={54} label={k.label}
-              onChange={(v01) => onKnob(k.nodeId, k.param, knobValue(k, v01))} />
-          ))}
-        </div>
+        {groups.length === 0 && <div className="inst-noknobs">No knobs exported. Open <b>Edit flow</b> and expose params in Synflow’s Host Interface.</div>}
+        {groups.map((g) => (
+          <div className="lp-group" key={g.id}>
+            <div className="lp-section-title">{g.label}</div>
+            <div className="inst-knobs">
+              {g.knobs.map((k) => (
+                <Knob key={`${k.nodeId}.${k.param}`} value={knob01(k)} color={cat} size={50} label={knobLabel(g.label, k.label)}
+                  onChange={(v01) => onKnob(k.nodeId, k.param, knobValue(k, v01))} />
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {kind !== 'effect' && onGain && (
+          <div className="lp-group">
+            <div className="lp-section-title">Output</div>
+            <div className="inst-knobs">
+              <Knob value={Math.min(1, (gain ?? 1) / 1.5)} color="var(--accent)" size={50} label="Gain" readout={`${Math.round((gain ?? 1) * 100)}%`}
+                onChange={(v01) => onGain(v01 * 1.5)} />
+            </div>
+          </div>
+        )}
 
         {kind === 'synth' && (
           <>

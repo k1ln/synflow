@@ -443,3 +443,7 @@ body {
 .lp-section-title { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
 .lp-kb { height: 200px; max-width: 900px; }
 .lp-pad { max-width: 360px; }
+
+/* Live-page knob groups */
+.lp-group { display: flex; flex-direction: column; gap: 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border-subtle); }
+.lp-group:last-child { border-bottom: none; }
