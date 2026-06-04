@@ -402,3 +402,16 @@ body {
 .arr2-clip-btn:hover { background: rgba(0,0,0,.3); color: var(--ink-1); }
 .arr2-clip-btn.on { color: var(--accent); }
 .arr2-ph { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); box-shadow: 0 0 8px var(--accent); pointer-events: none; }
+
+/* ── Track name / loop / length / voices controls ─────────────────────────── */
+.te-name { font-size: 15px; font-weight: 700; color: var(--ink-1); background: transparent; border: 1px solid transparent; border-radius: 5px; padding: 3px 6px; min-width: 80px; max-width: 220px; }
+.te-name:hover { border-color: var(--border-strong); }
+.te-name:focus { outline: none; border-color: var(--accent); background: var(--glass-field); }
+.te-loop { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 5px 10px; border-radius: 6px; cursor: pointer; color: var(--ink-2); background: var(--glass-field); border: 1px solid var(--border-strong); }
+.te-loop.on { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 28%, transparent); }
+.te-length, .te-voices { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-3); }
+.te-length select, .te-voices input { background: var(--glass-field); border: 1px solid var(--border-strong); color: var(--ink-1); border-radius: 5px; padding: 4px 6px; font: inherit; font-size: 12px; }
+.te-voices input { width: 50px; }
+.trk-loop { width: 20px; height: 20px; display: grid; place-items: center; border: none; background: transparent; color: var(--ink-3); cursor: pointer; border-radius: 4px; flex-shrink: 0; }
+.trk-loop:hover { color: var(--ink-1); }
+.trk-loop.on { color: var(--accent); }

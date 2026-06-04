@@ -61,8 +61,10 @@ export interface Track {
   name: string;
   type: 'drums' | 'synth';
   volume: number;
+  loop: boolean;           // live-performance loop: the track loops continuously
+  length: number;          // this track's pattern length, in steps (polymeter)
   uses: TrackInstrument[];
-  clips: Clip[];           // song arrangement: where this track's pattern plays
+  clips: Clip[];           // song arrangement: where this track's pattern plays (when loop is off, in Song mode)
   fx: FxInsert[];          // track-level FX (level 2)
   automation: AutomationLane[];
 }
@@ -114,7 +116,7 @@ export function defaultProject(): Project {
     masterFx: [],
     tracks: [
       {
-        id: 'drums', name: 'Drums', type: 'drums', volume: 0.8, fx: [], automation: [], clips: [loopClip()],
+        id: 'drums', name: 'Drums', type: 'drums', volume: 0.8, loop: true, length: total, fx: [], automation: [], clips: [loopClip()],
         uses: [
           { id: uid('use'), poolId: 'kick', fx: [], steps: stepArr(total, [0, 4, 8, 12]) },
           { id: uid('use'), poolId: 'snare', fx: [], steps: stepArr(total, [4, 12]) },
@@ -122,7 +124,7 @@ export function defaultProject(): Project {
         ],
       },
       {
-        id: 'synth', name: 'Synth', type: 'synth', volume: 0.8, fx: [fxInsert('lowpass')], automation: [], clips: [loopClip()],
+        id: 'synth', name: 'Synth', type: 'synth', volume: 0.8, loop: true, length: total, fx: [fxInsert('lowpass')], automation: [], clips: [loopClip()],
         uses: [
           {
             id: uid('use'), poolId: 'saw', fx: [], voices: 6,
@@ -151,4 +153,17 @@ export function trackActiveAt(clips: Clip[], slot: number, songSlots: number): b
     if (slot < end) return true;
   }
   return false;
+}
+
+/** Does a track play at song-slot `slot`? A looping track always plays (live);
+ *  otherwise its clips decide. */
+export function trackPlaysAt(track: Track, slot: number, songSlots: number): boolean {
+  return track.loop || trackActiveAt(track.clips, slot, songSlots);
+}
+
+/** Seamless loop length for Pattern mode = LCM of all track lengths. */
+export function patternLoopLength(tracks: Track[]): number {
+  const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+  const lcm = (a: number, b: number) => (a && b ? (a / gcd(a, b)) * b : a || b);
+  return Math.max(1, tracks.map((t) => Math.max(1, t.length)).reduce(lcm, 1));
 }
