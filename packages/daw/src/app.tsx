@@ -5,7 +5,7 @@ import { Transport } from './audio/Transport';
 import { Scheduler } from './audio/Scheduler';
 import { InstrumentHost } from './audio/InstrumentHost';
 import { VoicePool } from './audio/VoicePool';
-import { Mixer, type ResolvedFx } from './audio/Mixer';
+import { Mixer, FxChain, type ResolvedFx } from './audio/Mixer';
 import {
   defaultProject, newNoteId, uid, fxInsert, blankSteps, patternLoopLength,
   type Project, type Track, type PoolItem, type FxInsert,
@@ -48,6 +48,7 @@ export function App() {
   const liveSynthsRef = useRef<Map<string, VoicePool>>(new Map());      // live synths, keyed by poolId
   const liveDrumsRef = useRef<Map<string, InstrumentHost>>(new Map());  // live drums, keyed by poolId
   const liveGainRef = useRef<Map<string, GainNode>>(new Map());         // live per-instrument gain, keyed by poolId
+  const liveFxRef = useRef<Map<string, FxChain>>(new Map());            // live per-instrument FX chain, keyed by poolId
   const mixerRef = useRef<Mixer | null>(null);
   const projectRef = useRef(project); projectRef.current = project;
   const folderRef = useRef<FileSystemDirectoryHandle | null>(null); folderRef.current = folder;
@@ -145,8 +146,9 @@ export function App() {
       await t.chain.setChain(resolveFx(track.fx));
       for (const use of track.uses) {
         const dest = mixer.use(use.id, track.id);
-        await mixer.useChain(use.id)!.setChain(resolveFx(use.fx));
         const pool = proj.pool.find((p) => p.id === use.poolId);
+        await mixer.usePoolChain(use.id)!.setChain(resolveFx(pool?.fx ?? [])); // instrument-general FX
+        await mixer.useChain(use.id)!.setChain(resolveFx(use.fx));             // instrument-in-track FX
         if (pool) await buildUse(use.id, pool, dest, use.voices);
       }
     }
@@ -230,6 +232,7 @@ export function App() {
     for (const p of liveSynthsRef.current.values()) p.dispose(); liveSynthsRef.current.clear();
     for (const h of liveDrumsRef.current.values()) h.dispose(); liveDrumsRef.current.clear();
     liveGainRef.current.clear();
+    for (const c of liveFxRef.current.values()) c.dispose(); liveFxRef.current.clear();
     try { void ctxRef.current?.close(); } catch { /* noop */ }
     ctxRef.current = null; mixerRef.current = null; schedulerRef.current = null; transportRef.current = null;
     setIsPlaying(false); setCurrentStep(-1);
@@ -268,17 +271,22 @@ export function App() {
     if (host) { host.trigger(); window.setTimeout(() => host.release(), 220); }
   }, [ensureAudio, buildAudio]);
 
-  const liveGain = (poolId: string): GainNode => {
+  // Live path: instrument → liveFx (the instrument's general FX) → liveGain → master.
+  // Returns the node the live engine connects to.
+  const liveDest = (poolId: string): AudioNode => {
     const ctx = ctxRef.current!; const mixer = mixerRef.current!;
     let g = liveGainRef.current.get(poolId);
     if (!g) { g = ctx.createGain(); g.gain.value = projectRef.current.pool.find((p) => p.id === poolId)?.gain ?? 1; g.connect(mixer.masterSum); liveGainRef.current.set(poolId, g); }
-    return g;
+    let fx = liveFxRef.current.get(poolId);
+    if (!fx) { fx = new FxChain(ctx); fx.output.connect(g); liveFxRef.current.set(poolId, fx); }
+    return fx.input;
   };
   const buildLive = useCallback(async (poolId: string) => {
     await ensureAudio(); await ctxRef.current?.resume();
     const ctx = ctxRef.current!;
     const pool = projectRef.current.pool.find((p) => p.id === poolId); if (!pool) return;
-    const dest = liveGain(poolId);
+    const dest = liveDest(poolId);
+    await liveFxRef.current.get(poolId)!.setChain(resolveFx(pool.fx ?? []));
     if (pool.kind === 'synth') {
       if (!liveSynthsRef.current.has(poolId)) liveSynthsRef.current.set(poolId, await VoicePool.create(() => new InstrumentHost(ctx, pool.flow, dest), 8));
     } else if (!liveDrumsRef.current.has(poolId)) {
@@ -312,6 +320,26 @@ export function App() {
   const mapPool = (poolId: string, fn: (p: PoolItem) => PoolItem) =>
     setProject((p) => ({ ...p, pool: p.pool.map((pi) => (pi.id === poolId ? fn(pi) : pi)) }));
   const usesOfPool = (poolId: string) => projectRef.current.tracks.flatMap((t) => t.uses).filter((u) => u.poolId === poolId);
+  const poolById = (poolId: string) => projectRef.current.pool.find((p) => p.id === poolId);
+
+  // Instrument-general FX (added from the live page): heard live + in every track.
+  const rebuildPoolFx = (poolId: string, fx: FxInsert[]) => {
+    for (const u of usesOfPool(poolId)) void mixerRef.current?.usePoolChain(u.id)?.setChain(resolveFx(fx));
+    void liveFxRef.current.get(poolId)?.setChain(resolveFx(fx));
+  };
+  const onPoolFxAdd = (poolId: string, fxId: string) => { const next = [...(poolById(poolId)?.fx ?? []), fxInsert(fxId)]; mapPool(poolId, (pi) => ({ ...pi, fx: next })); rebuildPoolFx(poolId, next); };
+  const onPoolFxRemove = (poolId: string, i: number) => { const next = (poolById(poolId)?.fx ?? []).filter((_, j) => j !== i); mapPool(poolId, (pi) => ({ ...pi, fx: next })); rebuildPoolFx(poolId, next); };
+  const onPoolFxEdit = (poolId: string, i: number) => {
+    const insert = poolById(poolId)?.fx?.[i]; if (!insert) return;
+    editFxFlow(insert, (f) => { const next = (poolById(poolId)?.fx ?? []).map((x, j) => (j === i ? { ...x, flow: f } : x)); mapPool(poolId, (pi) => ({ ...pi, fx: next })); rebuildPoolFx(poolId, next); });
+  };
+  const onPoolFxKnob = (poolId: string, i: number, nodeId: string, param: string, value: number) => {
+    for (const u of usesOfPool(poolId)) mixerRef.current?.usePoolChain(u.id)?.setParam(i, nodeId, param, value);
+    liveFxRef.current.get(poolId)?.setParam(i, nodeId, param, value);
+    const insert = poolById(poolId)?.fx?.[i]; const base = insert?.flow ?? (insert && findEntry(insert.fxId)?.flow); if (!insert || !base) return;
+    const flow = setFlowParam(base, nodeId, param, value);
+    mapPool(poolId, (pi) => ({ ...pi, fx: (pi.fx ?? []).map((x, j) => (j === i ? { ...x, flow } : x)) }));
+  };
 
   // Tweak an exposed knob: drive every live + per-track engine of this instrument,
   // and update the flow default so it sticks (and saves on Edit-in-Synflow).
@@ -376,6 +404,7 @@ export function App() {
     liveDrumsRef.current.get(poolId)?.dispose(); liveDrumsRef.current.delete(poolId);
     try { liveGainRef.current.get(poolId)?.disconnect(); } catch { /* noop */ }
     liveGainRef.current.delete(poolId);
+    liveFxRef.current.get(poolId)?.dispose(); liveFxRef.current.delete(poolId);
     setProject((p) => ({ ...p, pool: p.pool.filter((pi) => pi.id !== poolId), tracks: p.tracks.map((t) => ({ ...t, uses: t.uses.filter((u) => u.poolId !== poolId) })) }));
     if (openItem?.id === poolId) setOpenItem(null);
     if (liveSynth === poolId) setLiveSynth('');
@@ -525,6 +554,9 @@ export function App() {
                   onKnob={(nodeId, param, v) => onInstrumentKnob(pool.id, nodeId, param, v)}
                   onEdit={() => editInstrument(pool.id)} onBack={() => setOpenItem(null)}
                   onNoteOn={(m) => void liveNoteOn(pool.id, m)} onNoteOff={(m) => liveNoteOff(pool.id, m)} onHit={() => void liveDrumDown(pool.id)}
+                  fx={pool.fx ?? []} effects={effects}
+                  onFxAdd={(fxId) => onPoolFxAdd(pool.id, fxId)} onFxRemove={(i) => onPoolFxRemove(pool.id, i)}
+                  onFxEdit={(i) => onPoolFxEdit(pool.id, i)} onFxKnob={(i, nodeId, param, v) => onPoolFxKnob(pool.id, i, nodeId, param, v)}
                 />
               );
             }

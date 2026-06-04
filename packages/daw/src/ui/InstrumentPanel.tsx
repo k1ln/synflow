@@ -1,9 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Pencil } from 'lucide-react';
 import type { Flow } from '../synflow/instruments';
+import type { FxInsert } from '../model/project';
+import type { LibraryEntry } from '../synflow/library';
 import { isBlackKey, midiName } from '../model/pitch';
 import { flowKnobs, knob01, knobValue } from '../synflow/knobs';
 import { Knob } from './Knob';
+import { FxBar } from './FxBar';
 
 const KEYMAP: Record<string, number> = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12, o: 13, l: 14, p: 15 };
 const VISIBLE = 17;
@@ -20,7 +23,7 @@ const nodeGroupName = (id: string, type?: string) => {
  * / drum pad), tweak every knob exported from Synflow, set its gain, edit the flow.
  * Effects show only their knobs (no live play).
  */
-export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onEdit, onBack, onNoteOn, onNoteOff, onHit }: {
+export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onEdit, onBack, onNoteOn, onNoteOff, onHit, fx, effects, onFxAdd, onFxRemove, onFxEdit, onFxKnob }: {
   name: string;
   kind: 'synth' | 'drum' | 'effect';
   flow: Flow;
@@ -32,6 +35,13 @@ export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onEdit
   onNoteOn?: (midi: number) => void;
   onNoteOff?: (midi: number) => void;
   onHit?: () => void;
+  // instrument-general FX (instruments only)
+  fx?: FxInsert[];
+  effects?: LibraryEntry[];
+  onFxAdd?: (fxId: string) => void;
+  onFxRemove?: (i: number) => void;
+  onFxEdit?: (i: number) => void;
+  onFxKnob?: (i: number, nodeId: string, param: string, value: number) => void;
 }) {
   const knobs = flowKnobs(flow);
   const cat = kind === 'synth' ? 'var(--cat-mod)' : kind === 'drum' ? 'var(--cat-source)' : 'var(--cat-fx)';
@@ -102,6 +112,13 @@ export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onEdit
               <Knob value={Math.min(1, (gain ?? 1) / 1.5)} color="var(--accent)" size={50} label="Gain" readout={`${Math.round((gain ?? 1) * 100)}%`}
                 onChange={(v01) => onGain(v01 * 1.5)} />
             </div>
+          </div>
+        )}
+        {kind !== 'effect' && onFxAdd && (
+          <div className="lp-group">
+            <div className="lp-section-title">Instrument FX</div>
+            <FxBar label="" color="var(--cat-fx)" fx={fx ?? []} effects={effects ?? []}
+              onAdd={onFxAdd} onRemove={(i) => onFxRemove?.(i)} onEdit={(i) => onFxEdit?.(i)} onKnob={onFxKnob} />
           </div>
         )}
 
