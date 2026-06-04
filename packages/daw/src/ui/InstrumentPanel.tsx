@@ -31,7 +31,7 @@ export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onEdit
   onGain?: (v: number) => void;
   onKnob: (nodeId: string, param: string, value: number) => void;
   onEdit: () => void;
-  onBack: () => void;
+  onBack?: () => void;
   onNoteOn?: (midi: number) => void;
   onNoteOff?: (midi: number) => void;
   onHit?: () => void;
@@ -84,7 +84,7 @@ export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onEdit
   return (
     <div className="live-page">
       <div className="lp-head">
-        <button className="lp-back" onClick={onBack} title="Back"><ArrowLeft size={16} /> Back</button>
+        {onBack && <button className="lp-back" onClick={onBack} title="Back"><ArrowLeft size={16} /> Back</button>}
         <span className="inst-dot" style={{ background: cat, boxShadow: `0 0 8px ${cat}` }} />
         <span className="lp-name" style={{ color: cat }}>{name}</span>
         <span className="inst-kind">{kind}</span>
