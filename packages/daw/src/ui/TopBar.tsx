@@ -1,11 +1,10 @@
 import React from 'react';
-import { Play, Pause, Square, Circle, SkipBack, Grid3x3, Music2, Layers, SlidersHorizontal, PanelLeft, Save, FolderOpen, Settings, Piano, Check } from 'lucide-react';
+import { Play, Pause, Square, Circle, SkipBack, Grid3x3, Music2, SlidersHorizontal, PanelLeft, Save, FolderOpen, Settings, Piano, Check } from 'lucide-react';
 
-export type ViewId = 'tracks' | 'song' | 'live' | 'mix';
+export type ViewId = 'tracks' | 'live' | 'mix';
 
 const TABS: [ViewId, string, React.ComponentType<any>][] = [
   ['tracks', 'Tracks', Grid3x3],
-  ['song', 'Song', Layers],
   ['live', 'Live', Piano],
   ['mix', 'Mixer', SlidersHorizontal],
 ];
