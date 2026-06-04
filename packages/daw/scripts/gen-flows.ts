@@ -48,12 +48,27 @@ function exposeKnobs(node: any): any {
   return knobs.length ? { ...node, data: { ...node.data, knobs } } : node;
 }
 
-// Clean left→right signal-flow layout: x = longest path from a source (layer),
-// y stacks nodes within a layer. Readable + stable when opened in the editor.
-// Columns follow the AUDIO signal path only (main-input / destination-input).
-// Modulation edges (envelope → a param like gain/frequency) don't push a node to
-// the right, so sources + their envelopes share the left column and the chain
-// reads osc → gain → master left→right.
+// Approximate RENDERED footprint per node type (these editor nodes vary a lot —
+// an ADSR with its knob grid is ~10× the size of a Gain). Columns/rows are spaced
+// by these so nothing overlaps.
+const SIZE: Record<string, { w: number; h: number }> = {
+  OscillatorFlowNode: { w: 160, h: 260 },
+  AudioWorkletOscillatorFlowNode: { w: 160, h: 260 },
+  ADSRFlowNode: { w: 430, h: 470 },
+  GainFlowNode: { w: 150, h: 170 },
+  BiquadFilterFlowNode: { w: 240, h: 320 },
+  DelayFlowNode: { w: 150, h: 170 },
+  MasterOutFlowNode: { w: 250, h: 180 },
+  DynamicCompressorFlowNode: { w: 260, h: 360 },
+  DistortionFlowNode: { w: 220, h: 220 },
+};
+const sizeOf = (type: string) => SIZE[type] ?? { w: 190, h: 200 };
+
+// Left→right signal-flow layout: columns follow the AUDIO path only (modulation
+// edges like envelope→gain don't push a node right), so sources + their envelopes
+// share the left column and the chain reads osc → gain → master. Column x is set
+// by the widest node in the previous column and rows are stacked by node height,
+// so big nodes (ADSR) never collide with small ones (Gain).
 const AUDIO_IN = new Set(['main-input', 'destination-input']);
 function layout(flow: Flow): Flow {
   const incoming = new Map<string, string[]>();
@@ -72,12 +87,21 @@ function layout(flow: Flow): Flow {
   const byDepth = new Map<number, any[]>();
   // Audio source(s) first in each column so the signal path stays a straight line.
   for (const n of flow.nodes) { const d = depth(n.id); (byDepth.get(d) ?? byDepth.set(d, []).get(d)!).push(n); }
-  const X0 = 100, GX = 340, Y0 = 80, GY = 200;
-  const nodes = flow.nodes.map((n) => {
-    const d = depth(n.id);
-    const row = byDepth.get(d)!.indexOf(n);
-    return exposeKnobs({ ...n, position: { x: X0 + d * GX, y: Y0 + row * GY } });
-  });
+
+  const GAP_X = 90, GAP_Y = 60, X0 = 100, Y0 = 80;
+  const pos = new Map<string, { x: number; y: number }>();
+  let x = X0;
+  for (const d of [...byDepth.keys()].sort((a, b) => a - b)) {
+    let y = Y0, maxW = 0;
+    for (const n of byDepth.get(d)!) {
+      const s = sizeOf(n.type);
+      pos.set(n.id, { x, y });
+      y += s.h + GAP_Y;
+      maxW = Math.max(maxW, s.w);
+    }
+    x += maxW + GAP_X;
+  }
+  const nodes = flow.nodes.map((n) => exposeKnobs({ ...n, position: pos.get(n.id)! }));
   return { nodes, edges: flow.edges };
 }
 
