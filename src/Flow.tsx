@@ -47,8 +47,6 @@ import ImpressumDialog from './components/ImpressumDialog';
 import DatenschutzDialog from './components/DatenschutzDialog';
 import TopBar from './components/TopBar';
 import './sys/exposeFlowSynth';
-import WebRTCInputFlowNode from './nodes/WebRTCInputFlowNode';
-import WebRTCOutputFlowNode from './nodes/WebRTCOutputFlowNode';
 import MiniPlayer from './components/MiniPlayer';
 import AudioExplorer from './components/AudioExplorer';
 import OrchestratorDialog from './nodes/OrchestratorDialog';
@@ -56,28 +54,30 @@ import DocsPlayground from './components/DocsPlayground';
 import { DawEditorBridge, isDawEditMode } from './host/dawEditorBridge';
 import { HostInterfacePanel } from './host/hostInterface';
 import {
-  makeDistortionCurve,
   hexToRgb,
   makeGlow,
   makeEdgeGlowFilter,
   normalizeNodeStylesForTheme,
 } from './utils/styleUtils';
 import { nodeTypes, orderedNodeTypes } from './constants/flowNodeTypes';
+import { nodeDefaults } from './constants/nodeDefaults';
 
 const timeout = Date.now();
 
 const initialNodes = [];
 
-const nodeStyleObj = {
-  padding: "5px",
-  border: "1px solid rgba(80, 95, 130, 0.50)",
-  borderRadius: "7px",
-  textAlign: "center",
-  background: "rgba(18, 19, 36, 0.52)",
-  backdropFilter: "blur(6px)",
-  color: "#eee",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+// ReactFlow takes style *objects* it applies to its own SVG elements, so these
+// can't be CSS classes — hoisted here to keep them out of the JSX.
+const DEFAULT_EDGE_OPTIONS = {
+  // Do not set stroke here so per-edge style.stroke can control color.
+  // Keep consistent thickness and caps globally.
+  style: { strokeWidth: 1.5, strokeLinecap: 'round' as const },
 };
+const CONNECTION_LINE_STYLE = { stroke: '#ffffff', strokeWidth: 1.5 };
+
+// The shared base node look now lives in the `.flow-node` CSS class
+// (nodes/AudioNode.css); nodes that need it in JS import `baseNodeStyle` from
+// ./utils/styleUtils. Per-node default data lives in ./constants/nodeDefaults.
 
 // Style helpers (DARK_NODE_BG, hexToRgb, makeGlow, makeEdgeGlowFilter,
 // normalizeNodeStylesForTheme, makeDistortionCurve) now live in
@@ -1395,352 +1395,23 @@ function Flow() {
     }
     let data: any = { label: `` };
 
-    if (type === "OscillatorFlowNode") {
-      const narrowOscStyleObj = { ...nodeStyleObj, width: "60px" };
-      data = {
-        ...data,
-        frequency: 440,
-        detune: 0,
-        type: "sine",
-        frequencyType: "hz",
-        label: "Oscillator",
-        style: narrowOscStyleObj
-      }
-    }
-    else if (type === "AudioWorkletOscillatorFlowNode") {
-      const narrowOscStyleObj = { ...nodeStyleObj, width: "60px" };
-      data = {
-        ...data,
-        frequency: 440,
-        detune: 0,
-        type: "sine",
-        frequencyType: "hz",
-        label: "AW Oscillator",
-        style: narrowOscStyleObj
-      }
-    }
-    else if (type === "GainFlowNode") {
-      const narrowNodeStyleObj = { ...nodeStyleObj };
-      data = {
-        ...data,
-        gain: 1,
-        style: narrowNodeStyleObj
-      };
-    } else if (type === "DelayFlowNode") {
-      const narrowNodeStyleObj = { ...nodeStyleObj, width: "80px" };
-      data = {
-        ...data,
-        delayTime: 0.5,
-        style: nodeStyleObj
-      };
-    }
-    else if (type === "BiquadFilterFlowNode") {
-      data = {
-        ...data,
-        filterType: "lowpass",
-        frequency: 1000,
-        detune: 0,
-        Q: 0,
-        gain: 0,
-        style: nodeStyleObj
-      };
-    }
-    else if (type === "DynamicCompressorFlowNode") {
-      data = {
-        ...data,
-        threshold: -50,
-        knee: 40,
-        ratio: 12,
-        attack: 0.003,
-        release: 0.25,
-        style: nodeStyleObj
-      };
-    }
-    else if (type === "IIRFilterFlowNode") {
-      data = {
-        ...data,
-        feedforward: [0.5, 0.5],
-        feedback: [1.0, -0.5],
-        label: "IIR Filter",
-        style: nodeStyleObj
-      };
-    }
-    else if (type === "DistortionFlowNode") {
-      data = {
-        ...data,
-        curve: makeDistortionCurve(400),
-        oversample: "none",
-        style: nodeStyleObj
-      };
-    }
-    else if (type === "MasterOutFlowNode") {
-      data = {
-        ...data,
-        style: nodeStyleObj
-      };
-    }
-    else if (type === "AudioWorkletFlowNode") {
-      data = {
-        ...data,
-        processorUrl: "path/to/processor.js",
-        style: nodeStyleObj
-      };
-    }
-    else if (type === "AutomationFlowNode") {
-      // Provide default automation data; style width doubled for editor
-      const autoStyle = { ...nodeStyleObj, width: '440px' };
-      data = {
-        ...data,
-        label: 'Automation',
-        lengthSec: 2,
-        loop: true,
-        // Default points: flat at 100% (y=0.5)
-        points: [{ x: 0, y: 0.5 }, { x: 1, y: 0.5 }],
-        style: autoStyle
-      };
-    }
-    else if (type === "ADSRFlowNode") {
-      data = {
-        ...data,
-        attackTime: 0.1,
-        decayTime: 0.2,
-        sustainLevel: 0.5,
-        releaseTime: 0.3,
-        maxTime: 10,
-        style: nodeStyleObj
-      };
-    }
-    else if (type === "ButtonFlowNode") {
-      data = {
-        ...data,
-        assignedKey: null,
-        retriggerFrequency: 1,
-        isRetriggering: false,
-        isPressed: false,
-        retriggerLength: 0.1,
-      }
-    }
-    else if (type === "MidiButtonFlowNode") {
-      data = {
-        ...data,
-        assignedKey: null,
-        retriggerFrequency: 1,
-        isRetriggering: false,
-        isPressed: false,
-        retriggerLength: 0.1,
-        midiMapping: null,
-        style: nodeStyleObj
-      }
-    }
-    else if (type === "OnOffButtonFlowNode") {
-      const gateStyle = { ...nodeStyleObj, maxHeight: 70 };
-      data = {
-        ...data,
-        label: "Gate",
-        isOn: false,
-        style: gateStyle
-      };
-    }
-    else if (type === "ClockFlowNode") {
-      data = {
-        ...data,
-        bpm: 120,
-        isEmitting: true,
-        eventBus,
-        style: nodeStyleObj
-      }
-    }
-    else if (type === "SpeedDividerFlowNode") {
-      data = {
-        ...data,
-        divider: 1,
-        multiplier: 1,
-        style: nodeStyleObj
-      }
-    }
-    else if (type === "FrequencyFlowNode") {
-      data = {
-        ...data,
-        value: 440,
-        frequency: 440,
-        type: "sine",
-        frequencyType: "hz",
-        style: nodeStyleObj
-      }
-    }
-    else if (type === "ConstantFlowNode") {
-      data = {
-        ...data,
-        value: 1,
-        style: nodeStyleObj
-      }
-    }
-    else if (type === "SwitchFlowNode") {
-      data = {
-        ...data,
-        numOutputs: 2,
-        activeOutput: 1,
-      }
-    }
-    else if (type === "BlockingSwitchFlowNode") {
-      data = {
-        ...data,
-        numOutputs: 2,
-      }
-    }
-    else if (type === "FlowNode") {
-      data = {
-        ...data,
-        label: "Flow",
-        style: nodeStyleObj,
-        db: dbRef.current,
-      }
-    }
-    else if (type === "FunctionFlowNode") {
-      data = {
-        functionCode: "function process(value) {\n  // Modify the value here\n  return value;\n}",
-        value: "",
-        style: { ...nodeStyleObj }
-      }
-    } else if (type === "ScriptSequencerFlowNode") {
-      data = {
-        ...data,
-        label: "ScriptSequencer",
-        script: "// proprietary script — runs one line per clock tick\n// connect a clock to \"clock\" (left), \"reset\" to reset the cursor.\non #0\nramp #1 0..1 1t\narray #2 [0.1, 0.3, 0.5, 0.7] 1t swing pink 0.2\noff #0\nloop",
-        activeLine: 0,
-        outputCount: 3,
-        style: nodeStyleObj
-      };
-    } else if (type === "InputNode") {
-      data = {
-        ...data,
-        index: 0,
-        value: "",
-        style: nodeStyleObj
-      };
-    } else if (type === "OutputNode") {
-      data = {
-        ...data,
-        index: 0,
-        value: "",
-        style: nodeStyleObj
-      };
-      // } else if (type === "SignalRouterFlowNode") {
-      //   data = {
-      //     ...data,
-      //     outputs: 1,
-      //     pendingRoute: 1,
-      //     style: nodeStyleObj
-      //   };
-    } else if (type === "SampleFlowNode") {
-      // Use a broader width for SampleFlowNode
-      const wideNodeStyleObj = { ...nodeStyleObj, width: "400px" };
-      data = {
-        ...data,
-        label: "string",
-        audioUrl: "",
-        selections: [],
-        style: wideNodeStyleObj
-      };
-    } else if (type === "MouseTriggerButton") {
-      data = {
-        ...data,
-        label: "Mouse Trigger",
-        style: nodeStyleObj
-      }
-    } else if (type === "WebRTCInputFlowNode") {
-      const wideNodeStyleObj = { ...nodeStyleObj, width: "240px" };
-      data = {
-        ...data,
-        label: "WebRTC In",
-        serverUrl: "http://localhost:8787",
-        sessionId: undefined,
-        connectionState: 'idle',
-        style: wideNodeStyleObj,
-      };
-    } else if (type === "WebRTCOutputFlowNode") {
-      const wideNodeStyleObj = { ...nodeStyleObj, width: "240px" };
-      data = {
-        ...data,
-        label: "WebRTC Out",
-        serverUrl: "http://localhost:8787",
-        sessionId: undefined,
-        connectionState: 'idle',
-        style: wideNodeStyleObj,
-      };
-    } else if (type === "AnalyzerNodeGPT") {
-      const analyzerStyle = {
-        ...nodeStyleObj,
-        width: "320px",
-        borderRadius: "14px",
-        background: "#05060d",
-        border: "1px solid #1d2233",
-        boxShadow: "0 14px 34px rgba(5,7,16,0.6)",
-      };
-      data = {
-        ...data,
-        label: "Analyzer",
-        mode: "bars",
-        colorPreset: "aurora",
-        fftSize: 4096,
-        minDecibels: -96,
-        maxDecibels: -10,
-        smoothingTimeConstant: 0.8,
-        style: analyzerStyle,
-      };
-    } else if (type === "OscilloscopeFlowNode") {
-      const oscilloscopeStyle = {
-        ...nodeStyleObj,
-        width: "420px",
-      };
-      data = {
-        ...data,
-        label: "Scope",
-        fftSize: 4096,
-        lineWidth: 2,
-        triggerLevel: 0.0,
-        timeScale: 1.0,
-        glowIntensity: 8,
-        zoom: 1.0,
-        panOffset: 0.0,
-        style: oscilloscopeStyle,
-      };
-    } else if (type === "MidiFileFlowNode") {
-      const midiFileStyle = {
-        ...nodeStyleObj,
-        width: "250px",
-      };
-      data = {
-        ...data,
-        label: "MIDI File",
-        midiFile: null,
-        currentBar: 0,
-        currentTick: 0,
-        isPlaying: false,
-        loop: true,
-        style: midiFileStyle,
-      };
-    } else if (type === "UnisonBeginFlowNode") {
-      data = {
-        ...data,
-        label: "Unison Begin",
-        style: { ...nodeStyleObj, glowColor: '#a78bfa' },
-      };
-    } else if (type === "UnisonEndFlowNode") {
-      data = {
-        ...data,
-        label: "Unison End",
-        amount: 4,
-        detuneSpread: 20,
-        volumeSpread: 15,
-        avgDelayMs: 10,
-        maxDelayMs: 50,
-        style: { ...nodeStyleObj, glowColor: '#a78bfa' },
-      };
+    const def = nodeDefaults[type];
+    if (def) {
+      // structuredClone so each new node gets its own copy of nested
+      // arrays/objects (points, coefficients, selections, …) instead of
+      // sharing the registry's default object references.
+      data = { ...data, ...structuredClone(def) };
     }
 
     // Determine style width/height for centering.
-    const styleObj = (copy && copiedNode?.data?.style) ? copiedNode.data.style : (data.style || { ...nodeStyleObj, glowColor: '#00ff88', boxShadow: makeGlow('#00ff88', 'normal') });
+    // Base look now lives in the `.flow-node` CSS class; data.style only carries
+    // dynamic bits (width, glow color, category accent). New nodes get a glow
+    // color + matching shadow here unless they already specified one.
+    const styleObj: any = (copy && copiedNode?.data?.style)
+      ? copiedNode.data.style
+      : { ...(data.style || {}) };
+    if (!styleObj.glowColor) styleObj.glowColor = '#00ff88';
+    if (!styleObj.boxShadow) styleObj.boxShadow = makeGlow(styleObj.glowColor, 'normal');
     // Inject category accent top border for new (non-copy) nodes
     if (!copy) {
       const catColor = NODE_CATEGORY_COLORS[type];
@@ -2150,61 +1821,297 @@ function Flow() {
     nodes,
   ]);
 
+  // ─── JSX event handlers (kept out of the template below) ────────────────────
+  const handleRootContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setNodePaletteOpen(prev => !prev);
+  };
+
+  // TopBar
+  const handleNewFlow = () => {
+    setSaveDialogName('');
+    setSaveDialogFolder('');
+    setSaveDialogIsNewFlow(true);
+    setSaveDialogOpen(true);
+  };
+  const handleOpenFlow = () => { void refreshFlowList(); setOpenDialogFlows(true); };
+  const handleTogglePalette = () => setNodePaletteOpen(prev => !prev);
+  const handleImportFlowJsonClick = () => document.getElementById('import-flow-json-input')?.click();
+  const handleImportAllJsonClick = () => document.getElementById('import-all-json-input')?.click();
+  const handleInitAudio = () => { if (!isPlaying) { init(); } };
+  const handleLatencyHintChange = (hint: any) => {
+    latencyHintRef.current = hint;
+    setLatencyHint(hint);
+    try { localStorage.setItem('audioLatencyHint', hint); } catch { /* noop */ }
+    // latencyHint is fixed at context creation — re-init to apply it live.
+    if (isPlaying) { init(); }
+  };
+  const handleStopAudio = () => {
+    try {
+      if (managerRef.current) {
+        try { managerRef.current.dispose(); } catch (e) { console.warn('[TopBar] manager dispose failed', e); }
+        managerRef.current = undefined;
+      }
+      audioGraphManagerRef.current = null;
+      if (ctx !== undefined) {
+        try { ctx.close().catch(() => {}); } catch (e) { console.warn('[TopBar] context close failed', e); }
+        (ctx as any) = undefined;
+      }
+    } finally {
+      setIsPlaying(false);
+      try { EventBus.getInstance().emit('audio.stopped', {}); } catch { /* noop */ }
+    }
+  };
+  const handleNodeGlowColorChange = (col: string) => {
+    setNodeGlowColor(col);
+    if (!selectedNode) return;
+    setNodes((nds) => nds.map((n) => {
+      if (n.id !== selectedNode.id) return n;
+      const s: any = { ...(n.data?.style || {}) };
+      s.glowColor = col;
+      s.boxShadow = makeGlow(col, 'strong');
+      return { ...n, data: { ...n.data, style: s } } as any;
+    }));
+  };
+  const handleNodeBgColorChange = (col: string) => {
+    setNodeBgColor(col);
+    if (!selectedNode) return;
+    setNodes((nds) => nds.map((n) => {
+      if (n.id !== selectedNode.id) return n;
+      const s: any = { ...(n.data?.style || {}) };
+      s.background = col;
+      return { ...n, data: { ...n.data, style: s } } as any;
+    }));
+  };
+  const handleEdgeColorChange = (col: string) => {
+    setEdgeColor(col);
+    if (!selectedEdge) return;
+    setEdges((eds) => eds.map((ed) => ed.id === selectedEdge ? ({
+      ...ed,
+      style: { ...(ed.style || {}), stroke: col, strokeWidth: 2, filter: makeEdgeGlowFilter(col, 'strong') }
+    }) : ed));
+  };
+  const handleOpenDocs = () => setShowDocsPlayground(true);
+  const handleCloseDocs = () => setShowDocsPlayground(false);
+  const handleOpenImpressum = () => setImpressumOpen(true);
+  const handleOpenDatenschutz = () => setDatenschutzOpen(true);
+  const handleDeleteCurrentFlow = async () => {
+    try {
+      const dbKey = makeFlowDbKey(flowNameInput, currentFlowFolder || '');
+      await db.delete(dbKey);
+    } catch (e) { console.warn('Delete flow failed', e); }
+    setFlowItems(items => items.filter(i => i !== flowNameInput));
+    setLocalFlowMeta(meta => meta.filter(m => m.name !== flowNameInput));
+    setFlowNameInput('');
+    clearCurrentFlowPointer();
+    setNodes([]); setEdges([]);
+  };
+
+  // AudioExplorer
+  const handleCloseRecordings = () => setRecordingsPanelOpen(false);
+  const handlePlayAudio = (item: any) => {
+    try {
+      const raw = item.url || item.base64 || item.data || item.content;
+      if (!raw) return;
+      const isObjectOrHttp = /^blob:|^https?:/.test(raw);
+      const isData = raw.startsWith('data:');
+      const finalSrc = isData || isObjectOrHttp ? raw : ('data:audio/wav;base64,' + raw);
+      setMiniPlayerSrc(finalSrc);
+      setMiniPlayerTitle(item.name || 'Recording');
+      setMiniPlayerOpen(true);
+    } catch (e) {
+      console.error('Failed to play audio:', e);
+    }
+  };
+  const handleDownloadAudio = (item: any) => {
+    try {
+      const raw = item.url || item.base64 || item.data || item.content;
+      if (!raw) return;
+      const isObjectOrHttp = /^blob:|^https?:/.test(raw);
+      const isData = raw.startsWith('data:');
+      const href = isData || isObjectOrHttp ? raw : ('data:audio/wav;base64,' + raw);
+      const fname = item.name ? (item.name.endsWith('.wav') ? item.name : item.name + '.wav') : 'audio.wav';
+      const a = document.createElement('a');
+      a.href = href;
+      a.download = fname;
+      a.click();
+    } catch (e) {
+      console.error('Failed to download audio:', e);
+    }
+  };
+  const handleDeleteAudio = async (item: any) => {
+    if (fsRootHandle) {
+      try {
+        // Determine which folder the item belongs to
+        const folderName = item._folder || 'recording';
+        const dir = await fsRootHandle.getDirectoryHandle(folderName);
+        // Extract just the filename from the ID
+        const fname = item.name || (item.id.split('-fs-')[0] + '.wav');
+        await (dir as any).removeEntry(fname).catch(() => { });
+        void refreshRecordings();
+      } catch (e) {
+        console.warn('[FS delete] failed', e);
+      }
+    } else {
+      try {
+        await recordingsDbRef.current.delete(item.id);
+        void refreshRecordings();
+      } catch (e) {
+        console.warn('[IDB delete] failed', e);
+      }
+    }
+    setUploadedAudio(prev => prev.filter(x => x.id !== item.id));
+  };
+
+  // Node palette
+  const handlePaletteSelect = (t: string) => addNode(t);
+
+  // FS folder prompt
+  const handleSkipFsPrompt = () => setShowFsFolderPrompt(false);
+
+  // Save dialog
+  const handleSaveDialogNameChange = (e: React.ChangeEvent<HTMLInputElement>) => setSaveDialogName(e.target.value);
+  const handleSaveDialogFolderChange = (e: React.ChangeEvent<HTMLInputElement>) => setSaveDialogFolder(e.target.value);
+  const handleCloseSaveDialog = () => setSaveDialogOpen(false);
+
+  // Explorer dialog
+  const explorerMyFlows = serverFlows.map(f => ({ ...f, _source: 'mine' as const }));
+  const explorerPublicFlows = publicFlows.map(f => ({ ...f, _source: 'public' as const }));
+  const handleOpenLocalFlow = (name: string, folder_path?: string) => { void openFlowFromIndexedDB(name, folder_path); setOpenDialogFlows(false); };
+  const handleCloseOpenDialog = () => setOpenDialogFlows(false);
+  const handleDeleteLocalFlow = async (name: string, folder_path?: string) => {
+    try {
+      const dbKey = makeFlowDbKey(name, folder_path || '');
+      await db.delete(dbKey);
+    } catch (e) { console.warn('Local delete failed', e); }
+    setFlowItems(items => items.filter(i => i !== name));
+    setLocalFlowMeta(meta => meta.filter(m => m.name !== name));
+    if (flowNameInput === name) {
+      setFlowNameInput('');
+      clearCurrentFlowPointer();
+      setNodes([]); setEdges([]);
+    }
+  };
+  const handleCreateFolder = (fullPath?: string) => {
+    const pathStr = (fullPath || '').trim();
+    if (!pathStr) return;
+    setFolderPaths(prev => prev.includes(pathStr) ? prev : [...prev, pathStr].sort());
+  };
+  const handleRenameFolder = (oldP: string, newP: string) => {
+    setFolderPaths(prev => prev.map(p => p === oldP || p.startsWith(oldP + '/') ? newP + p.slice(oldP.length) : p));
+    void (async () => {
+      const all = await db.get('*');
+      for (const rec of all) {
+        const fp = rec.folder_path || rec.value?.folder_path || '';
+        if (fp.startsWith(oldP)) {
+          const newFp = newP + fp.slice(oldP.length);
+          const flowName = (rec.id || '').split('/').pop() || rec.id;
+          const oldKey = makeFlowDbKey(flowName, fp);
+          const newKey = makeFlowDbKey(flowName, newFp);
+          try { await db.delete(oldKey); } catch {}
+          await db.put(newKey, { nodes: rec.nodes || rec.value?.nodes || [], edges: rec.edges || rec.value?.edges || [], folder_path: newFp, updated_at: rec.updated_at });
+        }
+      }
+      const refreshed = await db.get('*');
+      setLocalFlowMeta(refreshed.map((f: any) => ({ id: f.id, name: (f.id || '').split('/').pop() || f.id, folder_path: f.folder_path || f.value?.folder_path || '', updated_at: f.updated_at, _source: 'local' })));
+    })();
+  };
+  const handleMoveFlow = (flow: any, targetFolder: string) => {
+    void (async () => {
+      const oldKey = makeFlowDbKey(flow.name, flow.folder_path || '');
+      const recs = await db.get(oldKey);
+      if (recs && recs[0]) {
+        const r = recs[0];
+        const newKey = makeFlowDbKey(flow.name, targetFolder);
+        try { await db.delete(oldKey); } catch {}
+        await db.put(newKey, { nodes: r.nodes || r.value?.nodes || [], edges: r.edges || r.value?.edges || [], folder_path: targetFolder, updated_at: r.updated_at });
+        if (flowNameInput === flow.name) {
+          setCurrentFlowFolder(targetFolder);
+          writeCurrentFlowFolder(targetFolder);
+        }
+        const refreshed = await db.get('*');
+        setLocalFlowMeta(refreshed.map((f: any) => ({ id: f.id, name: (f.id || '').split('/').pop() || f.id, folder_path: f.folder_path || f.value?.folder_path || '', updated_at: f.updated_at, _source: 'local' })));
+        const folderSet = new Set<string>();
+        refreshed.forEach((f: any) => { const fp = f.folder_path || f.value?.folder_path; if (fp) { const parts = fp.split('/').filter(Boolean); let acc = ''; for (const p of parts) { acc = acc ? acc + '/' + p : p; folderSet.add(acc); } } });
+        setFolderPaths(Array.from(folderSet.values()).sort());
+      }
+    })();
+  };
+  const handleRenameFlow = (flow: any, newName: string) => {
+    void (async () => {
+      // Handle local flows
+      if (flow._source === 'local') {
+        const oldKey = makeFlowDbKey(flow.name, flow.folder_path || '');
+        const recs = await db.get(oldKey);
+        if (recs && recs[0]) {
+          try { await db.delete(oldKey); } catch { }
+
+          // If this is the currently open flow, save the editor's current state
+          const isCurrentFlow = flowNameInput === flow.name;
+          const nodesToSave = isCurrentFlow ? nodes : (recs[0].nodes || recs[0].value?.nodes || []);
+          const edgesToSave = isCurrentFlow ? edges : (recs[0].edges || recs[0].value?.edges || []);
+          const updated_at = new Date().toISOString();
+          const folderPath = recs[0].folder_path || recs[0].value?.folder_path || '';
+          const newKey = makeFlowDbKey(newName, folderPath);
+
+          await db.put(newKey, { nodes: nodesToSave, edges: edgesToSave, folder_path: folderPath, updated_at });
+          setFlowItems(prev => prev.filter(n => n !== flow.name).concat(newName));
+          setLocalFlowMeta(meta => meta.filter(m => m.name !== flow.name).concat({ id: newName, name: newName, folder_path: flow.folder_path || '', updated_at, _source: 'local' }));
+          if (isCurrentFlow) { setFlowNameInput(newName); writeCurrentFlowName(newName); }
+
+          // Also rename on disk if fs handle is present
+          if (fsRootHandle) {
+            try {
+              await deleteFlowFromDisk(fsRootHandle, flow.name, flow.folder_path);
+              const flowData: FlowData = {
+                name: newName,
+                nodes: nodesToSave,
+                edges: edgesToSave,
+                folder_path: flow.folder_path,
+                updated_at
+              };
+              await saveFlowToDisk(fsRootHandle, flowData);
+            } catch (e) { console.warn('Disk rename failed during local rename', e); }
+          }
+        }
+      }
+      // Handle remote flows
+    })();
+  };
+
+  // Mini player + orchestrator
+  const handleCloseMiniPlayer = () => setMiniPlayerOpen(false);
+  const handleCloseOrchestrator = () => setOrchestratorEditorOpen(false);
+
   return (
-    <div style={{ display: 'flex', height: "100vh", width: "100%", paddingTop: dawEdit ? 0 : 44, background: '#07070d' }} onContextMenu={(e) => { e.preventDefault(); setNodePaletteOpen(prev => !prev); }}>
+    <div className={`flow-root${dawEdit ? ' flow-root--daw' : ''}`} onContextMenu={handleRootContextMenu}>
       {/* DAW bridge: when opened by Mothscilla (#mothscilla), load the incoming flow + show "Send to Mothscilla". No-op otherwise. */}
       <DawEditorBridge nodes={nodes} edges={edges} setNodes={setNodes as any} setEdges={setEdges as any} />
       {/* Host interface editor (edit mode only): expose audio I/O, trigger, pitch + knobs to Mothscilla. */}
       <HostInterfacePanel nodes={nodes} setNodes={setNodes as any} active={dawEdit} />
       {/* Flow container */}
-      <div style={{ flex: 1, display: orchestratorEditorOpen ? 'none' : 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div className={`flow-canvas-col${orchestratorEditorOpen ? ' flow-canvas-col--hidden' : ''}`}>
       {/* Inline controls: color pickers for selected node and edge */}
       {/* Color pickers moved into TopBar */}
       {/* Icon Top Bar: left shows open/tools, right shows save/publish/auth/sync. Hidden in Mothscilla edit mode. */}
       {!dawEdit && <TopBar
-        onNewFlow={() => {
-          setSaveDialogName('');
-          setSaveDialogFolder('');
-          setSaveDialogIsNewFlow(true);
-          setSaveDialogOpen(true);
-        }}
-        onOpenFlow={() => { void refreshFlowList(); setOpenDialogFlows(true); }}
-        onTogglePalette={() => setNodePaletteOpen(prev => !prev)}
+        onNewFlow={handleNewFlow}
+        onOpenFlow={handleOpenFlow}
+        onTogglePalette={handleTogglePalette}
         onSaveFlow={triggerSave}
         onExportFlowJson={exportFlowAsJSON}
         onExportAllJson={exportAllAsJSON}
-        onImportFlowJsonClick={() => document.getElementById('import-flow-json-input')?.click()}
-        onImportAllJsonClick={() => document.getElementById('import-all-json-input')?.click()}
-        onInitAudio={() => { if (!isPlaying) { init(); } }}
+        onImportFlowJsonClick={handleImportFlowJsonClick}
+        onImportAllJsonClick={handleImportAllJsonClick}
+        onInitAudio={handleInitAudio}
         latencyHint={latencyHint}
-        onLatencyHintChange={(hint) => {
-          latencyHintRef.current = hint;
-          setLatencyHint(hint);
-          try { localStorage.setItem('audioLatencyHint', hint); } catch { /* noop */ }
-          // latencyHint is fixed at context creation — re-init to apply it live.
-          if (isPlaying) { init(); }
-        }}
-        onStopAudio={() => {
-          try {
-            if (managerRef.current) {
-              try { managerRef.current.dispose(); } catch (e) { console.warn('[TopBar] manager dispose failed', e); }
-              managerRef.current = undefined;
-            }
-            audioGraphManagerRef.current = null;
-            if (ctx !== undefined) {
-              try { ctx.close().catch(() => {}); } catch (e) { console.warn('[TopBar] context close failed', e); }
-              (ctx as any) = undefined;
-            }
-          } finally {
-            setIsPlaying(false);
-            try { EventBus.getInstance().emit('audio.stopped', {}); } catch { /* noop */ }
-          }
-        }}
+        onLatencyHintChange={handleLatencyHintChange}
+        onStopAudio={handleStopAudio}
         isPlaying={isPlaying}
         isLoading={isFlowLoading}
         statusLabel={lastSavedAt ? new Date(lastSavedAt).toLocaleTimeString() : 'Not Saved'}
-        onOpenImpressum={() => setImpressumOpen(true)}
-        onOpenDatenschutz={() => setDatenschutzOpen(true)}
+        onOpenImpressum={handleOpenImpressum}
+        onOpenDatenschutz={handleOpenDatenschutz}
         currentItemType={flowNameInput ? 'flow' : undefined}
         currentItemName={flowNameInput || ''}
         selectedNodeType={selectedNodeType || undefined}
@@ -2213,356 +2120,114 @@ function Flow() {
         nodeBgColor={selectedNode ? nodeBgColor : undefined}
         // nodeFontColor removed from TopBar
         edgeColor={selectedEdge ? edgeColor : undefined}
-        onNodeGlowColorChange={(col) => {
-          setNodeGlowColor(col);
-          if (!selectedNode) return;
-          setNodes((nds) => nds.map((n) => {
-            if (n.id !== selectedNode.id) return n;
-            const s: any = { ...(n.data?.style || {}) };
-            s.glowColor = col;
-            s.boxShadow = makeGlow(col, 'strong');
-            return { ...n, data: { ...n.data, style: s } } as any;
-          }));
-        }}
-        onNodeBgColorChange={(col) => {
-          setNodeBgColor(col);
-          if (!selectedNode) return;
-          setNodes((nds) => nds.map((n) => {
-            if (n.id !== selectedNode.id) return n;
-            const s: any = { ...(n.data?.style || {}) };
-            s.background = col;
-            return { ...n, data: { ...n.data, style: s } } as any;
-          }));
-        }}
+        onNodeGlowColorChange={handleNodeGlowColorChange}
+        onNodeBgColorChange={handleNodeBgColorChange}
         // Font color change disabled
-        onEdgeColorChange={(col) => {
-          setEdgeColor(col);
-          if (!selectedEdge) return;
-          setEdges((eds) => eds.map((ed) => ed.id === selectedEdge ? ({
-            ...ed,
-            style: { ...(ed.style || {}), stroke: col, strokeWidth: 2, filter: makeEdgeGlowFilter(col, 'strong') }
-          }) : ed));
-        }}
+        onEdgeColorChange={handleEdgeColorChange}
         // Integrated Auth Panel props
         audioFolderName={fsRootHandle?.name}
         audioFolderMissing={!fsRootHandle}
         onSelectAudioFolder={chooseFsFolder}
         onChangeAudioFolder={chooseFsFolder}
-        onOpenDocs={() => setShowDocsPlayground(true)}
-        onDeleteFlow={flowNameInput ? async () => {
-          try {
-            const dbKey = makeFlowDbKey(flowNameInput, currentFlowFolder || '');
-            await db.delete(dbKey);
-          } catch (e) { console.warn('Delete flow failed', e); }
-          setFlowItems(items => items.filter(i => i !== flowNameInput));
-          setLocalFlowMeta(meta => meta.filter(m => m.name !== flowNameInput));
-          setFlowNameInput('');
-          clearCurrentFlowPointer();
-          setNodes([]); setEdges([]);
-        } : undefined}
+        onOpenDocs={handleOpenDocs}
+        onDeleteFlow={flowNameInput ? handleDeleteCurrentFlow : undefined}
       />}
 
       {showDocsPlayground && (
-        <DocsPlayground onClose={() => setShowDocsPlayground(false)} />
+        <DocsPlayground onClose={handleCloseDocs} />
       )}
 
 
       {/* Audio Explorer (File Browser) */}
       <AudioExplorer
         isOpen={recordingsPanelOpen}
-        onClose={() => setRecordingsPanelOpen(false)}
+        onClose={handleCloseRecordings}
         recordings={recordings}
         allFolderAudio={allFolderAudio}
         uploadedAudio={uploadedAudio}
-        onPlay={(item) => {
-          try {
-            const raw = item.url || item.base64 || item.data || item.content;
-            if (!raw) return;
-            const isObjectOrHttp = /^blob:|^https?:/.test(raw);
-            const isData = raw.startsWith('data:');
-            const finalSrc = isData || isObjectOrHttp ? raw : ('data:audio/wav;base64,' + raw);
-            setMiniPlayerSrc(finalSrc);
-            setMiniPlayerTitle(item.name || 'Recording');
-            setMiniPlayerOpen(true);
-          } catch (e) {
-            console.error('Failed to play audio:', e);
-          }
-        }}
-        onDownload={(item) => {
-          try {
-            const raw = item.url || item.base64 || item.data || item.content;
-            if (!raw) return;
-            const isObjectOrHttp = /^blob:|^https?:/.test(raw);
-            const isData = raw.startsWith('data:');
-            const href = isData || isObjectOrHttp ? raw : ('data:audio/wav;base64,' + raw);
-            const fname = item.name ? (item.name.endsWith('.wav') ? item.name : item.name + '.wav') : 'audio.wav';
-            const a = document.createElement('a');
-            a.href = href;
-            a.download = fname;
-            a.click();
-          } catch (e) {
-            console.error('Failed to download audio:', e);
-          }
-        }}
-        onDelete={async (item) => {
-          if (fsRootHandle) {
-            try {
-              // Determine which folder the item belongs to
-              const folderName = item._folder || 'recording';
-              const dir = await fsRootHandle.getDirectoryHandle(folderName);
-              // Extract just the filename from the ID
-              const fname = item.name || (item.id.split('-fs-')[0] + '.wav');
-              await (dir as any).removeEntry(fname).catch(() => { });
-              void refreshRecordings();
-            } catch (e) {
-              console.warn('[FS delete] failed', e);
-            }
-          } else {
-            try {
-              await recordingsDbRef.current.delete(item.id);
-              void refreshRecordings();
-            } catch (e) {
-              console.warn('[IDB delete] failed', e);
-            }
-          }
-          setUploadedAudio(prev => prev.filter(x => x.id !== item.id));
-        }}
+        onPlay={handlePlayAudio}
+        onDownload={handleDownloadAudio}
+        onDelete={handleDeleteAudio}
       />
 
       {/* Legal dialogs */}
       <ImpressumDialog open={impressumOpen} onOpenChange={setImpressumOpen} />
       <DatenschutzDialog open={datenschutzOpen} onOpenChange={setDatenschutzOpen} />
-      <NodePaletteDialog open={nodePaletteOpen} onOpenChange={setNodePaletteOpen} nodeTypes={nodeTypes} onSelect={(t) => addNode(t)} />
+      <NodePaletteDialog open={nodePaletteOpen} onOpenChange={setNodePaletteOpen} nodeTypes={nodeTypes} onSelect={handlePaletteSelect} />
       {/* Audio Folder Selection Prompt (File System Access) */}
       {fsSupported && showFsFolderPrompt && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1600, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#1e1e1e', border: '1px solid #333', borderRadius: 12, padding: '28px 32px', width: 430, maxWidth: '90%', display: 'flex', flexDirection: 'column', gap: 18, fontFamily: 'Inter, sans-serif' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <h2 style={{ margin: 0, fontSize: 20 }}>Select Audio Workspace Folder</h2>
-              <p style={{ margin: 0, fontSize: 13, lineHeight: '18px', opacity: .8 }}>FlowSynth can store recordings and sampling snapshots directly on your disk. Choose a folder and we'll create <code style={{ fontSize: 12 }}>recording/</code> and <code style={{ fontSize: 12 }}>sampling/</code> subdirectories. Existing in-browser recordings will be migrated.</p>
-              <p style={{ margin: 0, fontSize: 12, opacity: .55 }}>You can revoke access anytime via browser site settings.</p>
+        <div className="flow-modal-overlay">
+          <div className="flow-fs-prompt">
+            <div className="flow-fs-prompt__head">
+              <h2 className="flow-fs-prompt__title">Select Audio Workspace Folder</h2>
+              <p className="flow-fs-prompt__text">FlowSynth can store recordings and sampling snapshots directly on your disk. Choose a folder and we'll create <code>recording/</code> and <code>sampling/</code> subdirectories. Existing in-browser recordings will be migrated.</p>
+              <p className="flow-fs-prompt__sub">You can revoke access anytime via browser site settings.</p>
             </div>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <button onClick={chooseFsFolder} style={{ background: '#2d5b1f', border: '1px solid #3a7a28', color: '#fff', padding: '10px 16px', fontSize: 13, borderRadius: 8, cursor: 'pointer', flexGrow: 1 }}>Choose Folder…</button>
-              <button onClick={() => setShowFsFolderPrompt(false)} style={{ background: '#242424', border: '1px solid #444', color: '#ccc', padding: '10px 16px', fontSize: 13, borderRadius: 8, cursor: 'pointer' }}>Skip (use browser storage)</button>
+            <div className="flow-fs-prompt__actions">
+              <button onClick={chooseFsFolder} className="flow-btn-primary">Choose Folder…</button>
+              <button onClick={handleSkipFsPrompt} className="flow-btn-secondary">Skip (use browser storage)</button>
             </div>
-            <div style={{ fontSize: 11, opacity: .5 }}>If you skip now you can still pick a folder later from the Audio Assets panel or a future settings menu.</div>
+            <div className="flow-fs-prompt__note">If you skip now you can still pick a folder later from the Audio Assets panel or a future settings menu.</div>
           </div>
         </div>
       )}
       {/* Save Dialog (moved out of hidden container so it is visible) */}
       <Dialog.Root open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <Dialog.Portal>
-          <Dialog.Overlay style={{
-            background: "rgba(0,0,0,0.5)",
-            position: "fixed",
-            inset: 0,
-            zIndex: 1000
-          }} />
-          <Dialog.Content style={{
-            background: "#222",
-            color: "#fff",
-            borderRadius: "8px",
-            padding: "24px",
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: 1001,
-            minWidth: "320px"
-          }}>
+          <Dialog.Overlay className="flow-dialog-overlay" />
+          <Dialog.Content className="flow-dialog-content">
             <Dialog.Title>{saveDialogIsNewFlow ? 'New Flow' : 'Save Flow'}</Dialog.Title>
             <Dialog.Description>Enter a name and choose a folder:</Dialog.Description>
             <input
               type="text"
               value={saveDialogName}
-              onChange={e => setSaveDialogName(e.target.value)}
+              onChange={handleSaveDialogNameChange}
               placeholder="Flow name"
-              style={{
-                width: "100%",
-                marginTop: "12px",
-                marginBottom: "10px",
-                padding: "8px",
-                borderRadius: "4px",
-                border: "1px solid #444",
-                background: "#333",
-                color: "#fff",
-                boxSizing: "border-box",
-              }}
+              className="flow-dialog-input"
               autoFocus
             />
-            <label style={{ fontSize: 11, color: '#aaa', display: 'block', marginBottom: 4 }}>Folder (leave empty for root)</label>
+            <label className="flow-dialog-label">Folder (leave empty for root)</label>
             <input
               type="text"
               list="save-dialog-folder-list"
               value={saveDialogFolder}
-              onChange={e => setSaveDialogFolder(e.target.value)}
+              onChange={handleSaveDialogFolderChange}
               placeholder="Root"
-              style={{
-                width: "100%",
-                marginBottom: "16px",
-                padding: "8px",
-                borderRadius: "4px",
-                border: "1px solid #444",
-                background: "#333",
-                color: "#fff",
-                boxSizing: "border-box",
-              }}
+              className="flow-dialog-input flow-dialog-input--folder"
             />
             <datalist id="save-dialog-folder-list">
               {folderPaths.map(fp => <option key={fp} value={fp} />)}
             </datalist>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
-              <button
-                onClick={() => setSaveDialogOpen(false)}
-                style={{
-                  padding: "8px 16px",
-                  background: "#555",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer"
-                }}
-              >
+            <div className="flow-dialog-actions">
+              <button onClick={handleCloseSaveDialog} className="flow-btn-cancel">
                 Cancel
               </button>
-              <button
-                onClick={handleSaveDialogConfirm}
-                style={{
-                  padding: "8px 16px",
-                  background: "#28a745",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  transition: "background 0.2s, transform 0.1s",
-                  outline: "none",
-                }}
-                onMouseDown={e => e.currentTarget.style.background = "#218838"}
-                onMouseUp={e => e.currentTarget.style.background = "#28a745"}
-                onMouseLeave={e => e.currentTarget.style.background = "#28a745"}
-                onFocus={e => e.currentTarget.style.boxShadow = "0 0 0 2px #155724"}
-                onBlur={e => e.currentTarget.style.boxShadow = "none"}
-              >
+              <button onClick={handleSaveDialogConfirm} className="flow-btn-save">
                 Save
               </button>
             </div>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
-      <input id="import-flow-json-input" type="file" accept="application/json" onChange={importFlowFromJSON} style={{ display: 'none' }} />
-      <input id="import-all-json-input" type="file" accept="application/json" onChange={importAllFromJSON} style={{ display: 'none' }} />
+      <input id="import-flow-json-input" type="file" accept="application/json" onChange={importFlowFromJSON} className="flow-hidden" />
+      <input id="import-all-json-input" type="file" accept="application/json" onChange={importAllFromJSON} className="flow-hidden" />
       {/* New Explorer Dialog for Flows */}
       <ExplorerDialog
         open={openDialogFlows}
         localFlows={localFlowMeta}
         folders={folderPaths}
-        myFlows={serverFlows.map(f => ({ ...f, _source: 'mine' as const }))}
-        publicFlows={publicFlows.map(f => ({ ...f, _source: 'public' as const }))}
+        myFlows={explorerMyFlows}
+        publicFlows={explorerPublicFlows}
         loading={false}
         usePortal
         fullScreen={false}
-        onOpenLocal={(name, folder_path) => { void openFlowFromIndexedDB(name, folder_path); setOpenDialogFlows(false); }}
-        onClose={() => setOpenDialogFlows(false)}
-        onDeleteLocal={async (name, folder_path) => {
-          try {
-            const dbKey = makeFlowDbKey(name, folder_path || '');
-            await db.delete(dbKey);
-          } catch (e) { console.warn('Local delete failed', e); }
-          setFlowItems(items => items.filter(i => i !== name));
-          setLocalFlowMeta(meta => meta.filter(m => m.name !== name));
-          if (flowNameInput === name) {
-            setFlowNameInput('');
-            clearCurrentFlowPointer();
-            setNodes([]); setEdges([]);
-          }
-        }}
-        onCreateFolder={(fullPath) => {
-          const pathStr = (fullPath || '').trim();
-          if (!pathStr) return;
-          setFolderPaths(prev => prev.includes(pathStr) ? prev : [...prev, pathStr].sort());
-        }}
-        onRenameFolder={(oldP, newP) => {
-          setFolderPaths(prev => prev.map(p => p === oldP || p.startsWith(oldP + '/') ? newP + p.slice(oldP.length) : p));
-          void (async () => {
-            const all = await db.get('*');
-            for (const rec of all) {
-              const fp = rec.folder_path || rec.value?.folder_path || '';
-              if (fp.startsWith(oldP)) {
-                const newFp = newP + fp.slice(oldP.length);
-                const flowName = (rec.id || '').split('/').pop() || rec.id;
-                const oldKey = makeFlowDbKey(flowName, fp);
-                const newKey = makeFlowDbKey(flowName, newFp);
-                try { await db.delete(oldKey); } catch {}
-                await db.put(newKey, { nodes: rec.nodes || rec.value?.nodes || [], edges: rec.edges || rec.value?.edges || [], folder_path: newFp, updated_at: rec.updated_at });
-              }
-            }
-            const refreshed = await db.get('*');
-            setLocalFlowMeta(refreshed.map((f: any) => ({ id: f.id, name: (f.id || '').split('/').pop() || f.id, folder_path: f.folder_path || f.value?.folder_path || '', updated_at: f.updated_at, _source: 'local' })));
-          })();
-        }}
-        onMoveFlow={(flow, targetFolder) => {
-          void (async () => {
-            const oldKey = makeFlowDbKey(flow.name, flow.folder_path || '');
-            const recs = await db.get(oldKey);
-            if (recs && recs[0]) {
-              const r = recs[0];
-              const newKey = makeFlowDbKey(flow.name, targetFolder);
-              try { await db.delete(oldKey); } catch {}
-              await db.put(newKey, { nodes: r.nodes || r.value?.nodes || [], edges: r.edges || r.value?.edges || [], folder_path: targetFolder, updated_at: r.updated_at });
-              if (flowNameInput === flow.name) {
-                setCurrentFlowFolder(targetFolder);
-                writeCurrentFlowFolder(targetFolder);
-              }
-              const refreshed = await db.get('*');
-              setLocalFlowMeta(refreshed.map((f: any) => ({ id: f.id, name: (f.id || '').split('/').pop() || f.id, folder_path: f.folder_path || f.value?.folder_path || '', updated_at: f.updated_at, _source: 'local' })));
-              const folderSet = new Set<string>();
-              refreshed.forEach((f: any) => { const fp = f.folder_path || f.value?.folder_path; if (fp) { const parts = fp.split('/').filter(Boolean); let acc = ''; for (const p of parts) { acc = acc ? acc + '/' + p : p; folderSet.add(acc); } } });
-              setFolderPaths(Array.from(folderSet.values()).sort());
-            }
-          })();
-        }}
-        onRenameFlow={(flow, newName) => {
-          void (async () => {
-            // Handle local flows
-            if (flow._source === 'local') {
-              const oldKey = makeFlowDbKey(flow.name, flow.folder_path || '');
-              const recs = await db.get(oldKey);
-              if (recs && recs[0]) {
-                try { await db.delete(oldKey); } catch { }
-
-                // If this is the currently open flow, save the editor's current state
-                const isCurrentFlow = flowNameInput === flow.name;
-                const nodesToSave = isCurrentFlow ? nodes : (recs[0].nodes || recs[0].value?.nodes || []);
-                const edgesToSave = isCurrentFlow ? edges : (recs[0].edges || recs[0].value?.edges || []);
-                const updated_at = new Date().toISOString();
-                const folderPath = recs[0].folder_path || recs[0].value?.folder_path || '';
-                const newKey = makeFlowDbKey(newName, folderPath);
-
-                await db.put(newKey, { nodes: nodesToSave, edges: edgesToSave, folder_path: folderPath, updated_at });
-                setFlowItems(prev => prev.filter(n => n !== flow.name).concat(newName));
-                setLocalFlowMeta(meta => meta.filter(m => m.name !== flow.name).concat({ id: newName, name: newName, folder_path: flow.folder_path || '', updated_at, _source: 'local' }));
-                if (isCurrentFlow) { setFlowNameInput(newName); writeCurrentFlowName(newName); }
-
-                // Also rename on disk if fs handle is present
-                if (fsRootHandle) {
-                  try {
-                    await deleteFlowFromDisk(fsRootHandle, flow.name, flow.folder_path);
-                    const flowData: FlowData = {
-                      name: newName,
-                      nodes: nodesToSave,
-                      edges: edgesToSave,
-                      folder_path: flow.folder_path,
-                      updated_at
-                    };
-                    await saveFlowToDisk(fsRootHandle, flowData);
-                  } catch (e) { console.warn('Disk rename failed during local rename', e); }
-                }
-              }
-            }
-            // Handle remote flows
-          })();
-        }}
+        onOpenLocal={handleOpenLocalFlow}
+        onClose={handleCloseOpenDialog}
+        onDeleteLocal={handleDeleteLocalFlow}
+        onCreateFolder={handleCreateFolder}
+        onRenameFolder={handleRenameFolder}
+        onMoveFlow={handleMoveFlow}
+        onRenameFlow={handleRenameFlow}
       />
       {/* React Flow Graph */}
 
@@ -2580,12 +2245,8 @@ function Flow() {
         nodeTypes={nodeTypes as any}
         proOptions={{ hideAttribution: true }}
         onlyRenderVisibleElements={false}
-        defaultEdgeOptions={{
-          // Do not set stroke here so per-edge style.stroke can control color.
-          // Keep consistent thickness and caps globally.
-          style: { strokeWidth: 1.5, strokeLinecap: 'round' },
-        }}
-        connectionLineStyle={{ stroke: '#ffffff', strokeWidth: 1.5 }}
+        defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
+        connectionLineStyle={CONNECTION_LINE_STYLE}
         fitView
       >
         <MiniMap />
@@ -2595,30 +2256,11 @@ function Flow() {
 
       {/* Inline Toasts */}
       {toasts.length > 0 && (
-        <div
-          style={{
-            position: 'fixed',
-            right: 16,
-            bottom: 16,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-            zIndex: 99999,
-          }}
-        >
+        <div className="flow-toasts">
           {toasts.map((t) => (
             <div
               key={t.id}
-              style={{
-                background: t.kind === 'error' ? '#2b0f12' : '#0f2b12',
-                border: `1px solid ${t.kind === 'error' ? '#ff5a6b' : '#2aff9a'}`,
-                color: '#fff',
-                padding: '8px 10px',
-                borderRadius: 8,
-                minWidth: 220,
-                boxShadow: '0 6px 20px rgba(0,0,0,0.35)',
-                fontSize: 12,
-              }}
+              className={`flow-toast ${t.kind === 'error' ? 'flow-toast--error' : 'flow-toast--ok'}`}
             >
               {t.message}
             </div>
@@ -2630,18 +2272,18 @@ function Flow() {
         <MiniPlayer
           audioSrc={miniPlayerSrc}
           title={miniPlayerTitle}
-          onClose={() => setMiniPlayerOpen(false)}
+          onClose={handleCloseMiniPlayer}
         />
       )}
       </div>
 
       {/* Orchestrator Editor Panel */}
       {orchestratorEditorOpen && orchestratorEditorData && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%', height: '100%' }}>
+        <div className="flow-orch-col">
           <OrchestratorDialog
             orchestratorData={orchestratorEditorData.orchestratorData}
             nodeId={orchestratorEditorData.nodeId}
-            onClose={() => setOrchestratorEditorOpen(false)}
+            onClose={handleCloseOrchestrator}
             onChange={orchestratorEditorData.onChange}
           />
         </div>

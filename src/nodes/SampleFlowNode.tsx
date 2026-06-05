@@ -16,6 +16,7 @@ import MidiKnob from '../components/MidiKnob';
 import { frequencyToNote } from '../util/pitchDetection';
 import { detectOnsets as detectOnsetsEssentia } from '../util/onsetDetection';
 import './AudioNode.css';
+import { baseNodeStyle } from '../utils/styleUtils';
 
 export type AudioBufferSegment = {
   id: string;
@@ -2915,6 +2916,13 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
       <Handle type='source' position={Position.Right} id='output' className='mainOutput' />
     </div>
   );
+};
+
+export const defaultData = {
+  label: "string",
+  audioUrl: "",
+  selections: [],
+  style: { ...baseNodeStyle, width: "400px" },
 };
 
 export default SampleFlowNode;

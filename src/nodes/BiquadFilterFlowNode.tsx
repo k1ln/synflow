@@ -58,20 +58,10 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
     }
   }, [frequency, detune, Q, gain, label, type, freqMidiMapping, detuneMidiMapping, qMidiMapping, gainMidiMapping]);
   
-  if (data.style === undefined) {
-    data.style = {
-      padding: "0px",
-      border: "1px solid #ddd",
-      borderRadius: "5px",
-      width: "130px",
-      textAlign: "center",
-      background: "#1f1f1f",
-      color: "#eee",
-    }
-  }
   
   return (
     <div
+      className="flow-node"
       style={data.style}
     >
       <div className="node-row" style={{ justifyContent: "space-between", padding: "0 2px", marginBottom: 6 }}>
@@ -254,6 +244,14 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
       </div>
     </div>
   );
+};
+
+export const defaultData = {
+  filterType: "lowpass",
+  frequency: 1000,
+  detune: 0,
+  Q: 0,
+  gain: 0,
 };
 
 export default React.memo(BiquadFilterFlowNode);

@@ -44,7 +44,7 @@ const OnOffButtonFlowNode: React.FC<OnOffButtonFlowNodeProps> = ({ data }) => {
   }, [isOn]);
   
   return (
-    <div style={nodeStyle}>
+    <div className="flow-node" style={nodeStyle}>
       <button
         className={`nodrag nowheel nopan ${isOn ? 'node-state-btn-on' : 'node-state-btn-off'}`}
         draggable={false}
@@ -66,6 +66,12 @@ const OnOffButtonFlowNode: React.FC<OnOffButtonFlowNodeProps> = ({ data }) => {
       <div style={{ position: 'absolute', right: -12, top: 32, fontSize: 9, color: '#888' }}>OUT</div>
     </div>
   );
+};
+
+export const defaultData = {
+  label: "Gate",
+  isOn: false,
+  style: { maxHeight: 70 },
 };
 
 export default React.memo(OnOffButtonFlowNode);

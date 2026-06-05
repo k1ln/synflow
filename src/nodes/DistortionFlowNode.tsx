@@ -2,6 +2,7 @@
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
 import "./AudioNode.css";
+import { makeDistortionCurve } from "../utils/styleUtils";
 
 export type DistortionFlowNodeProps = {
   data: {
@@ -205,20 +206,9 @@ const DistortionFlowNode: React.FC<DistortionFlowNodeProps> = ({ data }) => {
     }
   };
 
-  if (data.style === undefined) {
-    data.style = {
-      padding: "8px",
-      border: "1px solid #ddd",
-      borderRadius: "5px",
-      width: "180px",
-      textAlign: "center",
-      background: "#1f1f1f",
-      color: "#eee",
-    }
-  }
 
   return (
-    <div style={data.style}>
+    <div className="flow-node" style={data.style}>
       <div className="node-title">DISTORTION</div>
 
       {/* Main Input */}
@@ -330,6 +320,11 @@ const DistortionFlowNode: React.FC<DistortionFlowNodeProps> = ({ data }) => {
       </div>
     </div>
   );
+};
+
+export const defaultData = {
+  curve: makeDistortionCurve(400),
+  oversample: "none",
 };
 
 export default DistortionFlowNode;

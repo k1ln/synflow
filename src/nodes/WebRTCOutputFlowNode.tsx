@@ -177,7 +177,7 @@ const WebRTCOutputFlowNode: React.FC<WebRTCOutputFlowNodeProps> = ({ data }) => 
   const statusLabel = connectionState ? connectionState.toUpperCase() : 'UNKNOWN';
 
   return (
-    <div style={{ ...(data.style || {}), width: 240, padding: 8 }}>
+    <div className="flow-node" style={{ ...(data.style || {}), width: 240, padding: 8 }}>
       <Handle type="target" position={Position.Left} id="main-input" style={{ top: 20, width: 10, height: 10 }} />
       <div className="node-row" style={{ justifyContent: 'space-between', gap: 6 }}>
         <span className="node-title" style={{ margin: 0, padding: 0, border: 0, textShadow: 'none', whiteSpace: 'nowrap' }}>WebRTC Out</span>
@@ -229,6 +229,13 @@ const WebRTCOutputFlowNode: React.FC<WebRTCOutputFlowNodeProps> = ({ data }) => 
       </div>
     </div>
   );
+};
+
+export const defaultData = {
+  label: "WebRTC Out",
+  serverUrl: "http://localhost:8787",
+  sessionId: undefined,
+  connectionState: "idle",
 };
 
 export default React.memo(WebRTCOutputFlowNode);

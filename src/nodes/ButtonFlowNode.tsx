@@ -46,20 +46,9 @@ const ButtonFlowNode: React.FC<ButtonNodeProps> = ({ data }) => {
     };
   });
 
-  if (data.style === undefined) {
-    data.style = {
-      padding: "10px",
-      border: "1px solid #ddd",
-      borderRadius: "5px",
-      width: "120px",
-      textAlign: "center",
-      background: "transparent",
-      color: "#eee",
-    };
-  }
   data.style = { ...data.style, width: "60px", height: "60px" };
   return (
-    <div style={data.style}>
+    <div className="flow-node" style={data.style}>
       <Handle
         type="source"
         position={Position.Right}
@@ -81,6 +70,14 @@ const ButtonFlowNode: React.FC<ButtonNodeProps> = ({ data }) => {
       </div>
     </div>
   );
+};
+
+export const defaultData = {
+  assignedKey: null,
+  retriggerFrequency: 1,
+  isRetriggering: false,
+  isPressed: false,
+  retriggerLength: 0.1,
 };
 
 export default ButtonFlowNode;

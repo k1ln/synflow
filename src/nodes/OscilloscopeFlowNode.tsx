@@ -13,6 +13,7 @@ import {
 import EventBus from "../sys/EventBus";
 import MidiKnob from "../components/MidiKnob";
 import "./AudioNode.css";
+import { baseNodeStyle } from "../utils/styleUtils";
 
 type OscilloscopePayload = {
   wave: number[];
@@ -433,6 +434,18 @@ const OscilloscopeFlowNode: React.FC<OscilloscopeFlowNodeProps> = ({
       </div>
     </div>
   );
+};
+
+export const defaultData = {
+  label: "Scope",
+  fftSize: 4096,
+  lineWidth: 2,
+  triggerLevel: 0.0,
+  timeScale: 1.0,
+  glowIntensity: 8,
+  zoom: 1.0,
+  panOffset: 0.0,
+  style: { ...baseNodeStyle, width: "420px" },
 };
 
 export default React.memo(OscilloscopeFlowNode);

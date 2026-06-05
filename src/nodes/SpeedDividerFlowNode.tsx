@@ -90,19 +90,8 @@ const SpeedDividerFlowNode: React.FC<SpeedDividerFlowNodeProps> = ({
     []
   );
 
-  if (!data.style) {
-    data.style = {
-      padding: '8px',
-      border: '1px solid #2a3139',
-      borderRadius: 6,
-      width: 120,
-      background: '#1f1f1f',
-      color: '#eee'
-    };
-  }
-
   return (
-    <div style={data.style}>
+    <div className="flow-node" style={data.style}>
       <Handle
         type="target"
         position={Position.Left}
@@ -160,6 +149,11 @@ const SpeedDividerFlowNode: React.FC<SpeedDividerFlowNodeProps> = ({
       </div>
     </div>
   );
+};
+
+export const defaultData = {
+  divider: 1,
+  multiplier: 1,
 };
 
 export default React.memo(SpeedDividerFlowNode);

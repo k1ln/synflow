@@ -446,4 +446,8 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
     );
 };
 
+export const defaultData = {
+  label: "Flow",
+};
+
 export default FlowNode;

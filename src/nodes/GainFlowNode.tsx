@@ -185,20 +185,8 @@ const GainFlowNode: React.FC<GainFlowNodeProps> = ({ data }) => {
     }
     // ...additional logic...
   }, [gain, label]);
-  if (data.style === undefined) {
-    data.style = {
-      padding: "0px",
-      border: "1px solid #ddd",
-      borderRadius: "5px",
-      width: "40px",
-      textAlign: "center",
-      background: "#1f1f1f",
-      color: "#eee",
-    }
-  }
-  
   return (
-    <div style={data.style}>
+    <div className="flow-node" style={data.style}>
       <div className="node-title">GAIN</div>
 
       {/* Main Input */}
@@ -272,6 +260,10 @@ const GainFlowNode: React.FC<GainFlowNodeProps> = ({ data }) => {
       </div>
     </div>
   );
+};
+
+export const defaultData = {
+  gain: 1,
 };
 
 export default GainFlowNode;

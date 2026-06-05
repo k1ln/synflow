@@ -367,7 +367,7 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
   const baseStyle = (data.style || {}) as React.CSSProperties;
 
   return (
-    <div style={{ ...baseStyle, minWidth: 220, padding: 10, position: 'relative' }}>
+    <div className="flow-node" style={{ ...baseStyle, minWidth: 220, padding: 10, position: 'relative' }}>
       {/* Clock input - triggers tick advance */}
       <Handle
         type="target"
@@ -571,6 +571,16 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
       )}
     </div>
   );
+};
+
+export const defaultData = {
+  label: "MIDI File",
+  midiFile: null,
+  currentBar: 0,
+  currentTick: 0,
+  isPlaying: false,
+  loop: true,
+  style: { width: "250px" },
 };
 
 export default React.memo(MidiFileFlowNode);

@@ -25,6 +25,7 @@ import {
 import { StreamLanguage } from '@codemirror/language';
 import EventBus from '../sys/EventBus';
 import './AudioNode.css';
+import { baseNodeStyle } from '../utils/styleUtils';
 import './ScriptSequencerFlowNode.css';
 
 export interface FavoriteItem {
@@ -1498,6 +1499,14 @@ multi-action line:  on #0 ; ramp #1 0..1 1t`}
       />
     </div>
   );
+};
+
+export const defaultData = {
+  label: "ScriptSequencer",
+  script: "// proprietary script — runs one line per clock tick\n// connect a clock to \"clock\" (left), \"reset\" to reset the cursor.\non #0\nramp #1 0..1 1t\narray #2 [0.1, 0.3, 0.5, 0.7] 1t swing pink 0.2\noff #0\nloop",
+  activeLine: 0,
+  outputCount: 3,
+  style: { ...baseNodeStyle },
 };
 
 export default React.memo(ScriptSequencerFlowNode);

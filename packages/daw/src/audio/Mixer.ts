@@ -1,10 +1,13 @@
 import { AudioGraphManager, EventBus } from '@synflow/core';
 import type { Flow } from '../synflow/instruments';
+import type { EqSettings } from '../model/project';
+import { EqNode } from './EqNode';
 
-export interface ResolvedFx { name: string; flow: Flow }
-interface Insert { engine: AudioGraphManager; inId?: string; outId?: string; name: string }
+/** A resolved insert: either a Synflow flow or the built-in graphical EQ. */
+export interface ResolvedFx { name: string; flow?: Flow; eq?: EqSettings }
+interface Insert { name: string; engine?: AudioGraphManager; inId?: string; outId?: string; eq?: EqNode }
 
-/** A rebuildable FX chain: input → [synflow FX engines] → output. */
+/** A rebuildable FX chain: input → [synflow engines / native EQ] → output. */
 export class FxChain {
   readonly input: GainNode;
   readonly output: GainNode;
@@ -18,38 +21,56 @@ export class FxChain {
 
   get count(): number { return this.fx.length; }
   get names(): string[] { return this.fx.map((f) => f.name); }
-  setParam(i: number, nodeId: string, param: string, value: number): void { this.fx[i]?.engine.setParam(nodeId, param, value); }
+  setParam(i: number, nodeId: string, param: string, value: number): void { this.fx[i]?.engine?.setParam(nodeId, param, value); }
 
-  /** Rebuild the whole chain from resolved inserts (FX = @synflow/core engines). */
+  /** Rebuild the whole chain from resolved inserts. */
   async setChain(inserts: ResolvedFx[]): Promise<void> {
-    for (const f of this.fx) { try { f.engine.dispose(); } catch { /* noop */ } }
+    for (const f of this.fx) this.disposeInsert(f);
     this.fx = [];
     for (const ins of inserts) {
-      const engine = new AudioGraphManager(this.ctx as any, { current: ins.flow.nodes } as any, { current: ins.flow.edges } as any, { bus: new EventBus() });
-      await engine.initialize();
-      this.fx.push({
-        engine, name: ins.name,
-        inId: ins.flow.nodes.find((n: any) => n.data?.isInput)?.id,
-        outId: ins.flow.nodes.find((n: any) => n.data?.isOutput)?.id,
-      });
+      if (ins.eq) {
+        const eq = new EqNode(this.ctx); eq.setSettings(ins.eq);
+        this.fx.push({ name: ins.name, eq });
+      } else if (ins.flow) {
+        const engine = new AudioGraphManager(this.ctx as any, { current: ins.flow.nodes } as any, { current: ins.flow.edges } as any, { bus: new EventBus() });
+        await engine.initialize();
+        this.fx.push({
+          name: ins.name, engine,
+          inId: ins.flow.nodes.find((n: any) => n.data?.isInput)?.id,
+          outId: ins.flow.nodes.find((n: any) => n.data?.isOutput)?.id,
+        });
+      }
     }
     this.rewire();
   }
 
+  /** Live-update a native EQ insert without rebuilding the chain. */
+  updateEq(i: number, settings: EqSettings): void { this.fx[i]?.eq?.setSettings(settings); }
+  /** The AnalyserNode of a native EQ insert (for the editor's spectrum), or null. */
+  getEqAnalyser(i: number): AnalyserNode | null { return this.fx[i]?.eq?.analyser ?? null; }
+
+  private inOut(f: Insert): { in: AudioNode; out: AudioNode } | null {
+    if (f.eq) return { in: f.eq.input, out: f.eq.output };
+    const inN = f.inId ? f.engine?.getAudioInput(f.inId) : undefined;
+    const outN = f.outId ? f.engine?.getAudioOutput(f.outId) : undefined;
+    return inN && outN ? { in: inN, out: outN } : null;
+  }
+
   private rewire(): void {
     try { this.input.disconnect(); } catch { /* noop */ }
-    for (const f of this.fx) { const o = f.outId && f.engine.getAudioOutput(f.outId); if (o) { try { o.disconnect(); } catch { /* noop */ } } }
+    for (const f of this.fx) { const io = this.inOut(f); if (io) { try { io.out.disconnect(); } catch { /* noop */ } } }
     let node: AudioNode = this.input;
-    for (const f of this.fx) {
-      const inN = f.inId ? f.engine.getAudioInput(f.inId) : undefined;
-      const outN = f.outId ? f.engine.getAudioOutput(f.outId) : undefined;
-      if (inN && outN) { node.connect(inN); node = outN; }
-    }
+    for (const f of this.fx) { const io = this.inOut(f); if (io) { node.connect(io.in); node = io.out; } }
     node.connect(this.output); // passthrough when empty
   }
 
+  private disposeInsert(f: Insert): void {
+    try { f.engine?.dispose(); } catch { /* noop */ }
+    try { f.eq?.dispose(); } catch { /* noop */ }
+  }
+
   dispose(): void {
-    for (const f of this.fx) { try { f.engine.dispose(); } catch { /* noop */ } }
+    for (const f of this.fx) this.disposeInsert(f);
     this.fx = [];
     try { this.input.disconnect(); } catch { /* noop */ }
     try { this.output.disconnect(); } catch { /* noop */ }

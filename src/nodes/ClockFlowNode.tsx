@@ -3,6 +3,7 @@ import { Handle, Position } from "@xyflow/react";
 import { Power, ChevronRight } from "lucide-react";
 import EventBus from "../sys/EventBus";
 import {CustomNumberInput} from "../util/CustomNumberInput";
+import { baseNodeStyle } from "../utils/styleUtils";
 
 export type ClockNodeProps = {
   id: string;
@@ -187,6 +188,12 @@ const ClockFlowNode: React.FC<ClockNodeProps> = ({ id, data }) => {
       <Handle type="source" position={Position.Right} id="main-output" />
     </div>
   );
+};
+
+export const defaultData = {
+  bpm: 120,
+  isEmitting: true,
+  style: { ...baseNodeStyle },
 };
 
 export default React.memo(ClockFlowNode);

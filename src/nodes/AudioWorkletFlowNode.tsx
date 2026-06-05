@@ -407,17 +407,6 @@ class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {
     position: 'relative'
   }
 
-  if (data.style === undefined) {
-    data.style = {
-      padding: "10px",
-      border: "1px solid #ddd",
-      borderRadius: "5px",
-      width: "200px",
-      textAlign: "center",
-      background: "#333",
-      color: "#eee",
-    }
-  }
   const openEditor = useCallback(() => {
     if (isHidden) return;
     if (!isExpanded) {
@@ -509,7 +498,7 @@ class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {
   }, []);
 
   return (
-    <div style={containerStyle}>
+    <div className="flow-node" style={containerStyle}>
       {/* Main Input */}
       <Handle
         type="target"
@@ -662,6 +651,10 @@ class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {
       )}
     </div>
   );
+};
+
+export const defaultData = {
+  processorUrl: "path/to/processor.js",
 };
 
 export default React.memo(AudioWorkletFlowNode);

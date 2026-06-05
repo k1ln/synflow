@@ -53,7 +53,7 @@ const UnisonBeginFlowNode: React.FC<UnsisonBeginFlowNodeProps> = ({ data }) => {
   
   
   return (
-    <div style={data.style}>
+    <div className="flow-node" style={data.style}>
       <div className="node-title">BEGIN UNISON</div>
 
       {/* Main Input */}
@@ -155,6 +155,11 @@ const UnisonBeginFlowNode: React.FC<UnsisonBeginFlowNodeProps> = ({ data }) => {
       </div>
     </div>
   );
+};
+
+export const defaultData = {
+  label: "Unison Begin",
+  style: { glowColor: "#a78bfa" },
 };
 
 export default UnisonBeginFlowNode;

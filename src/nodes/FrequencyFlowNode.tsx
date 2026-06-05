@@ -242,4 +242,11 @@ React.FC<FrequencyFlowNodeProps> = ({
   );
 };
 
+export const defaultData = {
+  value: 440,
+  frequency: 440,
+  type: "sine",
+  frequencyType: "hz",
+};
+
 export default FrequencyFlowNode;

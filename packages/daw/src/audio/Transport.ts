@@ -14,8 +14,10 @@ export class Transport {
   get secondsPerBeat(): number { return 60 / this.bpm; }
   get secondsPerStep(): number { return this.secondsPerBeat / this.stepsPerBeat; }
 
-  start(): void {
-    this.startedAt = this.clock.currentTime + 0.05; // small lead-in
+  /** Begin playback; `fromStep` offsets the origin so a seeked start reports the
+   *  correct position. */
+  start(fromStep = 0): void {
+    this.startedAt = this.clock.currentTime + 0.05 - fromStep * this.secondsPerStep; // small lead-in
     this.isPlaying = true;
   }
   stop(): void { this.isPlaying = false; }

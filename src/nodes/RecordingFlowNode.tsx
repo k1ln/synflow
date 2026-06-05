@@ -115,7 +115,7 @@ const RecordingFlowNode: React.FC<RecordingFlowNodeProps> = ({ data }) => {
   }
 
   return (
-    <div style={data.style}>
+    <div className="flow-node" style={data.style}>
       <div className="node-title">REC</div>
       {/* Pass-through input */}
       <Handle

@@ -1,19 +1,26 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Plus, Trash2, Drum, Music2, Repeat } from 'lucide-react';
+import { Plus, Trash2, Drum, Music2, Repeat, AudioWaveform } from 'lucide-react';
 import { RealtimeClock } from './audio/ClockSource';
 import { Transport } from './audio/Transport';
 import { Scheduler } from './audio/Scheduler';
 import { InstrumentHost } from './audio/InstrumentHost';
 import { VoicePool } from './audio/VoicePool';
 import { Mixer, FxChain, type ResolvedFx } from './audio/Mixer';
+import { AudioAssets } from './audio/AudioAssets';
+import { AudioClipPlayer } from './audio/AudioClipPlayer';
+import { pickAudioFile } from './audio/decodeAudioFile';
+import { Recorder } from './audio/Recorder';
+import { bounceProjectToWav } from './audio/bounce';
+import { bounceProjectStream } from './audio/bounceStream';
 import {
-  defaultProject, newNoteId, uid, fxInsert, blankSteps, trackActiveAt, patternLoopLength,
-  type Project, type Track, type PoolItem, type FxInsert,
+  defaultProject, newNoteId, uid, fxInsert, blankSteps, trackActiveAt, patternLoopLength, songLengthSteps, songLengthSlots, normalizeProject,
+  EQ_FX_ID, defaultEq,
+  type Project, type Track, type PoolItem, type FxInsert, type AudioAsset, type AudioClip, type EqSettings,
 } from './model/project';
 import { midiToFreq } from './model/pitch';
 import { type Flow } from './synflow/instruments';
 import { LIBRARY, findEntry, cloneFlow, type LibraryEntry } from './synflow/library';
-import { fsSupported, restoreFolder, seedLibrary, readAllFlows, writeFlow, pickFolder, saveProject, loadProject } from './synflow/flowStore';
+import { fsSupported, restoreFolder, seedLibrary, readAllFlows, writeFlow, pickFolder, saveProject, loadProject, songSlug, createBounceWritable, listAllAssets, listAudioFiles } from './synflow/flowStore';
 import { TopBar, type ViewId } from './ui/TopBar';
 import { Pool } from './ui/Pool';
 import { TrackEditor, type TrackEditorHandlers } from './ui/TrackEditor';
@@ -21,7 +28,45 @@ import { FxBar } from './ui/FxBar';
 import { Arrange } from './ui/Arrange';
 import { InstrumentPanel } from './ui/InstrumentPanel';
 import { SynflowEditor } from './ui/SynflowEditor';
+import { EqEditor } from './ui/EqEditor';
 import { StorageSetup } from './ui/StorageSetup';
+
+type ImportInfo = { name: string; phase: 'reading' | 'decoding'; read: number; total: number; startedAt: number };
+
+/** h:mm:ss (drops the hours field below an hour). */
+function fmtElapsed(ms: number): string {
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  const mm = String(m).padStart(2, '0'), ss = String(sec).padStart(2, '0');
+  return h > 0 ? `${h}:${mm}:${ss}` : `${m}:${ss}`;
+}
+
+const fmtMB = (bytes: number) => `${(bytes / 1e6).toFixed(1)} MB`;
+
+/** Progress overlay shown while importing audio. Hidden for quick imports so it
+ *  only appears for the longer files the user is waiting on. */
+function ImportOverlay({ info }: { info: ImportInfo }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const id = setInterval(() => setNow(Date.now()), 200); return () => clearInterval(id); }, []);
+  const elapsed = now - info.startedAt;
+  if (elapsed < 300) return null; // short imports: don't flash the bar
+  const pct = info.phase === 'reading' && info.total > 0 ? Math.round((info.read / info.total) * 100) : null;
+  return (
+    <div className="syn-overlay import-overlay">
+      <div className="import-card">
+        <div className="import-title">Importing audio…</div>
+        {info.name && <div className="import-name">{info.name}</div>}
+        <div className={`import-bar ${pct == null ? 'indeterminate' : ''}`}>
+          <div className="import-bar-fill" style={pct == null ? undefined : { width: `${pct}%` }} />
+        </div>
+        <div className="import-meta">
+          <span>{info.phase === 'reading' ? (pct != null ? `${pct}% · ${fmtMB(info.read)} / ${fmtMB(info.total)}` : 'Reading…') : 'Decoding…'}</span>
+          <span>{fmtElapsed(elapsed)} elapsed</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function App() {
   const [project, setProject] = useState<Project>(() => defaultProject());
@@ -36,10 +81,13 @@ export function App() {
   const [songMode, setSongMode] = useState(false);
   const songModeRef = useRef(false); songModeRef.current = songMode;
   const [editor, setEditor] = useState<{ flow: Flow; title: string; onSaved: (f: Flow) => void } | null>(null);
+  const [eqEditor, setEqEditor] = useState<{ title: string; settings: EqSettings; sampleRate: number; getAnalyser: () => AnalyserNode | null; onChange: (s: EqSettings, commit: boolean) => void } | null>(null);
   const [library, setLibrary] = useState<LibraryEntry[]>(LIBRARY);
   const [folder, setFolder] = useState<FileSystemDirectoryHandle | null>(null);
   const [storageSetup, setStorageSetup] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [recTrack, setRecTrack] = useState<string | null>(null); // audio track currently recording
+  const [importing, setImporting] = useState<ImportInfo | null>(null); // long audio import progress
 
   const ctxRef = useRef<AudioContext | null>(null);
   const transportRef = useRef<Transport | null>(null);
@@ -51,10 +99,16 @@ export function App() {
   const liveGainRef = useRef<Map<string, GainNode>>(new Map());         // live per-instrument gain, keyed by poolId
   const liveFxRef = useRef<Map<string, FxChain>>(new Map());            // live per-instrument FX chain, keyed by poolId
   const mixerRef = useRef<Mixer | null>(null);
+  const assetsMgrRef = useRef<AudioAssets | null>(null);                // audio asset cache (disk/embedded)
+  const audioPlayersRef = useRef<Map<string, AudioClipPlayer>>(new Map()); // audio-track clip players, keyed by track.id
   const projectRef = useRef(project); projectRef.current = project;
+  const currentStepRef = useRef(currentStep); currentStepRef.current = currentStep;
+  const seekRef = useRef(0);                                            // step playback starts from / playhead rests at
+  const recorderRef = useRef<Recorder | null>(null);
   const folderRef = useRef<FileSystemDirectoryHandle | null>(null); folderRef.current = folder;
 
-  const effects = library.filter((e) => e.group === 'effect');
+  // Built-in graphical EQ first, then the Synflow effects from the library.
+  const effects: LibraryEntry[] = [{ id: EQ_FX_ID, name: 'Equalizer', category: 'Built-in', group: 'effect', flow: { nodes: [], edges: [] } as any }, ...library.filter((e) => e.group === 'effect')];
   const selectedTrack = project.tracks.find((t) => t.id === selTrack) ?? project.tracks[0];
 
   // ─── flow folder (File System Access) ──────────────────────────────────────
@@ -85,12 +139,12 @@ export function App() {
       if (handle) {
         await adoptFolder(handle);
         const last = localStorage.getItem('mothscilla:lastSong');
-        if (last) { const proj = await loadProject(handle, last); if (proj && !cancelled) { setProject(proj); setSelTrack(proj.tracks[0]?.id ?? ''); } }
+        if (last) { const raw = await loadProject(handle, last); if (raw && !cancelled) { const proj = normalizeProject(raw); setProject(proj); setSelTrack(proj.tracks[0]?.id ?? ''); } }
       } else if (fsSupported) {
         setStorageSetup(true);
       } else {
         const local = localStorage.getItem('mothscilla:localSong');
-        if (local) { try { const proj = JSON.parse(local); if (!cancelled) { setProject(proj); setSelTrack(proj.tracks[0]?.id ?? ''); } } catch { /* ignore */ } }
+        if (local) { try { const proj = normalizeProject(JSON.parse(local)); if (!cancelled) { setProject(proj); setSelTrack(proj.tracks[0]?.id ?? ''); } } catch { /* ignore */ } }
       }
     })();
     return () => { cancelled = true; };
@@ -123,9 +177,12 @@ export function App() {
   // ─── audio build (3-level FX) ──────────────────────────────────────────────
   const resolveFx = (inserts: FxInsert[]): ResolvedFx[] =>
     inserts
-      .map((ins) => ({ name: ins.name, flow: ins.flow ?? findEntry(ins.fxId)?.flow }))
-      .filter((x): x is { name: string; flow: Flow } => !!x.flow)
-      .map((x) => ({ name: x.name, flow: cloneFlow(x.flow) }));
+      .map((ins): ResolvedFx | null => {
+        if (ins.eq) return { name: ins.name, eq: ins.eq };               // native graphical EQ
+        const flow = ins.flow ?? findEntry(ins.fxId)?.flow;
+        return flow ? { name: ins.name, flow: cloneFlow(flow) } : null;  // synflow effect
+      })
+      .filter((x): x is ResolvedFx => !!x);
 
   const buildUse = useCallback(async (useId: string, pool: PoolItem, dest: AudioNode, voices?: number) => {
     const ctx = ctxRef.current!;
@@ -138,6 +195,13 @@ export function App() {
     mixerRef.current?.setUseGain(useId, pool.gain ?? 1); // instrument gain
   }, []);
 
+  // Lazily create the audio-asset cache and keep its folder current.
+  const ensureAssets = useCallback((): AudioAssets => {
+    if (!assetsMgrRef.current) assetsMgrRef.current = new AudioAssets();
+    assetsMgrRef.current.setFolder(folderRef.current);
+    return assetsMgrRef.current;
+  }, []);
+
   const buildAudio = useCallback(async () => {
     const mixer = mixerRef.current; if (!mixer || !ctxRef.current) return;
     const proj = projectRef.current;
@@ -145,6 +209,12 @@ export function App() {
     for (const track of proj.tracks) {
       const t = mixer.track(track.id, track.volume);
       await t.chain.setChain(resolveFx(track.fx));
+      if (track.type === 'audio') {
+        let player = audioPlayersRef.current.get(track.id);
+        if (!player) { player = new AudioClipPlayer(ctxRef.current!, ensureAssets(), t.sum); audioPlayersRef.current.set(track.id, player); }
+        await player.preload(track.audioClips ?? [], (id) => proj.assets.find((a) => a.id === id));
+        continue; // audio tracks have no instrument uses
+      }
       for (const use of track.uses) {
         const dest = mixer.use(use.id, track.id);
         const pool = proj.pool.find((p) => p.id === use.poolId);
@@ -153,7 +223,7 @@ export function App() {
         if (pool) await buildUse(use.id, pool, dest, use.voices);
       }
     }
-  }, [buildUse]);
+  }, [buildUse, ensureAssets]);
 
   const ensureAudio = useCallback(async () => {
     if (ctxRef.current) return;
@@ -172,19 +242,36 @@ export function App() {
       const stepMs = transport.secondsPerStep * 1000;
       const gateMs = Math.min(transport.secondsPerStep * 0.9, 0.5) * 1000;
       for (const track of proj.tracks) {
+        if (track.muted) continue;     // arrangement mute (scheduler reads it live)
+        // Audio tracks live on the song timeline: trigger clips whose start falls in
+        // this absolute step (with a sub-step delay for the fractional part).
+        if (track.type === 'audio') {
+          if (!song) continue;
+          const player = audioPlayersRef.current.get(track.id); if (!player) continue;
+          for (const c of track.audioClips ?? []) {
+            if (Math.floor(c.start) !== s) continue;
+            const asset = proj.assets.find((a) => a.id === c.assetId); if (!asset) continue;
+            const sub = (c.start - s) * stepMs;
+            player.schedule(c, asset, time + sub / 1000, lead + sub);
+          }
+          continue;
+        }
         // Pattern/live: only ACTIVE (looped) tracks play (click loop to bring in/out).
         // Song: the track's CLIPS decide (loop is the live toggle, not the arrangement).
-        if (song ? !trackActiveAt(track.clips, slot, proj.songSlots) : !track.loop) continue;
+        if (song ? !trackActiveAt(track.clips, slot, songLengthSlots(proj)) : !track.loop) continue;
         const step = s % Math.max(1, track.length);    // each track loops at its own length
         for (const use of track.uses) {
           if (use.muted) continue;
           if (track.type === 'synth' && use.notes) {
             const vp = poolsRef.current.get(use.id); if (!vp) continue;
             for (const n of use.notes) {
-              if (n.start !== step) continue;
+              // free placement: trigger the note in the step it starts in, with a
+              // sub-step delay for the fractional part.
+              if (Math.floor(n.start) !== step) continue;
+              const sub = (n.start - step) * stepMs;        // ms into this step
               const f = midiToFreq(n.midi);
-              window.setTimeout(() => vp.noteOn(n.id, f), lead);
-              window.setTimeout(() => vp.noteOff(n.id), lead + n.length * stepMs);
+              window.setTimeout(() => vp.noteOn(n.id, f), lead + sub);
+              window.setTimeout(() => vp.noteOff(n.id), lead + sub + n.length * stepMs);
             }
           } else if (track.type === 'drums' && use.steps?.[step]) {
             const host = hostsRef.current.get(use.id); if (!host) continue;
@@ -199,21 +286,102 @@ export function App() {
     schedulerRef.current = scheduler;
   }, [buildAudio]);
 
+  // ─── audition: hear a recorded asset / clip on demand (clip play, browser preview) ──
+  const [previewKey, setPreviewKey] = useState<string | null>(null);
+  const auditionRef = useRef<{ src: AudioBufferSourceNode; gain: GainNode; key: string } | null>(null);
+  const stopAudition = useCallback(() => {
+    const a = auditionRef.current;
+    if (a) {
+      try { a.src.onended = null; a.src.stop(); } catch { /* already stopped */ }
+      try { a.src.disconnect(); a.gain.disconnect(); } catch { /* noop */ }
+    }
+    auditionRef.current = null;
+    setPreviewKey(null);
+  }, []);
+  // `key` lets the UI show play/stop per clip (clip id) or per recording ('asset:'+id);
+  // clicking the same thing again stops it. Routed through the master bus.
+  const auditionAudio = useCallback(async (key: string, assetId: string, opts?: { offset?: number; duration?: number; gain?: number }) => {
+    if (auditionRef.current?.key === key) { stopAudition(); return; }
+    await ensureAudio(); await ctxRef.current?.resume();
+    const ctx = ctxRef.current; const mixer = mixerRef.current; if (!ctx || !mixer) return;
+    const asset = projectRef.current.assets.find((a) => a.id === assetId); if (!asset) return;
+    const buffer = await ensureAssets().resolveBuffer(asset); if (!buffer) return;
+    stopAudition();
+    const src = ctx.createBufferSource(); src.buffer = buffer;
+    const gain = ctx.createGain(); gain.gain.value = opts?.gain ?? 1;
+    src.connect(gain).connect(mixer.masterSum);
+    src.start(0, Math.max(0, opts?.offset ?? 0), opts?.duration && opts.duration > 0 ? opts.duration : undefined);
+    src.onended = () => { if (auditionRef.current?.src === src) stopAudition(); };
+    auditionRef.current = { src, gain, key };
+    setPreviewKey(key);
+  }, [ensureAudio, ensureAssets, stopAudition]);
+  const auditionClip = useCallback((clip: AudioClip) => auditionAudio(clip.id, clip.assetId, { offset: clip.offset, duration: clip.duration, gain: clip.gain }), [auditionAudio]);
+  const auditionAsset = useCallback((assetId: string) => auditionAudio('asset:' + assetId, assetId), [auditionAudio]);
+
+  // Start any audio clip that the playhead lands *inside* (the per-step scheduler
+  // only fires a clip at its start, so playing/seeking mid-clip would stay silent).
+  const primeAudioClips = (fromStep: number) => {
+    const ctx = ctxRef.current; const tr = transportRef.current;
+    if (!ctx || !tr || !songModeRef.current) return;
+    const proj = projectRef.current;
+    const spp = tr.secondsPerStep;
+    const lead = 0.06;                         // small lead-in so it starts cleanly
+    const when = ctx.currentTime + lead;
+    for (const track of proj.tracks) {
+      if (track.type !== 'audio' || track.muted) continue;
+      const player = audioPlayersRef.current.get(track.id); if (!player) continue;
+      for (const c of track.audioClips ?? []) {
+        const endStep = c.start + c.duration / spp;
+        if (fromStep <= c.start || fromStep >= endStep) continue;   // not inside this clip
+        const into = (fromStep - c.start) * spp;                    // seconds into the clip
+        const asset = proj.assets.find((a) => a.id === c.assetId); if (!asset) continue;
+        player.schedule({ ...c, offset: c.offset + into, duration: c.duration - into }, asset, when, lead * 1000);
+      }
+    }
+  };
+
   const play = useCallback(async () => {
     await ensureAudio();
     await ctxRef.current!.resume();
     transportRef.current!.bpm = projectRef.current.bpm;
     const proj = projectRef.current;
-    schedulerRef.current!.totalSteps = songModeRef.current ? proj.songSlots * proj.totalSteps : patternLoopLength(proj.tracks);
-    transportRef.current!.start(); schedulerRef.current!.start();
+    schedulerRef.current!.totalSteps = songModeRef.current ? songLengthSteps(proj) : patternLoopLength(proj.tracks);
+    transportRef.current!.start(seekRef.current); schedulerRef.current!.start(seekRef.current);
+    primeAudioClips(seekRef.current);
     setIsPlaying(true);
   }, [ensureAudio]);
+
+  // Keep the loop length in sync as content changes (e.g. a long import grows the
+  // song) so the full clip plays without re-pressing play.
+  useEffect(() => {
+    const s = schedulerRef.current; if (!s) return;
+    s.totalSteps = songMode ? songLengthSteps(project) : patternLoopLength(project.tracks);
+  }, [project, songMode]);
+
+  // Opening the Song view plays the arrangement: audio tracks only sound in Song
+  // mode, and Pattern mode loops a single bar. (You can still flip to Pattern here.)
+  useEffect(() => { if (view === 'song') setSongMode(true); }, [view]);
+
+  // Move the playhead (and where playback begins) to an absolute step; live-seeks if playing.
+  const seekTo = (step: number) => {
+    const total = songModeRef.current ? songLengthSteps(projectRef.current) : patternLoopLength(projectRef.current.tracks);
+    const s = Math.max(0, Math.min(Math.max(1, total) - 1, Math.round(step)));
+    seekRef.current = s;
+    setCurrentStep(s);
+    if (isPlaying) {
+      schedulerRef.current?.seek(s);
+      for (const p of audioPlayersRef.current.values()) p.stopAll(); // drop clips from the old position
+      primeAudioClips(s);                                            // and start whatever the new spot is inside
+    }
+  };
 
   const stop = useCallback(() => {
     schedulerRef.current?.stop(); transportRef.current?.stop();
     for (const vp of poolsRef.current.values()) vp.allOff();
-    setIsPlaying(false); setCurrentStep(-1);
-  }, []);
+    for (const p of audioPlayersRef.current.values()) p.stopAll();
+    stopAudition();
+    setIsPlaying(false); setCurrentStep(seekRef.current);   // return playhead to the seek point
+  }, [stopAudition]);
 
   const setBpm = (bpm: number) => { setProject((p) => ({ ...p, bpm })); if (transportRef.current) transportRef.current.bpm = bpm; };
 
@@ -223,12 +391,60 @@ export function App() {
   const saveSong = useCallback(async () => {
     const root = folderRef.current;
     if (root) {
-      try { const file = await saveProject(root, projectRef.current); localStorage.setItem('mothscilla:lastSong', file); flashSaved(); console.info('[Mothscilla] saved song to disk:', file); }
+      try {
+        await ensureAssets().persistDisk(projectRef.current.assets); // large audio stays on disk (streamed)
+        const file = await saveProject(root, projectRef.current); localStorage.setItem('mothscilla:lastSong', file); flashSaved(); console.info('[Mothscilla] saved song to disk:', file);
+      }
       catch (e) { console.warn('[Mothscilla] save song failed', e); }
     } else {
       try { localStorage.setItem('mothscilla:localSong', JSON.stringify(projectRef.current)); flashSaved(); console.info('[Mothscilla] no folder — saved song to localStorage'); } catch (e) { console.warn('[Mothscilla] save song failed', e); }
     }
-  }, []);
+  }, [ensureAssets]);
+
+  // Export a portable song: embed every audio asset as base64 and download it.
+  const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
+  const exportSong = useCallback(async () => {
+    setExporting(true); setExportProgress(0);
+    try {
+      const proj = projectRef.current;
+      const { assets, skipped } = await ensureAssets().embedAll(proj.assets, setExportProgress);
+      const blob = new Blob([JSON.stringify({ ...proj, assets })], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `${songSlug(proj.name)}.json`; a.click();
+      URL.revokeObjectURL(url);
+      flashSaved();
+      if (skipped.length) window.alert(`Exported, but ${skipped.length} large audio file(s) couldn't be embedded (too big for a portable JSON):\n\n• ${skipped.join('\n• ')}\n\nThey stay as disk references. To share the audio, send the project folder or use Bounce.`);
+    } catch (e) { console.warn('[Mothscilla] export failed', e); window.alert('Export failed — see the console. Large audio can\'t be embedded; share the project folder or Bounce instead.'); }
+    finally { setExporting(false); }
+  }, [ensureAssets]);
+
+  // Bounce the song to a WAV faster than realtime (OfflineAudioContext).
+  const [bouncing, setBouncing] = useState(false);
+  const [bounceProgress, setBounceProgress] = useState(0);
+  const bounceSong = useCallback(async () => {
+    setBouncing(true); setBounceProgress(0);
+    try {
+      const proj = projectRef.current;
+      const file = `${songSlug(proj.name)}.wav`;
+      if (folderRef.current) {
+        // Streaming, low-RAM, FX-aware mixdown straight to <folder>/bounces/.
+        const writable = await createBounceWritable(folderRef.current, file);
+        try {
+          await bounceProjectStream(proj, ensureAssets(), writable, { onProgress: setBounceProgress });
+        } finally { await writable.close(); }
+        console.info(`[Mothscilla] bounced song to bounces/${file}`);
+      } else {
+        // No project folder: small in-memory bounce + download.
+        const wav = await bounceProjectToWav(proj, ensureAssets());
+        const url = URL.createObjectURL(new Blob([wav], { type: 'audio/wav' }));
+        const a = document.createElement('a'); a.href = url; a.download = file; a.click();
+        URL.revokeObjectURL(url);
+        console.info('[Mothscilla] bounced song to WAV (download)');
+      }
+    } catch (e) { console.warn('[Mothscilla] bounce failed', e); }
+    finally { setBouncing(false); }
+  }, [ensureAssets]);
 
   // Tear down all audio so it rebuilds from a freshly loaded project.
   const resetAudio = useCallback(() => {
@@ -239,13 +455,16 @@ export function App() {
     for (const h of liveDrumsRef.current.values()) h.dispose(); liveDrumsRef.current.clear();
     liveGainRef.current.clear();
     for (const c of liveFxRef.current.values()) c.dispose(); liveFxRef.current.clear();
+    for (const p of audioPlayersRef.current.values()) p.dispose(); audioPlayersRef.current.clear();
+    assetsMgrRef.current?.dispose(); assetsMgrRef.current = null;
     try { void ctxRef.current?.close(); } catch { /* noop */ }
     ctxRef.current = null; mixerRef.current = null; schedulerRef.current = null; transportRef.current = null;
     setIsPlaying(false); setCurrentStep(-1);
   }, []);
 
-  const loadProjectState = useCallback((proj: Project) => {
+  const loadProjectState = useCallback((raw: Project) => {
     resetAudio();
+    const proj = normalizeProject(raw);
     setProject(proj);
     setSelTrack(proj.tracks[0]?.id ?? '');
     setOpenItem(null); setEditor(null);
@@ -276,6 +495,16 @@ export function App() {
     const host = hostsRef.current.get(useId);
     if (host) { host.trigger(); window.setTimeout(() => host.release(), 220); }
   }, [ensureAudio, buildAudio]);
+
+  // Piano-roll key gutter: hold a note (ADSR on at mouse-down, release at mouse-up)
+  // through the use's own voice pool. midi doubles as the voice id (no clash with
+  // scheduled notes, whose ids are >1000).
+  const useNoteOn = useCallback(async (useId: string, midi: number) => {
+    await ensureAudio(); await ctxRef.current?.resume();
+    if (!poolsRef.current.has(useId)) await buildAudio();
+    poolsRef.current.get(useId)?.noteOn(midi, midiToFreq(midi));
+  }, [ensureAudio, buildAudio]);
+  const useNoteOff = useCallback((useId: string, midi: number) => { poolsRef.current.get(useId)?.noteOff(midi); }, []);
 
   // Live path: instrument → liveFx (the instrument's general FX) → liveGain → master.
   // Returns the node the live engine connects to.
@@ -335,6 +564,14 @@ export function App() {
   const onPoolFxRemove = (poolId: string, i: number) => { const next = (poolById(poolId)?.fx ?? []).filter((_, j) => j !== i); mapPool(poolId, (pi) => ({ ...pi, fx: next })); rebuildPoolFx(poolId, next); };
   const onPoolFxEdit = (poolId: string, i: number) => {
     const insert = poolById(poolId)?.fx?.[i]; if (!insert) return;
+    if (insert.fxId === EQ_FX_ID) {
+      const poolChains = () => [...usesOfPool(poolId).map((u) => mixerRef.current?.usePoolChain(u.id)), liveFxRef.current.get(poolId)];
+      openEqEditor(poolById(poolId)?.name ?? 'Instrument', insert,
+        () => liveFxRef.current.get(poolId)?.getEqAnalyser(i) ?? (usesOfPool(poolId)[0] ? mixerRef.current?.usePoolChain(usesOfPool(poolId)[0].id)?.getEqAnalyser(i) ?? null : null),
+        (eq) => poolChains().forEach((c) => c?.updateEq(i, eq)),
+        (eq) => mapPool(poolId, (pi) => ({ ...pi, fx: (pi.fx ?? []).map((x, j) => (j === i ? { ...x, eq } : x)) })));
+      return;
+    }
     editFxFlow(insert, (f) => { const next = (poolById(poolId)?.fx ?? []).map((x, j) => (j === i ? { ...x, flow: f } : x)); mapPool(poolId, (pi) => ({ ...pi, fx: next })); rebuildPoolFx(poolId, next); });
   };
   const onPoolFxKnob = (poolId: string, i: number, nodeId: string, param: string, value: number) => {
@@ -434,6 +671,15 @@ export function App() {
     if (flow) setEditor({ flow, title: insert.name, onSaved: (f) => { apply(f); persistFx(insert, f); } });
   };
 
+  // Open the native graphical EQ. `updateLive` pushes edits to the live node(s)
+  // (every move); `writeBack` persists to the model (on release).
+  const openEqEditor = (title: string, insert: FxInsert, getAnalyser: () => AnalyserNode | null, updateLive: (eq: EqSettings) => void, writeBack: (eq: EqSettings) => void) => {
+    setEqEditor({
+      title, settings: insert.eq ?? defaultEq(), sampleRate: ctxRef.current?.sampleRate ?? 48000, getAnalyser,
+      onChange: (eq, commit) => { updateLive(eq); if (commit) writeBack(eq); },
+    });
+  };
+
   const h: TrackEditorHandlers = {
     onToggleStep: (useId, step) => mapUse(useId, (u) => {
       if (!(u.steps ?? [])[step]) void audition(useId);
@@ -442,6 +688,11 @@ export function App() {
     onMuteUse: (useId) => mapUse(useId, (u) => ({ ...u, muted: !u.muted })),
     onAddNote: (useId, midi, start) => { void audition(useId, { frequency: midiToFreq(midi) }); mapUse(useId, (u) => ({ ...u, notes: [...(u.notes ?? []), { id: newNoteId(), midi, start, length: 2 }] })); },
     onRemoveNote: (useId, noteId) => mapUse(useId, (u) => ({ ...u, notes: (u.notes ?? []).filter((n) => n.id !== noteId) })),
+    onMoveNote: (useId, noteId, midi, start) => mapUse(useId, (u) => ({ ...u, notes: (u.notes ?? []).map((n) => (n.id === noteId ? { ...n, midi, start } : n)) })),
+    onResizeNote: (useId, noteId, length) => mapUse(useId, (u) => ({ ...u, notes: (u.notes ?? []).map((n) => (n.id === noteId ? { ...n, length } : n)) })),
+    onPlayNote: (useId, midi) => void audition(useId, { frequency: midiToFreq(midi) }),
+    onKeyDown: (useId, midi) => void useNoteOn(useId, midi),
+    onKeyUp: (useId, midi) => useNoteOff(useId, midi),
     onAddUse: (poolId) => {
       const track = selectedTrack; if (!track) return;
       const pool = project.pool.find((p) => p.id === poolId); if (!pool) return;
@@ -462,12 +713,24 @@ export function App() {
     onUseFxRemove: (useId, i) => { const cur = (useById(useId)?.fx ?? []).filter((_, j) => j !== i); mapUse(useId, (u) => ({ ...u, fx: u.fx.filter((_, j) => j !== i) })); rebuildUseChain(useId, cur); },
     onUseFxEdit: (useId, i) => {
       const insert = useById(useId)?.fx[i]; if (!insert) return;
+      if (insert.fxId === EQ_FX_ID) {
+        const chain = () => mixerRef.current?.useChain(useId);
+        openEqEditor('Instrument', insert, () => chain()?.getEqAnalyser(i) ?? null, (eq) => chain()?.updateEq(i, eq),
+          (eq) => mapUse(useId, (u) => ({ ...u, fx: u.fx.map((x, j) => (j === i ? { ...x, eq } : x)) })));
+        return;
+      }
       editFxFlow(insert, (f) => { mapUse(useId, (u) => ({ ...u, fx: u.fx.map((x, j) => (j === i ? { ...x, flow: f } : x)) })); rebuildUseChain(useId, (useById(useId)?.fx ?? []).map((x, j) => (j === i ? { ...x, flow: f } : x))); });
     },
     onTrackFxAdd: (fxId) => { const t = selectedTrack; if (!t) return; const ins = fxInsert(fxId); mapTrack(t.id, (x) => ({ ...x, fx: [...x.fx, ins] })); rebuildTrackChain(t.id, [...t.fx, ins]); },
     onTrackFxRemove: (i) => { const t = selectedTrack; if (!t) return; const next = t.fx.filter((_, j) => j !== i); mapTrack(t.id, (x) => ({ ...x, fx: next })); rebuildTrackChain(t.id, next); },
     onTrackFxEdit: (i) => {
       const t = selectedTrack; const insert = t?.fx[i]; if (!t || !insert) return;
+      if (insert.fxId === EQ_FX_ID) {
+        const chain = () => mixerRef.current?.track(t.id).chain;
+        openEqEditor(t.name, insert, () => chain()?.getEqAnalyser(i) ?? null, (eq) => chain()?.updateEq(i, eq),
+          (eq) => mapTrack(t.id, (x) => ({ ...x, fx: x.fx.map((f, j) => (j === i ? { ...f, eq } : f)) })));
+        return;
+      }
       editFxFlow(insert, (f) => { const next = t.fx.map((x, j) => (j === i ? { ...x, flow: f } : x)); mapTrack(t.id, (x) => ({ ...x, fx: next })); rebuildTrackChain(t.id, next); });
     },
     onUseFxKnob: (useId, i, nodeId, param, value) => {
@@ -487,12 +750,31 @@ export function App() {
     onToggleLoop: () => { if (selectedTrack) toggleTrackLoop(selectedTrack.id); },
     onSetLength: (length) => { if (selectedTrack) setTrackLength(selectedTrack.id, length); },
     onSetVoices: (useId, voices) => setUseVoices(useId, voices),
+    onTrackVolume: (trackId, v) => setTrackVolume(trackId, v),
+    onImportAudio: (trackId) => void importAudioClip(trackId),
+    onAddClipFromAsset: (trackId, asset) => void addClipFromAsset(trackId, asset),
+    onOpenLibrary: () => void refreshAudioLibrary(),
+    onStartRec: (trackId) => void startRecording(trackId),
+    onStopRec: () => void stopRecording(),
+    onMoveAudioClip: (trackId, clipId, start) => moveAudioClip(trackId, clipId, start),
+    onTrimAudioClip: (trackId, clipId, offset, duration) => trimAudioClip(trackId, clipId, offset, duration),
+    onSplitAudioClip: (trackId, clipId, atSteps) => splitAudioClip(trackId, clipId, atSteps),
+    onRemoveAudioClip: (trackId, clipId) => removeAudioClip(trackId, clipId),
+    onAudioClipGain: (trackId, clipId, gain) => setAudioClipGain(trackId, clipId, gain),
+    onPlayAudioClip: (clip) => auditionClip(clip),
   };
 
-  const addTrack = (type: 'drums' | 'synth') => {
+  const addTrack = (type: 'drums' | 'synth' | 'audio') => {
     const id = uid('track');
-    setProject((p) => ({ ...p, tracks: [...p.tracks, { id, name: `${type === 'drums' ? 'Drums' : 'Synth'} ${p.tracks.length + 1}`, type, volume: 0.8, loop: true, length: p.totalSteps, uses: [], clips: [{ id: uid('clip'), start: 0, length: 1, loop: true }], fx: [], automation: [] }] }));
+    const label = type === 'drums' ? 'Drums' : type === 'audio' ? 'Audio' : 'Synth';
+    setProject((p) => ({ ...p, tracks: [...p.tracks, {
+      id, name: `${label} ${p.tracks.length + 1}`, type, volume: 0.8,
+      loop: type !== 'audio', length: p.totalSteps, uses: [],
+      clips: type === 'audio' ? [] : [{ id: uid('clip'), start: 0, length: 1, loop: true }],
+      audioClips: type === 'audio' ? [] : undefined, fx: [], automation: [],
+    }] }));
     setSelTrack(id);
+    if (type === 'audio') setSongMode(true); // audio plays on the song timeline
   };
   const removeTrack = (trackId: string) => {
     setProject((p) => ({ ...p, tracks: p.tracks.filter((t) => t.id !== trackId) }));
@@ -505,8 +787,9 @@ export function App() {
   const setTrackVolume = (trackId: string, v: number) => { mapTrack(trackId, (t) => ({ ...t, volume: v })); mixerRef.current?.setTrackVolume(trackId, v); };
   const renameTrack = (trackId: string, name: string) => mapTrack(trackId, (t) => ({ ...t, name }));
   const toggleTrackLoop = (trackId: string) => mapTrack(trackId, (t) => ({ ...t, loop: !t.loop })); // scheduler reads loop live
+  const toggleTrackMute = (trackId: string) => mapTrack(trackId, (t) => ({ ...t, muted: !t.muted })); // scheduler reads muted live
   const setTrackLength = (trackId: string, length: number) => {
-    const len = Math.max(1, Math.min(64, length));
+    const len = Math.max(1, Math.min(256, length));
     mapTrack(trackId, (t) => ({
       ...t, length: len,
       uses: t.uses.map((u) => (u.steps ? { ...u, steps: Array.from({ length: len }, (_, i) => u.steps![i] ?? false) } : u)),
@@ -525,7 +808,7 @@ export function App() {
   // ─── arrangement (song) ─────────────────────────────────────────────────────
   const toggleSongMode = () => setSongMode((m) => {
     const next = !m;
-    if (schedulerRef.current) schedulerRef.current.totalSteps = next ? projectRef.current.songSlots * projectRef.current.totalSteps : patternLoopLength(projectRef.current.tracks);
+    if (schedulerRef.current) schedulerRef.current.totalSteps = next ? songLengthSteps(projectRef.current) : patternLoopLength(projectRef.current.tracks);
     return next;
   });
   const setSongSlots = (n: number) => setProject((p) => ({ ...p, songSlots: n }));
@@ -533,11 +816,145 @@ export function App() {
   const removeClip = (trackId: string, clipId: string) => mapTrack(trackId, (t) => ({ ...t, clips: t.clips.filter((c) => c.id !== clipId) }));
   const toggleClipLoop = (trackId: string, clipId: string) => mapTrack(trackId, (t) => ({ ...t, clips: t.clips.map((c) => (c.id === clipId ? { ...c, loop: !c.loop } : c)) }));
   const setClipLen = (trackId: string, clipId: string, length: number) => mapTrack(trackId, (t) => ({ ...t, clips: t.clips.map((c) => (c.id === clipId ? { ...c, length } : c)) }));
+  const moveClip = (trackId: string, clipId: string, start: number) => mapTrack(trackId, (t) => ({ ...t, clips: t.clips.map((c) => (c.id === clipId ? { ...c, start } : c)) }));
+  const moveAudioClip = (trackId: string, clipId: string, start: number) => mapTrack(trackId, (t) => ({ ...t, audioClips: (t.audioClips ?? []).map((c) => (c.id === clipId ? { ...c, start } : c)) }));
+  const updateAudioClips = (trackId: string, fn: (cs: AudioClip[]) => AudioClip[]) => mapTrack(trackId, (t) => ({ ...t, audioClips: fn(t.audioClips ?? []) }));
+  const removeAudioClip = (trackId: string, clipId: string) => updateAudioClips(trackId, (cs) => cs.filter((c) => c.id !== clipId));
+
+  // Drop a recording onto the selected audio track (or the first one, creating it
+  // if there is none) at the playhead, then rebuild so it plays back with transport.
+  const placeAssetOnTrack = (assetId: string) => {
+    const cur = projectRef.current;
+    const asset = cur.assets.find((a) => a.id === assetId); if (!asset) return;
+    const clip: AudioClip = { id: uid('aclip'), assetId, start: Math.max(0, currentStepRef.current), offset: 0, duration: asset.duration, gain: 1 };
+    const target = cur.tracks.find((t) => t.id === selTrack && t.type === 'audio') ?? cur.tracks.find((t) => t.type === 'audio');
+    let next: Project;
+    if (target) {
+      next = { ...cur, tracks: cur.tracks.map((t) => (t.id === target.id ? { ...t, audioClips: [...(t.audioClips ?? []), clip] } : t)) };
+    } else {
+      const id = uid('track');
+      const nt: Track = { id, name: `Audio ${cur.tracks.filter((t) => t.type === 'audio').length + 1}`, type: 'audio', volume: 0.8, loop: true, length: cur.totalSteps, uses: [], clips: [], audioClips: [clip], fx: [], automation: [] };
+      next = { ...cur, tracks: [...cur.tracks, nt] };
+    }
+    projectRef.current = next; setProject(next);
+    void buildAudio();
+  };
+
+  // Delete a recording from the project: drop the asset and any clips that use it.
+  const removeRecording = (assetId: string) => {
+    if (previewKey === 'asset:' + assetId) stopAudition();
+    setProject((p) => ({
+      ...p,
+      assets: p.assets.filter((a) => a.id !== assetId),
+      tracks: p.tracks.map((t) => ({ ...t, audioClips: (t.audioClips ?? []).filter((c) => c.assetId !== assetId) })),
+    }));
+  };
+  const setAudioClipGain = (trackId: string, clipId: string, gain: number) => updateAudioClips(trackId, (cs) => cs.map((c) => (c.id === clipId ? { ...c, gain } : c)));
+  const trimAudioClip = (trackId: string, clipId: string, offset: number, duration: number) => updateAudioClips(trackId, (cs) => cs.map((c) => (c.id === clipId ? { ...c, offset: Math.max(0, offset), duration: Math.max(0.02, duration) } : c)));
+  const splitAudioClip = (trackId: string, clipId: string, atSteps: number) => {
+    const secPerStep = 60 / projectRef.current.bpm / projectRef.current.stepsPerBeat;
+    updateAudioClips(trackId, (cs) => cs.flatMap((c) => {
+      if (c.id !== clipId) return [c];
+      const into = (atSteps - c.start) * secPerStep;                 // seconds into the clip
+      if (into <= 0.02 || into >= c.duration - 0.02) return [c];
+      return [
+        { ...c, duration: into },
+        { ...c, id: uid('aclip'), start: atSteps, offset: c.offset + into, duration: c.duration - into },
+      ];
+    }));
+  };
+
+  // Decode bytes → asset, drop a clip at the playhead on `trackId`, rebuild audio.
+  const ingestAndAdd = async (trackId: string, name: string, bytes: ArrayBuffer, mime: string) => {
+    await ensureAudio();
+    let asset: AudioAsset;
+    try { asset = await ensureAssets().ingest(name, bytes, mime); }
+    catch (e) { console.warn('[Mothscilla] audio decode failed', e); return; }
+    const clip: AudioClip = { id: uid('aclip'), assetId: asset.id, start: Math.max(0, currentStepRef.current), offset: 0, duration: asset.duration, gain: 1 };
+    const cur = projectRef.current;
+    const next: Project = { ...cur, assets: [...cur.assets, asset], tracks: cur.tracks.map((t) => (t.id === trackId ? { ...t, audioClips: [...(t.audioClips ?? []), clip] } : t)) };
+    projectRef.current = next; setProject(next);
+    await buildAudio();
+  };
+
+  const importAudioClip = async (trackId: string) => {
+    let startedAt = 0;
+    const picked = await pickAudioFile((read, total) => {
+      if (!startedAt) startedAt = Date.now();
+      setImporting({ name: '', phase: 'reading', read, total, startedAt });
+    });
+    if (!picked) { setImporting(null); return; }
+    if (!startedAt) startedAt = Date.now();
+    setImporting({ name: picked.name, phase: 'decoding', read: 0, total: 0, startedAt });
+    try { await ingestAndAdd(trackId, picked.name.replace(/\.[^.]+$/, ''), picked.bytes, picked.mime); }
+    finally { setImporting(null); }
+    setSongMode(true); // audio plays on the song timeline
+  };
+
+  // Shared audio library: every disk asset used by any song in the folder, merged
+  // with the open song's assets. Refreshed when the "from project" picker opens.
+  const [audioLibrary, setAudioLibrary] = useState<AudioAsset[]>([]);
+  const assetKey = (a: AudioAsset) => (a.source.kind === 'disk' ? 'disk:' + a.source.fileName : 'id:' + a.id);
+  const refreshAudioLibrary = useCallback(async () => {
+    const root = folderRef.current;
+    const byKey = new Map<string, AudioAsset>();
+    if (root) {
+      // every file actually on disk (incl. subfolders) — duration filled on add
+      for (const f of await listAudioFiles(root)) {
+        const a: AudioAsset = { id: 'disk:' + f.path, name: f.name, duration: f.duration, peaks: { min: [], max: [] }, source: { kind: 'disk', fileName: f.path, mime: f.mime } };
+        byKey.set(assetKey(a), a);
+      }
+      // song-referenced assets carry real duration + waveform peaks → let them win
+      for (const a of await listAllAssets(root)) byKey.set(assetKey(a), a);
+    }
+    for (const a of projectRef.current.assets) byKey.set(assetKey(a), a); // the open song wins
+    setAudioLibrary([...byKey.values()].sort((a, b) => a.name.localeCompare(b.name)));
+  }, []);
+
+  // Drop a clip from a library/project asset (no re-import/decode) at the playhead.
+  // Registers the asset into the open song if it isn't there yet (deduped by file).
+  const addClipFromAsset = async (trackId: string, asset: AudioAsset) => {
+    await ensureAudio();
+    let a = asset;
+    // A raw disk file has no duration yet — open it (WAV header) or convert it
+    // (legacy codec) to learn the length; this also primes the streaming cache.
+    if (!(a.duration > 0) && a.source.kind === 'disk') {
+      const s = await ensureAssets().resolveStream(a); // may migrate + mutate a.source
+      if (s) a = { ...a, duration: s.meta.frames / s.meta.sampleRate };
+    }
+    if (!(a.duration > 0)) { console.warn('[Mothscilla] could not resolve audio (missing/unreadable?)', asset.name); return; }
+    const cur = projectRef.current;
+    const existing = cur.assets.find((x) => assetKey(x) === assetKey(a));
+    const assetId = existing ? existing.id : uid('asset');
+    const assets = existing ? cur.assets : [...cur.assets, { ...a, id: assetId }];
+    const clip: AudioClip = { id: uid('aclip'), assetId, start: Math.max(0, currentStepRef.current), offset: 0, duration: a.duration, gain: 1 };
+    const next: Project = { ...cur, assets, tracks: cur.tracks.map((t) => (t.id === trackId ? { ...t, audioClips: [...(t.audioClips ?? []), clip] } : t)) };
+    projectRef.current = next; setProject(next);
+    await buildAudio();
+    setSongMode(true);
+  };
+
+  const startRecording = async (trackId: string) => {
+    try { const rec = new Recorder(); await rec.start(); recorderRef.current = rec; setRecTrack(trackId); }
+    catch (e) { console.warn('[Mothscilla] mic access failed', e); recorderRef.current = null; }
+  };
+  const stopRecording = async () => {
+    const rec = recorderRef.current; const trackId = recTrack; setRecTrack(null);
+    if (!rec || !trackId) return;
+    const res = await rec.stop(); recorderRef.current = null;
+    if (res) await ingestAndAdd(trackId, `take ${new Date().toLocaleTimeString()}`, res.bytes, res.mime);
+  };
 
   const onMasterFxAdd = (fxId: string) => { const ins = fxInsert(fxId); setProject((p) => ({ ...p, masterFx: [...p.masterFx, ins] })); rebuildMaster([...project.masterFx, ins]); };
   const onMasterFxRemove = (i: number) => { const next = project.masterFx.filter((_, j) => j !== i); setProject((p) => ({ ...p, masterFx: next })); rebuildMaster(next); };
   const onMasterFxEdit = (i: number) => {
     const insert = project.masterFx[i]; if (!insert) return;
+    if (insert.fxId === EQ_FX_ID) {
+      const chain = () => mixerRef.current?.masterChain;
+      openEqEditor('Master', insert, () => chain()?.getEqAnalyser(i) ?? null, (eq) => chain()?.updateEq(i, eq),
+        (eq) => setProject((p) => ({ ...p, masterFx: p.masterFx.map((x, j) => (j === i ? { ...x, eq } : x)) })));
+      return;
+    }
     editFxFlow(insert, (f) => { const next = projectRef.current.masterFx.map((x, j) => (j === i ? { ...x, flow: f } : x)); setProject((p) => ({ ...p, masterFx: next })); rebuildMaster(next); });
   };
 
@@ -552,17 +969,17 @@ export function App() {
         armed={armed} onArm={() => setArmed((a) => !a)} bpm={project.bpm} onBpm={setBpm} position={pos}
         browserOpen={browserOpen} setBrowserOpen={setBrowserOpen}
         projectName={project.name} onProjectName={(name) => setProject((p) => ({ ...p, name }))}
-        onSave={saveSong} saved={saved} onOpenSong={openSong}
+        onSave={saveSong} saved={saved} onOpenSong={openSong} onExport={exportSong} exporting={exporting} exportProgress={exportProgress} onBounce={bounceSong} bouncing={bouncing} bounceProgress={bounceProgress}
       />
       <div className="workspace">
-        {browserOpen && <Pool pool={project.pool} effects={effects} armed={armedPool} onOpenInstrument={openInstrument} onEditEffect={openEffectPage} onRemoveInstrument={removePoolItem} onRemoveEffect={removeEffect} onAddFromFolder={addFromFolder} source={folder ? `disk · ${folder.name}` : 'built-in'} />}
+        {browserOpen && <Pool pool={project.pool} effects={effects} armed={armedPool} recordings={project.assets} previewKey={previewKey} onPreview={auditionAsset} onPlaceRecording={placeAssetOnTrack} onRemoveRecording={removeRecording} onOpenInstrument={openInstrument} onEditEffect={openEffectPage} onRemoveInstrument={removePoolItem} onRemoveEffect={removeEffect} onAddFromFolder={addFromFolder} source={folder ? `disk · ${folder.name}` : 'built-in'} />}
         <div className="main">
           {view === 'tracks' && (
             <div className="tracks-view">
               <div className="tracks-rail">
                 {project.tracks.map((t) => (
                   <div key={t.id} className={`trk ${t.id === selTrack ? 'sel' : ''}`} onClick={() => setSelTrack(t.id)}>
-                    {t.type === 'drums' ? <Drum size={13} /> : <Music2 size={13} />}
+                    {t.type === 'drums' ? <Drum size={13} /> : t.type === 'audio' ? <AudioWaveform size={13} /> : <Music2 size={13} />}
                     <span className="trk-name">{t.name}</span>
                     <button className={`trk-loop ${t.loop ? 'on' : ''}`} title={t.loop ? 'Looping' : 'Loop off'} onClick={(e) => { e.stopPropagation(); toggleTrackLoop(t.id); }}><Repeat size={12} /></button>
                     <button className="trk-del" title="Delete track" onClick={(e) => { e.stopPropagation(); removeTrack(t.id); }}><Trash2 size={12} /></button>
@@ -571,11 +988,12 @@ export function App() {
                 <div className="trk-add">
                   <button onClick={() => addTrack('drums')}><Plus size={12} /> Drums</button>
                   <button onClick={() => addTrack('synth')}><Plus size={12} /> Synth</button>
+                  <button onClick={() => addTrack('audio')}><Plus size={12} /> Audio</button>
                 </div>
               </div>
               <div className="track-editor-wrap">
                 {selectedTrack
-                  ? <TrackEditor project={project} track={selectedTrack} effects={effects} currentStep={currentStep} h={h} />
+                  ? <TrackEditor project={project} track={selectedTrack} effects={effects} currentStep={currentStep} recTrack={recTrack} previewKey={previewKey} audioLibrary={audioLibrary} h={h} />
                   : <div className="te-empty">No track — add one.</div>}
               </div>
             </div>
@@ -583,9 +1001,10 @@ export function App() {
 
           {view === 'song' && (
             <Arrange
-              project={project} currentSlot={currentStep < 0 ? -1 : Math.floor(currentStep / project.totalSteps)} songMode={songMode} selTrack={selTrack}
-              onToggleSongMode={toggleSongMode} onSetSongSlots={setSongSlots} onSelectTrack={setSelTrack}
+              project={project} currentStep={currentStep} songMode={songMode} selTrack={selTrack}
+              onToggleSongMode={toggleSongMode} onSetSongSlots={setSongSlots} onSelectTrack={setSelTrack} onToggleMute={toggleTrackMute} onTrackVolume={setTrackVolume} onSeek={seekTo}
               onAddClip={addClip} onRemoveClip={removeClip} onToggleLoop={toggleClipLoop} onClipLen={setClipLen}
+              onMoveClip={moveClip} onMoveAudioClip={moveAudioClip} onRemoveAudioClip={removeAudioClip} onPlayClip={auditionClip} previewKey={previewKey}
             />
           )}
 
@@ -635,7 +1054,7 @@ export function App() {
               <div className="mx-tracks">
                 {project.tracks.map((t) => (
                   <div className="mx-strip" key={t.id}>
-                    <div className="mx-strip-head">{t.type === 'drums' ? <Drum size={13} /> : <Music2 size={13} />} {t.name}</div>
+                    <div className="mx-strip-head">{t.type === 'drums' ? <Drum size={13} /> : t.type === 'audio' ? <AudioWaveform size={13} /> : <Music2 size={13} />} {t.name}</div>
                     <input className="mx-vol" type="range" min={0} max={1} step={0.01} value={t.volume} onChange={(e) => setTrackVolume(t.id, parseFloat(e.target.value))} />
                     <FxBar label="Track FX" fx={t.fx} effects={effects} compact
                       onAdd={(fx) => { const ins = fxInsert(fx); mapTrack(t.id, (x) => ({ ...x, fx: [...x.fx, ins] })); rebuildTrackChain(t.id, [...t.fx, ins]); }}
@@ -656,7 +1075,9 @@ export function App() {
         </div>
       </div>
       {editor && <SynflowEditor flow={editor.flow} title={editor.title} onSaved={editor.onSaved} onClose={() => setEditor(null)} />}
+      {eqEditor && <EqEditor title={eqEditor.title} settings={eqEditor.settings} sampleRate={eqEditor.sampleRate} getAnalyser={eqEditor.getAnalyser} onChange={eqEditor.onChange} onClose={() => setEqEditor(null)} />}
       {storageSetup && <StorageSetup onFolder={(h2) => adoptFolder(h2, true)} onSkip={() => setStorageSetup(false)} />}
+      {importing && <ImportOverlay info={importing} />}
     </div>
   );
 }

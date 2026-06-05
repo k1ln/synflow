@@ -11,6 +11,7 @@ import {
 } from "@xyflow/react";
 import EventBus from "../sys/EventBus";
 import "./AudioNode.css";
+import { baseNodeStyle } from "../utils/styleUtils";
 
 type Mode = "bars" | "scope";
 type Preset = "aurora" | "ember" | "mono";
@@ -393,6 +394,24 @@ const AnalyzerNodeGPT: React.FC<AnalyzerNodeGPTProps> = ({
       />
     </div>
   );
+};
+
+export const defaultData = {
+  label: "Analyzer",
+  mode: "bars",
+  colorPreset: "aurora",
+  fftSize: 4096,
+  minDecibels: -96,
+  maxDecibels: -10,
+  smoothingTimeConstant: 0.8,
+  style: {
+    ...baseNodeStyle,
+    width: "320px",
+    borderRadius: "14px",
+    background: "#05060d",
+    border: "1px solid #1d2233",
+    boxShadow: "0 14px 34px rgba(5,7,16,0.6)",
+  },
 };
 
 export default React.memo(AnalyzerNodeGPT);
