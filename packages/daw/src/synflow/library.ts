@@ -21,9 +21,12 @@ function build(): LibraryEntry[] {
     if (path.endsWith('/index.json')) continue;
     const data = (mod as any).default ?? mod;
     const group: 'instrument' | 'effect' = path.includes('/effects/') ? 'effect' : 'instrument';
+    // Fall back to the source filename so flows lacking daw/name metadata still get a
+    // stable id + name (otherwise they seed to disk as "undefined.json" and never load).
+    const base = path.split('/').pop()!.replace(/\.json$/i, '');
     out.push({
-      id: data.daw?.id ?? data.name,
-      name: data.name,
+      id: data.daw?.id ?? data.name ?? base,
+      name: data.name ?? base,
       category: data.daw?.category ?? (group === 'effect' ? 'Effects' : 'Instruments'),
       kind: data.daw?.kind,
       group,
@@ -37,7 +40,18 @@ export const LIBRARY: LibraryEntry[] = build();
 export const INSTRUMENTS = LIBRARY.filter((e) => e.group === 'instrument');
 export const EFFECTS = LIBRARY.filter((e) => e.group === 'effect');
 
-export function findEntry(id: string): LibraryEntry | undefined { return LIBRARY.find((e) => e.id === id); }
+// The live catalog (bundled + on-disk + user-created), kept in sync by the app so
+// findEntry can resolve flows/names that aren't in the static bundle (folder-loaded
+// effects, brand-new effects made in Synflow). See registerEntries in app.tsx.
+const dynamic = new Map<string, LibraryEntry>();
+export function registerEntries(entries: LibraryEntry[]): void {
+  dynamic.clear();
+  for (const e of entries) dynamic.set(e.id, e);
+}
+
+export function findEntry(id: string): LibraryEntry | undefined {
+  return dynamic.get(id) ?? LIBRARY.find((e) => e.id === id);
+}
 
 /** Deep-clone a library flow so each track instance is independently editable. */
 export function cloneFlow(flow: Flow): Flow { return JSON.parse(JSON.stringify(flow)); }

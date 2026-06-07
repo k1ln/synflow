@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, Square, Circle, SkipBack, Grid3x3, Layers, SlidersHorizontal, PanelLeft, Save, FolderOpen, Settings, Piano, Check, Download, FileAudio, Loader } from 'lucide-react';
+import { Play, Pause, Square, Circle, SkipBack, Grid3x3, Layers, SlidersHorizontal, PanelLeft, Save, FolderOpen, FilePlus, Settings, Piano, Check, Download, FileAudio, Loader } from 'lucide-react';
 
 export type ViewId = 'tracks' | 'song' | 'live' | 'mix';
 
@@ -12,7 +12,7 @@ const TABS: [ViewId, string, React.ComponentType<any>][] = [
 
 export function TopBar({
   view, setView, isPlaying, onPlay, onStop, armed, onArm, bpm, onBpm, position, browserOpen, setBrowserOpen,
-  projectName, onProjectName, onSave, saved, onOpenSong, onExport, exporting, exportProgress, onBounce, bouncing, bounceProgress,
+  projectName, onProjectName, onNewSong, onSave, saved, onOpenSong, onExport, exporting, exportProgress, onBounce, bouncing, bounceProgress,
 }: {
   view: ViewId;
   setView: (v: ViewId) => void;
@@ -28,6 +28,7 @@ export function TopBar({
   setBrowserOpen: (v: boolean) => void;
   projectName: string;
   onProjectName: (v: string) => void;
+  onNewSong: () => void;
   onSave: () => void;
   saved: boolean;
   onOpenSong: () => void;
@@ -49,7 +50,9 @@ export function TopBar({
       <div className="project">
         <span className="project-pill">Song</span>
         <input className="project-name-input" value={projectName} onChange={(e) => onProjectName(e.target.value)} spellCheck={false} title="Song name" />
+        <button className="icon-btn" title="New song (fresh project, saved to the songs folder)" onClick={onNewSong}><FilePlus size={16} /></button>
         <button className="icon-btn" title="Open song (choose a .json from the songs folder)" onClick={onOpenSong}><FolderOpen size={16} /></button>
+        <button className={`icon-btn ${saved ? 'saved' : ''}`} title="Save song (audio stays on disk, streamed)" onClick={onSave}>{saved ? <Check size={16} /> : <Save size={16} />}</button>
       </div>
 
       <div className="viewtabs">
@@ -81,7 +84,6 @@ export function TopBar({
       <div className="tb-tools">
         <span className="tb-status">{isPlaying ? 'Playing' : 'Stopped'}</span>
         <button className={`icon-btn ${browserOpen ? 'active' : ''}`} title="Browser" onClick={() => setBrowserOpen(!browserOpen)}><PanelLeft size={18} /></button>
-        <button className={`icon-btn ${saved ? 'saved' : ''}`} title="Save song (audio stays on disk, streamed)" onClick={onSave}>{saved ? <Check size={18} /> : <Save size={18} />}</button>
         <button className={`icon-btn ${exporting ? 'busy' : ''}`} title="Export portable song (.json with audio embedded as base64)" onClick={onExport} disabled={exporting}>
           {exporting ? <><Loader size={16} className="spin" /><span className="btn-pct">{pct(exportProgress)}</span></> : <Download size={18} />}
         </button>

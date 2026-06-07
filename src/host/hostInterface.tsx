@@ -29,10 +29,20 @@ function defaultMax(v: number): number {
 
 const C = { accent: '#6ee7a8', panel: '#0c0f16', border: '#26324a', ink: '#cdd6e6', dim: '#7c8aa3' };
 
-export function HostInterfacePanel({ nodes, setNodes, active }: {
+/** Small ✕ close button, shown only when the panel is a toggled overlay (standalone editor). */
+function CloseBtn({ onClose }: { onClose: () => void }) {
+  return (
+    <button onClick={onClose} title="Close (hide host interface)"
+      style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: C.dim, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>✕</button>
+  );
+}
+
+export function HostInterfacePanel({ nodes, setNodes, active, onClose }: {
   nodes: any[];
   setNodes: (updater: (nds: any[]) => any[]) => void;
   active: boolean;
+  /** When provided, the panel is a closable overlay (standalone "Expose to DAW"); omit in DAW edit mode where it's always on. */
+  onClose?: () => void;
 }) {
   if (!active) return null;
   const sel = nodes.find((n) => n.selected);
@@ -42,9 +52,11 @@ export function HostInterfacePanel({ nodes, setNodes, active }: {
     background: C.panel, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12,
     boxShadow: '0 8px 28px rgba(0,0,0,.55)', fontFamily: 'Inter, system-ui, sans-serif', color: C.ink, fontSize: 12,
   };
+  const titleRow: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 8 };
 
   if (!sel) {
-    return <div style={wrap}><div style={{ fontWeight: 700, color: C.accent, marginBottom: 6 }}>Host Interface</div>
+    return <div style={wrap}>
+      <div style={titleRow}><div style={{ fontWeight: 700, color: C.accent, marginBottom: 6 }}>Host Interface</div>{onClose && <CloseBtn onClose={onClose} />}</div>
       <div style={{ color: C.dim }}>Select a node to expose its audio ports, trigger, pitch and knobs to Mothscilla.</div></div>;
   }
 
@@ -72,7 +84,7 @@ export function HostInterfacePanel({ nodes, setNodes, active }: {
 
   return (
     <div style={wrap}>
-      <div style={{ fontWeight: 700, color: C.accent, marginBottom: 2 }}>Host Interface</div>
+      <div style={titleRow}><div style={{ fontWeight: 700, color: C.accent, marginBottom: 2 }}>Host Interface</div>{onClose && <CloseBtn onClose={onClose} />}</div>
       <div style={{ color: C.dim, marginBottom: 4, fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
 
       <div style={head}>Audio</div>

@@ -26,3 +26,11 @@ export const knob01 = (k: ExposedKnob): number => {
 
 /** Map a 0..1 knob position back to the param's real value. */
 export const knobValue = (k: ExposedKnob, v01: number): number => k.min + v01 * (k.max - k.min);
+
+/** Human-readable readout of a knob's real value (precision scales with its range). */
+export const knobReadout = (k: ExposedKnob, v01: number): string => {
+  const v = knobValue(k, v01);
+  const span = Math.abs(k.max - k.min);
+  const dp = span >= 100 ? 0 : span >= 10 ? 1 : span >= 1 ? 2 : 3;
+  return v.toFixed(dp).replace(/\.?0+$/, '') || '0';
+};

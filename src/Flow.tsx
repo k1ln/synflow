@@ -235,6 +235,9 @@ function Flow() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(storedEdges);
   // Embedded in Mothscilla for flow editing: hide chrome + don't restore last flow.
   const dawEdit = isDawEditMode();
+  // Standalone "Expose to DAW": toggles the Host Interface overlay outside DAW edit mode,
+  // so authors can declare exposed knobs / I/O / trigger while editing flows directly.
+  const [exposeOpen, setExposeOpen] = useState(false);
   const [flowItems, setFlowItems] = useState<string[]>([]);
   const [folderPaths, setFolderPaths] = useState<string[]>([]); // all known folders (local)
   const [currentFlowFolder, setCurrentFlowFolder] = useState<string>(''); // folder of currently open flow
@@ -2088,7 +2091,8 @@ function Flow() {
       {/* DAW bridge: when opened by Mothscilla (#mothscilla), load the incoming flow + show "Send to Mothscilla". No-op otherwise. */}
       <DawEditorBridge nodes={nodes} edges={edges} setNodes={setNodes as any} setEdges={setEdges as any} />
       {/* Host interface editor (edit mode only): expose audio I/O, trigger, pitch + knobs to Mothscilla. */}
-      <HostInterfacePanel nodes={nodes} setNodes={setNodes as any} active={dawEdit} />
+      <HostInterfacePanel nodes={nodes} setNodes={setNodes as any} active={dawEdit || exposeOpen}
+        onClose={dawEdit ? undefined : () => setExposeOpen(false)} />
       {/* Flow container */}
       <div className={`flow-canvas-col${orchestratorEditorOpen ? ' flow-canvas-col--hidden' : ''}`}>
       {/* Inline controls: color pickers for selected node and edge */}
@@ -2131,6 +2135,8 @@ function Flow() {
         onChangeAudioFolder={chooseFsFolder}
         onOpenDocs={handleOpenDocs}
         onDeleteFlow={flowNameInput ? handleDeleteCurrentFlow : undefined}
+        exposeActive={exposeOpen}
+        onToggleExpose={() => setExposeOpen((v) => !v)}
       />}
 
       {showDocsPlayground && (

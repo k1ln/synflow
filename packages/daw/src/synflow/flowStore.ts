@@ -98,9 +98,12 @@ export async function readAllFlows(root: any): Promise<LibraryEntry[]> {
       for await (const [name, handle] of (d as any).entries()) {
         if (handle.kind !== 'file' || !name.endsWith('.json')) continue;
         const data = JSON.parse(await (await handle.getFile()).text());
+        // A raw Synflow export is just { nodes, edges } — no name/daw. Derive a clean
+        // id + name from the filename so dropped-in instruments AND effects just work.
+        const base = name.replace(/\.json$/i, '');
         out.push({
-          id: data.daw?.id ?? name.replace(/\.json$/, ''),
-          name: data.name ?? name,
+          id: data.daw?.id ?? data.name ?? base,
+          name: data.name ?? base,
           category: data.daw?.category ?? (group === 'effect' ? 'Effects' : 'Instruments'),
           kind: data.daw?.kind, group, flow: { nodes: data.nodes, edges: data.edges },
         });

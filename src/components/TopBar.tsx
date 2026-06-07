@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Save, Upload, Download, FolderOpen, Plus, Settings, HardDriveDownload, FilePlus, FileInput, FileOutput, Play, Square, MoreHorizontal, Music, BookOpen, Github, Youtube, HelpCircle, Shield, Trash2 } from 'lucide-react';
+import { Save, Upload, Download, FolderOpen, Plus, Settings, HardDriveDownload, FilePlus, FileInput, FileOutput, Play, Square, MoreHorizontal, Music, BookOpen, Github, Youtube, HelpCircle, Shield, Trash2, SlidersHorizontal } from 'lucide-react';
 
 export interface TopBarProps {
   // Left cluster (sidebar-related)
@@ -48,6 +48,10 @@ export interface TopBarProps {
   audioFolderMissing?: boolean; // flag indicating no folder selected / permission lost
   onSelectAudioFolder?: () => void; // trigger folder picker
   onChangeAudioFolder?: () => void; // change current audio folder
+
+  // "Expose to DAW": toggle the Host Interface overlay in standalone editing.
+  onToggleExpose?: () => void;
+  exposeActive?: boolean;
 }
 
 // Icon-only button with tooltip
@@ -107,6 +111,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   onChangeAudioFolder,
   onOpenDocs,
   onDeleteFlow,
+  onToggleExpose,
+  exposeActive,
 }) => {
   const showCurrent = (currentItemName && currentItemName.length > 0);
   const [ioMenuOpen, setIoMenuOpen] = useState(false);
@@ -414,6 +420,24 @@ export const TopBar: React.FC<TopBarProps> = ({
           )}
 
           <Divider />
+
+          {onToggleExpose && (
+            <button
+              title="Expose to DAW — declare which params, I/O and triggers Mothscilla can control"
+              onClick={onToggleExpose}
+              className="topbar-btn"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 10px',
+                borderRadius: 6, cursor: 'pointer',
+                background: exposeActive ? 'rgba(110,231,168,.16)' : 'transparent',
+                color: exposeActive ? '#6ee7a8' : '#eee',
+                border: `1px solid ${exposeActive ? '#2f6b4a' : '#333'}`,
+              }}
+            >
+              <SlidersHorizontal size={16} />
+              <span style={{ fontSize: 11 }}>Expose to DAW</span>
+            </button>
+          )}
 
           {onOpenDocs && (
             <IconBtn title="Docs Playground" onClick={onOpenDocs}>
