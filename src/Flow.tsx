@@ -12,7 +12,7 @@ import {
 import { Connection, Edge, Node } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './Flow.css';
-
+ 
 import { Handle, Position } from '@xyflow/react';
 import NodePaletteDialog, { NODE_CATEGORY_COLORS } from './components/NodePaletteDialog';
 import { useEffect } from 'react';
