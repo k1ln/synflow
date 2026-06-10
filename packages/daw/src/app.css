@@ -581,3 +581,121 @@ body {
 /* Live-page knob groups */
 .lp-group { display: flex; flex-direction: column; gap: 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border-subtle); }
 .lp-group:last-child { border-bottom: none; }
+
+/* Touch scrolling behavior */
+.browser-list,
+.arr2-scroll,
+.mixer,
+.tracks-view,
+.editor-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+@media (max-width: 768px) {
+  .workspace { flex-direction: column; }
+  .main { min-height: 0; }
+
+  .browser {
+    width: 100%;
+    max-height: 40vh;
+    border-right: none;
+    border-bottom: 1px solid var(--border-strong);
+  }
+
+  .topbar {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 8px;
+    gap: 8px;
+  }
+  .transport-wrap { width: 100%; order: 4; }
+  .transport {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 6px 10px;
+  }
+  .tb-tools { margin-left: auto; }
+
+  .t-btn,
+  .icon-btn,
+  .trk-loop,
+  .trk-del,
+  .browser-addfolder,
+  .bg-new,
+  .rec-play,
+  .rec-add,
+  .fxbar-icon,
+  .fxc-edit,
+  .pp-close,
+  .syn-close,
+  .arr2-mute,
+  .arr2-zoom button,
+  .arr2-clip-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .icon-btn.busy { min-height: 44px; }
+  .vtab { min-height: 44px; padding: 8px 12px; }
+  .viewtabs {
+    max-width: 100%;
+    overflow-x: auto;
+    justify-content: flex-start;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .track-add button,
+  .fx-chip,
+  .fx-add,
+  .te-addbtn,
+  .pp-empty-btn,
+  .arr2-mode,
+  .te-loop {
+    min-height: 44px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .tracks-view { flex-direction: column; overflow: auto; }
+  .tracks-rail {
+    width: 100%;
+    max-height: 34vh;
+    border-right: none;
+    border-bottom: 1px solid var(--border-strong);
+  }
+
+  .pr-keys { flex: 0 0 56px; }
+  .pr-keyrow {
+    min-height: 22px;
+    font-size: 10px;
+    padding-right: 6px;
+  }
+
+  .mixer { overflow-x: auto; }
+  .mx-strip { width: 120px; flex: 0 0 120px; }
+
+  .arr2-trk {
+    width: 120px;
+    min-width: 120px;
+  }
+
+  .knob-wrap .knob {
+    width: var(--knob-size-mobile, 56px) !important;
+    height: var(--knob-size-mobile, 56px) !important;
+  }
+}
+
+@media (max-width: 1024px) and (orientation: landscape) {
+  .browser { max-height: 30vh; }
+}
+
+@media (max-width: 800px) {
+  .topbar {
+    padding: 4px;
+    gap: 6px;
+  }
+  .brand-word { display: none; }
+}

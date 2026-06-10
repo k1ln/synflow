@@ -137,6 +137,11 @@
   --tracking-caps: 0.09em;   /* uppercase module titles      */
   --tracking-wide: 0.05em;   /* labels                       */
   --tracking-brand: 0.18em;  /* Orbitron wordmark spacing     */
+
+  /* touch targets */
+  --touch-target-min: 44px;
+  --knob-size-mobile: 56px;
+  --piano-row-mobile: 22px;
 }
 
 /* ============================================================================

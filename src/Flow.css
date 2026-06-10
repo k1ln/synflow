@@ -292,3 +292,30 @@ body {
 }
 .flow-toast--ok { background: #0f2b12; border-color: #2aff9a; }
 .flow-toast--error { background: #2b0f12; border-color: #ff5a6b; }
+
+.flow-canvas-col,
+.flow-orch-col {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+
+@media (max-width: 768px) {
+    .topbar-btn {
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px;
+        min-height: 44px;
+    }
+    .topbar-loading {
+        width: 44px;
+        height: 44px;
+    }
+    .topbar-spinner {
+        width: 22px;
+        height: 22px;
+    }
+    .react-flow__handle {
+        width: 24px;
+        height: 24px;
+    }
+}
