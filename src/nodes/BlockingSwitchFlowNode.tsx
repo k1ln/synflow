@@ -23,7 +23,7 @@ const BlockingSwitchFlowNode: React.FC<BlockingSwitchFlowNodeProps> = ({ data })
         }
         const timeout = setTimeout(() => {
             updateNodeInternals(data.id);
-        }, 100);
+        }, 10);
         return () => clearTimeout(timeout);
     }, [numOutputs, data.id, data.onChange, updateNodeInternals]);
 
