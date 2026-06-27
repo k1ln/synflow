@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Save, Upload, Download, LogIn, LogOut, User, FolderOpen, Share2, RefreshCw, Plus, Settings, HardDriveDownload, Database, FilePlus, FileInput, FileOutput, Play, Square, MoreHorizontal, Mic, Music, BookOpen } from 'lucide-react';
+import { Save, Upload, Download, LogIn, LogOut, User, FolderOpen, Share2, RefreshCw, Plus, Settings, HardDriveDownload, Database, FilePlus, FileInput, FileOutput, Play, Square, MoreHorizontal, Mic, Music, BookOpen, Github } from 'lucide-react';
 
 export interface TopBarProps {
   // Left cluster (sidebar-related)
@@ -349,6 +349,28 @@ export const TopBar: React.FC<TopBarProps> = ({
 
           {onOpenImpressum && <IconBtn title="Impressum" onClick={onOpenImpressum}><Download size={18} /></IconBtn>}
           {onOpenDatenschutz && <IconBtn title="Datenschutz" onClick={onOpenDatenschutz}><Database size={18} /></IconBtn>}
+
+          <a
+            href="https://github.com/k1ln/synflow"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="View on GitHub"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 32,
+              height: 32,
+              borderRadius: 6,
+              background: '#1f1f1f',
+              color: '#eee',
+              border: '1px solid #333',
+              cursor: 'pointer',
+              marginLeft: 4,
+            }}
+          >
+            <Github size={18} />
+          </a>
         </div>
       </div>
     </div>
