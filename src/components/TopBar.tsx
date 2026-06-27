@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Save, Upload, Download, LogIn, LogOut, User, FolderOpen, Share2, RefreshCw, Plus, Settings, HardDriveDownload, Database, FilePlus, FileInput, FileOutput, Play, Square, MoreHorizontal, Mic, Music } from 'lucide-react';
+import { Save, Upload, Download, LogIn, LogOut, User, FolderOpen, Share2, RefreshCw, Plus, Settings, HardDriveDownload, Database, FilePlus, FileInput, FileOutput, Play, Square, MoreHorizontal, Mic, Music, BookOpen } from 'lucide-react';
 
 export interface TopBarProps {
   // Left cluster (sidebar-related)
@@ -22,6 +22,8 @@ export interface TopBarProps {
   onOpenDatenschutz?: () => void;
   statusLabel?: string;
   selectedNodeType?: string;
+  // Docs / playground
+  onOpenDocs?: () => void;
   // Current open entity info
   currentItemType?: 'flow' | 'component';
   currentItemName?: string;
@@ -96,6 +98,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   audioFolderMissing,
   onSelectAudioFolder,
   onChangeAudioFolder,
+  onOpenDocs,
 }) => {
   const showCurrent = (currentItemName && currentItemName.length > 0);
   const [ioMenuOpen, setIoMenuOpen] = useState(false);
@@ -330,6 +333,12 @@ export const TopBar: React.FC<TopBarProps> = ({
           )}
 
           <Divider />
+
+          {onOpenDocs && (
+            <IconBtn title="Docs Playground" onClick={onOpenDocs}>
+              <BookOpen size={18} />
+            </IconBtn>
+          )}
 
           {onOpenImpressum && <IconBtn title="Impressum" onClick={onOpenImpressum}><Download size={18} /></IconBtn>}
           {onOpenDatenschutz && <IconBtn title="Datenschutz" onClick={onOpenDatenschutz}><Database size={18} /></IconBtn>}
