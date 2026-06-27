@@ -36,7 +36,7 @@ Synflow is a browser-based, node-graph workstation for building interactive audi
 - Interactive audio toys, procedural soundbeds, and experimental processors
 
 ---
-
+<img src="public/synflow.png" alt="Synflow" width="800" />
 ## 🖼️ Architecture at a glance
 ```mermaid
 flowchart LR
