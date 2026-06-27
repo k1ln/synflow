@@ -365,6 +365,8 @@ function Flow() {
   // Track flow loading to show top-bar spinner and avoid T.D.Z. access
   const [isFlowLoading, setIsFlowLoading] = useState(false);
 
+  
+
   /**
    * Opens a flow by name. Disk is the primary source;
    * falls back to IndexedDB if disk is unavailable.
@@ -377,6 +379,31 @@ function Flow() {
   ) => {
     if (!flowName) return;
     setIsFlowLoading(true);
+    // Ensure any running audio graph / virtual nodes are stopped and cleaned up
+    try {
+      if (managerRef.current) {
+        try { managerRef.current.dispose(); } catch (e) { console.warn('[Flow] manager dispose failed', e); }
+        managerRef.current = undefined;
+      }
+      audioGraphManagerRef.current = null;
+      if (ctx !== undefined) {
+        try { ctx.close().catch(() => {}); } catch (e) { console.warn('[Flow] context close failed', e); }
+        (ctx as any) = undefined;
+      }
+      setIsPlaying(false);
+      try { EventBus.getInstance().emit('audio.stopped', {}); } catch { /* noop */ }
+    } catch (e) {
+      console.warn('[Flow] Failed to stop audio before opening flow', e);
+    }
+
+    // Reset EventManager to ensure keyboard handlers and callbacks
+    // are destroyed and recreated for the new flow.
+    try {
+      EventManager.resetInstance();
+      eventManagerRef.current = EventManager.getInstance();
+    } catch (e) {
+      console.warn('[Flow] Failed to reset EventManager', e);
+    }
     try {
       setNodes([]);
       setEdges([]);
@@ -1365,32 +1392,7 @@ function Flow() {
     try { EventBus.getInstance().emit('audio.started', {}); } catch { /* noop */ }
   }
 
-  const stopAudio = useCallback(() => {
-    try {
-      if (managerRef.current) {
-        try {
-          managerRef.current.dispose();
-        } catch (e) {
-          console.warn('[audio] manager dispose failed', e);
-        }
-        managerRef.current = undefined;
-      }
-
-      audioGraphManagerRef.current = null;
-
-      if (ctx !== undefined) {
-        try {
-          ctx.close().catch(() => { });
-        } catch (e) {
-          console.warn('[audio] context close failed', e);
-        }
-        (ctx as any) = undefined;
-      }
-    } finally {
-      setIsPlaying(false);
-      try { EventBus.getInstance().emit('audio.stopped', {}); } catch { /* noop */ }
-    }
-  }, []);
+  
 
   // Function to add a new node
 
@@ -2128,7 +2130,22 @@ function Flow() {
         onImportFlowJsonClick={() => document.getElementById('import-flow-json-input')?.click()}
         onImportAllJsonClick={() => document.getElementById('import-all-json-input')?.click()}
         onInitAudio={() => { if (!isPlaying) { init(); } }}
-        onStopAudio={stopAudio}
+        onStopAudio={() => {
+          try {
+            if (managerRef.current) {
+              try { managerRef.current.dispose(); } catch (e) { console.warn('[TopBar] manager dispose failed', e); }
+              managerRef.current = undefined;
+            }
+            audioGraphManagerRef.current = null;
+            if (ctx !== undefined) {
+              try { ctx.close().catch(() => {}); } catch (e) { console.warn('[TopBar] context close failed', e); }
+              (ctx as any) = undefined;
+            }
+          } finally {
+            setIsPlaying(false);
+            try { EventBus.getInstance().emit('audio.stopped', {}); } catch { /* noop */ }
+          }
+        }}
         isPlaying={isPlaying}
         isLoading={isFlowLoading}
         statusLabel={lastSavedAt ? new Date(lastSavedAt).toLocaleTimeString() : 'Not Saved'}
