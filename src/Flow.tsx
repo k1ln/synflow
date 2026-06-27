@@ -92,6 +92,7 @@ import WebRTCOutputFlowNode from './nodes/WebRTCOutputFlowNode';
 import MiniPlayer from './components/MiniPlayer';
 import AudioExplorer from './components/AudioExplorer';
 import AnalyzerNodeGPT from './nodes/AnalyzerNodeGPT';
+import OscilloscopeFlowNode from './nodes/OscilloscopeFlowNode';
 import SpeedDividerFlowNode from './nodes/SpeedDividerFlowNode';
 import AudioSignalFreqShifterFlowNode from './nodes/AudioSignalFreqShifterFlowNode';
 import FlowEventFreqShifterFlowNode from './nodes/FlowEventFreqShifterFlowNode';
@@ -159,6 +160,7 @@ const nodeTypes = {
   SequencerFrequencyFlowNode: SequencerFrequencyFlowNode,
   AutomationFlowNode: AutomationFlowNode,
   AnalyzerNodeGPT: AnalyzerNodeGPT,
+  OscilloscopeFlowNode: OscilloscopeFlowNode,
   LogFlowNode: LogFlowNode,
   MidiKnobFlowNode: MidiKnobFlowNode,
   EventFlowNode: EventFlowNode,
@@ -1670,6 +1672,23 @@ function Flow() {
         smoothingTimeConstant: 0.8,
         style: analyzerStyle,
       };
+    } else if (type === "OscilloscopeFlowNode") {
+      const oscilloscopeStyle = {
+        ...nodeStyleObj,
+        width: "420px",
+      };
+      data = {
+        ...data,
+        label: "Scope",
+        fftSize: 4096,
+        lineWidth: 2,
+        triggerLevel: 0.0,
+        timeScale: 1.0,
+        glowIntensity: 8,
+        zoom: 1.0,
+        panOffset: 0.0,
+        style: oscilloscopeStyle,
+      };
     }
 
     // Determine style width/height for centering.
@@ -1762,6 +1781,7 @@ function Flow() {
     'WebRTCPulseNode',
     'WebSocketAudioNode',
     'AnalyzerNodeGPT',
+    'OscilloscopeFlowNode',
     'EqualizerFlowNode',
     'VocoderFlowNode',
   ]), []);

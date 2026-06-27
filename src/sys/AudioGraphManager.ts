@@ -69,6 +69,7 @@ import VirtualMicNode from "../virtualNodes/VirtualMicNode";
 import VirtualWebRTCInputNode from "../virtualNodes/VirtualWebRTCInputNode";
 import VirtualWebRTCOutputNode from "../virtualNodes/VirtualWebRTCOutputNode";
 import VirtualAnalyzerNodeGPT from "../virtualNodes/VirtualAnalyzerNodeGPT";
+import VirtualOscilloscopeNode from "../virtualNodes/VirtualOscilloscopeNode";
 import VirtualSpeedDividerNode from "../virtualNodes/VirtualSpeedDividerNode";
 import VirtualAudioSignalFreqShifterNode from "../virtualNodes/VirtualAudioSignalFreqShifterNode";
 import { AudioSignalFreqShifterFlowNodeProps } from "../nodes/AudioSignalFreqShifterFlowNode";
@@ -143,6 +144,7 @@ const webAudioApiFlowNodes = [
     "WebSocketAudioNode",
     "RecordingFlowNode",
     "AnalyzerNodeGPT",
+    "OscilloscopeFlowNode",
     "AudioSignalFreqShifterFlowNode",
     "AudioWorkletOscillatorFlowNode",
     "EqualizerFlowNode",
@@ -180,6 +182,7 @@ export type VirtualNodeType = VirtualFlowNode |
     VirtualWebRTCInputNode |
     VirtualWebRTCOutputNode |
     VirtualAnalyzerNodeGPT |
+    VirtualOscilloscopeNode |
     VirtualAudioSignalFreqShifterNode |
     VirtualFlowEventFreqShifterNode |
     VirtualVocoderNode;
@@ -1028,6 +1031,15 @@ export class AudioGraphManager {
                     );
                     virtualAnalyzer.render(nodeData);
                     this.virtualNodes.set(node.id, virtualAnalyzer as any);
+                    break;
+                case "OscilloscopeFlowNode":
+                    const virtualOscilloscope = new VirtualOscilloscopeNode(
+                        this.audioContext,
+                        this.eventBus,
+                        node
+                    );
+                    virtualOscilloscope.render(nodeData);
+                    this.virtualNodes.set(node.id, virtualOscilloscope as any);
                     break;
                 case "EqualizerFlowNode":
                     const virtualEqualizer = new VirtualEqualizerNode(
