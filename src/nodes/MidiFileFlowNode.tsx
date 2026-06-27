@@ -33,6 +33,7 @@ export interface MidiFileFlowNodeData {
   isPlaying: boolean;
   loop: boolean;
   subdivision?: number;  // Clock subdivision: 1 = per beat, 4 = per 16th note, etc.
+  transpose?: number;    // Transpose in semitones (+12 = up one octave)
   style?: React.CSSProperties;
   onChange?: (data: any) => void;
 }
@@ -248,6 +249,7 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
   const [isPlaying, setIsPlaying] = useState<boolean>(data.isPlaying ?? false);
   const [loop, setLoop] = useState<boolean>(data.loop ?? true);
   const [subdivision, setSubdivision] = useState<number>(data.subdivision ?? 1);
+  const [transpose, setTranspose] = useState<number>(data.transpose ?? 12); // Default +12 (one octave up)
   const suppressOnChangeRef = useRef(false);
   const [jumpToBar, setJumpToBar] = useState<number>(0);
   
@@ -267,11 +269,12 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
           currentTick,
           isPlaying,
           loop,
-          subdivision
+          subdivision,
+          transpose
         });
       }
     }
-  }, [midiFile, currentBar, currentTick, isPlaying, loop, subdivision]);
+  }, [midiFile, currentBar, currentTick, isPlaying, loop, subdivision, transpose]);
 
   // Subscribe to virtual node updates for UI sync
   useEffect(() => {
@@ -303,7 +306,8 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
       setCurrentBar(0);
       setCurrentTick(0);
       
-      // Notify virtual node of new MIDI file
+      // Notify virtual node of new MIDI file and reset playback to beginning
+      eventBus.emit(`${nodeId}.reset.receiveNodeOn`, { gate: 1 });
       eventBus.emit(`${nodeId}.params.updateParams`, {
         nodeid: nodeId,
         data: { midiFile: parsed, currentBar: 0, currentTick: 0 }
@@ -498,6 +502,36 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
             <span style={{ fontSize: 10, opacity: 0.7 }}>
               ({midiFile ? Math.floor(midiFile.ticksPerBeat / subdivision) : '-'} ticks)
             </span>
+          </div>
+
+          {/* Transpose control */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+            <span style={{ fontSize: 11 }}>Transpose:</span>
+            <select
+              value={transpose}
+              onChange={(e) => {
+                const newTranspose = parseInt(e.target.value, 10);
+                setTranspose(newTranspose);
+                eventBus.emit(`${nodeId}.params.updateParams`, {
+                  nodeid: nodeId,
+                  data: { transpose: newTranspose }
+                });
+              }}
+              style={{
+                background: baseStyle.background || '#333',
+                color: baseStyle.color || '#fff',
+                border: '1px solid #555',
+                borderRadius: 4,
+                padding: '2px 4px',
+                fontSize: 11
+              }}
+            >
+              <option value={-24}>-24 (2 oct down)</option>
+              <option value={-12}>-12 (1 oct down)</option>
+              <option value={0}>0 (original)</option>
+              <option value={12}>+12 (1 oct up)</option>
+              <option value={24}>+24 (2 oct up)</option>
+            </select>
           </div>
 
           {/* Reset button */}

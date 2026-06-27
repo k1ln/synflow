@@ -25,7 +25,8 @@ const BlockingSwitchFlowNode: React.FC<BlockingSwitchFlowNodeProps> = ({ data })
             updateNodeInternals(data.id);
         }, 10);
         return () => clearTimeout(timeout);
-    }, [numOutputs, data.id, data.onChange, updateNodeInternals]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [numOutputs, data.id, updateNodeInternals]);
 
     // Subscribe to virtual node status updates to show occupied outputs
     useEffect(() => {
