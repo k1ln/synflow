@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FlowSynth WebRTC Admin</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header>
+    <h1>FlowSynth WebRTC Sessions</h1>
+    <p>Manage local PortAudio devices exposed over WebRTC.</p>
+  </header>
+  <main>
+    <section id="status">
+      <button id="refresh-sessions">Refresh Sessions</button>
+      <button id="refresh-devices">Refresh Devices</button>
+      <span id="health-indicator" class="tag">checking…</span>
+    </section>
+
+    <section id="sessions">
+      <h2>Existing Sessions</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Direction</th>
+            <th>Host API</th>
+            <th>Input Device</th>
+            <th>Output Device</th>
+            <th>Sample Rate</th>
+            <th>Channels</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="session-rows"></tbody>
+      </table>
+    </section>
+
+    <section id="session-form">
+      <h2>Create / Update Session</h2>
+      <form id="create-session">
+        <label>
+          Name
+          <input type="text" id="session-name" required placeholder="Monitoring Booth" />
+        </label>
+        <label>
+          Direction
+          <select id="session-direction">
+            <option value="capture">Mic → WebRTC (capture)</option>
+            <option value="playback">WebRTC → Speakers (playback)</option>
+          </select>
+        </label>
+        <label>
+          Host API
+          <select id="session-host-api"></select>
+        </label>
+        <label>
+          Input Device
+          <select id="session-input"></select>
+        </label>
+        <label>
+          Output Device
+          <select id="session-output"></select>
+        </label>
+        <label>
+          Sample Rate
+          <input type="number" id="session-sample-rate" value="48000" min="8000" step="100" />
+        </label>
+        <label>
+          Channels
+          <input type="number" id="session-channels" value="2" min="1" max="8" />
+        </label>
+        <label>
+          Block Size (frames)
+          <input type="number" id="session-block" value="480" min="120" step="120" />
+        </label>
+        <label>
+          Latency (ms)
+          <input type="number" id="session-latency" value="10" min="5" />
+        </label>
+        <label>
+          Description
+          <input type="text" id="session-description" placeholder="Live mix console" />
+        </label>
+        <div class="form-actions">
+          <button type="submit">Save Session</button>
+          <button type="button" id="reset-form">Reset</button>
+        </div>
+        <input type="hidden" id="session-id" />
+      </form>
+    </section>
+  </main>
+
+  <footer>
+    <small>Sessions persist to disk in <code>webrtc-server/data/sessions.json</code>.</small>
+  </footer>
+
+  <script src="./app.js" type="module"></script>
+</body>
+</html>

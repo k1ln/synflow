@@ -1,0 +1,26 @@
+{
+  "name": "flow-webrtc-server",
+  "version": "0.1.0",
+  "description": "Local WebRTC audio bridge for FlowSynth using PortAudio devices",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "naudiodon": "^2.3.6",
+    "uuid": "^11.0.3",
+    "wrtc": "^0.4.7"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.1",
+    "node-pre-gyp": "^0.17.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
