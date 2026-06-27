@@ -12,6 +12,8 @@ export type AutomationFlowNodeProps = {
     id: string;
     label?: string;
     lengthSec?: number; // total automation length in seconds
+    lengthMs?: number; // total automation length in milliseconds
+    lengthUnit?: 's' | 'ms'; // unit for length display
     points?: AutomationPoint[]; // normalized [0..1] x and y
   // Percent range -1000..1000 (interpreted later as percent of target span)
   min?: number; // default 0
@@ -32,7 +34,10 @@ const DEFAULT_POINTS: AutomationPoint[] = [
 const AutomationFlowNode: React.FC<AutomationFlowNodeProps> = ({ data }) => {
   const eventBus = EventBus.getInstance();
   const [label] = useState(data.label || 'Automation');
-  const [lengthSec, setLengthSec] = useState<number>(typeof data.lengthSec === 'number' ? data.lengthSec : 2);
+  const [lengthUnit, setLengthUnit] = useState<'s' | 'ms'>(data.lengthUnit || 's');
+  // Initialize from either lengthMs or lengthSec, converting to internal seconds representation
+  const initialLengthSec = data.lengthMs ? data.lengthMs / 1000 : (typeof data.lengthSec === 'number' ? data.lengthSec : 2);
+  const [lengthSec, setLengthSec] = useState<number>(initialLengthSec);
   // min/max percent inputs removed: mapping is fixed (0..200%) so keep but unused for compatibility
   const [minVal, setMinVal] = useState<number>(typeof data.min === 'number' ? data.min : 0);
   const [maxVal, setMaxVal] = useState<number>(typeof data.max === 'number' ? data.max : 200);
@@ -119,9 +124,9 @@ const AutomationFlowNode: React.FC<AutomationFlowNodeProps> = ({ data }) => {
   }, [minVal, maxVal]);
   useEffect(()=>{
     if (data.onChange instanceof Function) {
-      data.onChange({ ...data, label, lengthSec, points, min: minVal, max: maxVal, loop, style, nodeWidth });
+      data.onChange({ ...data, label, lengthSec, lengthMs: lengthSec * 1000, lengthUnit, points, min: minVal, max: maxVal, loop, style, nodeWidth });
     }
-  }, [lengthSec, points, loop, style, minVal, maxVal, nodeWidth]);
+  }, [lengthSec, lengthUnit, points, loop, style, minVal, maxVal, nodeWidth]);
 
   const clampPercent = (v:number)=> Math.max(-1000, Math.min(1000, v));
 
@@ -289,8 +294,37 @@ const AutomationFlowNode: React.FC<AutomationFlowNodeProps> = ({ data }) => {
      
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop:4 }}>
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
-          <label style={{fontSize:11, lineHeight:'14px'}}>Len {lengthSec.toFixed(2)}s</label>
-          <MidiKnob style={{ display: 'inline-block' }} min={0.05} max={30} value={lengthSec} onChange={(v)=> setLengthSec(Math.max(0.05, Math.min(30, v)))} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+            <label style={{fontSize:11, lineHeight:'14px'}}>
+              Len {lengthUnit === 'ms' ? (lengthSec * 1000).toFixed(0) : lengthSec.toFixed(2)}{lengthUnit}
+            </label>
+            <button
+              onClick={() => setLengthUnit(u => u === 's' ? 'ms' : 's')}
+              style={{
+                background: '#2a3a4a',
+                color: '#aabbcc',
+                border: '1px solid #445566',
+                borderRadius: 3,
+                cursor: 'pointer',
+                fontSize: 9,
+                padding: '1px 4px',
+                lineHeight: '12px'
+              }}
+              title="Toggle between seconds and milliseconds"
+            >
+              {lengthUnit === 's' ? 'ms' : 's'}
+            </button>
+          </div>
+          <MidiKnob 
+            style={{ display: 'inline-block' }} 
+            min={lengthUnit === 'ms' ? 0 : 0.05} 
+            max={lengthUnit === 'ms' ? 2000 : 30} 
+            value={lengthUnit === 'ms' ? lengthSec * 1000 : lengthSec} 
+            onChange={(v)=> {
+              const newLengthSec = lengthUnit === 'ms' ? v / 1000 : v;
+              setLengthSec(Math.max(0, Math.min(30, newLengthSec)));
+            }} 
+          />
         </div>
         <div style={{ display:'flex', flexDirection:'column', fontSize:11, gap:2 }}>
           <label style={{display:'flex',alignItems:'center',gap:4}}>Loop <input style={{margin:0}} type="checkbox" checked={loop} onChange={(e)=> setLoop(e.target.checked)} /></label>

@@ -1,7 +1,7 @@
 import VirtualNode from './VirtualNode';
 import EventBus from '../sys/EventBus';
 import { CustomNode } from '../sys/AudioGraphManager';
-import { MidiNote, ParsedMidiFile } from '../nodes/MidiFileFlowNode';
+import { MidiNote, MidiTempoChange, ParsedMidiFile } from '../nodes/MidiFileFlowNode';
 
 export interface MidiFileVirtualData {
   midiFile?: ParsedMidiFile | null;
@@ -12,6 +12,7 @@ export interface MidiFileVirtualData {
   ticksPerClock?: number;  // How many MIDI ticks to advance per clock signal (0 = auto from PPQ)
   subdivision?: number;    // Clock subdivision: 1 = whole beat, 2 = half, 4 = quarter, etc.
   transpose?: number;      // Transpose notes by semitones (+12 = up one octave, -12 = down one octave)
+  singleVoiceMode?: boolean; // Only one note at a time (monophonic)
 }
 
 export type MidiFileRuntimeNode = CustomNode & { data: MidiFileVirtualData } & { id: string };
@@ -37,6 +38,10 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
   private subdivision: number = 1;  // 1 = per beat, 4 = per 16th note, etc.
   private ticksPerClock: number = 0; // 0 = auto-calculate from PPQ and subdivision
   private transpose: number = 0;     // Transpose in semitones (+12 = up one octave)
+  private singleVoiceMode: boolean = false; // Only one note at a time (monophonic)
+  
+  // Track currently playing note for single voice mode
+  private currentPlayingNote: { note: number; frequency: number; channel: number } | null = null;
   
   // Track the last clock time for timing calculations
   private lastClockTime: number = 0;
@@ -52,11 +57,22 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
   // Current position in sorted notes array
   private noteIndex: number = 0;
   
+  // Tempo changes sorted by tick
+  private tempoChanges: MidiTempoChange[] = [];
+  // Current position in tempo changes array
+  private tempoIndex: number = 0;
+  
   // Handler references for cleanup
   private emitEventsForConnectedEdges: (
     node: MidiFileRuntimeNode,
     data: any,
     eventType: string
+  ) => void;
+  private emitForHandle: (
+    node: MidiFileRuntimeNode,
+    data: any,
+    eventType: string,
+    sourceHandle: string
   ) => void;
 
   constructor(
@@ -66,10 +82,17 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
       node: MidiFileRuntimeNode,
       data: any,
       eventType: string
+    ) => void,
+    emitForHandle?: (
+      node: MidiFileRuntimeNode,
+      data: any,
+      eventType: string,
+      sourceHandle: string
     ) => void
   ) {
     super(undefined, undefined, eventBus, node);
     this.emitEventsForConnectedEdges = emitEventsForConnectedEdges;
+    this.emitForHandle = emitForHandle || emitEventsForConnectedEdges;
     
     // Initialize from node data
     this.loadFromData(node.data);
@@ -87,6 +110,7 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
     this.subdivision = data.subdivision ?? 1;
     this.ticksPerClock = data.ticksPerClock ?? 0;
     this.transpose = data.transpose ?? 0;
+    this.singleVoiceMode = data.singleVoiceMode ?? false;
     
     // Reset note index to match current position
     this.resetNoteIndex();
@@ -113,6 +137,10 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
       });
     }
     
+    // Store tempo changes
+    this.tempoChanges = midiFile.tempoChanges || [];
+    this.tempoIndex = 0;
+    
     // Reset playback state
     this.currentTick = 0;
     this.currentBar = 0;
@@ -128,10 +156,22 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
     for (let i = 0; i < this.sortedNotes.length; i++) {
       if (this.sortedNotes[i].startTick >= this.currentTick) {
         this.noteIndex = i;
-        return;
+        break;
+      }
+      if (i === this.sortedNotes.length - 1) {
+        this.noteIndex = this.sortedNotes.length;
       }
     }
-    this.noteIndex = this.sortedNotes.length;
+    
+    // Find the last tempo change at or before currentTick
+    this.tempoIndex = 0;
+    for (let i = 0; i < this.tempoChanges.length; i++) {
+      if (this.tempoChanges[i].tick <= this.currentTick) {
+        this.tempoIndex = i + 1; // next one to check
+      } else {
+        break;
+      }
+    }
   }
 
   private installSubscriptions() {
@@ -165,19 +205,27 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
       () => this.reset()
     );
 
-    // Forward note-on events to connected edges (main-output handle)
+    // Forward note-on events — only to edges wired from main-output
     this.eventBus.subscribe(
       `${this.node.id}.main-output.sendNodeOn`,
       (data: any) => {
-        this.emitEventsForConnectedEdges(this.node, data, 'receiveNodeOn');
+        this.emitForHandle(this.node, data, 'receiveNodeOn', 'main-output');
       }
     );
 
-    // Forward note-off events to connected edges (main-output handle)
+    // Forward note-off events — only to edges wired from main-output
     this.eventBus.subscribe(
       `${this.node.id}.main-output.sendNodeOff`,
       (data: any) => {
-        this.emitEventsForConnectedEdges(this.node, data, 'receiveNodeOff');
+        this.emitForHandle(this.node, data, 'receiveNodeOff', 'main-output');
+      }
+    );
+
+    // Forward tempo events — only to edges wired from tempo-output
+    this.eventBus.subscribe(
+      `${this.node.id}.tempo-output.sendNodeOn`,
+      (data: any) => {
+        this.emitForHandle(this.node, data, 'receiveNodeOn', 'tempo-output');
       }
     );
 
@@ -215,6 +263,15 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
       this.transpose = d.transpose;
     }
 
+    if (typeof d.singleVoiceMode === 'boolean') {
+      this.singleVoiceMode = d.singleVoiceMode;
+      // If switching to single voice mode while notes are playing, turn them all off
+      if (this.singleVoiceMode) {
+        this.turnOffAllActiveNotes();
+        this.currentPlayingNote = null;
+      }
+    }
+
     if (typeof d.jumpToBar === 'number') {
       this.jumpToBar(d.jumpToBar);
     }
@@ -246,6 +303,7 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
   private onClockTick() {
     if (!this.midiFile) return;
     
+    const wasPlaying = this.isPlaying;
     this.isPlaying = true;
     const now = performance.now();
     const clockInterval = this.lastClockTime > 0 ? now - this.lastClockTime : 0;
@@ -264,10 +322,28 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
     // Debug clock timing
     //console.log(`[Clock] interval=${clockInterval.toFixed(1)}ms, ticksToAdvance=${ticksToAdvance}, msPerTick=${this.msPerTick.toFixed(3)}, range=${startTick}-${endTick}`);
     
+    // On the very first clock tick, emit the initial tempo so connected
+    // clock nodes start at the right BPM immediately.
+    if (!wasPlaying && this.tempoChanges.length > 0) {
+      // Find the last tempo change at or before the current position
+      let initialTempo = this.tempoChanges[0];
+      for (let i = 1; i < this.tempoChanges.length; i++) {
+        if (this.tempoChanges[i].tick <= startTick) {
+          initialTempo = this.tempoChanges[i];
+        } else {
+          break;
+        }
+      }
+      this.emitTempoChange(initialTempo);
+    }
+    
     // Process all note-ons in this tick range with proper timing
     // Note-offs are scheduled via setTimeout based on the note duration
     // Even on first tick (msPerTick=0), we should play notes with a default duration
     this.processNoteOnsInRange(startTick, endTick, clockInterval, ticksToAdvance);
+    
+    // Emit any tempo changes that fall within this tick range
+    this.processTempoChangesInRange(startTick, endTick);
     
     // Advance the tick position
     this.currentTick = endTick;
@@ -409,8 +485,27 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
     
     console.log(
       `[emitNoteOn] t=${now.toFixed(1)}ms, note=${note.note}, transposed=${transposedNote}, ` +
-      `velocity=${note.velocity}, frequency=${frequency.toFixed(2)}`
+      `velocity=${note.velocity}, frequency=${frequency.toFixed(2)}, singleVoiceMode=${this.singleVoiceMode}`
     );
+    
+    // In single voice mode, turn off the currently playing note before starting a new one
+    if (this.singleVoiceMode && this.currentPlayingNote) {
+      console.log(
+        `[SingleVoice] Stopping current note ${this.currentPlayingNote.note} ` +
+        `(freq=${this.currentPlayingNote.frequency.toFixed(2)}) before starting new note ${transposedNote}`
+      );
+      
+      // Cancel any scheduled note-off for the current note
+      const currentKey = `${this.currentPlayingNote.channel}-${this.currentPlayingNote.note - this.transpose}`;
+      if (this.activeNoteOffTimeouts.has(currentKey)) {
+        clearTimeout(this.activeNoteOffTimeouts.get(currentKey)!);
+        this.activeNoteOffTimeouts.delete(currentKey);
+      }
+      
+      // Emit immediate note-off for the current note
+      this.emitNoteOff(this.currentPlayingNote.note - this.transpose, this.currentPlayingNote.channel);
+      this.currentPlayingNote = null;
+    }
     
     const payload = {
       note: transposedNote,
@@ -426,6 +521,15 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
       // will send to all connected edges from this node
     };
     
+    // Update currently playing note for single voice mode
+    if (this.singleVoiceMode) {
+      this.currentPlayingNote = {
+        note: transposedNote,
+        frequency: frequency,
+        channel: note.channel
+      };
+    }
+    
     // Emit to main-output handle
     this.eventBus.emit(`${this.node.id}.main-output.sendNodeOn`, payload);
   }
@@ -438,8 +542,21 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
 
     console.log(
       `[emitNoteOff] t=${now.toFixed(1)}ms, note=${noteNumber}, transposed=${transposedNote}, ` +
-      `frequency=${frequency.toFixed(2)}`
+      `frequency=${frequency.toFixed(2)}, singleVoiceMode=${this.singleVoiceMode}`
     );
+    
+    // In single voice mode, only emit note-off if this is the currently playing note
+    if (this.singleVoiceMode) {
+      if (!this.currentPlayingNote || this.currentPlayingNote.note !== transposedNote) {
+        console.log(
+          `[SingleVoice] Skipping note-off for ${transposedNote} ` +
+          `(current=${this.currentPlayingNote?.note ?? 'none'})`
+        );
+        return;
+      }
+      // Clear the current playing note
+      this.currentPlayingNote = null;
+    }
     
     const payload = {
       note: transposedNote,
@@ -457,6 +574,46 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
     this.eventBus.emit(`${this.node.id}.main-output.sendNodeOff`, payload);
   }
 
+  /**
+   * Check for tempo changes in the tick range [startTick, endTick) and emit them.
+   * Only the last tempo change in the range is emitted (if multiple fall within one clock tick).
+   */
+  private processTempoChangesInRange(startTick: number, endTick: number) {
+    if (this.tempoChanges.length === 0) return;
+    
+    let lastTempoInRange: MidiTempoChange | null = null;
+    
+    while (
+      this.tempoIndex < this.tempoChanges.length &&
+      this.tempoChanges[this.tempoIndex].tick < endTick
+    ) {
+      const tc = this.tempoChanges[this.tempoIndex];
+      if (tc.tick >= startTick) {
+        lastTempoInRange = tc;
+      }
+      this.tempoIndex++;
+    }
+    
+    if (lastTempoInRange) {
+      this.emitTempoChange(lastTempoInRange);
+    }
+  }
+
+  /**
+   * Emit a tempo change event on the tempo-output handle.
+   * The payload includes bpm and value (same number) so the receiving clock
+   * node can read it from either field.
+   */
+  private emitTempoChange(tc: MidiTempoChange) {
+    console.log(`[MidiFile] Tempo change at tick ${tc.tick}: ${tc.bpm} BPM`);
+    const payload = {
+      bpm: tc.bpm,
+      value: tc.bpm,
+      tick: tc.tick
+    };
+    this.eventBus.emit(`${this.node.id}.tempo-output.sendNodeOn`, payload);
+  }
+
   private turnOffAllActiveNotes() {
     // Cancel all pending note-off timeouts
     this.activeNoteOffTimeouts.forEach((timeoutId, key) => {
@@ -469,6 +626,7 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
       this.emitNoteOff(note, channel);
     });
     this.activeNoteOffTimeouts.clear();
+    this.currentPlayingNote = null;
   }
 
   private jumpToBar(bar: number) {
@@ -496,8 +654,10 @@ export class VirtualMidiFileNode extends VirtualNode<MidiFileRuntimeNode, undefi
     this.currentTick = 0;
     this.currentBar = 0;
     this.noteIndex = 0;
+    this.tempoIndex = 0;
     this.isPlaying = false;
     this.lastClockTime = 0;
+    this.currentPlayingNote = null;
     
     this.syncUI();
   }
