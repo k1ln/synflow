@@ -118,14 +118,14 @@ const MidiFlowNote: React.FC<{ data: MidiFlowNoteData }> = ({ data }) => {
             eventBus.emit(`${data.id}.main-input.sendNodeOff`, payload);
           }
         }
-
-        if (cmd === 0x9 && d2 > 0) { // note on
           const freq = midiNoteToFreq(d1);
           const name = midiNoteToName(d1);
+          
+        if (cmd === 0x9 && d2 > 0) { // note on
           emit('note-on', 'on', { value: freq, frequency: freq, note: name, noteNumber: d1, velocity: d2, channel: ch });
 
         } else if (cmd === 0x8 || (cmd === 0x9 && d2 === 0)) { // note off
-          emit('note-off', 'off', { value: 0, frequency: 0, note: lastNote, noteNumber: d1, velocity: d2, channel: ch });
+          emit('note-off', 'off', { value: freq, frequency: freq, note: name, noteNumber: d1, velocity: d2, channel: ch });
         } else if (cmd === 0xB) { // Control Change
           emit('control-change', 'on', { controller: d1, value: d2, channel: ch });
         } else if (cmd === 0xC) { // Program Change (1 data byte)
