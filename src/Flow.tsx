@@ -1690,7 +1690,7 @@ function Flow() {
         label: "Analyzer",
         mode: "bars",
         colorPreset: "aurora",
-        fftSize: 1024,
+        fftSize: 4096,
         minDecibels: -96,
         maxDecibels: -10,
         smoothingTimeConstant: 0.8,

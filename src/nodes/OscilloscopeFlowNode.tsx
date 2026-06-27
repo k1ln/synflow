@@ -112,7 +112,7 @@ const OscilloscopeFlowNode: React.FC<OscilloscopeFlowNodeProps> = ({
   // Subscribe to analyzer data
   useEffect(() => {
     if (!nodeId) return;
-    const key = `${nodeId}.analyser.data`;
+    const key = `${nodeId}.GUI.analyser.data`;
     const handler = (payload: OscilloscopePayload) => {
       // Convert to Float32Array normalized -1 to 1
       const raw = payload.wave;
