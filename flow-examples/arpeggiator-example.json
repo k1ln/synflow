@@ -1,0 +1,109 @@
+{
+  "nodes": [
+    {
+      "id": "clock-1",
+      "type": "ClockFlowNode",
+      "position": { "x": 100, "y": 100 },
+      "data": {
+        "id": "clock-1",
+        "bpm": 120,
+        "isEmitting": true
+      }
+    },
+    {
+      "id": "freq-1",
+      "type": "FrequencyFlowNode",
+      "position": { "x": 100, "y": 250 },
+      "data": {
+        "id": "freq-1",
+        "frequency": 440
+      }
+    },
+    {
+      "id": "arp-1",
+      "type": "ArpeggiatorFlowNode",
+      "position": { "x": 400, "y": 150 },
+      "data": {
+        "id": "arp-1",
+        "noteCount": 4,
+        "mode": "up",
+        "octaveSpread": 1,
+        "baseFrequency": 440
+      }
+    },
+    {
+      "id": "osc-1",
+      "type": "OscillatorFlowNode",
+      "position": { "x": 700, "y": 150 },
+      "data": {
+        "id": "osc-1",
+        "type": "sine",
+        "frequency": 440
+      }
+    },
+    {
+      "id": "adsr-1",
+      "type": "ADSRFlowNode",
+      "position": { "x": 950, "y": 150 },
+      "data": {
+        "id": "adsr-1",
+        "attack": 0.01,
+        "decay": 0.1,
+        "sustain": 0.7,
+        "release": 0.3
+      }
+    },
+    {
+      "id": "master-1",
+      "type": "MasterOutFlowNode",
+      "position": { "x": 1200, "y": 150 },
+      "data": {
+        "id": "master-1"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-clock-arp",
+      "source": "clock-1",
+      "sourceHandle": "main-input",
+      "target": "arp-1",
+      "targetHandle": "clock-input"
+    },
+    {
+      "id": "e-freq-arp",
+      "source": "freq-1",
+      "sourceHandle": "main-output",
+      "target": "arp-1",
+      "targetHandle": "freq-input"
+    },
+    {
+      "id": "e-arp-osc-freq",
+      "source": "arp-1",
+      "sourceHandle": "main-output",
+      "target": "osc-1",
+      "targetHandle": "frequency"
+    },
+    {
+      "id": "e-arp-adsr-trigger",
+      "source": "arp-1",
+      "sourceHandle": "main-output",
+      "target": "adsr-1",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-osc-adsr",
+      "source": "osc-1",
+      "sourceHandle": "main-output",
+      "target": "adsr-1",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-adsr-master",
+      "source": "adsr-1",
+      "sourceHandle": "main-output",
+      "target": "master-1",
+      "targetHandle": "main-input"
+    }
+  ]
+}

@@ -80,6 +80,7 @@ import ImpressumDialog from './components/ImpressumDialog';
 import DatenschutzDialog from './components/DatenschutzDialog';
 import TopBar from './components/TopBar';
 import AutomationFlowNode from './nodes/AutomationFlowNode';
+import ArpeggiatorFlowNode from './nodes/ArpeggiatorFlowNode';
 import MidiKnobFlowNode from './nodes/MidiKnobFlowNode';
 import EventFlowNode from './nodes/EventFlowNode';
 import './sys/exposeFlowSynth';
@@ -222,6 +223,7 @@ const nodeTypes = {
   SequencerFlowNode: SequencerFlowNode,
   SequencerFrequencyFlowNode: SequencerFrequencyFlowNode,
   AutomationFlowNode: AutomationFlowNode,
+  ArpeggiatorFlowNode: ArpeggiatorFlowNode,
   AnalyzerNodeGPT: AnalyzerNodeGPT,
   OscilloscopeFlowNode: OscilloscopeFlowNode,
   LogFlowNode: LogFlowNode,

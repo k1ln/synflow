@@ -62,6 +62,7 @@ import VirtualSampleFlowNode from "../virtualNodes/VirtualSampleFlowNode";
 import VirtualSequencerNode from "../virtualNodes/VirtualSequencerNode";
 import VirtualSequencerFrequencyNode from "../virtualNodes/VirtualSequencerFrequencyNode";
 import VirtualAutomationNode from "../virtualNodes/VirtualAutomationNode";
+import VirtualArpeggiatorNode from "../virtualNodes/VirtualArpeggiatorNode";
 import VirtualMidiKnobNode from "../virtualNodes/VirtualMidiKnobNode";
 import { VirtualMouseTriggerButtonNode } from '../virtualNodes/VirtualMouseTriggerButtonNode';
 import VirtualRecordingNode from "../virtualNodes/VirtualRecordingNode";
@@ -188,7 +189,8 @@ export type VirtualNodeType = VirtualFlowNode |
     VirtualOscilloscopeNode |
     VirtualAudioSignalFreqShifterNode |
     VirtualFlowEventFreqShifterNode |
-    VirtualVocoderNode;
+    VirtualVocoderNode |
+    VirtualArpeggiatorNode;
 
 export class AudioGraphManager {
     private audioContext: AudioContext;
@@ -1112,6 +1114,18 @@ export class AudioGraphManager {
                         this.handleConnectedEdgesAutomationNodeOff(node as any, data, 'receiveNodeOff');
                     });
                     this.virtualNodes.set(node.id, virtualAutomationNode as any);
+                    break;
+                case "ArpeggiatorFlowNode":
+                    const virtualArpeggiatorNode = new VirtualArpeggiatorNode(
+                        this.audioContext,
+                        this.eventBus,
+                        node as any
+                    );
+                    // Subscribe to output events and route them to connected nodes
+                    this.eventBus.subscribe(node.id + '.main-output.sendNodeOn', (data: any) => {
+                        this.emitEventsForConnectedEdges(node as any, data, 'receiveNodeOn');
+                    });
+                    this.virtualNodes.set(node.id, virtualArpeggiatorNode as any);
                     break;
                 case "AnalyzerNodeGPT":
                     const virtualAnalyzer = new VirtualAnalyzerNodeGPT(
