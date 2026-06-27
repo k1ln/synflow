@@ -63,13 +63,6 @@ jobs:
           
           echo "✅ Deployment completed successfully!"
 
-      - name: Invalidate cache (if using CDN)
-        if: ${{ secrets.SCW_DISTRIBUTION_ID != '' }}
-        run: |
-          echo "Note: Add CDN invalidation here if using Scaleway CDN"
-          # Currently Scaleway doesn't have CloudFront equivalent
-          # You would need to wait for cache expiry or use custom solution
-
       - name: Deployment summary
         run: |
           echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
