@@ -300,6 +300,38 @@ function Flow() {
     };
   }, [eventBus]);
 
+  // Ensure all flow handles have a helpful title on hover.
+  useEffect(() => {
+    const setHandleTitle = (el: Element) => {
+      if (!(el instanceof HTMLElement)) return;
+      if (el.title) return;
+      const idAttr = el.getAttribute('data-handle-id') || el.getAttribute('data-handleid') || el.getAttribute('data-id') || el.getAttribute('id') || el.getAttribute('data-handle') || (el as any).dataset?.handle;
+      const typeAttr = el.getAttribute('data-handle-type') || el.getAttribute('data-type') || (el as any).dataset?.handletype;
+      const title = idAttr ? idAttr : (typeAttr ? typeAttr : 'handle');
+      el.title = title;
+    };
+
+    const processExisting = () => {
+      document.querySelectorAll('.react-flow__handle, .xyflow-handle, .react-flow__handle--target, .react-flow__handle--source').forEach(setHandleTitle);
+    };
+
+    processExisting();
+    const mo = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        for (const node of Array.from(m.addedNodes)) {
+          if (node instanceof Element) {
+            if (node.matches && node.matches('.react-flow__handle, .xyflow-handle, .react-flow__handle--target, .react-flow__handle--source')) {
+              setHandleTitle(node);
+            }
+            node.querySelectorAll && node.querySelectorAll('.react-flow__handle, .xyflow-handle, .react-flow__handle--target, .react-flow__handle--source').forEach(setHandleTitle);
+          }
+        }
+      }
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+    return () => mo.disconnect();
+  }, []);
+
 
   let storedNodes: Node[] = [];
   let storedEdges: Edge[] = [];

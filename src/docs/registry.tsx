@@ -1,4 +1,5 @@
 import React from 'react';
+import firstStepsPng from './img/first-steps.png';
 import MasterOutFlowNode from '../nodes/MasterOutFlowNode';
 import OscillatorFlowNode from '../nodes/OscillatorFlowNode';
 import AudioWorkletOscillatorFlowNode from '../nodes/AudioWorkletOscillatorFlowNode';
@@ -116,6 +117,57 @@ const createNodePreview = (
   );
   return Preview;
 };
+
+// Simple first-steps preview: renders the quick demo instructions.
+const FirstStepsPreview: React.FC = () => (
+  <div style={{ padding: 12, maxWidth: 720, lineHeight: 1.45, maxHeight: 420 }}>
+    <h3 style={{ margin: '0 0 8px 0' }}>First Steps</h3>
+    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', height: '100%' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingRight: 8, maxHeight: 360 }}>
+        <ol>
+          <li>Connect your MIDI device and allow Web MIDI access when the browser prompts.</li>
+          <li>Load the demo patch (Import / Load flow) or select the provided demo from docs.</li>
+          <li>Open the <strong>MidiFlowNote</strong> node and select your device from the Device dropdown.</li>
+          <li>Press the app <strong>Play</strong> button to start the AudioContext (audio must be started before sound will play).</li>
+          <li>Press a key on your MIDI controller — you should hear the oscillator routed through the ADSR and Gain to Master Out.</li>
+        </ol>
+        <h4 style={{ margin: '8px 0 4px 0' }}>Add nodes (manual)</h4>
+        <p style={{ margin: 0, color: '#ccc' }}>If you want to build the patch manually, add the nodes in this order for an easy setup:</p>
+        <ol style={{ marginTop: 6 }}>
+          <li><strong>MidiFlowNote</strong> — provides note on/off and frequency events.</li>
+          <li><strong>ADSRFlowNode</strong> — envelope for amplitude control (connect to Gain).</li>
+          <li><strong>OscillatorFlowNode</strong> — tone source (driven by frequency from MidiFlowNote).</li>
+          <li><strong>GainFlowNode</strong> — mix incoming oscillator audio and envelope control.</li>
+          <li><strong>MasterOutFlowNode</strong> — final output to speakers/headphones.</li>
+          <li>(Optional) <strong>LogFlowNode</strong> — attach to outputs to inspect message payloads for debugging.</li>
+        </ol>
+        <h4 style={{ margin: '8px 0 4px 0' }}>Connection sequence</h4>
+        <ol style={{ marginTop: 6 }}>
+          <li>Connect <em>MidiFlowNote</em> <strong>note-on</strong> (or note-off group) → <em>ADSRFlowNode</em> <strong>main-input</strong> (triggers the envelope).</li>
+          <li>Connect <em>MidiFlowNote</em> <strong>output / frequency</strong> → <em>OscillatorFlowNode</em> <strong>frequency</strong> (sets pitch).</li>
+          <li>Connect <em>OscillatorFlowNode</em> <strong>output</strong> → <em>GainFlowNode</em> <strong>main-input</strong> (audio stream).</li>
+          <li>Connect <em>ADSRFlowNode</em> <strong>output</strong> → <em>GainFlowNode</em> <strong>gain</strong> (envelope controls amplitude).</li>
+          <li>Connect <em>GainFlowNode</em> <strong>output</strong> → <em>MasterOutFlowNode</em> <strong>destination-input</strong> (final audio path).</li>
+        </ol>
+        <h4 style={{ margin: '8px 0 4px 0' }}>How to connect nodes</h4>
+        <ol style={{ marginTop: 6 }}>
+          <li>Hover over a node's handle (small circle on left/right). Click and hold the handle, then drag to the target node's handle and release to create a connection.</li>
+          <li>To connect to a parameter (e.g., oscillator frequency or gain), drag to the left-side handle that corresponds to that parameter.</li>
+          <li>To remove a connection, click the edge and press Delete or use the context menu on the connection.</li>
+          <li>Order matters: connect event/gate handles (note-on) before audio handles to ensure trigger arrives when audio is present.</li>
+        </ol>
+        <div style={{ marginTop: 8, color: '#ccc' }}>When finished wiring, press <strong>Play</strong> — then press keys on your MIDI controller or trigger button nodes to hear the patch.</div>
+      </div>
+      <div style={{ width: 320, flexShrink: 0, overflowY: 'auto', maxHeight: 360 }}>
+        <img src={firstStepsPng} alt="First steps diagram" style={{ width: '100%', height: 'auto', objectFit: 'contain', borderRadius: 6, border: '1px solid #333', display: 'block' }} />
+        <div style={{ fontSize: 12, color: '#999', marginTop: 6 }}>Diagram: suggested node layout and connections (Midi → ADSR → Oscillator → Gain → Master)</div>
+        <div style={{ marginTop: 8 }}>
+          <a href="/docs/demo-patch.json" download style={{ color: '#7fffd4' }}>Download demo patch (JSON)</a>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 // Dedicated docs wrapper for the Gain node (with detailed state).
 const GainNodeDoc: React.FC<{ label: string; gain: number }> = ({ label, gain }) => {
@@ -1372,6 +1424,16 @@ const VocoderPreview: React.FC = () => (
 );
 
 export const docs: DocItem[] = [
+  {
+    id: 'first-steps',
+    title: 'First Steps',
+    description: [
+      'Quick start guide to get audio and MIDI working with the demo patch.',
+    ].join('\n'),
+    component: FirstStepsPreview,
+    defaultProps: {},
+    controls: {},
+  },
   {
     id: 'master-out-node',
     title: 'Master Out',
