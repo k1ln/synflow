@@ -79,6 +79,8 @@ import VirtualEqualizerNode from "../virtualNodes/VirtualEqualizerNode";
 import { EqualizerFlowNodeProps } from "../nodes/EqualizerFlowNode";
 import VirtualVocoderNode from "../virtualNodes/VirtualVocoderNode";
 import { VocoderFlowNodeProps } from "../nodes/VocoderFlowNode";
+import VirtualMidiFileNode from "../virtualNodes/VirtualMidiFileNode";
+import { MidiFileFlowNodeProps } from "../nodes/MidiFileFlowNode";
 import VirtualAudioWorkletOscillatorNode from "../virtualNodes/VirtualAudioWorkletOscillatorNode";
 import {
     loadRootHandle,
@@ -990,6 +992,14 @@ export class AudioGraphManager {
                     virtualSequencerFrequencyNode.setSendNodeOn((data) => this.emitEventsForConnectedEdges(node, data, 'receiveNodeOn'));
                     virtualSequencerFrequencyNode.setSendNodeOff((data) => this.emitEventsForConnectedEdges(node, data, 'receiveNodeOff'));
                     this.virtualNodes.set(node.id, virtualSequencerFrequencyNode);
+                    break;
+                case "MidiFileFlowNode":
+                    const virtualMidiFileNode = new VirtualMidiFileNode(
+                        this.eventBus,
+                        node as CustomNode & MidiFileFlowNodeProps,
+                        this.emitEventsForConnectedEdges.bind(this)
+                    );
+                    this.virtualNodes.set(node.id, virtualMidiFileNode as any);
                     break;
                 case "DistortionFlowNode":
                     const virtualDistortionNode = new VirtualDistortionNode(
