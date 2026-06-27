@@ -1584,6 +1584,23 @@ function Flow() {
     // Height isn't explicitly defined; approximate via padding & content. Use 120 as heuristic unless provided.
     const nodeHeight = styleObj?.height ? parseInt(styleObj.height, 10) || 120 : 120;
     const centeredPosition = { x: flowCenter.x - nodeWidth / 2, y: flowCenter.y - nodeHeight / 2 };
+    // When copying, prefer the original node position (possibly offset beforehand)
+    let basePosition = centeredPosition;
+    if (copy && copiedNode) {
+      const px = (copiedNode.position && typeof copiedNode.position.x === 'number')
+        ? copiedNode.position.x
+        : (copiedNode.positionAbsolute && typeof copiedNode.positionAbsolute.x === 'number'
+          ? copiedNode.positionAbsolute.x
+          : undefined);
+      const py = (copiedNode.position && typeof copiedNode.position.y === 'number')
+        ? copiedNode.position.y
+        : (copiedNode.positionAbsolute && typeof copiedNode.positionAbsolute.y === 'number'
+          ? copiedNode.positionAbsolute.y
+          : undefined);
+      if (px !== undefined && py !== undefined) {
+        basePosition = { x: px, y: py };
+      }
+    }
 
     let newNode: any | null = null;
     const id = uuidv4() + "." + type;
@@ -1593,7 +1610,7 @@ function Flow() {
       newNode = {
         id: id,
         type: type,
-        position: centeredPosition,
+        position: basePosition,
         data: {
           ...copiedNode.data, id: id, onChange: (data: any) => {
             //console.log("Node data changed:", data);
@@ -1608,7 +1625,7 @@ function Flow() {
       newNode = {
         id: id,
         type: type,
-        position: centeredPosition,
+        position: basePosition,
         data: {
           ...data, id: id, style: { ...styleObj }, onChange: (data: any) => {
             // console.log("Node data changed:", data);
@@ -1723,13 +1740,80 @@ function Flow() {
       const copiednodes = JSON.parse(
         event.clipboardData?.getData("flowchart:nodes") || "[]"
       ) as any[] | undefined;
-      if (copiednodes) {
-        copiednodes.forEach((node) => {
+      if (copiednodes && Array.isArray(copiednodes) && copiednodes.length) {
+        // Compute original group bounding box center (prefer position, fallback to positionAbsolute)
+        const xs = copiednodes.map((n) =>
+          (n.position && typeof n.position.x === 'number')
+            ? n.position.x
+            : (n.positionAbsolute && typeof n.positionAbsolute.x === 'number'
+              ? n.positionAbsolute.x
+              : 0)
+        );
+        const ys = copiednodes.map((n) =>
+          (n.position && typeof n.position.y === 'number')
+            ? n.position.y
+            : (n.positionAbsolute && typeof n.positionAbsolute.y === 'number'
+              ? n.positionAbsolute.y
+              : 0)
+        );
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+        const originalCenter = {
+          x: (minX + maxX) / 2,
+          y: (minY + maxY) / 2,
+        };
+
+        // Determine current viewport center in flow coordinates
+        let targetCenter = { x: originalCenter.x, y: originalCenter.y };
+        try {
+          const container = document.querySelector('.react-flow') as HTMLElement | null;
+          const width = container?.clientWidth ?? window.innerWidth;
+          const height = container?.clientHeight ?? window.innerHeight;
+          const screenCenter = { x: width / 2, y: height / 2 };
+          // @ts-ignore
+          if (reactFlow?.screenToFlowPosition) {
+            // @ts-ignore
+            targetCenter = reactFlow.screenToFlowPosition(screenCenter);
+          }
+        } catch {
+          // fall back to originalCenter if anything goes wrong
+        }
+
+        // Small extra offset so pastes don't sit exactly on originals
+        const OFFSET_X = 60;
+        const OFFSET_Y = 60;
+
+        const dx = (targetCenter.x - originalCenter.x) + OFFSET_X;
+        const dy = (targetCenter.y - originalCenter.y) + OFFSET_Y;
+
+        const shiftedNodes = copiednodes.map((node) => {
+          const px = (node.position && typeof node.position.x === 'number')
+            ? node.position.x
+            : (node.positionAbsolute && typeof node.positionAbsolute.x === 'number'
+              ? node.positionAbsolute.x
+              : 0);
+          const py = (node.position && typeof node.position.y === 'number')
+            ? node.position.y
+            : (node.positionAbsolute && typeof node.positionAbsolute.y === 'number'
+              ? node.positionAbsolute.y
+              : 0);
+          return {
+            ...node,
+            position: {
+              x: px + dx,
+              y: py + dy,
+            },
+          };
+        });
+
+        shiftedNodes.forEach((node) => {
           addNode(node.type, true, node);
         });
       }
     },
-    [reactFlow]
+    [addNode, reactFlow]
   );
 
   useEffect(() => {
@@ -2164,6 +2248,7 @@ function Flow() {
 
       <ReactFlow
         colorMode="dark"
+        minZoom={0.05}
         nodes={memoizedNodes}
         edges={edges}
         onNodesChange={onNodesChange}
