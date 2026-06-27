@@ -69,13 +69,6 @@ npm run dev
 
 ---
 
-## 🧩 Node palette (sampling)
-- **Audio**: oscillators, biquad filter, compressor, delay, reverb, distortion, audio freq shifter, analyzer, mic/recording
-- **Flow / Control**: flow-event freq shifter, clock, frequency utility, constant, switch/blocking switch, function node, automation, speed divider
-- **MIDI**: MIDI button/knob, MIDI note source, sequencers (trigger/frequency)
-- **I/O**: master out, input/output buses, sample player, log/event nodes, mouse trigger
-- **Worklets**: audio freq shifter and other processors built on AudioWorklet for low-latency tasks
-
 ## 📖 Node catalog (full list)
 
 - Master Out — final bus, meters/volume out
