@@ -197,16 +197,25 @@ const MidiKnob: React.FC<MidiKnobProps> = ({ value, min, max, detent, onChange, 
         {isLearning && (
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,200,0,0.25)', borderRadius: 4, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#222' }}>LEARN</div>
         )}
+        {(activeMapping || isLearning) && (
+          <div style={{
+            position: 'absolute',
+            top: 22,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            color: '#FFD700',
+            fontSize: 8,
+            pointerEvents: 'none',
+            touchAction: 'none',
+            userSelect: 'none',
+            zIndex: 1000,
+            whiteSpace: 'nowrap'
+          }}>
+            {activeMapping ? `CC ${activeMapping.controller}` : 'Learning… move a control'}
+          </div>
+        )}
       </div>
-      {/* Channel info only when mapped or learning to avoid clutter on normal knobs. */}
-      {(activeMapping || isLearning) && (
-        <div style={{ fontSize: 10, opacity: 0.75, marginTop: 6, textAlign:'center', lineHeight:1.15 }}>
-          {activeMapping && (
-            <>CC {activeMapping.controller}</>
-          )}
-          {isLearning && !activeMapping && 'Learning… move a control'}
-        </div>
-      )}
+      {/* Channel info moved into knob overlay to hover above the control */}
     </div>
   );
 };
