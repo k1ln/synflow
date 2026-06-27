@@ -89,7 +89,11 @@ const FunctionFlowNode: React.FC<FunctionNodeProps> = ({ data }) => {
       const handler = (inputData: any) => {
         setInputValues((vals) => {
           const newVals = [...vals];
-          newVals[i] = inputData.data?.value ?? "";
+          const incoming =
+            inputData?.value ??
+            inputData?.data?.value ??
+            "";
+          newVals[i] = incoming;
           return newVals;
         });
       };
@@ -130,7 +134,10 @@ const FunctionFlowNode: React.FC<FunctionNodeProps> = ({ data }) => {
   // Listen for main input
   useEffect(() => {
     const handleReceiveNodeOn = (inputData: any) => {
-      const mainValue = inputData.data?.value ?? "";
+      const mainValue =
+        inputData?.value ??
+        inputData?.data?.value ??
+        "";
       evaluateFunction(mainValue);
       //console.log(`Function evaluated with main input: ${mainValue}`);
     };

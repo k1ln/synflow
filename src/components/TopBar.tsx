@@ -18,6 +18,7 @@ export interface TopBarProps {
   onInitAudio?: () => void;
   onStopAudio?: () => void;
   isPlaying?: boolean; // indicates audio graph started
+  isLoading?: boolean; // indicates flow/nodes are loading
   onOpenImpressum?: () => void;
   onOpenDatenschutz?: () => void;
   statusLabel?: string;
@@ -78,6 +79,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onInitAudio, 
   onStopAudio,
   isPlaying, 
+  isLoading,
   onOpenImpressum, 
   onOpenDatenschutz, 
   statusLabel,
@@ -262,6 +264,11 @@ export const TopBar: React.FC<TopBarProps> = ({
           <Divider />
           {onInitAudio && <IconBtn title={isPlaying ? 'Audio Started' : 'Initialize AudioGraph'} onClick={onInitAudio} playing={!!isPlaying}><Play size={18} /></IconBtn>}
           {onStopAudio && isPlaying && <IconBtn title="Stop Audio" onClick={onStopAudio}><Square size={18} /></IconBtn>}
+          {isLoading && (
+            <div className="topbar-loading" title="Loading flow">
+              <div className="topbar-spinner" />
+            </div>
+          )}
           {statusLabel && <div style={{ fontSize: 11, opacity: .8, padding: '2px 8px', border: '1px solid #333', borderRadius: 999, background: '#1a1a1a' }}>{statusLabel}</div>}
 
           <Divider />

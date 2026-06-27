@@ -109,7 +109,7 @@ export class VirtualFunctionNode extends VirtualNode<CustomNode & FunctionNodePr
             if(Array.isArray(result)){
                 result.forEach((res, index)=>{
                     //console.log("EMIT MULTI OUTPUT", index, res);
-                    this.handleConnectedEdges(this.node, {value: res}, "receiveNodeOn", index);
+                    this.handleConnectedEdges(this.node, {value: res}, eventStr, index);
                 });
             }else{
                 if(eventStr=="receiveNodeOn"){

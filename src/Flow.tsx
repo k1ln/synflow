@@ -305,6 +305,19 @@ function Flow() {
     };
   }, [setNodes, eventBus]);
 
+  // Lightweight toast state for inline notifications
+  type Toast = { id: number; message: string; kind?: 'info' | 'error' };
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const toastCounter = useRef(0);
+  const showToast = useCallback((message: string, kind: 'info' | 'error' = 'info', timeoutMs = 2500) => {
+    const id = ++toastCounter.current;
+    const t: Toast = { id, message, kind };
+    setToasts((prev) => [...prev, t]);
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((x) => x.id !== id));
+    }, timeoutMs);
+  }, []);
+
 
   function addOnchangeToNodes(nodes: any[]) {
     nodes.forEach((node: any) => {
@@ -323,6 +336,8 @@ function Flow() {
 
   // Track last opened flow name to run freshness checks after auth state is ready
   const lastOpenedFlowRef = useRef<string | null>(null);
+  // Track flow loading to show top-bar spinner and avoid T.D.Z. access
+  const [isFlowLoading, setIsFlowLoading] = useState(false);
 
   /**
    * Opens a flow by name. Disk is the primary source;
@@ -335,97 +350,107 @@ function Flow() {
     rootHandle?: FileSystemDirectoryHandle | null
   ) => {
     if (!flowName) return;
-    setNodes([]);
-    setEdges([]);
+    setIsFlowLoading(true);
+    try {
+      setNodes([]);
+      setEdges([]);
 
-    let recNodes: any[] = [];
-    let recEdges: any[] = [];
-    let recFolder = folderPathOverride || '';
-    let loadedFromDisk = false;
+      let recNodes: any[] = [];
+      let recEdges: any[] = [];
+      let recFolder = folderPathOverride || '';
+      let loadedFromDisk = false;
 
-    // Try disk first if handle is available
-    if (rootHandle) {
-      try {
-        const diskFlow = await loadFlowFromDisk(
-          rootHandle,
-          flowName,
-          folderPathOverride || ''
-        );
-        if (diskFlow) {
-          recNodes = diskFlow.nodes || [];
-          recEdges = diskFlow.edges || [];
-          recFolder = diskFlow.folder_path || folderPathOverride || '';
-          loadedFromDisk = true;
+      // Try disk first if handle is available
+      if (rootHandle) {
+        try {
+          const diskFlow = await loadFlowFromDisk(
+            rootHandle,
+            flowName,
+            folderPathOverride || ''
+          );
+          if (diskFlow) {
+            recNodes = diskFlow.nodes || [];
+            recEdges = diskFlow.edges || [];
+            recFolder = diskFlow.folder_path || folderPathOverride || '';
+            loadedFromDisk = true;
 
-          // Sync to IndexedDB so DB stays in sync with disk
-          const payload = {
-            nodes: recNodes,
-            edges: recEdges,
-            folder_path: recFolder,
-            updated_at: diskFlow.updated_at || new Date().toISOString(),
-          };
-          db.put(flowName, payload).catch((e: any) => {
-            console.warn('[Flow] Failed to sync disk flow to DB', e);
-          });
+            // Sync to IndexedDB so DB stays in sync with disk
+            const payload = {
+              nodes: recNodes,
+              edges: recEdges,
+              folder_path: recFolder,
+              updated_at: diskFlow.updated_at || new Date().toISOString(),
+            };
+            db.put(flowName, payload).catch((e: any) => {
+              console.warn('[Flow] Failed to sync disk flow to DB', e);
+            });
+          }
+        } catch (e) {
+          console.warn('[Flow] Disk load failed, falling back to DB', e);
         }
-      } catch (e) {
-        console.warn('[Flow] Disk load failed, falling back to DB', e);
       }
-    }
 
-    // Fall back to IndexedDB if disk load failed or not available
-    if (!loadedFromDisk) {
-      try {
-        const records = await db.get(flowName);
-        if (!records || records.length === 0) {
-          console.warn('Flow not found:', flowName);
-          showToast?.(`Flow "${flowName}" not found`, 'error');
+      // Fall back to IndexedDB if disk load failed or not available
+      if (!loadedFromDisk) {
+        try {
+          const records = await db.get(flowName);
+          if (!records || records.length === 0) {
+            console.warn('Flow not found:', flowName);
+            showToast?.(`Flow "${flowName}" not found`, 'error');
+            return;
+          }
+          const rec = records[0];
+          recNodes = rec.nodes || rec.value?.nodes || [];
+          recEdges = rec.edges || rec.value?.edges || [];
+          recFolder = rec.folder_path
+            || rec.value?.folder_path
+            || folderPathOverride
+            || '';
+        } catch (e) {
+          console.error('Error opening flow from IndexedDB', e);
+          showToast?.('Failed to open flow', 'error');
           return;
         }
-        const rec = records[0];
-        recNodes = rec.nodes || rec.value?.nodes || [];
-        recEdges = rec.edges || rec.value?.edges || [];
-        recFolder = rec.folder_path
-          || rec.value?.folder_path
-          || folderPathOverride
-          || '';
-      } catch (e) {
-        console.error('Error opening flow from IndexedDB', e);
-        showToast?.('Failed to open flow', 'error');
-        return;
       }
+
+      // Sanitize any persisted selection/glow artifacts before applying theme
+      const sanitized = recNodes.map((n: any) => {
+        const d = n.data || {};
+        const style = { ...(d.style || {}) } as any;
+        // Remove strong glow (downgrade to neutral or remove entirely)
+        if (style.boxShadow && /14px 3px/.test(style.boxShadow)) {
+          style.boxShadow =
+            '0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)';
+        }
+        // If glowColor persisted without selection,
+        // keep color but ensure normal strength
+        if (style.glowColor) {
+          style.boxShadow =
+            '0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)';
+        }
+        // Explicitly clear any ReactFlow selection flags
+        const { selected, ...restNode } = n;
+        return { ...restNode, data: { ...d, style }, selected: false };
+      });
+      const themedNodes = normalizeNodeStylesForTheme(sanitized);
+      addOnchangeToNodes(themedNodes);
+      setNodes(themedNodes);
+      setEdges(recEdges);
+      sessionStorage.setItem('currentFlow', flowName);
+
+      setFlowNameInput(flowName);
+      setCurrentFlowFolder(recFolder);
+      // Record last opened flow; freshness check runs in effect once auth state & ensureFlowFresh are ready
+      lastOpenedFlowRef.current = flowName;
+    } finally {
+      // Delay clearing loading state to allow React Flow to render nodes
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsFlowLoading(false);
+        });
+      });
     }
-
-    // Sanitize any persisted selection/glow artifacts before applying theme
-    const sanitized = recNodes.map((n: any) => {
-      const d = n.data || {};
-      const style = { ...(d.style || {}) } as any;
-      // Remove strong glow (downgrade to neutral or remove entirely)
-      if (style.boxShadow && /14px 3px/.test(style.boxShadow)) {
-        style.boxShadow =
-          '0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)';
-      }
-      // If glowColor persisted without selection,
-      // keep color but ensure normal strength
-      if (style.glowColor) {
-        style.boxShadow =
-          '0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)';
-      }
-      // Explicitly clear any ReactFlow selection flags
-      const { selected, ...restNode } = n;
-      return { ...restNode, data: { ...d, style }, selected: false };
-    });
-    const themedNodes = normalizeNodeStylesForTheme(sanitized);
-    addOnchangeToNodes(themedNodes);
-    setNodes(themedNodes);
-    setEdges(recEdges);
-    sessionStorage.setItem('currentFlow', flowName);
-
-    setFlowNameInput(flowName);
-    setCurrentFlowFolder(recFolder);
-    // Record last opened flow; freshness check runs in effect once auth state & ensureFlowFresh are ready
-    lastOpenedFlowRef.current = flowName;
-  }, [setNodes, setEdges, db]);
+  }, [setNodes, setEdges, db, showToast, setIsFlowLoading]);
 
   // Legacy wrapper for backwards compatibility
   const openFlowFromIndexedDB = useCallback(async (
@@ -446,10 +471,15 @@ function Flow() {
         // Removed URL path parsing (/editNode/, /editFlow/) due to bugs
         const storedFlow = sessionStorage.getItem('currentFlow');
         if (storedFlow) {
+          setIsFlowLoading(true);
           await openFlowFromIndexedDB(storedFlow);
+        } else {
+          // Ensure spinner is off if nothing to open
+          setIsFlowLoading(false);
         }
       } catch (e) {
         console.warn('Initial load failed', e);
+        setIsFlowLoading(false);
       }
     };
     loadInitial();
@@ -628,19 +658,6 @@ function Flow() {
   const [datenschutzOpen, setDatenschutzOpen] = useState(false);
   // Control the File menu (Radix Dialog) open state so we can close it before opening other dialogs
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
-
-  // Lightweight toast state for inline notifications
-  type Toast = { id: number; message: string; kind?: 'info' | 'error' };
-  const [toasts, setToasts] = useState<Toast[]>([]);
-  const toastCounter = useRef(0);
-  const showToast = useCallback((message: string, kind: 'info' | 'error' = 'info', timeoutMs = 2500) => {
-    const id = ++toastCounter.current;
-    const t: Toast = { id, message, kind };
-    setToasts((prev) => [...prev, t]);
-    window.setTimeout(() => {
-      setToasts((prev) => prev.filter((x) => x.id !== id));
-    }, timeoutMs);
-  }, []);
 
   // --- Recordings Panel & Storage (File System + fallback IndexedDB) ---------
   const recordingsDbRef = useRef<SimpleIndexedDB>(new SimpleIndexedDB('FlowSynthDB', 'recordings')); // retained ONLY for migration & fallback
@@ -1727,11 +1744,14 @@ function Flow() {
   const onCopyCapture = useCallback(
     (event: ClipboardEvent) => {
       event.preventDefault();
-      const nodes = JSON.stringify(
-        reactFlow?.getNodes().filter((n) => n.selected)
-      );
+      const selectedNodes = reactFlow?.getNodes().filter((n) => n.selected) ?? [];
+      const selectedIds = new Set(selectedNodes.map((n) => n.id));
+      const selectedEdges = reactFlow?.getEdges().filter(
+        (e) => selectedIds.has(e.source) && selectedIds.has(e.target)
+      ) ?? [];
 
-      event.clipboardData?.setData("flowchart:nodes", nodes);
+      const payload = JSON.stringify({ nodes: selectedNodes, edges: selectedEdges });
+      event.clipboardData?.setData("flowchart:nodes", payload);
     },
     [reactFlow]
   );
@@ -1739,10 +1759,12 @@ function Flow() {
   const onPasteCapture = useCallback(
     (event: ClipboardEvent) => {
       event.preventDefault();
-      const copiednodes = JSON.parse(
-        event.clipboardData?.getData("flowchart:nodes") || "[]"
-      ) as any[] | undefined;
-      if (copiednodes && Array.isArray(copiednodes) && copiednodes.length) {
+      const payload = JSON.parse(
+        event.clipboardData?.getData("flowchart:nodes") || "{}"
+      ) as { nodes?: any[]; edges?: any[] };
+      const copiednodes = payload?.nodes || [];
+      const copiededges = payload?.edges || [];
+      if (Array.isArray(copiednodes) && copiednodes.length) {
         // Compute original group bounding box center (prefer position, fallback to positionAbsolute)
         const xs = copiednodes.map((n) =>
           (n.position && typeof n.position.x === 'number')
@@ -1810,12 +1832,48 @@ function Flow() {
           };
         });
 
-        shiftedNodes.forEach((node) => {
-          addNode(node.type, true, node);
+        // Map old ids to new ids for edge remapping
+        const idMap = new Map<string, string>();
+
+        const newNodes = shiftedNodes.map((node) => {
+          const newId = uuidv4() + "." + node.type;
+          idMap.set(node.id, newId);
+          const zIndex = ++nextNodeZRef.current;
+          return {
+            ...node,
+            id: newId,
+            selected: false,
+            zIndex,
+            position: { ...node.position },
+            data: {
+              ...node.data,
+              id: newId,
+              onChange: (data: any) => {
+                eventBus.emit(newId + ".params.updateParams", { nodeid: newId, data: data });
+                eventBus.emit("params.updateParams", { nodeid: newId, data: data });
+              },
+            },
+          } as Node;
         });
+
+        const newEdges = copiededges
+          .filter((e: any) => idMap.has(e.source) && idMap.has(e.target))
+          .map((e: any) => ({
+            ...e,
+            id: uuidv4() + ".edge",
+            selected: false,
+            source: idMap.get(e.source) as string,
+            target: idMap.get(e.target) as string,
+          } as Edge));
+
+        setNodes((nds) => [...nds, ...newNodes]);
+        setEdges((eds) => [...eds, ...newEdges]);
+        if (audioGraphManagerRef.current !== null) {
+          init();
+        }
       }
     },
-    [addNode, reactFlow]
+    [reactFlow, setNodes, setEdges]
   );
 
   useEffect(() => {
@@ -1937,6 +1995,7 @@ function Flow() {
         onInitAudio={() => { if (!isPlaying) { init(); } }}
         onStopAudio={stopAudio}
         isPlaying={isPlaying}
+        isLoading={isFlowLoading}
         statusLabel={lastSavedAt ? new Date(lastSavedAt).toLocaleTimeString() : 'Not Saved'}
         onOpenImpressum={() => setImpressumOpen(true)}
         onOpenDatenschutz={() => setDatenschutzOpen(true)}

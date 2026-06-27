@@ -736,13 +736,19 @@ export class AudioGraphManager {
                 }
             }
             if (index !== null) {
-                if (edge.sourceHandle === "output-" + index) {
-                    this.eventBus.emit(`${targetNodeId}.${edge.targetHandle}.receiveNodeOn`, {
-                        ...data[index],
-                        nodeId: targetNodeId,
-                        source: node.id,
-                    });
+                if (edge.sourceHandle !== "output-" + index) {
+                    continue;
                 }
+                const rawPayload = Array.isArray(data) ? data[index] : data;
+                const payload =
+                    rawPayload && typeof rawPayload === 'object'
+                        ? rawPayload
+                        : { value: rawPayload };
+                this.eventBus.emit(`${targetNodeId}.${edge.targetHandle}.${eventType}`, {
+                    ...payload,
+                    nodeId: targetNodeId,
+                    source: node.id,
+                });
             } else {
                 this.eventBus.emit(`${targetNodeId}.${edge.targetHandle}.${eventType}`, {
                     ...data,

@@ -97,10 +97,7 @@ const DocsPlayground: React.FC<DocsPlaygroundProps> = ({ onClose }) => {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: 0.3 }}>
-              Docs Playground
-            </span>
-            <span style={{ fontSize: 11, opacity: 0.7 }}>
-              Browse and try documented components in real time.
+              Docs
             </span>
           </div>
         </div>
@@ -138,7 +135,7 @@ const DocsPlayground: React.FC<DocsPlaygroundProps> = ({ onClose }) => {
           }}
         >
           <div style={{ fontSize: 11, opacity: 0.7, padding: '2px 6px 6px' }}>
-            Components
+            Nodes
           </div>
           <div style={{ flex: 1, overflow: 'auto' }}>
             {docs.map((doc) => {
@@ -161,17 +158,6 @@ const DocsPlayground: React.FC<DocsPlaygroundProps> = ({ onClose }) => {
                   }}
                 >
                   <div style={{ fontWeight: 500 }}>{doc.title}</div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      opacity: 0.7,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {doc.description}
-                  </div>
                 </button>
               );
             })}

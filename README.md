@@ -137,6 +137,32 @@ Key examples:
 - `scripts/` — Dev tooling and version helpers
 - `README.DEPLOYMENT.md` — Docker and proxy deployment guide
 
+## 🧠 Flow system overview
+- Hybrid graph: audio-rate nodes run in Web Audio/AudioWorklet; flow/control nodes talk via an in-browser EventBus. UI params drive virtual nodes, which build/update the underlying audio graph.
+- Persistence: the File System Access API is preferred. You pick a root folder; the app writes flows and audio there. IndexedDB is used only as a fallback and for migration.
+
+## 📂 Storage locations (local-first)
+- **Primary (File System Access API):**
+  - You choose a root folder; flows are synced disk ↔ IndexedDB (disk is source of truth).
+  - Audio assets go into subfolders under that root. The app will list all subdirectories and audio files; by convention it uses `recording/` and `sampling/` if present.
+  - Exports/backups still use browser download (e.g., `flowSynth-backup.json`).
+- **Fallback (IndexedDB):**
+  - If file-system permission isn’t granted, flows/recordings fall back to SimpleIndexedDB stores (`FlowSynthDB`). Migration helpers move old IndexedDB blobs to disk once a folder is chosen.
+
+### On-disk layout (created when you pick a folder)
+```
+<your-root>/
+├─ recording/   # recorded audio (WAV/others written via File System Access)
+├─ sampling/    # sampling snapshots
+├─ flows/       # flow JSON snapshots (disk is leader; synced to IndexedDB)
+└─ scripts/     # generated scripts/components from embedded graphs
+```
+
+## 🗂️ Document/data structure (at a glance)
+- **Flows:** nodes + edges + per-node data (controls, labels, mappings); serialized JSON for export/import. Synced to disk when a root folder is set.
+- **Virtual nodes:** mirror UI nodes and manage the Web Audio graph (filters, gains, worklets, analyzers).
+- **Audio files:** stored on disk under the chosen root (e.g., `recording/`, `sampling/`, or other subfolders you create); if no disk access, kept as blobs in IndexedDB until migrated.
+
 ---
 
 ## 🚢 Deployment
@@ -145,4 +171,4 @@ For containerized or reverse-proxy setups (nginx/Apache), see [README.DEPLOYMENT
 ---
 
 ## 📝 License
-ISC License. See [LICENSE](LICENSE).
+MIT License. See [LICENSE](LICENSE).
