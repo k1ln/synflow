@@ -1,0 +1,71 @@
+name: Deploy to Scaleway
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    # Only run if commit message contains '/prod'
+    if: contains(github.event.head_commit.message, '/prod')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Deploy to Scaleway Object Storage
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.SCW_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SCW_SECRET_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.SCW_REGION }}
+          BUCKET_NAME: ${{ secrets.SCW_BUCKET_NAME }}
+          SCW_REGION: ${{ secrets.SCW_REGION }}
+        run: |
+          # Set Scaleway S3 endpoint
+          export AWS_ENDPOINT_URL=https://s3.$SCW_REGION.scw.cloud
+          
+          # Sync build files to bucket
+          aws s3 sync dist/ s3://$BUCKET_NAME/ \
+            --endpoint-url=$AWS_ENDPOINT_URL \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "index.html" \
+            --exclude "*.html"
+          
+          # Upload HTML files with no-cache for SPA routing
+          aws s3 sync dist/ s3://$BUCKET_NAME/ \
+            --endpoint-url=$AWS_ENDPOINT_URL \
+            --exclude "*" \
+            --include "*.html" \
+            --cache-control "public, max-age=0, must-revalidate"
+          
+          echo "✅ Deployment completed successfully!"
+
+      - name: Deployment summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bucket**: ${{ secrets.SCW_BUCKET_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Region**: ${{ secrets.SCW_REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Author**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Website URL: https://${{ secrets.SCW_BUCKET_NAME }}.s3-website.${{ secrets.SCW_REGION }}.scw.cloud" >> $GITHUB_STEP_SUMMARY
