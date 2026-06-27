@@ -7,6 +7,10 @@
   <img src="https://img.shields.io/badge/audio-Web%20Audio%20API-00c853" alt="Web Audio" />
 </p>
 
+<p align="center">
+  <img src="public/screenshot.png" alt="FlowSynth Screenshot" width="800" />
+</p>
+
 FlowSynth is a browser-based, node-graph workstation for building interactive audio, MIDI, and control flows. It combines a modular synth feel with a visual editor powered by @xyflow/react, React 19, and the Web Audio API. Patch oscillators, filters, FX, MIDI utilities, and flow-event processors together to prototype ideas fast—entirely in the browser.
 
 ---
