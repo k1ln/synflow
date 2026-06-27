@@ -2460,7 +2460,7 @@ function Flow() {
         onNodeClick={onNodeClick}
         nodeTypes={nodeTypes as any}
         proOptions={{ hideAttribution: true }}
-        onlyRenderVisibleElements={true}
+        onlyRenderVisibleElements={false}
         defaultEdgeOptions={{
           // Do not set stroke here so per-edge style.stroke can control color.
           // Keep consistent thickness and caps globally.
