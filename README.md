@@ -7,7 +7,7 @@
 ╚══════╝   ╚═╝   ╚═╝  ╚═══╝╚═╝     ╚══════╝ ╚═════╝  ╚══╝╚══╝ 
 ```
 
-<p align="center">
+<p>
   <img src="https://img.shields.io/badge/build-vite-blue" alt="Vite" />
   <img src="https://img.shields.io/badge/ui-react%2019-61dafb" alt="React" />
   <img src="https://img.shields.io/badge/graph-@xyflow%20react-8e7cc3" alt="XYFlow" />
