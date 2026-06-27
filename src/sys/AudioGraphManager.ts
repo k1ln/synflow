@@ -485,6 +485,7 @@ export class AudioGraphManager {
                                 source: node.id,
                                 data: {
                                     [targetNodeHandle]: targetNodeHandleData,
+                                    value: targetNodeHandleData,  // Include 'value' for compatibility with oscillator nodes
                                 }
                             }
                             if (eventType !== "receiveNodeOff") {
