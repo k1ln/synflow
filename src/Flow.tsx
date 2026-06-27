@@ -1762,6 +1762,8 @@ function Flow() {
     'WebRTCPulseNode',
     'WebSocketAudioNode',
     'AnalyzerNodeGPT',
+    'EqualizerFlowNode',
+    'VocoderFlowNode',
   ]), []);
 
   const isAudioNodeType = useCallback((t?: string) => !!(t && AUDIO_NODE_TYPES.has(t)), [AUDIO_NODE_TYPES]);
