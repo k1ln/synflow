@@ -74,6 +74,7 @@ import {
   listAllSubdirectories,
   listFlowsOnDisk,
   loadFlowFromDisk,
+  makeFlowDbKey,
 } from './util/FileSystemAudioStore';
 import ImpressumDialog from './components/ImpressumDialog';
 import DatenschutzDialog from './components/DatenschutzDialog';
@@ -466,7 +467,8 @@ function Flow() {
               folder_path: recFolder,
               updated_at: diskFlow.updated_at || new Date().toISOString(),
             };
-            db.put(flowName, payload).catch((e: any) => {
+            const dbKey = makeFlowDbKey(flowName, recFolder);
+            db.put(dbKey, payload).catch((e: any) => {
               console.warn('[Flow] Failed to sync disk flow to DB', e);
             });
           }
@@ -478,7 +480,8 @@ function Flow() {
       // Fall back to IndexedDB if disk load failed or not available
       if (!loadedFromDisk) {
         try {
-          const records = await db.get(flowName);
+          const dbKey = makeFlowDbKey(flowName, folderPathOverride || '');
+          const records = await db.get(dbKey);
           if (!records || records.length === 0) {
             console.warn('Flow not found:', flowName);
             showToast?.(`Flow "${flowName}" not found`, 'error');
@@ -651,7 +654,9 @@ function Flow() {
         if (Array.isArray(data.flows)) {
           for (const f of data.flows) {
             if (!f || !f.id) continue;
-            await db.put(f.id, { nodes: f.nodes || [], edges: f.edges || [], updated_at: f.updated_at });
+            const folderPath = f.folder_path || '';
+            const dbKey = makeFlowDbKey(f.id, folderPath);
+            await db.put(dbKey, { nodes: f.nodes || [], edges: f.edges || [], folder_path: folderPath, updated_at: f.updated_at });
           }
           // refresh names
           const flows = await db.get('*');
@@ -1106,7 +1111,8 @@ function Flow() {
     }
 
     // Always sync to IndexedDB as well (cache/fallback)
-    db.put(name, payloadLocal);
+    const dbKey = makeFlowDbKey(name, currentFlowFolder);
+    db.put(dbKey, payloadLocal);
 
     setFlowNameInput(name);
     setSaveDialogOpen(false);
@@ -1176,7 +1182,8 @@ function Flow() {
     }
 
     // Always sync to IndexedDB as well (cache/fallback)
-    db.put(name, {
+    const dbKey = makeFlowDbKey(name, currentFlowFolder);
+    db.put(dbKey, {
       nodes: payloadNodes,
       edges: payloadEdges,
       folder_path: currentFlowFolder,
@@ -2061,7 +2068,8 @@ function Flow() {
 
   function saveFlowToIndexedDB(name: string) {
     if (!name) return;
-    db.put(name, { nodes, edges });
+    const dbKey = makeFlowDbKey(name, currentFlowFolder);
+    db.put(dbKey, { nodes, edges, folder_path: currentFlowFolder });
     sessionStorage.setItem('currentFlow', name);
     setFlowNameInput(name);
     setFlowItems((prev) => prev.includes(name) ? prev : [...prev, name]);
@@ -2080,13 +2088,15 @@ function Flow() {
       try {
         if (oldName && oldName !== trimmed) {
           try {
-            await db.delete(oldName);
+            const oldKey = makeFlowDbKey(oldName, currentFlowFolder);
+            await db.delete(oldKey);
           } catch {
             // ignore
           }
         }
 
-        await db.put(trimmed, {
+        const newKey = makeFlowDbKey(trimmed, currentFlowFolder);
+        await db.put(newKey, {
           nodes: payloadNodes,
           edges: payloadEdges,
           folder_path: currentFlowFolder,
@@ -2408,9 +2418,10 @@ function Flow() {
         fullScreen={false}
         onOpenLocal={(name, folder_path) => { openFlowFromIndexedDB(name, folder_path); setOpenDialogFlows(false); }}
         onClose={() => setOpenDialogFlows(false)}
-        onDeleteLocal={async (name) => {
+        onDeleteLocal={async (name, folder_path) => {
           try {
-            await db.delete(name);
+            const dbKey = makeFlowDbKey(name, folder_path || '');
+            await db.delete(dbKey);
           } catch (e) { console.warn('Local delete failed', e); }
           setFlowItems(items => items.filter(i => i !== name));
           setLocalFlowMeta(meta => meta.filter(m => m.name !== name));
@@ -2433,7 +2444,11 @@ function Flow() {
               const fp = rec.folder_path || rec.value?.folder_path || '';
               if (fp.startsWith(oldP)) {
                 const newFp = newP + fp.slice(oldP.length);
-                await db.put(rec.id, { nodes: rec.nodes || rec.value?.nodes || [], edges: rec.edges || rec.value?.edges || [], folder_path: newFp, updated_at: rec.updated_at });
+                const flowName = (rec.id || '').split('/').pop() || rec.id;
+                const oldKey = makeFlowDbKey(flowName, fp);
+                const newKey = makeFlowDbKey(flowName, newFp);
+                try { await db.delete(oldKey); } catch {}
+                await db.put(newKey, { nodes: rec.nodes || rec.value?.nodes || [], edges: rec.edges || rec.value?.edges || [], folder_path: newFp, updated_at: rec.updated_at });
               }
             }
             const refreshed = await db.get('*');
@@ -2442,10 +2457,13 @@ function Flow() {
         }}
         onMoveFlow={(flow, targetFolder) => {
           (async () => {
-            const recs = await db.get(flow.name);
+            const oldKey = makeFlowDbKey(flow.name, flow.folder_path || '');
+            const recs = await db.get(oldKey);
             if (recs && recs[0]) {
               const r = recs[0];
-              await db.put(flow.name, { nodes: r.nodes || r.value?.nodes || [], edges: r.edges || r.value?.edges || [], folder_path: targetFolder, updated_at: r.updated_at });
+              const newKey = makeFlowDbKey(flow.name, targetFolder);
+              try { await db.delete(oldKey); } catch {}
+              await db.put(newKey, { nodes: r.nodes || r.value?.nodes || [], edges: r.edges || r.value?.edges || [], folder_path: targetFolder, updated_at: r.updated_at });
               if (flowNameInput === flow.name) { setCurrentFlowFolder(targetFolder); }
               const refreshed = await db.get('*');
               setLocalFlowMeta(refreshed.map((f: any) => ({ id: f.id, name: (f.id || '').split('/').pop() || f.id, folder_path: f.folder_path || f.value?.folder_path || '', updated_at: f.updated_at, _source: 'local' })));
@@ -2459,17 +2477,20 @@ function Flow() {
           (async () => {
             // Handle local flows
             if (flow._source === 'local') {
-              const recs = await db.get(flow.name);
+              const oldKey = makeFlowDbKey(flow.name, flow.folder_path || '');
+              const recs = await db.get(oldKey);
               if (recs && recs[0]) {
-                try { await db.delete(flow.name); } catch { }
+                try { await db.delete(oldKey); } catch { }
 
                 // If this is the currently open flow, save the editor's current state
                 const isCurrentFlow = flowNameInput === flow.name;
                 const nodesToSave = isCurrentFlow ? nodes : (recs[0].nodes || recs[0].value?.nodes || []);
                 const edgesToSave = isCurrentFlow ? edges : (recs[0].edges || recs[0].value?.edges || []);
                 const updated_at = new Date().toISOString();
+                const folderPath = recs[0].folder_path || recs[0].value?.folder_path || '';
+                const newKey = makeFlowDbKey(newName, folderPath);
 
-                await db.put(newName, { nodes: nodesToSave, edges: edgesToSave, folder_path: recs[0].folder_path || recs[0].value?.folder_path || '', updated_at });
+                await db.put(newKey, { nodes: nodesToSave, edges: edgesToSave, folder_path: folderPath, updated_at });
                 setFlowItems(prev => prev.filter(n => n !== flow.name).concat(newName));
                 setLocalFlowMeta(meta => meta.filter(m => m.name !== flow.name).concat({ id: newName, name: newName, folder_path: flow.folder_path || '', updated_at, _source: 'local' }));
                 if (isCurrentFlow) { setFlowNameInput(newName); localStorage.setItem('currentFlow', newName); }
