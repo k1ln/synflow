@@ -2,7 +2,6 @@ import VirtualNode from './VirtualNode';
 import EventBus from '../sys/EventBus';
 import { CustomNode } from '../sys/AudioGraphManager';
 // Static imports (requested): use direct imports instead of dynamic import/then chains
-import { uploadAudio } from '../services/apiClient';
 import { loadRootHandle, writeAudioBlob } from '../util/FileSystemAudioStore';
 
 interface RecordingData {
@@ -207,10 +206,7 @@ registerProcessor('RecorderProcessor', RecorderProcessor);
           } catch (e) { console.warn('[VirtualRecordingNode] download trigger failed', e); }
         }
         // Optional backend upload if authenticated
-        try {
-          const token = localStorage.getItem('authToken');
-          if (token) uploadAudio(wavBlob, name).catch(err => console.warn('[VirtualRecordingNode] upload failed', err));
-        } catch (e) { console.warn('[VirtualRecordingNode] upload invocation failed', e); }
+        
       }
     } catch (e) {
       this.eventBus.emit(this.node.id + '.status.update', { error: 'wav_failed' });

@@ -2072,29 +2072,7 @@ function Flow() {
         loading={false}
         usePortal
         fullScreen={false}
-        onTogglePublish={async (item, makePublic) => {
-          try {
-            // We need the latest local flow data by name to save with new public state
-            const name = item.name.trim();
-            const local = await db.get(name);
-            let nodesData: any[] = [];
-            let edgesData: any[] = [];
-            if (local && local[0]) {
-              nodesData = local[0].nodes || local[0].value?.nodes || [];
-              edgesData = local[0].edges || local[0].value?.edges || [];
-            } else {
-              // fall back to current editor state if the open flow matches
-              if (flowNameInput && flowNameInput.trim() === name) {
-                nodesData = nodes;
-                edgesData = edges as any;
-              }
-            }
-            await saveFlowRemote({ name, data: { nodes: nodesData, edges: edgesData }, is_public: !!makePublic });
-            await refreshServerFlows();
-          } catch (e) { console.warn('Toggle publish flow failed', e); }
-        }}
         onOpenLocal={(name, folder_path) => { openFlowFromIndexedDB(name, folder_path); setOpenDialogFlows(false); }}
-        onOpenRemote={(flow) => { openServerFlow(flow); setOpenDialogFlows(false); }}
         onClose={() => setOpenDialogFlows(false)}
         onDeleteLocal={async (name) => {
           try {
@@ -2108,27 +2086,10 @@ function Flow() {
             setNodes([]); setEdges([]);
           }
         }}
-        onDeleteRemote={async (item) => {
-          try {
-            // remote deletion by id
-            if (item.id) {
-              const { deleteFlow } = await import('./services/apiClient');
-              await deleteFlow(item.id);
-              await refreshServerFlows();
-            }
-          } catch (e) { console.warn('Remote delete failed', e); }
-          // If we deleted the currently open flow by name, clear editor
-          if (flowNameInput && flowNameInput === item.name) {
-            setFlowNameInput('');
-            localStorage.removeItem('currentFlow');
-            setNodes([]); setEdges([]);
-          }
-        }}
         onCreateFolder={(fullPath) => {
           const pathStr = (fullPath || '').trim();
           if (!pathStr) return;
           setFolderPaths(prev => prev.includes(pathStr) ? prev : [...prev, pathStr].sort());
-          if (authUser) { createFolder(pathStr).catch(() => { }); }
         }}
         onRenameFolder={(oldP, newP) => {
           setFolderPaths(prev => prev.map(p => p === oldP || p.startsWith(oldP + '/') ? newP + p.slice(oldP.length) : p));
@@ -2144,7 +2105,6 @@ function Flow() {
             const refreshed = await db.get('*');
             setLocalFlowMeta(refreshed.map((f: any) => ({ id: f.id, name: f.id, folder_path: f.folder_path || f.value?.folder_path || '', updated_at: f.updated_at, _source: 'local' })));
           })();
-          if (authUser) { renameFolder(oldP, newP).catch(() => { }); }
         }}
         onMoveFlow={(flow, targetFolder) => {
           (async () => {
@@ -2160,7 +2120,6 @@ function Flow() {
               setFolderPaths(Array.from(folderSet.values()).sort());
             }
           })();
-          if (authUser) { moveFlowRemote(flow.name, targetFolder).catch(() => { }); }
         }}
         onRenameFlow={(flow, newName) => {
           (async () => {
@@ -2198,22 +2157,6 @@ function Flow() {
               }
             }
             // Handle remote flows
-            if (authUser && (flow._source === 'mine' || flow._source === 'public')) {
-              try {
-                await renameFlowRemote(flow.name, newName);
-
-                // If this is the currently open flow, save its current state to the server
-                if (flowNameInput === flow.name) {
-                  const dataPayload = { nodes: nodes.map(n => ({ ...n, selected: false })), edges: edges.map(e => ({ ...e, selected: false })) };
-                  await saveFlowRemote({ name: newName, data: dataPayload, folder_path: flow.folder_path, is_public: false });
-                  setFlowNameInput(newName);
-                  localStorage.setItem('currentFlow', newName);
-                }
-
-                // Update remote flow list
-                setServerFlows(flows => flows.map(f => f.id === flow.id ? { ...f, name: newName } : f));
-              } catch (err) { console.error('Failed to rename remote flow', err); }
-            }
           })();
         }}
       />

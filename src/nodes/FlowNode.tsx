@@ -4,7 +4,6 @@ import { SimpleIndexedDB } from "../util/SimpleIndexedDB";
 import EventBus from "../sys/EventBus";
 import { Knob } from 'react-rotary-knob-react19';
 import ExplorerDialog from '../components/ExplorerDialog';
-import { listMyFlows, listPublicFlows, getFlow, renameFlow as renameFlowRemote, currentUser } from '../services/apiClient';
 import { saveFlowToDisk, deleteFlowFromDisk, FlowData, loadRootHandle, loadFlowFromDisk, listFlowsOnDisk} from '../util/FileSystemAudioStore';
 
 export type FlowNodeProps = {
@@ -47,11 +46,6 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
 
     const refreshRemoteFlows = useCallback(async ()=>{
         setLoadingRemote(true);
-        try {
-            try { const mine = await listMyFlows(); setServerFlows(mine || []); } catch {}
-            try { const pub = await listPublicFlows(); setPublicFlows(pub || []); } catch {}
-            remoteLoadedRef.current = true;
-        } finally { setLoadingRemote(false); }
     }, []);
 
     // (Old small popup removed)
@@ -375,7 +369,6 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
                     onRefresh={refreshRemoteFlows}
                     onRenameFlow={(flow, newName) => {
                         (async () => {
-                            const user = await currentUser();
                             // Handle local flows
                             if (flow._source === 'local') {
                                 const recs = await db.get(flow.name);
@@ -412,15 +405,7 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
                                     }
                                 }
                             }
-                            // Handle remote flows
-                            if (user && (flow._source === 'mine' || flow._source === 'public')) {
-                                try {
-                                    await renameFlowRemote(flow.name, newName);
-                                    // Update remote flow list
-                                    setServerFlows(flows => flows.map(f => f.id === flow.id ? { ...f, name: newName } : f));
-                                    if (selectedNode === flow.name) { setSelectedNode(newName); }
-                                } catch (err) { console.error('Failed to rename remote flow', err); }
-                            }
+                    
                         })();
                     }}
                     onOpenLocal={(name) => {
@@ -429,24 +414,6 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
                         data.onChange?.({ ...data, selectedNode: name });
                         setShowExplorerDialog(false);
                         updateInputsOutputs();
-                    }}
-                    onOpenRemote={async (flowMeta:any)=>{
-                        try {
-                            // fetch full remote flow (assuming getFlow works for owned & public ids)
-                            const full = await getFlow(flowMeta.id);
-                            if(full?.name){
-                                // full.data may be a JSON string – parse if needed
-                                const rawData = typeof full.data === 'string' ? (()=>{ try { return JSON.parse(full.data); } catch { return {}; } })() : (full.data || {});
-                                const nodes = rawData?.nodes || full.nodes || [];
-                                const edges = rawData?.edges || full.edges || [];
-                                // Store canonical shape {id,name?,nodes,edges,updated_at}
-                                await db.put(full.name, { nodes, edges, updated_at: full.updated_at || new Date().toISOString() });
-                                setSelectedNode(full.name);
-                                data.onChange?.({ ...data, selectedNode: full.name });
-                                updateInputsOutputs();
-                            }
-                        } catch(e){ console.warn('Open remote flow failed', e); }
-                        setShowExplorerDialog(false);
                     }}
                     onClose={()=> setShowExplorerDialog(false)}
                     title="Select Flow"
