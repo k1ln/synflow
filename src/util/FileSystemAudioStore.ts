@@ -91,13 +91,71 @@ export async function selectAndPrepareRoot(): Promise<FileSystemDirectoryHandle 
     // Ensure subdirectories
     await root.getDirectoryHandle('recording', { create: true });
     await root.getDirectoryHandle('sampling', { create: true });
-    await root.getDirectoryHandle('flows', { create: true });
+    const flowsDir = await root.getDirectoryHandle('flows', { create: true });
     await root.getDirectoryHandle('scripts', { create: true });
+    // Create examples folder inside flows and populate with example flows
+    await copyExampleFlowsToDisk(flowsDir);
     await saveRootHandle(root);
     return root;
   } catch (e) {
     console.warn('[FS Audio] directory selection failed', e);
     return null;
+  }
+}
+
+// List of example flow files to copy
+const EXAMPLE_FLOWS = [
+  'cymball_example',
+  'Hard-Synth',
+  'keyboard',
+  'kick',
+  'lasers',
+  'mic-record',
+  'PolyOrgan',
+];
+
+// Copy bundled example flows to the flows/examples folder on disk
+async function copyExampleFlowsToDisk(flowsDir: FileSystemDirectoryHandle): Promise<void> {
+  try {
+    const examplesDir = await flowsDir.getDirectoryHandle('examples', { create: true });
+    
+    for (const flowName of EXAMPLE_FLOWS) {
+      try {
+        // Check if file already exists to avoid overwriting user modifications
+        try {
+          await examplesDir.getFileHandle(`${flowName}.json`);
+          // File exists, skip
+          continue;
+        } catch {
+          // File doesn't exist, proceed to create
+        }
+        
+        // Fetch from public folder
+        const response = await fetch(`/flow-examples/${flowName}.json`);
+        if (!response.ok) {
+          console.warn(`[FS Examples] Failed to fetch ${flowName}:`, response.status);
+          continue;
+        }
+        
+        const flowData = await response.json();
+        // Ensure the flow has a name and folder_path
+        flowData.name = flowData.name || flowName;
+        flowData.folder_path = 'examples';
+        flowData.updated_at = flowData.updated_at || new Date().toISOString();
+        
+        // Write to disk
+        const fileHandle = await examplesDir.getFileHandle(`${flowName}.json`, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(JSON.stringify(flowData, null, 2));
+        await writable.close();
+        
+        console.info(`[FS Examples] Copied ${flowName} to examples folder`);
+      } catch (e) {
+        console.warn(`[FS Examples] Failed to copy ${flowName}:`, e);
+      }
+    }
+  } catch (e) {
+    console.warn('[FS Examples] Failed to create examples folder:', e);
   }
 }
 
@@ -434,6 +492,10 @@ export async function listFlowsOnDisk(root: FileSystemDirectoryHandle): Promise<
           const file = await (entry as FileSystemFileHandle).getFile();
           const text = await file.text();
           const data = JSON.parse(text);
+          // Derive name from filename if not present in JSON
+          if (!data.name || typeof data.name !== 'string') {
+            data.name = entry.name.replace(/\.json$/i, '');
+          }
           if(typeof data.folder_path !== 'string') data.folder_path = prefix;
           out.push(data as FlowData);
         } catch(e){ console.warn('[FS Flow] read failed', entry.name, e); }
@@ -512,14 +574,23 @@ export async function syncDiskToDb(
     const diskFlows = await listFlowsOnDisk(root);
 
     for (const flow of diskFlows) {
+      // Skip flows without a valid name
+      if (!flow.name || typeof flow.name !== 'string') {
+        console.warn('[FS Flow] syncDiskToDb skipping flow with invalid name:', flow);
+        failed.push('(unnamed)');
+        continue;
+      }
       try {
+        // Use folder_path/name as the unique key to avoid collisions
+        const folderPath = flow.folder_path || '';
+        const uniqueKey = folderPath ? `${folderPath}/${flow.name}` : flow.name;
         const payload = {
           nodes: flow.nodes || [],
           edges: flow.edges || [],
-          folder_path: flow.folder_path || '',
+          folder_path: folderPath,
           updated_at: flow.updated_at || new Date().toISOString(),
         };
-        await db.put(flow.name, payload);
+        await db.put(uniqueKey, payload);
         synced++;
       } catch (e) {
         console.warn('[FS Flow] syncDiskToDb failed for', flow.name, e);

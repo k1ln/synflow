@@ -261,6 +261,8 @@ export const ExplorerDialog: React.FC<ExplorerDialogProps> = ({ open, localFlows
               {onCreateFolder && <button style={miniBtnStyle} title='Create root folder' onClick={()=> { setCreatingUnder(''); setNewFolderName(''); }}>＋ Folder</button>}
             </div>
             <div style={{ flex:1, overflowY:'auto', padding:8 }}>
+              {/* Folder hierarchy (always on top) */}
+              {[...folderTree[''] || []].map(rootName => renderFolder(rootName, 0))}
               {/* Root flows (no folder_path) */}
               {(flowsByFolder[''] || []).map(f => (
                 <div key={f.id} style={{ ...rowStyle, background:'#252525' }}>
@@ -280,8 +282,6 @@ export const ExplorerDialog: React.FC<ExplorerDialogProps> = ({ open, localFlows
                   </div>
                 </div>
               ))}
-              {/* Folder hierarchy */}
-              {[...folderTree[''] || []].map(rootName => renderFolder(rootName, 0))}
               {filteredLocal.length===0 && <div style={{ fontSize:12, opacity:.5 }}>No local flows.</div>}
             </div>
           </div>

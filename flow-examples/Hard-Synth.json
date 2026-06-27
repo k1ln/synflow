@@ -1,0 +1,2037 @@
+{
+  "nodes": [
+    {
+      "id": "c2cf0882-1321-41fa-bfbe-ebc6ff5f51ea.MasterOutFlowNode",
+      "type": "MasterOutFlowNode",
+      "position": {
+        "x": 1671.7116181687747,
+        "y": 32.2121867997387
+      },
+      "data": {
+        "label": "",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "c2cf0882-1321-41fa-bfbe-ebc6ff5f51ea.MasterOutFlowNode"
+      },
+      "zIndex": 2,
+      "measured": {
+        "width": 60,
+        "height": 62
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "3c47c686-75ab-4026-864c-4fcfb4c3b819.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 658.9962046150557,
+        "y": 155.4805095026184
+      },
+      "data": {
+        "label": "Oscillator",
+        "frequency": 164.81377845643496,
+        "detune": 0,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "3c47c686-75ab-4026-864c-4fcfb4c3b819.OscillatorFlowNode",
+        "knobValue": 30.53211734327443,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 3,
+      "measured": {
+        "width": 72,
+        "height": 221
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "7fc52707-d518-4698-9096-3d3b1e394776.AudioWorkletOscillatorFlowNode",
+      "type": "AudioWorkletOscillatorFlowNode",
+      "position": {
+        "x": 882.5063497066271,
+        "y": 225.27826018173985
+      },
+      "data": {
+        "label": "AW Oscillator",
+        "detune": 0,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "7fc52707-d518-4698-9096-3d3b1e394776.AudioWorkletOscillatorFlowNode",
+        "knobValue": 43.53704163608744,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null,
+        "frequency": 744.3224662954506
+      },
+      "zIndex": 4,
+      "measured": {
+        "width": 72,
+        "height": 221
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "c1b96a89-60a1-4012-b21f-44da18a84ebf.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 1049.424635621816,
+        "y": 199.72421241356966
+      },
+      "data": {
+        "label": "",
+        "gain": 1,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "c1b96a89-60a1-4012-b21f-44da18a84ebf.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 5,
+      "measured": {
+        "width": 75,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bed13178-adf4-44f7-a5d8-28f264cddf9d.ADSRFlowNode",
+      "type": "ADSRFlowNode",
+      "position": {
+        "x": 867.4759470263997,
+        "y": -230.5457868833525
+      },
+      "data": {
+        "label": "ADSR",
+        "attackTime": 0.001,
+        "decayTime": 0.2,
+        "sustainLevel": 0.514,
+        "releaseTime": 0.097,
+        "maxTime": 10,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "bed13178-adf4-44f7-a5d8-28f264cddf9d.ADSRFlowNode",
+        "sustainTime": 0.062,
+        "minPercent": 0,
+        "maxPercent": 100,
+        "lengthSec": 1.51
+      },
+      "zIndex": 6,
+      "measured": {
+        "width": 212,
+        "height": 226
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "fb19a85f-a852-4216-a389-c8ffc6726768.BiquadFilterFlowNode",
+      "type": "BiquadFilterFlowNode",
+      "position": {
+        "x": 1145.599412509869,
+        "y": -8.843025373639883
+      },
+      "data": {
+        "label": "",
+        "filterType": "lowpass",
+        "frequency": 344.47000815217683,
+        "detune": 0,
+        "Q": 5.817059610401782,
+        "gain": 0,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "fb19a85f-a852-4216-a389-c8ffc6726768.BiquadFilterFlowNode",
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null,
+        "qMidiMapping": null,
+        "gainMidiMapping": null
+      },
+      "zIndex": 10,
+      "measured": {
+        "width": 138,
+        "height": 196
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bc03b58d-47f4-4b7f-b4e6-2c86adc29439.FunctionFlowNode",
+      "type": "FunctionFlowNode",
+      "position": {
+        "x": -74.77245653649967,
+        "y": 434.2182607766297
+      },
+      "data": {
+        "functionCode": "\nif (typeof lastNumber === 'undefined') {\n  // If we are here, lastNumber didn't exist, so we initialize it.\n  // We explicitly declare it on the global scope (using 'var' or 'this') \n  // so it persists for the next eval.\n  lastNumber = 300; \n}\n\nfunction process(value) {\n  if (lastNumber < 200){lastNumber = 200}\n  const variation = 150;\n  let min = lastNumber - variation;\n  let max = lastNumber + variation;\n    // 3. Clamp to global limits (0 to 20000)\n  if (min < 500) min = 500\n  if (max > 800) max = 800;\n  if (min>max) {min = max}\n  // 4. Generate random number within the specific range\n  // Math.random() generates 0 (inclusive) to 1 (exclusive)\n  lastNumber = Math.random() * (max - min) + min;\n  return lastNumber;\n}",
+        "value": "",
+        "id": "bc03b58d-47f4-4b7f-b4e6-2c86adc29439.FunctionFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "numInputs": 1,
+        "numOutputs": 1,
+        "inputDefaults": [
+          ""
+        ]
+      },
+      "zIndex": 11,
+      "measured": {
+        "width": 372,
+        "height": 479
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "bb0c4e6e-0b8a-4211-8ba2-8ca0ed268a39.ClockFlowNode",
+      "type": "ClockFlowNode",
+      "position": {
+        "x": -305.92158489080754,
+        "y": 202.39602734121425
+      },
+      "data": {
+        "label": "",
+        "bpm": 120,
+        "isEmitting": true,
+        "eventBus": {
+          "events": {
+            "params.updateParams": [
+              null
+            ],
+            "7fc52707-d518-4698-9096-3d3b1e394776.AudioWorkletOscillatorFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "7fc52707-d518-4698-9096-3d3b1e394776.AudioWorkletOscillatorFlowNode.main-input.receiveNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "7fc52707-d518-4698-9096-3d3b1e394776.AudioWorkletOscillatorFlowNode.main-input.receiveNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "c1b96a89-60a1-4012-b21f-44da18a84ebf.GainFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "bed13178-adf4-44f7-a5d8-28f264cddf9d.ADSRFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "bed13178-adf4-44f7-a5d8-28f264cddf9d.ADSRFlowNode.main-input.receiveNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "bed13178-adf4-44f7-a5d8-28f264cddf9d.ADSRFlowNode.main-input.receiveNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "bed13178-adf4-44f7-a5d8-28f264cddf9d.ADSRFlowNode.attack-input.receiveNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "bed13178-adf4-44f7-a5d8-28f264cddf9d.ADSRFlowNode.sustainTime-input.receiveNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "bed13178-adf4-44f7-a5d8-28f264cddf9d.ADSRFlowNode.sustainLevel-input.receiveNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "bed13178-adf4-44f7-a5d8-28f264cddf9d.ADSRFlowNode.release-input.receiveNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "bed13178-adf4-44f7-a5d8-28f264cddf9d.ADSRFlowNode.minPercent-input.receiveNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "bed13178-adf4-44f7-a5d8-28f264cddf9d.ADSRFlowNode.maxPercent-input.receiveNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.b17f214d-c903-4821-ae7b-acc28b5c19f1.ButtonFlowNode.updateParams.midiLearn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.b17f214d-c903-4821-ae7b-acc28b5c19f1.ButtonFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.b17f214d-c903-4821-ae7b-acc28b5c19f1.ButtonFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.602f94a0-1973-4638-b9b4-972c9b899eaf.ButtonFlowNode.updateParams.midiLearn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.602f94a0-1973-4638-b9b4-972c9b899eaf.ButtonFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.602f94a0-1973-4638-b9b4-972c9b899eaf.ButtonFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.fbcd0d8e-284f-4f8c-8bf8-c844f745db78.OutputNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.fbcd0d8e-284f-4f8c-8bf8-c844f745db78.OutputNode.input.receiveNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.fbcd0d8e-284f-4f8c-8bf8-c844f745db78.OutputNode.input.receiveNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.24aa9517-ab60-4153-8daa-832e66a04da1.ConstantFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.c2367a7c-f63b-4c03-b6c0-46dcff25b388.ButtonFlowNode.updateParams.midiLearn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.c2367a7c-f63b-4c03-b6c0-46dcff25b388.ButtonFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.c2367a7c-f63b-4c03-b6c0-46dcff25b388.ButtonFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.de232fd7-f9f7-47d8-9eb6-39b8e7ead138.ButtonFlowNode.updateParams.midiLearn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.de232fd7-f9f7-47d8-9eb6-39b8e7ead138.ButtonFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.de232fd7-f9f7-47d8-9eb6-39b8e7ead138.ButtonFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.52861610-cd88-4368-ac4e-bb06480de90e.ButtonFlowNode.updateParams.midiLearn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.52861610-cd88-4368-ac4e-bb06480de90e.ButtonFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.52861610-cd88-4368-ac4e-bb06480de90e.ButtonFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.c2d4f50a-59cf-460e-aaf5-86c13978ed2f.ButtonFlowNode.updateParams.midiLearn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.c2d4f50a-59cf-460e-aaf5-86c13978ed2f.ButtonFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.c2d4f50a-59cf-460e-aaf5-86c13978ed2f.ButtonFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.eb940b67-9d3d-457a-8638-68fd4b202214.ButtonFlowNode.updateParams.midiLearn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.eb940b67-9d3d-457a-8638-68fd4b202214.ButtonFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.eb940b67-9d3d-457a-8638-68fd4b202214.ButtonFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.87a047fb-436f-41c1-833e-8e3ba320ac62.ButtonFlowNode.updateParams.midiLearn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.87a047fb-436f-41c1-833e-8e3ba320ac62.ButtonFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.87a047fb-436f-41c1-833e-8e3ba320ac62.ButtonFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.437234b1-56c3-4533-80c2-732466393153.ButtonFlowNode.updateParams.midiLearn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.437234b1-56c3-4533-80c2-732466393153.ButtonFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.437234b1-56c3-4533-80c2-732466393153.ButtonFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.bdfdf7e0-efc5-4106-9b7f-17f8fab247d5.ButtonFlowNode.updateParams.midiLearn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.bdfdf7e0-efc5-4106-9b7f-17f8fab247d5.ButtonFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.bdfdf7e0-efc5-4106-9b7f-17f8fab247d5.ButtonFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.f915102b-acfe-46ba-acc2-371784dfd04a.ConstantFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.ef6124d7-8f5e-4db9-be91-2774812a8a3e.ConstantFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.6fcc7ebd-e5e0-414c-a8fe-f6930395dfb0.ConstantFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.f3fc27b0-7c73-4fe1-98d8-21f0253e9032.ConstantFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.5cf992de-875e-4eb0-a20b-5d02a26e3ca8.ConstantFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.2c57c940-e5ba-4bb4-81bf-4690839f1d3a.ConstantFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.5b5b7f0b-8b4c-4ec1-b6a0-cf8663c5f10d.ConstantFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.8276c286-5780-42a8-a8d0-473439ae6586.ConstantFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.f27937e0-cd87-41bd-ae03-ae8874f1a46a.ConstantFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.7a811f01-9ec7-4d21-94d9-8ec16f956a58.ButtonFlowNode.updateParams.midiLearn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.7a811f01-9ec7-4d21-94d9-8ec16f956a58.ButtonFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.7a811f01-9ec7-4d21-94d9-8ec16f956a58.ButtonFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.36ab8b77-3ec8-47e7-bf3b-5113e660fe12.ButtonFlowNode.updateParams.midiLearn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.36ab8b77-3ec8-47e7-bf3b-5113e660fe12.ButtonFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.36ab8b77-3ec8-47e7-bf3b-5113e660fe12.ButtonFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.32336798-3a4d-499c-a6aa-534080716b1c.ConstantFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.1f82ece3-4a50-4ebd-aeae-dc2480048109.ConstantFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode.input-0.receiveNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode.main-input.receiveNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode.main-input.receiveNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.4bb4b241-dac5-4bc7-990d-7982fccde2fa.ButtonFlowNode.updateParams.midiLearn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.4bb4b241-dac5-4bc7-990d-7982fccde2fa.ButtonFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.4bb4b241-dac5-4bc7-990d-7982fccde2fa.ButtonFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.3082511a-9119-41b8-80e2-ee8d8bcab7d1.ButtonFlowNode.updateParams.midiLearn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.3082511a-9119-41b8-80e2-ee8d8bcab7d1.ButtonFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.3082511a-9119-41b8-80e2-ee8d8bcab7d1.ButtonFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.c7466101-473e-43db-b195-e98b286bbee6.ButtonFlowNode.updateParams.midiLearn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.c7466101-473e-43db-b195-e98b286bbee6.ButtonFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.c7466101-473e-43db-b195-e98b286bbee6.ButtonFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.95cacad9-e066-4790-84bb-30316d04d313.ButtonFlowNode.updateParams.midiLearn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.95cacad9-e066-4790-84bb-30316d04d313.ButtonFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.95cacad9-e066-4790-84bb-30316d04d313.ButtonFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.3ba81fc0-d4ef-469a-a76f-2ba6e2c7c8e9.ButtonFlowNode.updateParams.midiLearn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.3ba81fc0-d4ef-469a-a76f-2ba6e2c7c8e9.ButtonFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.3ba81fc0-d4ef-469a-a76f-2ba6e2c7c8e9.ButtonFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.97234042-1ff4-4427-b658-bb05660905ef.ConstantFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.f605076a-806a-4cb0-aac8-56d6d42ba0b6.ConstantFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.52d51404-6fef-4138-b884-9cbe9656916a.ConstantFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.59ea8db3-80d5-404b-a9fc-ff9b563d82d7.ConstantFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.af77b014-b8d7-43c3-b32b-038032331b93.ConstantFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.main-input.receiveNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.customNode.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.output-0.receiveNodeOn": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.output-0.receiveNodeOff": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "fb19a85f-a852-4216-a389-c8ffc6726768.BiquadFilterFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "bc03b58d-47f4-4b7f-b4e6-2c86adc29439.FunctionFlowNode.input-0.receiveNodeOn": [
+              null,
+              null,
+              null,
+              null
+            ],
+            "bc03b58d-47f4-4b7f-b4e6-2c86adc29439.FunctionFlowNode.main-input.receiveNodeOn": [
+              null,
+              null,
+              null,
+              null
+            ],
+            "7fc52707-d518-4698-9096-3d3b1e394776.AudioWorkletOscillatorFlowNode.style.background": [
+              null
+            ],
+            "bc03b58d-47f4-4b7f-b4e6-2c86adc29439.FunctionFlowNode.params.updateParams": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "bc03b58d-47f4-4b7f-b4e6-2c86adc29439.FunctionFlowNode.main-input.receiveNodeOff": [
+              null,
+              null,
+              null
+            ],
+            "bc03b58d-47f4-4b7f-b4e6-2c86adc29439.FunctionFlowNode.main-input.sendNodeOn": [
+              null,
+              null,
+              null
+            ],
+            "bc03b58d-47f4-4b7f-b4e6-2c86adc29439.FunctionFlowNode.main-input.sendNodeOff": [
+              null,
+              null,
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.b17f214d-c903-4821-ae7b-acc28b5c19f1.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.b17f214d-c903-4821-ae7b-acc28b5c19f1.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.602f94a0-1973-4638-b9b4-972c9b899eaf.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.602f94a0-1973-4638-b9b4-972c9b899eaf.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.24aa9517-ab60-4153-8daa-832e66a04da1.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.24aa9517-ab60-4153-8daa-832e66a04da1.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.c2367a7c-f63b-4c03-b6c0-46dcff25b388.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.c2367a7c-f63b-4c03-b6c0-46dcff25b388.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.de232fd7-f9f7-47d8-9eb6-39b8e7ead138.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.de232fd7-f9f7-47d8-9eb6-39b8e7ead138.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.52861610-cd88-4368-ac4e-bb06480de90e.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.52861610-cd88-4368-ac4e-bb06480de90e.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.c2d4f50a-59cf-460e-aaf5-86c13978ed2f.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.c2d4f50a-59cf-460e-aaf5-86c13978ed2f.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.eb940b67-9d3d-457a-8638-68fd4b202214.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.eb940b67-9d3d-457a-8638-68fd4b202214.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.87a047fb-436f-41c1-833e-8e3ba320ac62.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.87a047fb-436f-41c1-833e-8e3ba320ac62.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.437234b1-56c3-4533-80c2-732466393153.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.437234b1-56c3-4533-80c2-732466393153.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.bdfdf7e0-efc5-4106-9b7f-17f8fab247d5.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.bdfdf7e0-efc5-4106-9b7f-17f8fab247d5.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.f915102b-acfe-46ba-acc2-371784dfd04a.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.f915102b-acfe-46ba-acc2-371784dfd04a.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.ef6124d7-8f5e-4db9-be91-2774812a8a3e.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.ef6124d7-8f5e-4db9-be91-2774812a8a3e.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.6fcc7ebd-e5e0-414c-a8fe-f6930395dfb0.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.6fcc7ebd-e5e0-414c-a8fe-f6930395dfb0.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.f3fc27b0-7c73-4fe1-98d8-21f0253e9032.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.f3fc27b0-7c73-4fe1-98d8-21f0253e9032.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.5cf992de-875e-4eb0-a20b-5d02a26e3ca8.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.5cf992de-875e-4eb0-a20b-5d02a26e3ca8.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.2c57c940-e5ba-4bb4-81bf-4690839f1d3a.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.2c57c940-e5ba-4bb4-81bf-4690839f1d3a.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.5b5b7f0b-8b4c-4ec1-b6a0-cf8663c5f10d.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.5b5b7f0b-8b4c-4ec1-b6a0-cf8663c5f10d.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.8276c286-5780-42a8-a8d0-473439ae6586.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.8276c286-5780-42a8-a8d0-473439ae6586.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.f27937e0-cd87-41bd-ae03-ae8874f1a46a.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.f27937e0-cd87-41bd-ae03-ae8874f1a46a.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.7a811f01-9ec7-4d21-94d9-8ec16f956a58.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.7a811f01-9ec7-4d21-94d9-8ec16f956a58.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.36ab8b77-3ec8-47e7-bf3b-5113e660fe12.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.36ab8b77-3ec8-47e7-bf3b-5113e660fe12.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.32336798-3a4d-499c-a6aa-534080716b1c.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.32336798-3a4d-499c-a6aa-534080716b1c.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.1f82ece3-4a50-4ebd-aeae-dc2480048109.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.1f82ece3-4a50-4ebd-aeae-dc2480048109.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.4bb4b241-dac5-4bc7-990d-7982fccde2fa.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.4bb4b241-dac5-4bc7-990d-7982fccde2fa.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.3082511a-9119-41b8-80e2-ee8d8bcab7d1.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.3082511a-9119-41b8-80e2-ee8d8bcab7d1.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.c7466101-473e-43db-b195-e98b286bbee6.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.c7466101-473e-43db-b195-e98b286bbee6.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.95cacad9-e066-4790-84bb-30316d04d313.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.95cacad9-e066-4790-84bb-30316d04d313.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.3ba81fc0-d4ef-469a-a76f-2ba6e2c7c8e9.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.3ba81fc0-d4ef-469a-a76f-2ba6e2c7c8e9.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.97234042-1ff4-4427-b658-bb05660905ef.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.97234042-1ff4-4427-b658-bb05660905ef.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.f605076a-806a-4cb0-aac8-56d6d42ba0b6.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.f605076a-806a-4cb0-aac8-56d6d42ba0b6.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.52d51404-6fef-4138-b884-9cbe9656916a.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.52d51404-6fef-4138-b884-9cbe9656916a.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.59ea8db3-80d5-404b-a9fc-ff9b563d82d7.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.59ea8db3-80d5-404b-a9fc-ff9b563d82d7.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.af77b014-b8d7-43c3-b32b-038032331b93.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "27582be8-c96b-48d5-b056-1f1b8f10e95d.FlowNode.af77b014-b8d7-43c3-b32b-038032331b93.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "bb0c4e6e-0b8a-4211-8ba2-8ca0ed268a39.ClockFlowNode.params.updateParams": [
+              null,
+              null
+            ],
+            "bb0c4e6e-0b8a-4211-8ba2-8ca0ed268a39.ClockFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "bb0c4e6e-0b8a-4211-8ba2-8ca0ed268a39.ClockFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "bb0c4e6e-0b8a-4211-8ba2-8ca0ed268a39.ClockFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "3c47c686-75ab-4026-864c-4fcfb4c3b819.OscillatorFlowNode.params.updateParams": [
+              null
+            ],
+            "3c47c686-75ab-4026-864c-4fcfb4c3b819.OscillatorFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "3c47c686-75ab-4026-864c-4fcfb4c3b819.OscillatorFlowNode.main-input.receiveNodeOff": [
+              null
+            ]
+          },
+          "id": "559be05b-88b3-44c6-9ec0-83835257717f"
+        },
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "bb0c4e6e-0b8a-4211-8ba2-8ca0ed268a39.ClockFlowNode",
+        "sendOff": true,
+        "sendOffBeforeNextOn": true,
+        "offDelayMs": "1"
+      },
+      "zIndex": 12,
+      "measured": {
+        "width": 126,
+        "height": 77
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "e9face81-a335-4d9f-a6e7-ed7a9163f1b8.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 1458.1569405981322,
+        "y": 77.62750961579874
+      },
+      "data": {
+        "label": "",
+        "gain": 0,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "e9face81-a335-4d9f-a6e7-ed7a9163f1b8.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 17,
+      "measured": {
+        "width": 75,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "e7753099-8671-4568-b334-aec31c76becd.ReverbFlowNode",
+      "type": "ReverbFlowNode",
+      "position": {
+        "x": 1366.350441253371,
+        "y": -227.3590908709503
+      },
+      "data": {
+        "label": "",
+        "id": "e7753099-8671-4568-b334-aec31c76becd.ReverbFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "seconds": 24.29349041614457,
+        "decay": 5.798234056610991,
+        "reverse": false,
+        "formula": "(Math.random() * 2 - 1) * Math.pow(1 - n / length, decay)",
+        "secondsKnobValue": 0,
+        "decayKnobValue": 0.40078520018311337,
+        "secondsMidiMapping": null,
+        "decayMidiMapping": null
+      },
+      "zIndex": 18,
+      "measured": {
+        "width": 98,
+        "height": 252
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "1ab7244e-2d3c-46cf-bb99-c19aac721383.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 1526.850441253371,
+        "y": -119.3590908709503
+      },
+      "data": {
+        "label": "",
+        "gain": 0.9812268790226015,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "1ab7244e-2d3c-46cf-bb99-c19aac721383.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 19,
+      "measured": {
+        "width": 75,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "af24561f-4ad3-4088-815f-8304a4a9c743.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 517.8325314056802,
+        "y": 406.70548638443574
+      },
+      "data": {
+        "label": "Button",
+        "assignedKey": "Y",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "af24561f-4ad3-4088-815f-8304a4a9c743.ButtonFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88",
+          "width": "60px",
+          "height": "60px"
+        }
+      },
+      "zIndex": 21,
+      "measured": {
+        "width": 72,
+        "height": 72
+      },
+      "selected": false
+    },
+    {
+      "id": "e6ade2f8-8c90-4830-9d4e-a2b54f2fac61.FlowNode",
+      "type": "FlowNode",
+      "position": {
+        "x": 462.7830718719623,
+        "y": 196.73758697880444
+      },
+      "data": {
+        "label": "Flow",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "db": {
+          "db": {},
+          "dbName": "FlowSynthDB",
+          "storeName": "flows",
+          "uuid": "80bed1cc-4548-4ce2-918e-24aac31f8e67"
+        },
+        "id": "e6ade2f8-8c90-4830-9d4e-a2b54f2fac61.FlowNode",
+        "selectedNode": "keyboard",
+        "outputArr": [
+          0
+        ],
+        "inputArr": []
+      },
+      "zIndex": 22,
+      "measured": {
+        "width": 142,
+        "height": 70
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "341a8205-21ff-44df-aa98-94ac0695e4bc.FlowNode",
+      "type": "FlowNode",
+      "position": {
+        "x": 808.4206349896949,
+        "y": 548.4650294264794
+      },
+      "data": {
+        "label": "Flow",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "db": {
+          "db": {},
+          "dbName": "FlowSynthDB",
+          "storeName": "flows",
+          "uuid": "80bed1cc-4548-4ce2-918e-24aac31f8e67"
+        },
+        "id": "341a8205-21ff-44df-aa98-94ac0695e4bc.FlowNode",
+        "selectedNode": "kick",
+        "outputArr": [
+          0
+        ],
+        "inputArr": [
+          0
+        ]
+      },
+      "zIndex": 23,
+      "measured": {
+        "width": 142,
+        "height": 70
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "e40f1cf4-2a5d-4ec2-a587-6ae7509e208a.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 1087.4951443797975,
+        "y": 522.9452994689536
+      },
+      "data": {
+        "label": "",
+        "gain": 0,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "e40f1cf4-2a5d-4ec2-a587-6ae7509e208a.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 27,
+      "measured": {
+        "width": 75,
+        "height": 93
+      },
+      "selected": false
+    },
+    {
+      "id": "8021f18a-7b50-468d-a02b-0e961a858cbb.BiquadFilterFlowNode",
+      "type": "BiquadFilterFlowNode",
+      "position": {
+        "x": 1358.207557928071,
+        "y": 418.8013018390693
+      },
+      "data": {
+        "label": "",
+        "filterType": "lowpass",
+        "frequency": 6884.869161990547,
+        "detune": 0,
+        "Q": 0,
+        "gain": 0,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "8021f18a-7b50-468d-a02b-0e961a858cbb.BiquadFilterFlowNode",
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null,
+        "qMidiMapping": null,
+        "gainMidiMapping": null
+      },
+      "zIndex": 28,
+      "measured": {
+        "width": 138,
+        "height": 196
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "0e4eed69-9b8c-49ae-8b57-1ed89bca50db.SpeedDividerFlowNode",
+      "type": "SpeedDividerFlowNode",
+      "position": {
+        "x": 226.53641245961163,
+        "y": 85.44073169947698
+      },
+      "data": {
+        "label": "",
+        "divider": 1,
+        "multiplier": 1,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "0e4eed69-9b8c-49ae-8b57-1ed89bca50db.SpeedDividerFlowNode",
+        "incomingBpm": 120
+      },
+      "zIndex": 31,
+      "measured": {
+        "width": 132,
+        "height": 54
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "18ef6baf-8887-451b-bae4-fcb15b7fe218.MidiKnobFlowNode",
+      "type": "MidiKnobFlowNode",
+      "position": {
+        "x": 56.773044447063626,
+        "y": -158.737137397585
+      },
+      "data": {
+        "label": "",
+        "id": "18ef6baf-8887-451b-bae4-fcb15b7fe218.MidiKnobFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "min": 0,
+        "max": 12,
+        "curve": "linear",
+        "value": 4.000850223931909,
+        "midiMapping": null,
+        "controlsOpen": true
+      },
+      "zIndex": 44,
+      "measured": {
+        "width": 80,
+        "height": 205
+      },
+      "dragging": false,
+      "selected": false
+    }
+  ],
+  "edges": [
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round",
+        "filter": "drop-shadow(0 0 2px rgba(255,255,255,0.6)) drop-shadow(0 0 4px rgba(255,255,255,0.3))"
+      },
+      "source": "3c47c686-75ab-4026-864c-4fcfb4c3b819.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "7fc52707-d518-4698-9096-3d3b1e394776.AudioWorkletOscillatorFlowNode",
+      "targetHandle": "sync",
+      "id": "xy-edge__3c47c686-75ab-4026-864c-4fcfb4c3b819.OscillatorFlowNodeoutput-7fc52707-d518-4698-9096-3d3b1e394776.AudioWorkletOscillatorFlowNodesync",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "7fc52707-d518-4698-9096-3d3b1e394776.AudioWorkletOscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "c1b96a89-60a1-4012-b21f-44da18a84ebf.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__7fc52707-d518-4698-9096-3d3b1e394776.AudioWorkletOscillatorFlowNodeoutput-c1b96a89-60a1-4012-b21f-44da18a84ebf.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round",
+        "filter": "drop-shadow(0 0 2px rgba(255,255,255,0.8)) drop-shadow(0 0 4px rgba(255,255,255,0.5))"
+      },
+      "source": "bed13178-adf4-44f7-a5d8-28f264cddf9d.ADSRFlowNode",
+      "sourceHandle": "output",
+      "target": "c1b96a89-60a1-4012-b21f-44da18a84ebf.GainFlowNode",
+      "targetHandle": "gain",
+      "id": "xy-edge__bed13178-adf4-44f7-a5d8-28f264cddf9d.ADSRFlowNodeoutput-c1b96a89-60a1-4012-b21f-44da18a84ebf.GainFlowNodegain",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "c1b96a89-60a1-4012-b21f-44da18a84ebf.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "fb19a85f-a852-4216-a389-c8ffc6726768.BiquadFilterFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__c1b96a89-60a1-4012-b21f-44da18a84ebf.GainFlowNodeoutput-fb19a85f-a852-4216-a389-c8ffc6726768.BiquadFilterFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "bed13178-adf4-44f7-a5d8-28f264cddf9d.ADSRFlowNode",
+      "sourceHandle": "output",
+      "target": "fb19a85f-a852-4216-a389-c8ffc6726768.BiquadFilterFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__bed13178-adf4-44f7-a5d8-28f264cddf9d.ADSRFlowNodeoutput-fb19a85f-a852-4216-a389-c8ffc6726768.BiquadFilterFlowNodefrequency"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "fb19a85f-a852-4216-a389-c8ffc6726768.BiquadFilterFlowNode",
+      "sourceHandle": "output",
+      "target": "e9face81-a335-4d9f-a6e7-ed7a9163f1b8.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__fb19a85f-a852-4216-a389-c8ffc6726768.BiquadFilterFlowNodeoutput-e9face81-a335-4d9f-a6e7-ed7a9163f1b8.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "e9face81-a335-4d9f-a6e7-ed7a9163f1b8.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "c2cf0882-1321-41fa-bfbe-ebc6ff5f51ea.MasterOutFlowNode",
+      "targetHandle": "destination-input",
+      "id": "xy-edge__e9face81-a335-4d9f-a6e7-ed7a9163f1b8.GainFlowNodeoutput-c2cf0882-1321-41fa-bfbe-ebc6ff5f51ea.MasterOutFlowNodedestination-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "fb19a85f-a852-4216-a389-c8ffc6726768.BiquadFilterFlowNode",
+      "sourceHandle": "output",
+      "target": "e7753099-8671-4568-b334-aec31c76becd.ReverbFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__fb19a85f-a852-4216-a389-c8ffc6726768.BiquadFilterFlowNodeoutput-e7753099-8671-4568-b334-aec31c76becd.ReverbFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "e7753099-8671-4568-b334-aec31c76becd.ReverbFlowNode",
+      "sourceHandle": "output",
+      "target": "1ab7244e-2d3c-46cf-bb99-c19aac721383.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__e7753099-8671-4568-b334-aec31c76becd.ReverbFlowNodeoutput-1ab7244e-2d3c-46cf-bb99-c19aac721383.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "1ab7244e-2d3c-46cf-bb99-c19aac721383.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "c2cf0882-1321-41fa-bfbe-ebc6ff5f51ea.MasterOutFlowNode",
+      "targetHandle": "destination-input",
+      "id": "xy-edge__1ab7244e-2d3c-46cf-bb99-c19aac721383.GainFlowNodeoutput-c2cf0882-1321-41fa-bfbe-ebc6ff5f51ea.MasterOutFlowNodedestination-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "bc03b58d-47f4-4b7f-b4e6-2c86adc29439.FunctionFlowNode",
+      "sourceHandle": "output-0",
+      "target": "7fc52707-d518-4698-9096-3d3b1e394776.AudioWorkletOscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__bc03b58d-47f4-4b7f-b4e6-2c86adc29439.FunctionFlowNodeoutput-0-7fc52707-d518-4698-9096-3d3b1e394776.AudioWorkletOscillatorFlowNodefrequency"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "e6ade2f8-8c90-4830-9d4e-a2b54f2fac61.FlowNode",
+      "sourceHandle": "output-0",
+      "target": "3c47c686-75ab-4026-864c-4fcfb4c3b819.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__e6ade2f8-8c90-4830-9d4e-a2b54f2fac61.FlowNodeoutput-0-3c47c686-75ab-4026-864c-4fcfb4c3b819.OscillatorFlowNodefrequency"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "af24561f-4ad3-4088-815f-8304a4a9c743.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "341a8205-21ff-44df-aa98-94ac0695e4bc.FlowNode",
+      "targetHandle": "input-0",
+      "id": "xy-edge__af24561f-4ad3-4088-815f-8304a4a9c743.ButtonFlowNodeoutput-341a8205-21ff-44df-aa98-94ac0695e4bc.FlowNodeinput-0"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "341a8205-21ff-44df-aa98-94ac0695e4bc.FlowNode",
+      "sourceHandle": "output-0",
+      "target": "e40f1cf4-2a5d-4ec2-a587-6ae7509e208a.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__341a8205-21ff-44df-aa98-94ac0695e4bc.FlowNodeoutput-0-e40f1cf4-2a5d-4ec2-a587-6ae7509e208a.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "e40f1cf4-2a5d-4ec2-a587-6ae7509e208a.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "8021f18a-7b50-468d-a02b-0e961a858cbb.BiquadFilterFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__e40f1cf4-2a5d-4ec2-a587-6ae7509e208a.GainFlowNodeoutput-8021f18a-7b50-468d-a02b-0e961a858cbb.BiquadFilterFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "8021f18a-7b50-468d-a02b-0e961a858cbb.BiquadFilterFlowNode",
+      "sourceHandle": "output",
+      "target": "c2cf0882-1321-41fa-bfbe-ebc6ff5f51ea.MasterOutFlowNode",
+      "targetHandle": "destination-input",
+      "id": "xy-edge__8021f18a-7b50-468d-a02b-0e961a858cbb.BiquadFilterFlowNodeoutput-c2cf0882-1321-41fa-bfbe-ebc6ff5f51ea.MasterOutFlowNodedestination-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "bb0c4e6e-0b8a-4211-8ba2-8ca0ed268a39.ClockFlowNode",
+      "sourceHandle": "main-output",
+      "target": "341a8205-21ff-44df-aa98-94ac0695e4bc.FlowNode",
+      "targetHandle": "input-0",
+      "id": "xy-edge__bb0c4e6e-0b8a-4211-8ba2-8ca0ed268a39.ClockFlowNodemain-output-341a8205-21ff-44df-aa98-94ac0695e4bc.FlowNodeinput-0"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "0e4eed69-9b8c-49ae-8b57-1ed89bca50db.SpeedDividerFlowNode",
+      "sourceHandle": "output",
+      "target": "bed13178-adf4-44f7-a5d8-28f264cddf9d.ADSRFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__0e4eed69-9b8c-49ae-8b57-1ed89bca50db.SpeedDividerFlowNodeoutput-bed13178-adf4-44f7-a5d8-28f264cddf9d.ADSRFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "bb0c4e6e-0b8a-4211-8ba2-8ca0ed268a39.ClockFlowNode",
+      "sourceHandle": "main-output",
+      "target": "0e4eed69-9b8c-49ae-8b57-1ed89bca50db.SpeedDividerFlowNode",
+      "targetHandle": "input",
+      "id": "xy-edge__bb0c4e6e-0b8a-4211-8ba2-8ca0ed268a39.ClockFlowNodemain-output-0e4eed69-9b8c-49ae-8b57-1ed89bca50db.SpeedDividerFlowNodeinput"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "0e4eed69-9b8c-49ae-8b57-1ed89bca50db.SpeedDividerFlowNode",
+      "sourceHandle": "output",
+      "target": "bc03b58d-47f4-4b7f-b4e6-2c86adc29439.FunctionFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__0e4eed69-9b8c-49ae-8b57-1ed89bca50db.SpeedDividerFlowNodeoutput-bc03b58d-47f4-4b7f-b4e6-2c86adc29439.FunctionFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "18ef6baf-8887-451b-bae4-fcb15b7fe218.MidiKnobFlowNode",
+      "sourceHandle": "output",
+      "target": "0e4eed69-9b8c-49ae-8b57-1ed89bca50db.SpeedDividerFlowNode",
+      "targetHandle": "multiplier-input",
+      "id": "xy-edge__18ef6baf-8887-451b-bae4-fcb15b7fe218.MidiKnobFlowNodeoutput-0e4eed69-9b8c-49ae-8b57-1ed89bca50db.SpeedDividerFlowNodemultiplier-input"
+    }
+  ]
+}

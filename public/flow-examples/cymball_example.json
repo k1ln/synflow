@@ -1,0 +1,916 @@
+{
+  "nodes": [
+    {
+      "id": "e3900a19-7add-452f-85a8-72a0d2403bde.ADSRFlowNode",
+      "type": "ADSRFlowNode",
+      "position": {
+        "x": 341.2821834700009,
+        "y": -449.1299132357077
+      },
+      "data": {
+        "label": "ADSR",
+        "attackTime": 0.01,
+        "decayTime": 0.2,
+        "sustainLevel": 0.167,
+        "releaseTime": 2.21,
+        "maxTime": 10,
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#690707",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "e3900a19-7add-452f-85a8-72a0d2403bde.ADSRFlowNode",
+        "sustainTime": 0.403,
+        "minPercent": 0,
+        "maxPercent": 100,
+        "lengthSec": 3
+      },
+      "measured": {
+        "width": 222,
+        "height": 236
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "df3c92fc-271a-4f4e-a581-a0d7bbc5b71e.MouseTriggerButton",
+      "type": "MouseTriggerButton",
+      "position": {
+        "x": 1425.9075060052205,
+        "y": -276.74796382809075
+      },
+      "data": {
+        "label": "Mouse Trigger",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "width": "140px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "userSelect": "none",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "db": {
+          "db": {},
+          "dbName": "FlowSynthDB",
+          "storeName": "flows",
+          "uuid": "cb153712-3150-4891-8948-93e6d29ae208"
+        },
+        "id": "df3c92fc-271a-4f4e-a581-a0d7bbc5b71e.MouseTriggerButton"
+      },
+      "measured": {
+        "width": 162,
+        "height": 62
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "e85da56f-02a9-44a4-a0e5-1075bf763495.ButtonFlowNode",
+      "type": "ButtonFlowNode",
+      "position": {
+        "x": 46.349837915634254,
+        "y": -353.1985112355404
+      },
+      "data": {
+        "label": "Button",
+        "assignedKey": "A",
+        "retriggerFrequency": 1,
+        "isRetriggering": false,
+        "isPressed": false,
+        "retriggerLength": 0.1,
+        "id": "e85da56f-02a9-44a4-a0e5-1075bf763495.ButtonFlowNode",
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#333",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88",
+          "width": "60px",
+          "height": "60px"
+        }
+      },
+      "measured": {
+        "width": 82,
+        "height": 82
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "5fe92094-230d-456b-af2d-267be4fde534.MasterOutFlowNode",
+      "type": "MasterOutFlowNode",
+      "position": {
+        "x": 2635.1102149872413,
+        "y": 162.1030931629067
+      },
+      "data": {
+        "label": "",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "5fe92094-230d-456b-af2d-267be4fde534.MasterOutFlowNode"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 60,
+        "height": 62
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "38202c45-e3ea-4087-b64a-b2d1ce927c11.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 826.3964374126404,
+        "y": -126.64485697503478
+      },
+      "data": {
+        "label": "Oscillator",
+        "frequency": 523.251,
+        "detune": 0,
+        "type": "square",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "38202c45-e3ea-4087-b64a-b2d1ce927c11.OscillatorFlowNode",
+        "knobValue": 47.25600237800606,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 2,
+      "measured": {
+        "width": 72,
+        "height": 221
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "c84f6ae6-8b55-4681-9e97-eb0ebe9ab0ee.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 944.3490040069603,
+        "y": -60.90775240263715
+      },
+      "data": {
+        "label": "",
+        "gain": 1046.831,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "c84f6ae6-8b55-4681-9e97-eb0ebe9ab0ee.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 3,
+      "measured": {
+        "width": 75,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "c73ea392-7bb9-4b46-ae38-664598936443.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 1062.9392407721757,
+        "y": -109.81198456444919
+      },
+      "data": {
+        "label": "Oscillator",
+        "frequency": 1046.501,
+        "detune": 0,
+        "type": "square",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "c73ea392-7bb9-4b46-ae38-664598936443.OscillatorFlowNode",
+        "knobValue": 57.29032173358806,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 4,
+      "measured": {
+        "width": 72,
+        "height": 221
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "680b230c-6cf9-4414-abde-cc1703b7ebec.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 822.622426697272,
+        "y": 133.24831304083196
+      },
+      "data": {
+        "label": "Oscillator",
+        "frequency": 391.995,
+        "detune": 0,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "680b230c-6cf9-4414-abde-cc1703b7ebec.OscillatorFlowNode",
+        "knobValue": 43.075017728357174,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 5,
+      "measured": {
+        "width": 72,
+        "height": 221
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "6a0d98f2-f0bf-4eac-a76e-09de3e06f98f.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 958.2937557332364,
+        "y": 179.9112923255169
+      },
+      "data": {
+        "label": "",
+        "gain": 787,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "6a0d98f2-f0bf-4eac-a76e-09de3e06f98f.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 6,
+      "measured": {
+        "width": 75,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "d3605647-af56-4a37-9f1f-d0922fa4c526.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 1084.1616166353137,
+        "y": 142.81329222626422
+      },
+      "data": {
+        "label": "Oscillator",
+        "frequency": 786.991,
+        "detune": 0,
+        "type": "square",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "d3605647-af56-4a37-9f1f-d0922fa4c526.OscillatorFlowNode",
+        "knobValue": 53.16465900492774,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 8,
+      "measured": {
+        "width": 72,
+        "height": 221
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "ce66595c-10b5-44c4-8690-270b46df3497.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 1172.114183229634,
+        "y": -29.428012184869274
+      },
+      "data": {
+        "label": "",
+        "gain": 0.3725031962771847,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "ce66595c-10b5-44c4-8690-270b46df3497.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 9,
+      "measured": {
+        "width": 75,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "e68180e8-ae1f-4041-b2b6-40bef00bba00.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 1180.4470556402193,
+        "y": 184.44904635349482
+      },
+      "data": {
+        "label": "",
+        "gain": 0.3601937756909834,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "e68180e8-ae1f-4041-b2b6-40bef00bba00.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 10,
+      "measured": {
+        "width": 75,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "393f24e6-6b84-4318-a226-37143dd0e811.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 1185.0764292016554,
+        "y": 450.17508877994726
+      },
+      "data": {
+        "label": "",
+        "gain": 0.34192019273857277,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "393f24e6-6b84-4318-a226-37143dd0e811.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 12,
+      "measured": {
+        "width": 75,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "faecc25b-a3b2-4787-96c9-34acab62d876.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 1059.7168649090372,
+        "y": 412.21422557616825
+      },
+      "data": {
+        "label": "Oscillator",
+        "frequency": 1049.939,
+        "detune": 0,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "faecc25b-a3b2-4787-96c9-34acab62d876.OscillatorFlowNode",
+        "knobValue": 57.33780240772383,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 13,
+      "measured": {
+        "width": 72,
+        "height": 221
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "caf2ca0b-a396-4c01-92c4-9f70b5470254.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 941.5713798700982,
+        "y": 464.06320946425654
+      },
+      "data": {
+        "label": "",
+        "gain": 1048.503130980471,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "caf2ca0b-a396-4c01-92c4-9f70b5470254.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 14,
+      "measured": {
+        "width": 75,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "2432adeb-96ed-4401-96d5-9e10eb37f367.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 828.956789656655,
+        "y": 413.73336566573676
+      },
+      "data": {
+        "label": "Oscillator",
+        "frequency": 524.284,
+        "detune": 0,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "2432adeb-96ed-4401-96d5-9e10eb37f367.OscillatorFlowNode",
+        "knobValue": 47.28455361783588,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 15,
+      "measured": {
+        "width": 72,
+        "height": 221
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "9c1e17d6-2228-4e5a-b1a2-acb8ce945d69.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 1462.8388428878427,
+        "y": 159.450429121738
+      },
+      "data": {
+        "label": "",
+        "gain": 0.20815291558419605,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "9c1e17d6-2228-4e5a-b1a2-acb8ce945d69.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 16,
+      "measured": {
+        "width": 75,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "a625add0-31d4-463f-8bc8-58d35287ca75.BiquadFilterFlowNode",
+      "type": "BiquadFilterFlowNode",
+      "position": {
+        "x": 1724.9879944900963,
+        "y": 120.35702165343548
+      },
+      "data": {
+        "label": "",
+        "filterType": "lowpass",
+        "frequency": 1161.8435052805107,
+        "detune": 1.8425785424542482,
+        "Q": 0,
+        "gain": 0.00052846977364851,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "a625add0-31d4-463f-8bc8-58d35287ca75.BiquadFilterFlowNode",
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null,
+        "qMidiMapping": null,
+        "gainMidiMapping": null
+      },
+      "zIndex": 17,
+      "measured": {
+        "width": 138,
+        "height": 196
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "01167e07-aa25-4e74-b3fe-4773c1771104.DelayFlowNode",
+      "type": "DelayFlowNode",
+      "position": {
+        "x": 2213.7491996514027,
+        "y": 121.38561183198578
+      },
+      "data": {
+        "label": "",
+        "delayTime": 0.23809227603070382,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "01167e07-aa25-4e74-b3fe-4773c1771104.DelayFlowNode",
+        "knobValue": 0.07107020842399826,
+        "delayMidiMapping": null
+      },
+      "zIndex": 18,
+      "measured": {
+        "width": 80,
+        "height": 97
+      },
+      "selected": false,
+      "dragging": false
+    },
+    {
+      "id": "d6ed8e89-c069-41b2-ab0a-35680f098007.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 2207.916554453522,
+        "y": 266.03521273942425
+      },
+      "data": {
+        "label": "",
+        "gain": 0.960682850503834,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "d6ed8e89-c069-41b2-ab0a-35680f098007.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 19,
+      "measured": {
+        "width": 75,
+        "height": 93
+      },
+      "selected": false,
+      "dragging": false
+    }
+  ],
+  "edges": [
+    {
+      "style": {
+        "strokeWidth": 2,
+        "strokeLinecap": "round",
+        "filter": "drop-shadow(0 0 2px rgba(6,47,208,0.8)) drop-shadow(0 0 4px rgba(6,47,208,0.5))",
+        "stroke": "#062fd0"
+      },
+      "source": "df3c92fc-271a-4f4e-a581-a0d7bbc5b71e.MouseTriggerButton",
+      "sourceHandle": "output",
+      "target": "e3900a19-7add-452f-85a8-72a0d2403bde.ADSRFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__df3c92fc-271a-4f4e-a581-a0d7bbc5b71e.MouseTriggerButtonoutput-e3900a19-7add-452f-85a8-72a0d2403bde.ADSRFlowNodemain-input",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "e85da56f-02a9-44a4-a0e5-1075bf763495.ButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "e3900a19-7add-452f-85a8-72a0d2403bde.ADSRFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__e85da56f-02a9-44a4-a0e5-1075bf763495.ButtonFlowNodeoutput-e3900a19-7add-452f-85a8-72a0d2403bde.ADSRFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "38202c45-e3ea-4087-b64a-b2d1ce927c11.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "c84f6ae6-8b55-4681-9e97-eb0ebe9ab0ee.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__38202c45-e3ea-4087-b64a-b2d1ce927c11.OscillatorFlowNodeoutput-c84f6ae6-8b55-4681-9e97-eb0ebe9ab0ee.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "c84f6ae6-8b55-4681-9e97-eb0ebe9ab0ee.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "c73ea392-7bb9-4b46-ae38-664598936443.OscillatorFlowNode",
+      "targetHandle": "detune",
+      "id": "xy-edge__c84f6ae6-8b55-4681-9e97-eb0ebe9ab0ee.GainFlowNodeoutput-c73ea392-7bb9-4b46-ae38-664598936443.OscillatorFlowNodedetune"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "680b230c-6cf9-4414-abde-cc1703b7ebec.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "6a0d98f2-f0bf-4eac-a76e-09de3e06f98f.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__680b230c-6cf9-4414-abde-cc1703b7ebec.OscillatorFlowNodeoutput-6a0d98f2-f0bf-4eac-a76e-09de3e06f98f.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "6a0d98f2-f0bf-4eac-a76e-09de3e06f98f.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "d3605647-af56-4a37-9f1f-d0922fa4c526.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__6a0d98f2-f0bf-4eac-a76e-09de3e06f98f.GainFlowNodeoutput-d3605647-af56-4a37-9f1f-d0922fa4c526.OscillatorFlowNodefrequency"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "c73ea392-7bb9-4b46-ae38-664598936443.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "ce66595c-10b5-44c4-8690-270b46df3497.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__c73ea392-7bb9-4b46-ae38-664598936443.OscillatorFlowNodeoutput-ce66595c-10b5-44c4-8690-270b46df3497.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "d3605647-af56-4a37-9f1f-d0922fa4c526.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "e68180e8-ae1f-4041-b2b6-40bef00bba00.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__d3605647-af56-4a37-9f1f-d0922fa4c526.OscillatorFlowNodeoutput-e68180e8-ae1f-4041-b2b6-40bef00bba00.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "faecc25b-a3b2-4787-96c9-34acab62d876.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "393f24e6-6b84-4318-a226-37143dd0e811.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__faecc25b-a3b2-4787-96c9-34acab62d876.OscillatorFlowNodeoutput-393f24e6-6b84-4318-a226-37143dd0e811.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "2432adeb-96ed-4401-96d5-9e10eb37f367.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "caf2ca0b-a396-4c01-92c4-9f70b5470254.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__2432adeb-96ed-4401-96d5-9e10eb37f367.OscillatorFlowNodeoutput-caf2ca0b-a396-4c01-92c4-9f70b5470254.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "caf2ca0b-a396-4c01-92c4-9f70b5470254.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "faecc25b-a3b2-4787-96c9-34acab62d876.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__caf2ca0b-a396-4c01-92c4-9f70b5470254.GainFlowNodeoutput-faecc25b-a3b2-4787-96c9-34acab62d876.OscillatorFlowNodefrequency"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "ce66595c-10b5-44c4-8690-270b46df3497.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "9c1e17d6-2228-4e5a-b1a2-acb8ce945d69.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__ce66595c-10b5-44c4-8690-270b46df3497.GainFlowNodeoutput-9c1e17d6-2228-4e5a-b1a2-acb8ce945d69.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "e68180e8-ae1f-4041-b2b6-40bef00bba00.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "9c1e17d6-2228-4e5a-b1a2-acb8ce945d69.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__e68180e8-ae1f-4041-b2b6-40bef00bba00.GainFlowNodeoutput-9c1e17d6-2228-4e5a-b1a2-acb8ce945d69.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "393f24e6-6b84-4318-a226-37143dd0e811.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "9c1e17d6-2228-4e5a-b1a2-acb8ce945d69.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__393f24e6-6b84-4318-a226-37143dd0e811.GainFlowNodeoutput-9c1e17d6-2228-4e5a-b1a2-acb8ce945d69.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "e3900a19-7add-452f-85a8-72a0d2403bde.ADSRFlowNode",
+      "sourceHandle": "output",
+      "target": "9c1e17d6-2228-4e5a-b1a2-acb8ce945d69.GainFlowNode",
+      "targetHandle": "gain",
+      "id": "xy-edge__e3900a19-7add-452f-85a8-72a0d2403bde.ADSRFlowNodeoutput-9c1e17d6-2228-4e5a-b1a2-acb8ce945d69.GainFlowNodegain"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "9c1e17d6-2228-4e5a-b1a2-acb8ce945d69.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "a625add0-31d4-463f-8bc8-58d35287ca75.BiquadFilterFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__9c1e17d6-2228-4e5a-b1a2-acb8ce945d69.GainFlowNodeoutput-a625add0-31d4-463f-8bc8-58d35287ca75.BiquadFilterFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "e3900a19-7add-452f-85a8-72a0d2403bde.ADSRFlowNode",
+      "sourceHandle": "output",
+      "target": "a625add0-31d4-463f-8bc8-58d35287ca75.BiquadFilterFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__e3900a19-7add-452f-85a8-72a0d2403bde.ADSRFlowNodeoutput-a625add0-31d4-463f-8bc8-58d35287ca75.BiquadFilterFlowNodefrequency"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "a625add0-31d4-463f-8bc8-58d35287ca75.BiquadFilterFlowNode",
+      "sourceHandle": "output",
+      "target": "d6ed8e89-c069-41b2-ab0a-35680f098007.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__a625add0-31d4-463f-8bc8-58d35287ca75.BiquadFilterFlowNodeoutput-d6ed8e89-c069-41b2-ab0a-35680f098007.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "d6ed8e89-c069-41b2-ab0a-35680f098007.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "5fe92094-230d-456b-af2d-267be4fde534.MasterOutFlowNode",
+      "targetHandle": "destination-input",
+      "id": "xy-edge__d6ed8e89-c069-41b2-ab0a-35680f098007.GainFlowNodeoutput-5fe92094-230d-456b-af2d-267be4fde534.MasterOutFlowNodedestination-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "d6ed8e89-c069-41b2-ab0a-35680f098007.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "01167e07-aa25-4e74-b3fe-4773c1771104.DelayFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__d6ed8e89-c069-41b2-ab0a-35680f098007.GainFlowNodeoutput-01167e07-aa25-4e74-b3fe-4773c1771104.DelayFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "01167e07-aa25-4e74-b3fe-4773c1771104.DelayFlowNode",
+      "sourceHandle": "output",
+      "target": "d6ed8e89-c069-41b2-ab0a-35680f098007.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__01167e07-aa25-4e74-b3fe-4773c1771104.DelayFlowNodeoutput-d6ed8e89-c069-41b2-ab0a-35680f098007.GainFlowNodemain-input"
+    }
+  ]
+}
