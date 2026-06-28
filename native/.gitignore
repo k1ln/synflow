@@ -4,4 +4,8 @@ target/
 build/
 *.o
 *.a
+*.dylib
 *.f32
+
+# Vendored wasmtime C API (fetched via third_party/fetch-wasmtime.sh)
+third_party/wasmtime/
