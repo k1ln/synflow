@@ -32,6 +32,7 @@
 #include "synflow/nodes/SequencerNode.h"
 #include "synflow/nodes/SpeedDividerNode.h"
 #include "synflow/nodes/SwitchNode.h"
+#include "synflow/nodes/UnisonBeginNode.h"
 #include "synflow/nodes/WasmKarplusNode.h"
 
 #include <sstream>
@@ -758,6 +759,63 @@ int main() {
         g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
         check(!pr->values.empty() && std::fabs(pr->values.back() - 880.0) < 0.5 && !pr->onSamples.empty(),
               "FlowEventFreqShifter transposes 440 Hz up an octave (880) + forwards the gate");
+    }
+
+    // --- Test 25: UnisonBegin fans a note out to N detuned voice frequencies ---
+    {
+        AudioGraphManager g(RuntimeMode::Plugin);
+        auto ub = std::make_unique<UnisonBeginNode>();
+        ub->setNamedParam("numberOfVoices", 3);
+        ub->setNamedParam("detuneFreqDeviation", 20.0); // ±20 cents at A440
+        const int bi = g.addNode(std::move(ub));
+        auto p0 = std::make_unique<ProbeNode>(); ProbeNode* pr0 = p0.get(); const int i0 = g.addNode(std::move(p0));
+        auto p1 = std::make_unique<ProbeNode>(); ProbeNode* pr1 = p1.get(); const int i1 = g.addNode(std::move(p1));
+        auto p2 = std::make_unique<ProbeNode>(); ProbeNode* pr2 = p2.get(); const int i2 = g.addNode(std::move(p2));
+        g.connectEvent(bi, 0, i0, 0, "frequency");
+        g.connectEvent(bi, 1, i1, 0, "frequency");
+        g.connectEvent(bi, 2, i2, 0, "frequency");
+        g.prepare(SR, BLOCK);
+        std::vector<float> out(BLOCK, 0.0f);
+        g.queueInputEvent(bi, 0, EventType::Value, 440.0, 0);  // note frequency
+        g.queueInputEvent(bi, 0, EventType::NoteOn, 1.0, 0);   // gate
+        g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        bool got = !pr0->values.empty() && !pr1->values.empty() && !pr2->values.empty();
+        double f0 = got ? pr0->values[0] : 0, f1 = got ? pr1->values[0] : 0, f2 = got ? pr2->values[0] : 0;
+        check(got && f0 < f1 && f1 < f2 && f0 > 432 && f2 < 448,
+              "Unison spreads 3 voices into ascending detuned frequencies around 440");
+        check(std::fabs(f1 - 440.0) < 3.5, "Unison middle voice stays near the centre pitch (440)");
+    }
+
+    // --- Test 26: full unison flow renders N voice clones summed at UnisonEnd ---
+    {
+        const char* flow =
+            "{\"nodes\":["
+            "{\"id\":\"ub\",\"type\":\"UnisonBeginFlowNode\",\"data\":{\"numberOfVoices\":3,\"detuneFreqDeviation\":15}},"
+            "{\"id\":\"osc\",\"type\":\"OscillatorFlowNode\",\"data\":{\"frequency\":440,\"type\":\"sawtooth\"}},"
+            "{\"id\":\"ue\",\"type\":\"UnisonEndFlowNode\",\"data\":{}},"
+            "{\"id\":\"m\",\"type\":\"MasterOutFlowNode\",\"data\":{}}"
+            "],\"edges\":["
+            "{\"source\":\"ub\",\"sourceHandle\":\"unison-output\",\"target\":\"osc\",\"targetHandle\":\"frequency\"},"
+            "{\"source\":\"osc\",\"target\":\"ue\",\"targetHandle\":\"main-input\"},"
+            "{\"source\":\"ue\",\"target\":\"m\",\"targetHandle\":\"main-input\"}]}";
+        AudioGraphManager g(RuntimeMode::Plugin);
+        FlowLoadResult res = FlowLoader::loadInto(g, flow, SR, BLOCK);
+        check(res.unsupportedCount == 0, "unison flow: every node supported (Begin/End/voice clones)");
+        // region {osc} cloned x3 -> 3 osc clones + Begin + End + Master = 6 nodes
+        check(res.nodeCount == 6, "unison flow: region replicated into 3 voice clones (6 nodes total)");
+        // drive a note into UnisonBegin (its flat id is unchanged at top level)
+        int biIdx = res.nodeIndexById.count("ub") ? res.nodeIndexById["ub"] : -1;
+        check(biIdx >= 0, "unison flow: UnisonBegin present");
+        g.queueInputEvent(biIdx, 0, EventType::Value, 440.0, 0);
+        g.queueInputEvent(biIdx, 0, EventType::NoteOn, 1.0, 0);
+        const int N = 24000;
+        std::vector<float> out(static_cast<size_t>(N), 0.0f);
+        for (int i = 0; i < N; i += BLOCK) {
+            if (i > 0) { g.queueInputEvent(biIdx, 0, EventType::Value, 440.0, 0); g.queueInputEvent(biIdx, 0, EventType::NoteOn, 1.0, 0); }
+            g.renderBlock(out.data() + i, std::min(BLOCK, N - i), nullptr, 120.0, 0.0, true);
+        }
+        bool finite = true; for (float x : out) if (!std::isfinite(x)) finite = false;
+        check(finite && rms(out, 8000, 8000) > 0.1, "unison flow: 3 detuned voices sum to an audible output at master");
     }
 
     std::printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "ALL PASS", failures, failures == 1 ? "" : "s");

@@ -5,6 +5,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -30,6 +31,7 @@
 #include "synflow/nodes/SequencerFrequencyNode.h"
 #include "synflow/nodes/SpeedDividerNode.h"
 #include "synflow/nodes/SwitchNode.h"
+#include "synflow/nodes/UnisonBeginNode.h"
 #include "synflow/nodes/DelayNode.h"
 #include "synflow/nodes/DistortionNode.h"
 #include "synflow/nodes/DynamicCompressorNode.h"
@@ -79,6 +81,8 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
     if (type == "ScriptSequencerFlowNode") return std::make_unique<ScriptSequencerNode>();
     if (type == "FunctionFlowNode") return std::make_unique<FunctionNode>();
     if (type == "InputNode" || type == "OutputNode") return std::make_unique<BoundaryNode>();
+    if (type == "UnisonBeginFlowNode") return std::make_unique<UnisonBeginNode>();
+    if (type == "UnisonEndFlowNode") return std::make_unique<BoundaryNode>(); // sums the voice clones
     if (type == "FlowEventFreqShifterFlowNode") return std::make_unique<FlowEventFreqShifterNode>();
     // Visualization taps / recording are transparent on the audio path (their audio
     // node is a passthrough gain; the scope/meter/record is a side-branch handled in
@@ -107,6 +111,7 @@ bool isEventEmitterType(const std::string& type) {
         || type == "BlockingSwitchFlowNode" || type == "MidiFileFlowNode"
         || type == "ScriptSequencerFlowNode" || type == "FunctionFlowNode"
         || type == "ArpeggiatorFlowNode" || type == "FlowEventFreqShifterFlowNode"
+        || type == "UnisonBeginFlowNode"
         || type == "EventFlowNode" || type == "LogFlowNode"
         || type == "CommandInFlowNode" || type == "CommandOutFlowNode"
         || type == "AutomationFlowNode";
@@ -169,6 +174,86 @@ void flattenFlow(const JsonValue& flow, const std::string& prefix,
     }
 }
 
+// Unison voice multiplication (Bucket D). The region between each UnisonBegin and
+// UnisonEnd (graph-reachable, stopping at the End) is cloned into N voices: region
+// nodes are id-suffixed per voice, internal region edges replicated, the Begin's
+// output edges fanned out to each voice (port v / N+v), and each voice's edges into
+// the End summed (UnisonEnd is an additive boundary). The UnisonBeginNode then steers
+// each voice to its own detuned frequency at run time.
+void expandUnison(std::vector<FlatNode>& nodes, std::vector<FlatEdge>& edges) {
+    std::map<std::string, std::string> typeById;
+    std::map<std::string, const JsonValue*> jsonById;
+    for (const auto& fn : nodes) {
+        typeById[fn.id] = fn.node->find("type") ? fn.node->find("type")->asString() : "";
+        jsonById[fn.id] = fn.node;
+    }
+    std::vector<std::string> begins;
+    std::set<std::string> ends;
+    for (const auto& [id, t] : typeById) {
+        if (t == "UnisonBeginFlowNode") begins.push_back(id);
+        else if (t == "UnisonEndFlowNode") ends.insert(id);
+    }
+    if (begins.empty()) return;
+
+    std::map<std::string, std::vector<size_t>> outEdges;
+    for (size_t i = 0; i < edges.size(); ++i) outEdges[edges[i].src].push_back(i);
+
+    std::set<size_t> removeEdges;
+    std::set<std::string> removeNodes;
+    std::vector<FlatNode> addNodes;
+    std::vector<FlatEdge> addEdges;
+    auto suffix = [](const std::string& id, int v) { return id + "__uv" + std::to_string(v); };
+
+    for (const std::string& begin : begins) {
+        int N = 1;
+        if (const JsonValue* bd = jsonById[begin]->find("data"))
+            if (const JsonValue* nv = bd->find("numberOfVoices")) N = std::max(1, static_cast<int>(nv->asNumber(1)));
+
+        // region = nodes reachable from begin, stopping at an UnisonEnd
+        std::set<std::string> region;
+        std::vector<std::string> stack;
+        for (size_t ei : outEdges[begin]) if (!ends.count(edges[ei].dst)) stack.push_back(edges[ei].dst);
+        while (!stack.empty()) {
+            std::string cur = stack.back(); stack.pop_back();
+            if (region.count(cur) || ends.count(cur) || cur == begin) continue;
+            region.insert(cur);
+            for (size_t ei : outEdges[cur]) if (!ends.count(edges[ei].dst)) stack.push_back(edges[ei].dst);
+        }
+        if (region.empty()) continue;
+
+        for (const std::string& r : region) {
+            removeNodes.insert(r);
+            for (int v = 0; v < N; ++v) addNodes.push_back({suffix(r, v), jsonById[r]});
+        }
+        for (size_t i = 0; i < edges.size(); ++i) {
+            const FlatEdge& e = edges[i];
+            const bool srcR = region.count(e.src) > 0;
+            const bool dstR = region.count(e.dst) > 0;
+            if (e.src == begin && dstR) {
+                removeEdges.insert(i);
+                const bool isDetune = e.srcHandle.rfind("detune", 0) == 0;
+                for (int v = 0; v < N; ++v)
+                    addEdges.push_back({begin, suffix(e.dst, v), (isDetune ? "ud" : "uf") + std::to_string(v), e.dstHandle});
+            } else if (srcR && dstR) {
+                removeEdges.insert(i);
+                for (int v = 0; v < N; ++v) addEdges.push_back({suffix(e.src, v), suffix(e.dst, v), e.srcHandle, e.dstHandle});
+            } else if (srcR && ends.count(e.dst)) {
+                removeEdges.insert(i);
+                for (int v = 0; v < N; ++v) addEdges.push_back({suffix(e.src, v), e.dst, e.srcHandle, e.dstHandle});
+            }
+        }
+    }
+
+    std::vector<FlatNode> newNodes;
+    for (auto& fn : nodes) if (!removeNodes.count(fn.id)) newNodes.push_back(fn);
+    for (auto& fn : addNodes) newNodes.push_back(fn);
+    nodes.swap(newNodes);
+    std::vector<FlatEdge> newEdges;
+    for (size_t i = 0; i < edges.size(); ++i) if (!removeEdges.count(i)) newEdges.push_back(edges[i]);
+    for (auto& e : addEdges) newEdges.push_back(e);
+    edges.swap(newEdges);
+}
+
 } // namespace
 
 FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string& jsonText,
@@ -204,6 +289,7 @@ FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string&
             e.dstHandle = "main-input";
         }
     }
+    expandUnison(flatNodes, flatEdges); // replicate UnisonBegin..End regions into voices
 
     // --- nodes ---
     {
