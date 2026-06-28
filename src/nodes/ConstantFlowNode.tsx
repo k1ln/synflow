@@ -69,4 +69,8 @@ const ConstantFlowNode: React.FC<ConstantNodeProps> = ({ data }) => {
   );
 };
 
+export const defaultData = {
+  value: 1,
+};
+
 export default React.memo(ConstantFlowNode);

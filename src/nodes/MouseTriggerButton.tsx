@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import EventBus from '../sys/EventBus';
 import './AudioNode.css';
+import { baseNodeStyle } from '../utils/styleUtils';
 
 export interface MouseTriggerButtonProps {
   data: {
@@ -76,6 +77,11 @@ const MouseTriggerButton: React.FC<MouseTriggerButtonProps> = ({ data }) => {
         </button>
     </div>
   );
+};
+
+export const defaultData = {
+  label: "Mouse Trigger",
+  style: { ...baseNodeStyle },
 };
 
 export default React.memo(MouseTriggerButton);

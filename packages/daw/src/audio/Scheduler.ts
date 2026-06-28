@@ -23,10 +23,16 @@ export class Scheduler {
     private onStep: (step: number, time: number) => void,
   ) {}
 
-  start(): void {
-    this.step = 0;
+  start(fromStep = 0): void {
+    this.step = ((fromStep % this.totalSteps) + this.totalSteps) % this.totalSteps;
     this.nextStepTime = this.clock.currentTime + 0.05;
     this.timer = setInterval(() => this.tick(), this.intervalMs);
+  }
+
+  /** Jump the playback cursor to `step` while running (live seek). */
+  seek(step: number): void {
+    this.step = ((step % this.totalSteps) + this.totalSteps) % this.totalSteps;
+    this.nextStepTime = this.clock.currentTime + 0.05;
   }
 
   stop(): void {

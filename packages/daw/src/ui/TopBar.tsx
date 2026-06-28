@@ -1,18 +1,18 @@
 import React from 'react';
-import { Play, Pause, Square, Circle, SkipBack, Grid3x3, Music2, Layers, SlidersHorizontal, PanelLeft, Save, FolderOpen, Settings, Piano, Check } from 'lucide-react';
+import { Play, Pause, Square, Circle, SkipBack, Grid3x3, Layers, SlidersHorizontal, PanelLeft, Save, FolderOpen, Settings, Piano, Check, Download, FileAudio, Loader } from 'lucide-react';
 
 export type ViewId = 'tracks' | 'song' | 'live' | 'mix';
 
 const TABS: [ViewId, string, React.ComponentType<any>][] = [
-  ['tracks', 'Tracks', Grid3x3],
   ['song', 'Song', Layers],
+  ['tracks', 'Tracks', Grid3x3],
   ['live', 'Live', Piano],
   ['mix', 'Mixer', SlidersHorizontal],
 ];
 
 export function TopBar({
   view, setView, isPlaying, onPlay, onStop, armed, onArm, bpm, onBpm, position, browserOpen, setBrowserOpen,
-  projectName, onProjectName, onSave, saved, songs, onOpenSong,
+  projectName, onProjectName, onSave, saved, onOpenSong, onExport, exporting, exportProgress, onBounce, bouncing, bounceProgress,
 }: {
   view: ViewId;
   setView: (v: ViewId) => void;
@@ -31,7 +31,14 @@ export function TopBar({
   onSave: () => void;
   saved: boolean;
   onOpenSong: () => void;
+  onExport: () => void;
+  exporting: boolean;
+  exportProgress: number;
+  onBounce: () => void;
+  bouncing: boolean;
+  bounceProgress: number;
 }) {
+  const pct = (f: number) => `${Math.round(f * 100)}%`;
   return (
     <div className="topbar">
       <div className="brand">
@@ -47,7 +54,7 @@ export function TopBar({
 
       <div className="viewtabs">
         {TABS.map(([id, label, Ico]) => (
-          <button key={id} className={`vtab ${view === id ? 'active' : ''}`} onClick={() => setView(id)}>
+          <button key={id} className={`vtab ${view === id ? 'active' : ''}`} title={`${label} view`} onClick={() => setView(id)}>
             <Ico size={14} /> {label}
           </button>
         ))}
@@ -74,8 +81,14 @@ export function TopBar({
       <div className="tb-tools">
         <span className="tb-status">{isPlaying ? 'Playing' : 'Stopped'}</span>
         <button className={`icon-btn ${browserOpen ? 'active' : ''}`} title="Browser" onClick={() => setBrowserOpen(!browserOpen)}><PanelLeft size={18} /></button>
-        <button className={`icon-btn ${saved ? 'saved' : ''}`} title="Save song" onClick={onSave}>{saved ? <Check size={18} /> : <Save size={18} />}</button>
-        <button className="icon-btn" title="Settings"><Settings size={18} /></button>
+        <button className={`icon-btn ${saved ? 'saved' : ''}`} title="Save song (audio stays on disk, streamed)" onClick={onSave}>{saved ? <Check size={18} /> : <Save size={18} />}</button>
+        <button className={`icon-btn ${exporting ? 'busy' : ''}`} title="Export portable song (.json with audio embedded as base64)" onClick={onExport} disabled={exporting}>
+          {exporting ? <><Loader size={16} className="spin" /><span className="btn-pct">{pct(exportProgress)}</span></> : <Download size={18} />}
+        </button>
+        <button className={`icon-btn ${bouncing ? 'busy' : ''}`} title="Bounce song to WAV (offline, faster than realtime)" onClick={onBounce} disabled={bouncing}>
+          {bouncing ? <><Loader size={16} className="spin" /><span className="btn-pct">{pct(bounceProgress)}</span></> : <FileAudio size={18} />}
+        </button>
+        <button className="icon-btn" title="Settings (coming soon)"><Settings size={18} /></button>
       </div>
     </div>
   );

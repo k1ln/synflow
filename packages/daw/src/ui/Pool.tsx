@@ -1,23 +1,31 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, FolderPlus, Music2, Drum, Sparkles, Radio, X } from 'lucide-react';
-import type { PoolItem } from '../model/project';
+import { ChevronDown, ChevronRight, FolderPlus, Music2, Drum, Sparkles, Radio, X, Play, Square, Plus, AudioWaveform } from 'lucide-react';
+import type { PoolItem, AudioAsset } from '../model/project';
 import type { LibraryEntry } from '../synflow/library';
 
 const SECTION = {
   Instruments: { color: 'var(--cat-mod)', icon: Music2 },
   Drums: { color: 'var(--cat-source)', icon: Drum },
   Effects: { color: 'var(--cat-fx)', icon: Sparkles },
+  Recordings: { color: 'var(--cat-out, #4ad)', icon: AudioWaveform },
 } as const;
+
+const fmtDur = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
 
 /**
  * The project pool (left panel): instruments + drums loaded for this project
  * (click → live mode) and the effects available to add. "Add from folder" pulls
  * more flows in from the on-disk library.
  */
-export function Pool({ pool, effects, armed, onOpenInstrument, onEditEffect, onRemoveInstrument, onRemoveEffect, onAddFromFolder, source }: {
+export function Pool({ pool, effects, armed, recordings, previewKey, onPreview, onPlaceRecording, onRemoveRecording, onOpenInstrument, onEditEffect, onRemoveInstrument, onRemoveEffect, onAddFromFolder, source }: {
   pool: PoolItem[];
   effects: LibraryEntry[];
   armed?: string | null;
+  recordings: AudioAsset[];
+  previewKey: string | null;
+  onPreview: (assetId: string) => void;
+  onPlaceRecording: (assetId: string) => void;
+  onRemoveRecording: (assetId: string) => void;
   onOpenInstrument: (poolId: string) => void;
   onEditEffect: (effectId: string) => void;
   onRemoveInstrument: (poolId: string) => void;
@@ -25,7 +33,7 @@ export function Pool({ pool, effects, armed, onOpenInstrument, onEditEffect, onR
   onAddFromFolder: () => void;
   source?: string;
 }) {
-  const [open, setOpen] = useState<Record<string, boolean>>({ Instruments: true, Drums: true, Effects: true });
+  const [open, setOpen] = useState<Record<string, boolean>>({ Instruments: true, Drums: true, Effects: true, Recordings: true });
   const synths = pool.filter((p) => p.kind === 'synth');
   const drums = pool.filter((p) => p.kind === 'drum');
 
@@ -72,6 +80,23 @@ export function Pool({ pool, effects, armed, onOpenInstrument, onEditEffect, onR
         <Section name="Effects" count={effects.length}>
           {effects.map((e) => <Item key={e.id} name={e.name} color={SECTION.Effects.color} tag="edit" onClick={() => onEditEffect(e.id)} onRemove={() => onRemoveEffect(e.id)} title="Edit effect in Synflow" />)}
           {effects.length === 0 && <div className="browser-empty">none — add from folder</div>}
+        </Section>
+        <Section name="Recordings" count={recordings.length}>
+          {recordings.map((a) => {
+            const playing = previewKey === 'asset:' + a.id;
+            return (
+              <div key={a.id} className="rec-item" title={a.name}>
+                <button className={`rec-play ${playing ? 'on' : ''}`} title={playing ? 'Stop' : 'Preview'} onClick={() => onPreview(a.id)}>
+                  {playing ? <Square size={11} /> : <Play size={11} />}
+                </button>
+                <span className="rec-name">{a.name}</span>
+                <span className="rec-dur">{fmtDur(a.duration)}</span>
+                <button className="rec-add" title="Place on the selected audio track at the playhead" onClick={() => onPlaceRecording(a.id)}><Plus size={12} /></button>
+                <button className="bi-del" title="Delete recording" onClick={() => onRemoveRecording(a.id)}><X size={12} /></button>
+              </div>
+            );
+          })}
+          {recordings.length === 0 && <div className="browser-empty">none — record or import on an audio track</div>}
         </Section>
       </div>
       <div className="browser-foot"><Music2 size={14} /><span>{source ?? 'built-in'}</span></div>

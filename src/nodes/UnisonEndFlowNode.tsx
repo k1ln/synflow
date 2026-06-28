@@ -14,7 +14,7 @@ export type UnisonEndFlowNodeProps = {
 
 const UnisonEndFlowNode: React.FC<UnisonEndFlowNodeProps> = ({ data }) => {
   return (
-    <div style={data.style}>
+    <div className="flow-node" style={data.style}>
       <div className="node-title">UNISON END</div>
 
       {/* Main Input */}
@@ -33,6 +33,16 @@ const UnisonEndFlowNode: React.FC<UnisonEndFlowNodeProps> = ({ data }) => {
       />  
     </div>
   );
+};
+
+export const defaultData = {
+  label: "Unison End",
+  amount: 4,
+  detuneSpread: 20,
+  volumeSpread: 15,
+  avgDelayMs: 10,
+  maxDelayMs: 50,
+  style: { glowColor: "#a78bfa" },
 };
 
 export default UnisonEndFlowNode;

@@ -182,4 +182,8 @@ const BlockingSwitchFlowNode: React.FC<BlockingSwitchFlowNodeProps> = ({ data })
     );
 };
 
+export const defaultData = {
+  numOutputs: 2,
+};
+
 export default React.memo(BlockingSwitchFlowNode);

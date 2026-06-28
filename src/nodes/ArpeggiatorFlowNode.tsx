@@ -111,19 +111,6 @@ const ArpeggiatorFlowNode: React.FC<ArpeggiatorFlowNodeProps> = ({
     'shuffle': 'Shuffle (All once)'
   };
 
-  // Use ADSR-style defaults if no custom style provided
-  if (data.style === undefined) {
-    data.style = {
-      padding: '10px',
-      border: '1px solid #ddd',
-      borderRadius: '5px',
-      width: '200px',
-      textAlign: 'center',
-      background: '#333',
-      color: '#eee',
-    };
-  }
-
   const handleStyle: React.CSSProperties = {
     width: '8px',
     height: '8px',
@@ -134,7 +121,7 @@ const ArpeggiatorFlowNode: React.FC<ArpeggiatorFlowNodeProps> = ({
   };
 
   return (
-    <div style={data.style}>
+    <div className="flow-node" style={data.style}>
       <div className="node-title">ARPEGGIATOR</div>
 
       {/* Clock Input */}

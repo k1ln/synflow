@@ -14,19 +14,9 @@ const ChannelSplitterFlowNode: React.FC<ChannelSplitterFlowNodeProps> = ({ data 
   const [label, setLabel] = useState(data.label);
   const [numberOfOutputs, setNumberOfOutputs] = useState(data.numberOfOutputs);
 
-  if (data.style === undefined) {
-    data.style = {
-      padding: "10px",
-      border: "1px solid #ddd",
-      borderRadius: "5px",
-      width: "200px",
-      textAlign: "center",
-      background: "#333",
-      color: "#eee",
-    }
-  }
   return (
     <div
+      className="flow-node"
       style={data.style}
     >
       <div className="audio-header">

@@ -89,12 +89,8 @@ const MidiButtonFlowNode: React.FC<MidiButtonNodeProps> = ({ data }) => {
     toggleMidiLearn();
   };
 
-  if (data.style === undefined) {
-    data.style = { padding: '10px', border: '1px solid #ddd', borderRadius: '5px', width: '150px', textAlign: 'center', background: '#333', color: '#eee' };
-  }
-
   return (
-    <div style={data.style}>
+    <div className="flow-node" style={data.style}>
       <Handle type="source" position={Position.Right} id="output" className="mainOutput" />
       <div>
         <button
@@ -129,6 +125,15 @@ const MidiButtonFlowNode: React.FC<MidiButtonNodeProps> = ({ data }) => {
       </div>
     </div>
   );
+};
+
+export const defaultData = {
+  assignedKey: null,
+  retriggerFrequency: 1,
+  isRetriggering: false,
+  isPressed: false,
+  retriggerLength: 0.1,
+  midiMapping: null,
 };
 
 export default MidiButtonFlowNode;

@@ -235,7 +235,7 @@ const AutomationFlowNode: React.FC<AutomationFlowNodeProps> = ({ data }) => {
   };
 
   return (
-    <div style={nodeStyle} onContextMenu={stopContextMenuBubble}>
+    <div className="flow-node" style={nodeStyle} onContextMenu={stopContextMenuBubble}>
       <div className="node-title">AUTOMATION</div>
       <div className="node-row" style={{ justifyContent: 'flex-start', gap: 8, marginBottom: 4 }}>
         <div className="node-row" style={{ gap: 4 }}>
@@ -379,6 +379,14 @@ const AutomationFlowNode: React.FC<AutomationFlowNodeProps> = ({ data }) => {
       <Handle type="source" position={Position.Right} id="output" className="mainOutput" />
     </div>
   );
+};
+
+export const defaultData = {
+  label: "Automation",
+  lengthSec: 2,
+  loop: true,
+  points: [{ x: 0, y: 0.5 }, { x: 1, y: 0.5 }],
+  style: { width: "440px" },
 };
 
 export default AutomationFlowNode;

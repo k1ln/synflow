@@ -157,4 +157,9 @@ const SwitchFlowNode: React.FC<SwitchFlowNodeProps> = ({ data }) => {
   );
 };
 
+export const defaultData = {
+  numOutputs: 2,
+  activeOutput: 1,
+};
+
 export default React.memo(SwitchFlowNode);

@@ -74,17 +74,6 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
   function changeMinPercent(v:number){ setMinPercent(clampPercent(v)); }
   function changeMaxPercent(v:number){ setMaxPercent(clampPercent(v)); }
 
-  if (data.style === undefined) {
-    data.style = {
-      padding: "10px",
-      border: "1px solid #ddd",
-      borderRadius: "5px",
-      width: "200px",
-      textAlign: "center",
-      background: "#333",
-      color: "#eee",
-    };
-  }
 
   // Deterministic vivid color generator per handle id
   function vividColor(seed: string): string {
@@ -104,7 +93,7 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
   const handleColor = (id: string) => vividColor((data as any).id + ':' + id);
 
   return (
-    <div style={data.style}>
+    <div className="flow-node" style={data.style}>
       <div className="node-title">ADSR</div>
       <div className="node-row" style={{ gap: 6, marginBottom: 6 }}>
         <label className="node-label">Phase Max (s)</label>
@@ -279,6 +268,14 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
       </div>
     </div>
   );
+};
+
+export const defaultData = {
+  attackTime: 0.1,
+  decayTime: 0.2,
+  sustainLevel: 0.5,
+  releaseTime: 0.3,
+  maxTime: 10,
 };
 
 export default ADSRFlowNode;

@@ -1,13 +1,23 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import type { PianoNote } from '../model/project';
 import { midiName, isBlackKey } from '../model/pitch';
 
-const LOW = 48;   // C3
-const HIGH = 72;  // C5
+const LOW = 48;    // C3
+const HIGH = 72;   // C5
+const ROW_H = 14;  // px per semitone row
 
-/** Piano roll for one synth instrument-in-track (its own notes). */
+type SnapMode = 'off' | 'quarter' | 'step';
+const SNAP_UNIT: Record<SnapMode, number> = { off: 0, quarter: 0.25, step: 1 };
+const SNAP_LABEL: Record<SnapMode, string> = { off: 'free', quarter: '¼', step: '1' };
+
+const snapTo = (v: number, unit: number) => (unit > 0 ? Math.round(v / unit) * unit : v);
+
+/** Piano roll for one synth instrument-in-track. Notes are free-positioned:
+ *  click empty space to add, drag the body to move (pitch+time), drag the right
+ *  edge to resize, right-click / Delete to remove. Snap is optional. */
 export function PianoRoll({
-  id, name, notes, voices, totalSteps, stepsPerBeat, currentStep, onAddNote, onRemoveNote,
+  id, notes, totalSteps, stepsPerBeat, currentStep, onAddNote, onRemoveNote, onMoveNote, onResizeNote, onPlayNote,
+  onKeyDown: onGutterDown, onKeyUp: onGutterUp,
 }: {
   id: string;
   name: string;
@@ -18,36 +28,131 @@ export function PianoRoll({
   currentStep: number;
   onAddNote: (useId: string, midi: number, start: number) => void;
   onRemoveNote: (useId: string, noteId: number) => void;
+  onMoveNote: (useId: string, noteId: number, midi: number, start: number) => void;
+  onResizeNote: (useId: string, noteId: number, length: number) => void;
+  onPlayNote: (useId: string, midi: number) => void;
+  onKeyDown: (useId: string, midi: number) => void;
+  onKeyUp: (useId: string, midi: number) => void;
 }) {
   const rows: number[] = [];
   for (let m = HIGH; m >= LOW; m--) rows.push(m);
-  const noteAt = (midi: number, step: number) =>
-    notes.find((n) => n.midi === midi && step >= n.start && step < n.start + n.length);
+  const laneRef = useRef<HTMLDivElement>(null);
+  const [snap, setSnap] = useState<SnapMode>('quarter');
+  const [sel, setSel] = useState<number | null>(null);
+  const drag = useRef<null | {
+    mode: 'move' | 'resize'; noteId: number; startX: number; startY: number;
+    origStart: number; origLen: number; origMidi: number; laneW: number; moved: boolean;
+  }>(null);
+
+  // Key-gutter keyboard: hold a note on mouse-down, release on mouse-up anywhere.
+  const held = useRef<number | null>(null);
+  const releaseKey = () => { if (held.current != null) { onGutterUp(id, held.current); held.current = null; } window.removeEventListener('pointerup', releaseKey); };
+  const pressKey = (midi: number) => { if (held.current === midi) return; if (held.current != null) onGutterUp(id, held.current); held.current = midi; onGutterDown(id, midi); window.addEventListener('pointerup', releaseKey); };
+
+  const unit = SNAP_UNIT[snap];
+  const stepFromX = (clientX: number, laneW: number) => (clientX / laneW) * totalSteps;
+
+  const onLanePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    const rect = laneRef.current!.getBoundingClientRect();
+    const rawStart = stepFromX(e.clientX - rect.left, rect.width);
+    const start = Math.max(0, Math.min(totalSteps - 0.25, snapTo(rawStart, unit || 0.25)));
+    const row = Math.floor((e.clientY - rect.top) / ROW_H);
+    const midi = Math.max(LOW, Math.min(HIGH, HIGH - row));
+    onAddNote(id, midi, start);
+  };
+
+  const beginDrag = (e: React.PointerEvent, note: PianoNote, mode: 'move' | 'resize') => {
+    e.stopPropagation();
+    if (e.button !== 0) return;
+    setSel(note.id);
+    if (mode === 'move') onPlayNote(id, note.midi); // audition the note you grab
+    const laneW = laneRef.current!.getBoundingClientRect().width;
+    drag.current = { mode, noteId: note.id, startX: e.clientX, startY: e.clientY, origStart: note.start, origLen: note.length, origMidi: note.midi, laneW, moved: false };
+    window.addEventListener('pointermove', onDragMove);
+    window.addEventListener('pointerup', onDragEnd);
+  };
+
+  const onDragMove = (e: PointerEvent) => {
+    const d = drag.current; if (!d) return;
+    const dSteps = ((e.clientX - d.startX) / d.laneW) * totalSteps;
+    if (Math.abs(e.clientX - d.startX) > 2 || Math.abs(e.clientY - d.startY) > 2) d.moved = true;
+    if (d.mode === 'move') {
+      const len = d.origLen;
+      const start = Math.max(0, Math.min(totalSteps - len, snapTo(d.origStart + dSteps, unit)));
+      const midi = Math.max(LOW, Math.min(HIGH, d.origMidi - Math.round((e.clientY - d.startY) / ROW_H)));
+      onMoveNote(id, d.noteId, midi, start);
+    } else {
+      const min = unit || 0.25;
+      const len = Math.max(min, Math.min(totalSteps - d.origStart, snapTo(d.origLen + dSteps, unit)));
+      onResizeNote(id, d.noteId, len);
+    }
+  };
+
+  const onDragEnd = () => {
+    window.removeEventListener('pointermove', onDragMove);
+    window.removeEventListener('pointerup', onDragEnd);
+    drag.current = null;
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.key === 'Delete' || e.key === 'Backspace') && sel != null) { onRemoveNote(id, sel); setSel(null); }
+  };
 
   return (
-    <div className="pianoroll">
-      <div className="pr-grid">
-        {rows.map((midi) => (
-          <div className="pr-row" key={midi}>
-            <div className={`pr-key ${isBlackKey(midi) ? 'black' : ''}`}>{midiName(midi)}</div>
-            <div className="pr-cells" style={{ gridTemplateColumns: `repeat(${totalSteps}, 1fr)` }}>
-              {Array.from({ length: totalSteps }, (_, s) => {
-                const note = noteAt(midi, s);
-                return (
-                  <button
-                    key={s}
-                    className={[
-                      'pr-cell', note ? 'on' : '', note && note.start === s ? 'note-start' : '',
-                      s % stepsPerBeat === 0 ? 'beat' : '', s === currentStep ? 'playhead' : '',
-                    ].join(' ')}
-                    onClick={() => (note ? onRemoveNote(id, note.id) : onAddNote(id, midi, s))}
-                    title={`${midiName(midi)} @ step ${s + 1}`}
-                  />
-                );
-              })}
-            </div>
-          </div>
+    <div className="pianoroll" tabIndex={0} onKeyDown={onKeyDown}>
+      <div className="pr-tools">
+        <span className="pr-snap-label">snap</span>
+        {(['off', 'quarter', 'step'] as SnapMode[]).map((m) => (
+          <button key={m} className={`pr-snap ${snap === m ? 'on' : ''}`} onClick={() => setSnap(m)}>{SNAP_LABEL[m]}</button>
         ))}
+        <span className="pr-hint">click to add · drag to move · drag edge to resize · right-click / Delete to remove</span>
+      </div>
+      <div className="pr-body">
+        <div className="pr-keys">
+          {rows.map((midi) => (
+            <div
+              key={midi} className={`pr-keyrow ${isBlackKey(midi) ? 'black' : ''}`} style={{ height: ROW_H }}
+              onPointerDown={(e) => { e.preventDefault(); pressKey(midi); }}
+              onPointerEnter={(e) => { if (e.buttons & 1) pressKey(midi); }} // glide while held
+              title={`${midiName(midi)} — hold to play`}
+            >{midiName(midi)}</div>
+          ))}
+        </div>
+        <div
+          ref={laneRef}
+          className="pr-lane"
+          style={{
+            height: rows.length * ROW_H,
+            // fine step lines + stronger beat lines
+            backgroundSize: `${100 / totalSteps}% 100%, ${(100 / totalSteps) * stepsPerBeat}% 100%`,
+          }}
+          onPointerDown={onLanePointerDown}
+        >
+          {rows.map((midi) => (
+            <div key={`bg${midi}`} className={`pr-rowbg ${isBlackKey(midi) ? 'black' : 'white'}`} style={{ top: (HIGH - midi) * ROW_H, height: ROW_H }} />
+          ))}
+          {notes.map((n) => {
+            const top = (HIGH - n.midi) * ROW_H;
+            const left = (n.start / totalSteps) * 100;
+            const width = (n.length / totalSteps) * 100;
+            return (
+              <div
+                key={n.id}
+                className={`pr-note ${sel === n.id ? 'sel' : ''}`}
+                style={{ top, left: `${left}%`, width: `${width}%`, height: ROW_H - 1 }}
+                title={`${midiName(n.midi)} @ ${n.start.toFixed(2)} · ${n.length.toFixed(2)}`}
+                onPointerDown={(e) => beginDrag(e, n, 'move')}
+                onContextMenu={(e) => { e.preventDefault(); onRemoveNote(id, n.id); }}
+              >
+                <span className="pr-note-resize" onPointerDown={(e) => beginDrag(e, n, 'resize')} />
+              </div>
+            );
+          })}
+          {currentStep >= 0 && (
+            <div className="pr-playhead" style={{ left: `${((currentStep % totalSteps) / totalSteps) * 100}%` }} />
+          )}
+        </div>
       </div>
     </div>
   );

@@ -54,20 +54,8 @@ const DelayFlowNode: React.FC<DelayFlowNodeProps> = ({ data }) => {
     }
   }, [label, delayTime, knobValue, delayMidiMapping]);
 
-  if (data.style === undefined) {
-    data.style = {
-      padding: "0px",
-      border: "1px solid #ddd",
-      borderRadius: "5px",
-      width: "50px",
-      textAlign: "center",
-      background: "#1f1f1f",
-      color: "#eee",
-    }
-  }
-  
   return (
-    <div style={data.style}>
+    <div className="flow-node" style={data.style}>
       <div className="node-title">DELAY</div>
 
       {/* Main Input */}
@@ -127,6 +115,13 @@ const DelayFlowNode: React.FC<DelayFlowNodeProps> = ({ data }) => {
       </div>
     </div>
   );
+};
+
+// NOTE: the old addNode branch built an 80px-wide style but then assigned the
+// base style instead, so Delay always rendered at content width. Behavior
+// preserved here (no width override); set `style: { width: "80px" }` to fix.
+export const defaultData = {
+  delayTime: 0.5,
 };
 
 export default DelayFlowNode;

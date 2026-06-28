@@ -101,7 +101,7 @@ const IIRFilterFlowNode: React.FC<IIRFilterFlowNodeProps> = ({ data }) => {
   };
 
   return (
-    <div style={data.style}>
+    <div className="flow-node" style={data.style}>
       <div className="node-row" style={{ gap: 4, marginBottom: 8 }}>
         <span className="node-title" style={{ margin: 0, padding: 0, border: 0, textShadow: "none" }}>IIR FILTER</span>
         <span
@@ -209,6 +209,12 @@ const IIRFilterFlowNode: React.FC<IIRFilterFlowNodeProps> = ({ data }) => {
       </div>
     </div>
   );
+};
+
+export const defaultData = {
+  feedforward: [0.5, 0.5],
+  feedback: [1.0, -0.5],
+  label: "IIR Filter",
 };
 
 export default React.memo(IIRFilterFlowNode);

@@ -389,19 +389,9 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
     setDetuneMidiMapping(m => m ? { ...m, min: -100, max: 100 } : m);
   }, [knobMin, knobMax]);
 
-  if (data.style === undefined) {
-    data.style = {
-      padding: "0px",
-      border: "1px solid #ddd",
-      borderRadius: "5px",
-      width: "60px",
-      textAlign: "center",
-      background: "#1f1f1f",
-      color: "#eee",
-    }
-  }
-  return (
+return (
     <div
+      className="flow-node"
       style={data.style}
     >
       <div className="node-title">OSC</div>
@@ -610,6 +600,15 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
       )}
     </div>
   );
+};
+
+export const defaultData = {
+  frequency: 440,
+  detune: 0,
+  type: "sine",
+  frequencyType: "hz",
+  label: "Oscillator",
+  style: { width: "60px" },
 };
 
 export default React.memo(OscillatorFlowNode);

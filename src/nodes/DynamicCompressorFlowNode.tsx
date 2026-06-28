@@ -44,19 +44,8 @@ const DynamicCompressorFlowNode: React.FC<DynamicCompressorFlowNodeProps> = ({ d
     }
   }, [threshold, knee, ratio, attack, release, label, thresholdMidiMapping, kneeMidiMapping, ratioMidiMapping, attackMidiMapping, releaseMidiMapping]);
 
-  if (data.style === undefined) {
-    data.style = {
-      padding: "0px",
-      border: "1px solid #ddd",
-      borderRadius: "5px",
-      width: "130px",
-      textAlign: "center",
-      background: "#1f1f1f",
-      color: "#eee",
-    }
-  }
   return (
-    <div style={data.style}>
+    <div className="flow-node" style={data.style}>
       <div className="node-title">COMPRESSOR</div>
       
       {/* Main Input */}
@@ -250,6 +239,14 @@ const DynamicCompressorFlowNode: React.FC<DynamicCompressorFlowNodeProps> = ({ d
       </div>
     </div>
   );
+};
+
+export const defaultData = {
+  threshold: -50,
+  knee: 40,
+  ratio: 12,
+  attack: 0.003,
+  release: 0.25,
 };
 
 export default DynamicCompressorFlowNode;

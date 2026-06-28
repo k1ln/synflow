@@ -1,6 +1,25 @@
+import type { CSSProperties } from 'react';
 import { NODE_CATEGORY_COLORS } from '../components/NodePaletteDialog';
 
 export const DARK_NODE_BG = 'rgba(18, 19, 36, 0.52)';
+
+/**
+ * Base look shared by every flow node. This is the single source of truth that
+ * used to be the inline `nodeStyleObj` in Flow.tsx. Most nodes now get this look
+ * from the `.flow-node` CSS class (see AudioNode.css); a handful of bespoke
+ * nodes that merge their own local style still import this so their default look
+ * matches. Width is intentionally omitted so nodes size to their content.
+ */
+export const baseNodeStyle: CSSProperties = {
+  padding: '5px',
+  border: '1px solid rgba(80, 95, 130, 0.50)',
+  borderRadius: '7px',
+  textAlign: 'center',
+  background: 'rgba(18, 19, 36, 0.52)',
+  backdropFilter: 'blur(6px)',
+  color: '#eee',
+  boxShadow: '0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)',
+};
 
 export function makeDistortionCurve(amount: number): Float32Array {
   const k = typeof amount === "number" ? amount : 50;

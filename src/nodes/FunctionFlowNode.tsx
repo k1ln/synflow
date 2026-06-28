@@ -5,6 +5,7 @@ import { javascript } from "@codemirror/lang-javascript";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 import EventBus from "../sys/EventBus";
 import "./AudioNode.css";
+import { baseNodeStyle } from "../utils/styleUtils";
 
 export type FunctionNodeProps = {
   data: {
@@ -335,6 +336,12 @@ const FunctionFlowNode: React.FC<FunctionNodeProps> = ({ data }) => {
       ))}
     </div>
   );
+};
+
+export const defaultData = {
+  functionCode: "function process(value) {\n  // Modify the value here\n  return value;\n}",
+  value: "",
+  style: { ...baseNodeStyle },
 };
 
 export default React.memo(FunctionFlowNode);

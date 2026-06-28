@@ -93,7 +93,7 @@ const AudioWorkletOscillatorFlowNode: React.FC<AudioWorkletOscillatorFlowNodePro
 
   // UI
   return (
-    <div style={style}>
+    <div className="flow-node" style={style}>
       <div className="node-title">AW OSC</div>
       {/* FM Input (for frequency modulation) */}
       <Handle
@@ -197,6 +197,15 @@ const AudioWorkletOscillatorFlowNode: React.FC<AudioWorkletOscillatorFlowNodePro
       </div>
     </div>
   );
+};
+
+export const defaultData = {
+  frequency: 440,
+  detune: 0,
+  type: "sine",
+  frequencyType: "hz",
+  label: "AW Oscillator",
+  style: { width: "60px" },
 };
 
 export default React.memo(AudioWorkletOscillatorFlowNode);

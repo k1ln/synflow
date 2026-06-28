@@ -70,4 +70,9 @@ const btnSize: React.CSSProperties = {
   fontSize: 14,
 };
 
+export const defaultData = {
+  index: 0,
+  value: "",
+};
+
 export default InputNode;
