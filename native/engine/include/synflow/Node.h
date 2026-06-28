@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "Event.h"
+#include "Json.h"
 #include "RuntimeMode.h"
 
 namespace synflow {
@@ -71,6 +72,10 @@ public:
     // Apply a numeric-array param from node.data (e.g. FM "ratios"/"levels",
     // sequencer patterns). Default ignores unknown names.
     virtual void setArrayParam(const std::string& /*name*/, const std::vector<double>& /*values*/) {}
+
+    // Apply a structured (object/array) param from node.data for nodes that carry
+    // nested config (e.g. MidiFile's pre-parsed ParsedMidiFile). Default ignores.
+    virtual void setJsonParam(const std::string& /*name*/, const JsonValue& /*value*/) {}
 
     // Resolve a flow-JSON handle name ("output", "main-input", "frequency",
     // "gain", …) to a port index. Defaults to port 0; nodes override for named

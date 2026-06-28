@@ -15,6 +15,7 @@
 #include "synflow/nodes/ConstantNode.h"
 #include "synflow/nodes/MicNode.h"
 #include "synflow/nodes/MidiButtonNode.h"
+#include "synflow/nodes/MidiFileNode.h"
 #include "synflow/nodes/MidiKnobNode.h"
 #include "synflow/nodes/OnOffButtonNode.h"
 #include "synflow/nodes/RingModNode.h"
@@ -63,6 +64,7 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
     if (type == "AutomationFlowNode") return std::make_unique<AutomationNode>();
     if (type == "ArpeggiatorFlowNode") return std::make_unique<ArpeggiatorNode>();
     if (type == "BlockingSwitchFlowNode") return std::make_unique<BlockingSwitchNode>();
+    if (type == "MidiFileFlowNode") return std::make_unique<MidiFileNode>();
     if (type == "MicFlowNode") return std::make_unique<MicNode>();
     if (type == "LogFlowNode" || type == "EventFlowNode" || type == "CommandInFlowNode" || type == "CommandOutFlowNode")
         return std::make_unique<EventForwardNode>();
@@ -81,7 +83,7 @@ bool isEventEmitterType(const std::string& type) {
         || type == "ButtonFlowNode" || type == "OnOffButtonFlowNode"
         || type == "MouseTriggerButtonFlowNode"
         || type == "SwitchFlowNode" || type == "SequencerFrequencyFlowNode"
-        || type == "BlockingSwitchFlowNode"
+        || type == "BlockingSwitchFlowNode" || type == "MidiFileFlowNode"
         || type == "ArpeggiatorFlowNode"
         || type == "EventFlowNode" || type == "LogFlowNode"
         || type == "CommandInFlowNode" || type == "CommandOutFlowNode"
@@ -139,6 +141,9 @@ FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string&
                             if (const JsonValue* y = e.find("y")) flat.push_back(y->asNumber(0));
                         }
                         if (!flat.empty()) node->setArrayParam(key, flat);
+                        else node->setJsonParam(key, val); // non-{x,y} object arrays -> structured
+                    } else if (val.isObject()) {
+                        node->setJsonParam(key, val); // nested config (e.g. MidiFile midiFile)
                     }
                     if (key == "isOutput" && val.asBool()) isOutputFlag = true;
                     if (key == "isInput" && val.asBool()) isInputFlag = true;

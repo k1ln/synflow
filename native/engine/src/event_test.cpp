@@ -17,6 +17,8 @@
 #include "synflow/nodes/AutomationNode.h"
 #include "synflow/nodes/BlockingSwitchNode.h"
 #include "synflow/nodes/ClockNode.h"
+#include "synflow/nodes/MidiFileNode.h"
+#include "synflow/Json.h"
 #include "synflow/nodes/ConstantNode.h"
 #include "synflow/nodes/GainNode.h"
 #include "synflow/nodes/MidiButtonNode.h"
@@ -536,6 +538,42 @@ int main() {
         g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
         check(pr0->offSamples.size() == 1 && pr0->onSamples.size() == 2,
               "BlockingSwitch frees a voice on note-off and reuses the same output");
+    }
+
+    // --- Test 17: MidiFile plays its notes on clock ticks (sample-accurate) ---
+    {
+        // ticksPerBeat 480, two notes: A4(69) @tick0 dur240, C5(72) @tick480 dur240.
+        // At 120 bpm -> samplesPerTick=50; clock ticks at 0 and 24000 advance 480 ticks each.
+        const char* mj =
+            "{\"ticksPerBeat\":480,\"totalTicks\":960,\"tempoChanges\":[],"
+            "\"tracks\":[{\"notes\":["
+            "{\"note\":69,\"velocity\":100,\"startTick\":0,\"durationTicks\":240,\"channel\":0},"
+            "{\"note\":72,\"velocity\":100,\"startTick\":480,\"durationTicks\":240,\"channel\":0}"
+            "]}]}";
+        AudioGraphManager g(RuntimeMode::Plugin);
+        auto clk = std::make_unique<ClockNode>(); clk->setNamedParam("bpm", 120.0);
+        const int ci = g.addNode(std::move(clk));
+        auto mf = std::make_unique<MidiFileNode>();
+        mf->setNamedParam("loop", 0.0);
+        mf->setJsonParam("midiFile", JsonParser::parse(mj));
+        const int mi = g.addNode(std::move(mf));
+        auto probe = std::make_unique<ProbeNode>(); ProbeNode* pr = probe.get();
+        const int pi = g.addNode(std::move(probe));
+        g.connectEvent(ci, 0, mi, 0);              // clock -> midifile
+        g.connectEvent(mi, 0, pi, 0, "frequency");  // main-output -> probe
+        g.prepare(SR, BLOCK);
+        const int N = 48000; // two beats
+        std::vector<float> out(BLOCK, 0.0f);
+        for (int i = 0; i < N; i += BLOCK) g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        // note-on A4 @0, C5 @24000 ; note-offs @12000 (240*50) and @36000
+        bool onsOk = pr->onSamples == std::vector<long>{0, 24000};
+        check(onsOk, "MidiFile fires note-ons at the right sample per clock tick");
+        bool offsOk = pr->offSamples == std::vector<long>{12000, 36000};
+        check(offsOk, "MidiFile schedules note-offs at startTick+durationTicks");
+        bool freqOk = pr->values.size() >= 2
+            && std::fabs(pr->values[0] - 440.0) < 0.5
+            && std::fabs(pr->values[1] - 523.25) < 0.5; // C5
+        check(freqOk, "MidiFile emits the note frequencies (A4=440, C5=523.25)");
     }
 
     std::printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "ALL PASS", failures, failures == 1 ? "" : "s");
