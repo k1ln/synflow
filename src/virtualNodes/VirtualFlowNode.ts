@@ -18,6 +18,7 @@ export class VirtualFlowNode extends VirtualNode<CustomNode & FlowNodeProps, und
     >; // Reference to all virtual nodes in the graph, for potential internal routing
     private customNode: CustomNode | undefined; // Placeholder for custom node logic/state
     private handleConnectedEdgesFromOutput: (node: CustomNode, outputIndex: number, data: any, eventType: string) => void;
+    private outputAudioMap: Map<number, GainNode>;
 
     constructor(
         eventBus: EventBus,
@@ -27,7 +28,8 @@ export class VirtualFlowNode extends VirtualNode<CustomNode & FlowNodeProps, und
         virtualNodes?: Map<
             string,
             VirtualNodeType
-        >
+        >,
+        outputAudioMap?: Map<number, GainNode>
     ) {
         //Love this
         super(undefined, undefined, eventBus, node);
@@ -35,10 +37,16 @@ export class VirtualFlowNode extends VirtualNode<CustomNode & FlowNodeProps, und
         this.selectedNode = node.data.selectedNode;
         this.handleConnectedEdgesFromOutput = handleConnectedEdgesFromOutput;
         this.virtualNodes = virtualNodes;
+        this.outputAudioMap = outputAudioMap ?? new Map();
         // Listen for main input event and forward to outputs
         this.subscribeAllEvents();
 
         // Listen for parameter updates (e.g., selectedNode, inputs, outputs
+    }
+
+    /** Expose the inner OutputNode's GainNode as this FlowNode's audio output. */
+    public getOutputNode(): AudioNode | undefined {
+        return this.outputAudioMap.get(0);
     }
 
     subscribeAllEvents() {
