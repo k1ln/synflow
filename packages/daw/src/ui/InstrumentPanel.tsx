@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Pencil } from 'lucide-react';
-import type { PoolItem } from '../model/project';
+import { ArrowLeft, Pencil } from 'lucide-react';
+import type { Flow } from '../synflow/instruments';
 import { isBlackKey, midiName } from '../model/pitch';
 import { flowKnobs, knob01, knobValue } from '../synflow/knobs';
 import { Knob } from './Knob';
@@ -9,71 +9,76 @@ const KEYMAP: Record<string, number> = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 
 const VISIBLE = 17;
 
 /**
- * Per-instrument page: play it live (one keyboard/pad), tweak every knob exported
- * from Synflow, set its gain, and open the flow in Synflow. (reqs 2, 3, 5)
+ * Full-page live view for a pool item (NOT a popup): play it live (synth keyboard
+ * / drum pad), tweak every knob exported from Synflow, set its gain, edit the flow.
+ * Effects show only their knobs (no live play).
  */
-export function InstrumentPanel({ pool, gain, onGain, onKnob, onEdit, onClose, onNoteOn, onNoteOff, onHit }: {
-  pool: PoolItem;
-  gain: number;
-  onGain: (v: number) => void;
+export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onEdit, onBack, onNoteOn, onNoteOff, onHit }: {
+  name: string;
+  kind: 'synth' | 'drum' | 'effect';
+  flow: Flow;
+  gain?: number;
+  onGain?: (v: number) => void;
   onKnob: (nodeId: string, param: string, value: number) => void;
   onEdit: () => void;
-  onClose: () => void;
-  onNoteOn: (midi: number) => void;
-  onNoteOff: (midi: number) => void;
-  onHit: () => void;
+  onBack: () => void;
+  onNoteOn?: (midi: number) => void;
+  onNoteOff?: (midi: number) => void;
+  onHit?: () => void;
 }) {
-  const knobs = flowKnobs(pool.flow);
-  const cat = pool.kind === 'synth' ? 'var(--cat-mod)' : 'var(--cat-source)';
+  const knobs = flowKnobs(flow);
+  const cat = kind === 'synth' ? 'var(--cat-mod)' : kind === 'drum' ? 'var(--cat-source)' : 'var(--cat-fx)';
   const [octave, setOctave] = useState(4);
   const base = 12 * (octave + 1);
   const down = useRef(new Set<number>());
   const [lit, setLit] = useState<Set<number>>(new Set());
-  const on = (m: number) => { if (down.current.has(m)) return; down.current.add(m); setLit(new Set(down.current)); onNoteOn(m); };
-  const off = (m: number) => { if (!down.current.has(m)) return; down.current.delete(m); setLit(new Set(down.current)); onNoteOff(m); };
+  const on = (m: number) => { if (down.current.has(m)) return; down.current.add(m); setLit(new Set(down.current)); onNoteOn?.(m); };
+  const off = (m: number) => { if (!down.current.has(m)) return; down.current.delete(m); setLit(new Set(down.current)); onNoteOff?.(m); };
 
   useEffect(() => {
+    if (kind === 'effect') return;
     const typing = (el: EventTarget | null) => el instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);
     const kd = (e: KeyboardEvent) => {
       if (e.repeat || e.metaKey || e.ctrlKey || typing(e.target)) return;
-      if (pool.kind === 'drum') { if (e.key === ' ') { e.preventDefault(); onHit(); } return; }
+      if (kind === 'drum') { if (e.key === ' ') { e.preventDefault(); onHit?.(); } return; }
       const s = KEYMAP[e.key.toLowerCase()]; if (s != null) { e.preventDefault(); on(base + s); }
     };
     const ku = (e: KeyboardEvent) => { const s = KEYMAP[e.key.toLowerCase()]; if (s != null) off(base + s); };
     window.addEventListener('keydown', kd); window.addEventListener('keyup', ku);
     return () => { window.removeEventListener('keydown', kd); window.removeEventListener('keyup', ku); };
-  }, [base, pool.kind, onHit]);
+  }, [base, kind, onHit]);
 
   const midis = Array.from({ length: VISIBLE }, (_, i) => base + i);
   const whites = midis.filter((m) => !isBlackKey(m));
 
   return (
-    <div className="syn-overlay" onClick={onClose}>
-      <div className="inst-panel" onClick={(e) => e.stopPropagation()} style={{ borderColor: `color-mix(in srgb, ${cat} 45%, var(--border-strong))` }}>
-        <div className="inst-head">
-          <span className="inst-dot" style={{ background: cat, boxShadow: `0 0 8px ${cat}` }} />
-          <span className="inst-name" style={{ color: cat }}>{pool.name}</span>
-          <span className="inst-kind">{pool.kind}</span>
+    <div className="live-page">
+      <div className="lp-head">
+        <button className="lp-back" onClick={onBack} title="Back"><ArrowLeft size={16} /> Back</button>
+        <span className="inst-dot" style={{ background: cat, boxShadow: `0 0 8px ${cat}` }} />
+        <span className="lp-name" style={{ color: cat }}>{name}</span>
+        <span className="inst-kind">{kind}</span>
+        {kind !== 'effect' && onGain && (
           <label className="inst-gain" title="Instrument gain">
             <span>Gain</span>
-            <input type="range" min={0} max={1.5} step={0.01} value={gain} onChange={(e) => onGain(parseFloat(e.target.value))} />
-            <b>{Math.round(gain * 100)}</b>
+            <input type="range" min={0} max={1.5} step={0.01} value={gain ?? 1} onChange={(e) => onGain(parseFloat(e.target.value))} />
+            <b>{Math.round((gain ?? 1) * 100)}</b>
           </label>
-          <button className="pp-edit" onClick={onEdit} title="Edit this flow in Synflow"><Pencil size={13} /> Edit flow</button>
-          <button className="pp-close" onClick={onClose}><X size={15} /></button>
-        </div>
+        )}
+        <button className="pp-edit" onClick={onEdit} title="Edit this flow in Synflow"><Pencil size={13} /> Edit flow</button>
+      </div>
 
+      <div className="lp-body">
+        <div className="lp-section-title">Knobs from Synflow</div>
         <div className="inst-knobs">
           {knobs.length === 0 && <div className="inst-noknobs">No knobs exported. Open <b>Edit flow</b> and expose params in Synflow’s Host Interface.</div>}
           {knobs.map((k) => (
-            <Knob
-              key={`${k.nodeId}.${k.param}`} value={knob01(k)} color={cat} size={48} label={k.label}
-              onChange={(v01) => onKnob(k.nodeId, k.param, knobValue(k, v01))}
-            />
+            <Knob key={`${k.nodeId}.${k.param}`} value={knob01(k)} color={cat} size={54} label={k.label}
+              onChange={(v01) => onKnob(k.nodeId, k.param, knobValue(k, v01))} />
           ))}
         </div>
 
-        {pool.kind === 'synth' ? (
+        {kind === 'synth' && (
           <>
             <div className="inst-octrow">
               <span className="live-label">Octave</span>
@@ -82,7 +87,7 @@ export function InstrumentPanel({ pool, gain, onGain, onKnob, onEdit, onClose, o
               <button className="live-oct" onClick={() => setOctave((o) => Math.min(8, o + 1))}>+</button>
               <span className="live-hint">play with a–k or the keys</span>
             </div>
-            <div className="live-keyboard inst-kb" style={{ ['--whites' as any]: whites.length }}>
+            <div className="live-keyboard lp-kb" style={{ ['--whites' as any]: whites.length }}>
               <div className="lk-whites">
                 {whites.map((m) => (
                   <button key={m} className={`lk-white ${lit.has(m) ? 'on' : ''}`}
@@ -104,8 +109,9 @@ export function InstrumentPanel({ pool, gain, onGain, onKnob, onEdit, onClose, o
               </div>
             </div>
           </>
-        ) : (
-          <button className="inst-pad" onPointerDown={(e) => { e.preventDefault(); onHit(); }} title="Hit (Space)">{pool.name}<span>tap / Space</span></button>
+        )}
+        {kind === 'drum' && (
+          <button className="inst-pad lp-pad" onPointerDown={(e) => { e.preventDefault(); onHit?.(); }} title="Hit (Space)">{name}<span>tap / Space</span></button>
         )}
       </div>
     </div>

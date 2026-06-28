@@ -432,3 +432,14 @@ body {
 .open-menu button:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
 .open-none { font-size: 11px; color: var(--ink-3); padding: 6px 9px; }
 .icon-btn.saved { color: var(--accent); box-shadow: var(--glow-accent); }
+
+/* ── Full-page live view (per pool item, replaces the popup) ───────────────── */
+.live-page { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.lp-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border-strong); flex-wrap: wrap; }
+.lp-back { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 6px 11px; border-radius: 6px; cursor: pointer; color: var(--ink-2); background: var(--glass-field); border: 1px solid var(--border-strong); }
+.lp-back:hover { color: var(--accent); border-color: var(--accent); }
+.lp-name { font-size: 17px; font-weight: 700; }
+.lp-body { flex: 1; overflow: auto; padding: 18px 16px; display: flex; flex-direction: column; gap: 16px; }
+.lp-section-title { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+.lp-kb { height: 200px; max-width: 900px; }
+.lp-pad { max-width: 360px; }

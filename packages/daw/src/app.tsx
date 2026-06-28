@@ -13,7 +13,7 @@ import {
 import { midiToFreq } from './model/pitch';
 import { type Flow } from './synflow/instruments';
 import { LIBRARY, findEntry, cloneFlow, type LibraryEntry } from './synflow/library';
-import { fsSupported, restoreFolder, seedLibrary, readAllFlows, writeFlow, pickFolder, saveProject, listSongs, loadProject } from './synflow/flowStore';
+import { fsSupported, restoreFolder, seedLibrary, readAllFlows, writeFlow, pickFolder, saveProject, loadProject } from './synflow/flowStore';
 import { TopBar, type ViewId } from './ui/TopBar';
 import { Pool } from './ui/Pool';
 import { TrackEditor, type TrackEditorHandlers } from './ui/TrackEditor';
@@ -34,14 +34,13 @@ export function App() {
   const [selTrack, setSelTrack] = useState<string>(() => defaultProject().tracks[0]?.id ?? '');
   const [liveSynth, setLiveSynth] = useState<string>('');
   const [armedPool, setArmedPool] = useState<string | null>(null);
-  const [instPanel, setInstPanel] = useState<string | null>(null);
+  const [openItem, setOpenItem] = useState<{ kind: 'instrument' | 'effect'; id: string } | null>(null);
   const [songMode, setSongMode] = useState(false);
   const songModeRef = useRef(false); songModeRef.current = songMode;
   const [editor, setEditor] = useState<{ flow: Flow; title: string; onSaved: (f: Flow) => void } | null>(null);
   const [library, setLibrary] = useState<LibraryEntry[]>(LIBRARY);
   const [folder, setFolder] = useState<FileSystemDirectoryHandle | null>(null);
   const [storageSetup, setStorageSetup] = useState(false);
-  const [songs, setSongs] = useState<Array<{ file: string; name: string }>>([]);
   const [saved, setSaved] = useState(false);
 
   const ctxRef = useRef<AudioContext | null>(null);
@@ -86,7 +85,6 @@ export function App() {
       if (cancelled) return;
       if (handle) {
         await adoptFolder(handle);
-        const list = await listSongs(handle); if (cancelled) return; setSongs(list);
         const last = localStorage.getItem('mothscilla:lastSong');
         if (last) { const proj = await loadProject(handle, last); if (proj && !cancelled) { setProject(proj); setSelTrack(proj.tracks[0]?.id ?? ''); } }
       } else if (fsSupported) {
@@ -220,17 +218,16 @@ export function App() {
 
   // ─── song save / load (the whole project) ──────────────────────────────────
   const flashSaved = () => { setSaved(true); window.setTimeout(() => setSaved(false), 1600); };
-  const refreshSongs = useCallback(async () => { const root = folderRef.current; if (root) setSongs(await listSongs(root)); }, []);
 
   const saveSong = useCallback(async () => {
     const root = folderRef.current;
     if (root) {
-      try { const file = await saveProject(root, projectRef.current); localStorage.setItem('mothscilla:lastSong', file); flashSaved(); void refreshSongs(); console.info('[Mothscilla] saved song to disk:', file); }
+      try { const file = await saveProject(root, projectRef.current); localStorage.setItem('mothscilla:lastSong', file); flashSaved(); console.info('[Mothscilla] saved song to disk:', file); }
       catch (e) { console.warn('[Mothscilla] save song failed', e); }
     } else {
       try { localStorage.setItem('mothscilla:localSong', JSON.stringify(projectRef.current)); flashSaved(); console.info('[Mothscilla] no folder — saved song to localStorage'); } catch (e) { console.warn('[Mothscilla] save song failed', e); }
     }
-  }, [refreshSongs]);
+  }, []);
 
   // Tear down all audio so it rebuilds from a freshly loaded project.
   const resetAudio = useCallback(() => {
@@ -249,13 +246,23 @@ export function App() {
     resetAudio();
     setProject(proj);
     setSelTrack(proj.tracks[0]?.id ?? '');
-    setInstPanel(null); setEditor(null);
+    setOpenItem(null); setEditor(null);
   }, [resetAudio]);
 
-  const openSong = useCallback(async (file: string) => {
-    const root = folderRef.current; if (!root) return;
-    const proj = await loadProject(root, file);
-    if (proj) { loadProjectState(proj); localStorage.setItem('mothscilla:lastSong', file); }
+  // Open a song by picking its .json from the songs folder (native file picker).
+  const openSong = useCallback(async () => {
+    const root = folderRef.current;
+    try {
+      let startIn: any;
+      try { startIn = root ? await root.getDirectoryHandle('songs', { create: true }) : undefined; } catch { /* no songs dir yet */ }
+      const picker = (window as any).showOpenFilePicker;
+      if (!picker) { console.warn('[Mothscilla] file picker not supported in this browser'); return; }
+      const [handle] = await picker({ startIn, multiple: false, types: [{ description: 'Mothscilla song', accept: { 'application/json': ['.json'] } }] });
+      if (!handle) return;
+      const proj = JSON.parse(await (await handle.getFile()).text());
+      loadProjectState(proj);
+      localStorage.setItem('mothscilla:lastSong', handle.name);
+    } catch (e: any) { if (e?.name !== 'AbortError') console.warn('[Mothscilla] open song failed', e); }
   }, [loadProjectState]);
 
   // ─── audition (click feedback) + live performance ──────────────────────────
@@ -292,13 +299,21 @@ export function App() {
   const liveDrumDown = useCallback(async (poolId: string) => { await buildLive(poolId); const h = liveDrumsRef.current.get(poolId); h?.trigger(); window.setTimeout(() => h?.release(), 220); }, [buildLive]);
   const liveDrumUp = useCallback(() => {}, []);
 
-  // Open the per-instrument page (live + exposed knobs + gain + edit).
+  // Open the full-page live view for a pool item.
   const openInstrument = (poolId: string) => {
     const pool = project.pool.find((p) => p.id === poolId);
     setArmedPool(poolId);
     if (pool?.kind === 'synth') setLiveSynth(poolId);
-    setInstPanel(poolId);
+    setOpenItem({ kind: 'instrument', id: poolId });
     void buildLive(poolId);
+  };
+  const openEffectPage = (effectId: string) => setOpenItem({ kind: 'effect', id: effectId });
+  // Tweak an effect's exposed knob: update the library default + persist (future inserts use it).
+  const onEffectKnob = (effectId: string, nodeId: string, param: string, value: number) => {
+    const e = library.find((x) => x.id === effectId && x.group === 'effect'); if (!e) return;
+    const flow = setFlowParam(e.flow, nodeId, param, value);
+    setLibrary((lib) => lib.map((x) => (x.id === effectId && x.group === 'effect' ? { ...x, flow } : x)));
+    persistDebounced(`effect:${effectId}`, { group: 'effect', id: effectId, name: e.name, category: e.category, flow });
   };
 
   const mapPool = (poolId: string, fn: (p: PoolItem) => PoolItem) =>
@@ -369,7 +384,7 @@ export function App() {
     try { liveGainRef.current.get(poolId)?.disconnect(); } catch { /* noop */ }
     liveGainRef.current.delete(poolId);
     setProject((p) => ({ ...p, pool: p.pool.filter((pi) => pi.id !== poolId), tracks: p.tracks.map((t) => ({ ...t, uses: t.uses.filter((u) => u.poolId !== poolId) })) }));
-    if (instPanel === poolId) setInstPanel(null);
+    if (openItem?.id === poolId) setOpenItem(null);
     if (liveSynth === poolId) setLiveSynth('');
   };
 
@@ -512,12 +527,36 @@ export function App() {
         armed={armed} onArm={() => setArmed((a) => !a)} bpm={project.bpm} onBpm={setBpm} position={pos}
         browserOpen={browserOpen} setBrowserOpen={setBrowserOpen}
         projectName={project.name} onProjectName={(name) => setProject((p) => ({ ...p, name }))}
-        onSave={saveSong} saved={saved} songs={songs} onOpenSong={openSong}
+        onSave={saveSong} saved={saved} onOpenSong={openSong}
       />
       <div className="workspace">
-        {browserOpen && <Pool pool={project.pool} effects={effects} armed={armedPool} onOpenInstrument={openInstrument} onEditEffect={editEffect} onRemoveInstrument={removePoolItem} onRemoveEffect={removeEffect} onAddFromFolder={addFromFolder} source={folder ? `disk · ${folder.name}` : 'built-in'} />}
+        {browserOpen && <Pool pool={project.pool} effects={effects} armed={armedPool} onOpenInstrument={openInstrument} onEditEffect={openEffectPage} onRemoveInstrument={removePoolItem} onRemoveEffect={removeEffect} onAddFromFolder={addFromFolder} source={folder ? `disk · ${folder.name}` : 'built-in'} />}
         <div className="main">
-          {view === 'tracks' && (
+          {openItem && (() => {
+            if (openItem.kind === 'instrument') {
+              const pool = project.pool.find((p) => p.id === openItem.id);
+              if (!pool) return null;
+              return (
+                <InstrumentPanel
+                  name={pool.name} kind={pool.kind} flow={pool.flow} gain={pool.gain ?? 1}
+                  onGain={(v) => onInstrumentGain(pool.id, v)}
+                  onKnob={(nodeId, param, v) => onInstrumentKnob(pool.id, nodeId, param, v)}
+                  onEdit={() => editInstrument(pool.id)} onBack={() => setOpenItem(null)}
+                  onNoteOn={(m) => void liveNoteOn(pool.id, m)} onNoteOff={(m) => liveNoteOff(pool.id, m)} onHit={() => void liveDrumDown(pool.id)}
+                />
+              );
+            }
+            const e = library.find((x) => x.id === openItem.id && x.group === 'effect');
+            if (!e) return null;
+            return (
+              <InstrumentPanel
+                name={e.name} kind="effect" flow={e.flow}
+                onKnob={(nodeId, param, v) => onEffectKnob(e.id, nodeId, param, v)}
+                onEdit={() => editEffect(e.id)} onBack={() => setOpenItem(null)}
+              />
+            );
+          })()}
+          {!openItem && view === 'tracks' && (
             <div className="tracks-view">
               <div className="tracks-rail">
                 {project.tracks.map((t) => (
@@ -541,7 +580,7 @@ export function App() {
             </div>
           )}
 
-          {view === 'song' && (
+          {!openItem && view === 'song' && (
             <Arrange
               project={project} currentSlot={currentStep < 0 ? -1 : Math.floor(currentStep / project.totalSteps)} songMode={songMode} selTrack={selTrack}
               onToggleSongMode={toggleSongMode} onSetSongSlots={setSongSlots} onSelectTrack={setSelTrack}
@@ -549,14 +588,14 @@ export function App() {
             />
           )}
 
-          {view === 'live' && (
+          {!openItem && view === 'live' && (
             <Live
               project={project} synthId={liveSynth} onSelectSynth={setLiveSynth}
               onNoteOn={liveNoteOn} onNoteOff={liveNoteOff} onDrumDown={liveDrumDown} onDrumUp={liveDrumUp}
             />
           )}
 
-          {view === 'mix' && (
+          {!openItem && view === 'mix' && (
             <div className="mixer-view">
               <div className="mx-master">
                 <FxBar label="Master FX" color="var(--cat-master, var(--accent))" fx={project.masterFx} effects={effects} onAdd={onMasterFxAdd} onRemove={onMasterFxRemove} onEdit={onMasterFxEdit}
@@ -590,23 +629,8 @@ export function App() {
           )}
         </div>
       </div>
-      {instPanel && (() => {
-        const pool = project.pool.find((p) => p.id === instPanel);
-        if (!pool) return null;
-        return (
-          <InstrumentPanel
-            pool={pool} gain={pool.gain ?? 1}
-            onGain={(v) => onInstrumentGain(pool.id, v)}
-            onKnob={(nodeId, param, v) => onInstrumentKnob(pool.id, nodeId, param, v)}
-            onEdit={() => editInstrument(pool.id)}
-            onClose={() => setInstPanel(null)}
-            onNoteOn={(m) => void liveNoteOn(pool.id, m)} onNoteOff={(m) => liveNoteOff(pool.id, m)}
-            onHit={() => void liveDrumDown(pool.id)}
-          />
-        );
-      })()}
       {editor && <SynflowEditor flow={editor.flow} title={editor.title} onSaved={editor.onSaved} onClose={() => setEditor(null)} />}
-      {storageSetup && <StorageSetup onFolder={async (h2) => { await adoptFolder(h2, true); void refreshSongs(); }} onSkip={() => setStorageSetup(false)} />}
+      {storageSetup && <StorageSetup onFolder={(h2) => adoptFolder(h2, true)} onSkip={() => setStorageSetup(false)} />}
     </div>
   );
 }
