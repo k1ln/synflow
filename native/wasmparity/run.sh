@@ -16,10 +16,10 @@ echo "== compile C++ (engine + wasmtime C API) =="
 clang++ -std=c++17 -O2 \
   -I../engine/include -I"$WT/include" \
   -DSYNFLOW_WASMPARITY_DIR="\"$(pwd)\"" \
-  karplus_cpp.cpp ../engine/src/AudioGraphManager.cpp \
+  wasm_render.cpp ../engine/src/AudioGraphManager.cpp \
   -L"$WT/lib" -lwasmtime -Wl,-rpath,"$(cd "$WT/lib" && pwd)" \
-  -o build/karplus_cpp
+  -o build/wasm_render
 
-echo "== V8 reference ==" && node karplus_ref.mjs
-echo "== C++ (wasmtime) ==" && ./build/karplus_cpp
+echo "== V8 reference ==" && node wasm_ref.mjs
+echo "== C++ (wasmtime) ==" && ./build/wasm_render
 echo "== null-test ==" && node compare.mjs

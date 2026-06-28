@@ -17,6 +17,7 @@
 namespace synflow {
 
 inline wasmtime_val_t valI32(int32_t v) { wasmtime_val_t x; x.kind = WASMTIME_I32; x.of.i32 = v; return x; }
+inline wasmtime_val_t valI64(int64_t v) { wasmtime_val_t x; x.kind = WASMTIME_I64; x.of.i64 = v; return x; }
 inline wasmtime_val_t valF32(float v)   { wasmtime_val_t x; x.kind = WASMTIME_F32; x.of.f32 = v; return x; }
 
 class WasmModule {

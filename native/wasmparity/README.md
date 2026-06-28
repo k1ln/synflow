@@ -5,8 +5,8 @@ Proves the native C++ engine hosts the existing Rust→WASM DSP modules
 
 - The web runs each module in an AudioWorklet over V8 (`public/*Processor.js`).
 - The native engine hosts the **same `.wasm`** via the **wasmtime C API**
-  (`WasmModule.h`), wrapped as an `INode` (`WasmKarplusNode.h`), and driven by
-  the real `AudioGraphManager`.
+  (`WasmModule.h`), wrapped as an `INode` (`Wasm*Node.h`), and driven by the real
+  `AudioGraphManager`.
 
 Because these DSP modules have **no host imports**, wasmtime and V8 evaluate
 them identically — the M0 PoC proved `dsp.wasm` is bit-exact V8 vs wasmtime, and
@@ -25,10 +25,15 @@ Each module's C++ adapter mirrors its worklet's exact call convention
 
 ## Status
 
-| module  | shape        | verdict           |
-|---------|--------------|-------------------|
-| karplus | source+pluck | **bit-exact** (−400 dB) |
+Three module *shapes* proven, covering every data-flow path:
 
-Remaining `src/wasm/*` modules (fm, granular, noise, ladder, svf_drive,
-wavetable, hard_sync, freq_shifter, envgen, recorder) follow the identical
-pattern — one `INode` adapter each, mirroring its worklet.
+| module  | shape                         | verdict                 |
+|---------|-------------------------------|-------------------------|
+| karplus | source + note event (pluck)   | **bit-exact** (−400 dB) |
+| ladder  | effect (audio in → out)       | **bit-exact** (−400 dB) |
+| noise   | pure generator (i64 seed)     | **bit-exact** (−400 dB) |
+
+Remaining `src/wasm/*` modules (fm, granular, svf_drive, wavetable, hard_sync,
+freq_shifter, envgen, recorder) reuse one of these shapes — one `INode` adapter
+each, mirroring its worklet. The gate-on/off instrument shape (fm) lands with the
+M4 event system.
