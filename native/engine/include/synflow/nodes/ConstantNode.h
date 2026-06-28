@@ -16,7 +16,7 @@ public:
     int numOutputs() const override { return 0; }
 
     void setNamedParam(const std::string& name, double v) override {
-        if (name == "value") value_ = v;
+        if (name == "value" || name == "frequency") value_ = v; // Frequency node = Constant on "frequency"
     }
 
     void process(const ProcessContext& ctx) override {

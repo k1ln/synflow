@@ -19,8 +19,10 @@
 #include "synflow/nodes/MidiButtonNode.h"
 #include "synflow/nodes/MidiKnobNode.h"
 #include "synflow/nodes/OscillatorNode.h"
+#include "synflow/nodes/SequencerFrequencyNode.h"
 #include "synflow/nodes/SequencerNode.h"
 #include "synflow/nodes/SpeedDividerNode.h"
+#include "synflow/nodes/SwitchNode.h"
 #include "synflow/nodes/WasmKarplusNode.h"
 
 #include <sstream>
@@ -30,6 +32,7 @@ using namespace synflow;
 // Test-only sink: records the absolute sample position of every gate event.
 struct ProbeNode : INode {
     std::vector<long> onSamples, offSamples;
+    std::vector<double> values;
     int numInputs() const override { return 0; }
     int numOutputs() const override { return 0; }
     void process(const ProcessContext& ctx) override {
@@ -38,6 +41,7 @@ struct ProbeNode : INode {
             const long s = static_cast<long>(ctx.blockStartSample) + ev.sampleOffset;
             if (ev.type == EventType::NoteOn) onSamples.push_back(s);
             else if (ev.type == EventType::NoteOff) offSamples.push_back(s);
+            else if (ev.type == EventType::Value) values.push_back(ev.value);
         }
     }
 };
@@ -382,6 +386,48 @@ int main() {
         g.queueInputEvent(bi, 0, EventType::NoteOn, 1.0, 10); // mapped host note
         g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
         check(pr->onSamples.size() == 1 && pr->onSamples[0] == 10, "MidiButton forwards a host note as a trigger");
+    }
+
+    // --- Test 11: Switch round-robins clock ticks across its outputs ---
+    {
+        AudioGraphManager g(RuntimeMode::Plugin);
+        auto clk = std::make_unique<ClockNode>(); clk->setNamedParam("bpm", 120.0);
+        const int ci = g.addNode(std::move(clk));
+        auto sw = std::make_unique<SwitchNode>(); sw->setNamedParam("outputs", 2);
+        const int wi = g.addNode(std::move(sw));
+        auto p0 = std::make_unique<ProbeNode>(); ProbeNode* pr0 = p0.get(); const int i0 = g.addNode(std::move(p0));
+        auto p1 = std::make_unique<ProbeNode>(); ProbeNode* pr1 = p1.get(); const int i1 = g.addNode(std::move(p1));
+        g.connectEvent(ci, 0, wi, 0);
+        g.connectEvent(wi, 0, i0, 0); // switch output 0 -> probe0
+        g.connectEvent(wi, 1, i1, 0); // switch output 1 -> probe1
+        g.prepare(SR, BLOCK);
+        std::vector<float> out(BLOCK, 0.0f);
+        for (int i = 0; i < 96000; i += BLOCK) g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        // ticks 0,24000,48000,72000 -> active 1,0,1,0 -> port1:{0,48000} port0:{24000,72000}
+        check(pr1->onSamples == std::vector<long>{0, 48000} && pr0->onSamples == std::vector<long>{24000, 72000},
+              "Switch round-robins ticks across outputs");
+    }
+
+    // --- Test 12: SequencerFrequency emits per-step frequency + gate ---
+    {
+        AudioGraphManager g(RuntimeMode::Plugin);
+        auto clk = std::make_unique<ClockNode>(); clk->setNamedParam("bpm", 120.0);
+        const int ci = g.addNode(std::move(clk));
+        auto seq = std::make_unique<SequencerFrequencyNode>();
+        seq->setNamedParam("squares", 4);
+        seq->setArrayParam("frequencies", {110.0, 220.0, 440.0, 880.0});
+        const int si = g.addNode(std::move(seq));
+        auto fp = std::make_unique<ProbeNode>(); ProbeNode* freqP = fp.get(); const int fi = g.addNode(std::move(fp));
+        auto gp = std::make_unique<ProbeNode>(); ProbeNode* gateP = gp.get(); const int gi = g.addNode(std::move(gp));
+        g.connectEvent(ci, 0, si, 0);
+        g.connectEvent(si, 0, fi, 0); // freq output (port 0) -> freq probe
+        g.connectEvent(si, 1, gi, 0); // gate output (port 1) -> gate probe
+        g.prepare(SR, BLOCK);
+        std::vector<float> out(BLOCK, 0.0f);
+        for (int i = 0; i < 96000; i += BLOCK) g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        // 4 ticks advance steps 1,2,3,0 -> freqs 220,440,880,110
+        check(freqP->values == std::vector<double>{220.0, 440.0, 880.0, 110.0} && gateP->onSamples.size() == 4,
+              "SequencerFrequency steps frequencies + fires gate each step");
     }
 
     std::printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "ALL PASS", failures, failures == 1 ? "" : "s");

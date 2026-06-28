@@ -12,7 +12,9 @@
 #include "synflow/nodes/ConstantNode.h"
 #include "synflow/nodes/MidiButtonNode.h"
 #include "synflow/nodes/MidiKnobNode.h"
+#include "synflow/nodes/SequencerFrequencyNode.h"
 #include "synflow/nodes/SpeedDividerNode.h"
+#include "synflow/nodes/SwitchNode.h"
 #include "synflow/nodes/DelayNode.h"
 #include "synflow/nodes/DistortionNode.h"
 #include "synflow/nodes/DynamicCompressorNode.h"
@@ -40,12 +42,14 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
     if (type == "ADSRFlowNode") return std::make_unique<ADSRNode>();
     if (type == "ClockFlowNode") return std::make_unique<ClockNode>();
     if (type == "SequencerFlowNode") return std::make_unique<SequencerNode>();
-    if (type == "ConstantFlowNode") return std::make_unique<ConstantNode>();
+    if (type == "ConstantFlowNode" || type == "FrequencyFlowNode") return std::make_unique<ConstantNode>();
     if (type == "SpeedDividerFlowNode") return std::make_unique<SpeedDividerNode>();
     if (type == "MidiKnobFlowNode") return std::make_unique<MidiKnobNode>();
     if (type == "MidiButtonFlowNode") return std::make_unique<MidiButtonNode>();
     if (type == "ButtonFlowNode" || type == "OnOffButtonFlowNode" || type == "MouseTriggerButtonFlowNode")
         return std::make_unique<ButtonNode>();
+    if (type == "SwitchFlowNode") return std::make_unique<SwitchNode>();
+    if (type == "SequencerFrequencyFlowNode") return std::make_unique<SequencerFrequencyNode>();
     return nullptr;
 }
 
@@ -55,10 +59,13 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
 // continuous a-rate signal, so their output edges are audio. (See plan Bucket C.)
 bool isEventEmitterType(const std::string& type) {
     return type == "ClockFlowNode" || type == "SequencerFlowNode"
-        || type == "ConstantFlowNode" || type == "SpeedDividerFlowNode"
+        || type == "ConstantFlowNode" || type == "FrequencyFlowNode"
+        || type == "SpeedDividerFlowNode"
         || type == "MidiKnobFlowNode" || type == "MidiButtonFlowNode"
         || type == "ButtonFlowNode" || type == "OnOffButtonFlowNode"
-        || type == "MouseTriggerButtonFlowNode";
+        || type == "MouseTriggerButtonFlowNode"
+        || type == "SwitchFlowNode" || type == "SequencerFrequencyFlowNode"
+        || type == "ArpeggiatorFlowNode";
 }
 
 } // namespace
