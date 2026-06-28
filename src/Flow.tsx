@@ -104,6 +104,8 @@ import VocoderFlowNode from './nodes/VocoderFlowNode';
 import MidiFileFlowNode from './nodes/MidiFileFlowNode';
 import OrchestratorFlowNode from './nodes/OrchestratorFlowNode';
 import OrchestratorDialog from './nodes/OrchestratorDialog';
+import UnisonBeginFlowNode from './nodes/UnisonBeginFlowNode';
+import UnisonEndFlowNode from './nodes/UnisonEndFlowNode';
 import DocsPlayground from './components/DocsPlayground';
 
 function makeDistortionCurve(amount: number) {
@@ -257,6 +259,8 @@ const nodeTypes = {
   VocoderFlowNode: VocoderFlowNode,
   MidiFileFlowNode: MidiFileFlowNode,
   OrchestratorFlowNode: OrchestratorFlowNode,
+  UnisonBeginFlowNode: UnisonBeginFlowNode,
+  UnisonEndFlowNode: UnisonEndFlowNode,
 };
 const orderedNodeTypes = Object.fromEntries(
   Object.entries(nodeTypes).sort(([a], [b]) => a.localeCompare(b))
@@ -800,6 +804,8 @@ function Flow() {
 
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveDialogName, setSaveDialogName] = useState("");
+  const [saveDialogFolder, setSaveDialogFolder] = useState("");
+  const [saveDialogIsNewFlow, setSaveDialogIsNewFlow] = useState(false);
   const [impressumOpen, setImpressumOpen] = useState(false);
   const [datenschutzOpen, setDatenschutzOpen] = useState(false);
   // Control the File menu (Radix Dialog) open state so we can close it before opening other dialogs
@@ -1166,8 +1172,10 @@ function Flow() {
         });
       return;
     }
+    setSaveDialogFolder(currentFlowFolder);
+    setSaveDialogIsNewFlow(false);
     setSaveDialogOpen(true);
-  }, [flowNameInput, saveFlow]);
+  }, [flowNameInput, saveFlow, currentFlowFolder]);
 
   
   
@@ -1196,8 +1204,17 @@ function Flow() {
   const handleSaveDialogConfirm = async () => {
     const name = saveDialogName.trim();
     if (!name) return;
+    const folder = saveDialogFolder.trim();
+
+    if (saveDialogIsNewFlow) {
+      setNodes([]);
+      setEdges([]);
+      setSaveDialogIsNewFlow(false);
+    }
+
+    setCurrentFlowFolder(folder);
     localStorage.setItem('currentFlow', name);
-    localStorage.setItem('currentFlowFolder', currentFlowFolder);
+    localStorage.setItem('currentFlowFolder', folder);
     const payloadNodes = strippEverythingButData(nodes);
     const payloadEdges = strippEverythingButData(edges);
     const updated_at = new Date().toISOString();
@@ -1209,7 +1226,7 @@ function Flow() {
           name,
           nodes: payloadNodes,
           edges: payloadEdges,
-          folder_path: currentFlowFolder,
+          folder_path: folder,
           updated_at,
         };
         const diskResult = await saveFlowToDisk(fsRootHandle, flowData);
@@ -1222,11 +1239,11 @@ function Flow() {
     }
 
     // Always sync to IndexedDB as well (cache/fallback)
-    const dbKey = makeFlowDbKey(name, currentFlowFolder);
+    const dbKey = makeFlowDbKey(name, folder);
     db.put(dbKey, {
       nodes: payloadNodes,
       edges: payloadEdges,
-      folder_path: currentFlowFolder,
+      folder_path: folder,
       updated_at,
     });
 
@@ -1235,6 +1252,9 @@ function Flow() {
     setFlowItems((items) =>
       items.includes(name) ? items : [...items, name]
     );
+    if (folder && !folderPaths.includes(folder)) {
+      setFolderPaths((prev) => [...prev, folder].sort());
+    }
     setSaveDialogOpen(false);
   };
 
@@ -1817,6 +1837,23 @@ function Flow() {
         loop: true,
         style: midiFileStyle,
       };
+    } else if (type === "UnisonBeginFlowNode") {
+      data = {
+        ...data,
+        label: "Unison Begin",
+        style: { ...nodeStyleObj, glowColor: '#a78bfa' },
+      };
+    } else if (type === "UnisonEndFlowNode") {
+      data = {
+        ...data,
+        label: "Unison End",
+        amount: 4,
+        detuneSpread: 20,
+        volumeSpread: 15,
+        avgDelayMs: 10,
+        maxDelayMs: 50,
+        style: { ...nodeStyleObj, glowColor: '#a78bfa' },
+      };
     }
 
     // Determine style width/height for centering.
@@ -1924,6 +1961,8 @@ function Flow() {
     'OscilloscopeFlowNode',
     'EqualizerFlowNode',
     'VocoderFlowNode',
+    'UnisonBeginFlowNode',
+    'UnisonEndFlowNode',
   ]), []);
 
   const isAudioNodeType = useCallback((t?: string) => !!(t && AUDIO_NODE_TYPES.has(t)), [AUDIO_NODE_TYPES]);
@@ -2237,9 +2276,10 @@ function Flow() {
       {/* Icon Top Bar: left shows open/tools, right shows save/publish/auth/sync */}
       <TopBar
         onNewFlow={() => {
-          const name = prompt('Enter a name for the flow:');
-          setNodes([]); setEdges([]);
-          if (name) saveFlowToIndexedDB(name);
+          setSaveDialogName('');
+          setSaveDialogFolder('');
+          setSaveDialogIsNewFlow(true);
+          setSaveDialogOpen(true);
         }}
         onOpenFlow={() => { refreshFlowList(); setOpenDialogFlows(true); }}
         onTogglePalette={() => setNodePaletteOpen(prev => !prev)}
@@ -2314,6 +2354,18 @@ function Flow() {
         onSelectAudioFolder={chooseFsFolder}
         onChangeAudioFolder={chooseFsFolder}
         onOpenDocs={() => setShowDocsPlayground(true)}
+        onDeleteFlow={flowNameInput ? async () => {
+          try {
+            const dbKey = makeFlowDbKey(flowNameInput, currentFlowFolder || '');
+            await db.delete(dbKey);
+          } catch (e) { console.warn('Delete flow failed', e); }
+          setFlowItems(items => items.filter(i => i !== flowNameInput));
+          setLocalFlowMeta(meta => meta.filter(m => m.name !== flowNameInput));
+          setFlowNameInput('');
+          localStorage.removeItem('currentFlow');
+          localStorage.removeItem('currentFlowFolder');
+          setNodes([]); setEdges([]);
+        } : undefined}
       />
 
       {showDocsPlayground && (
@@ -2425,24 +2477,47 @@ function Flow() {
             zIndex: 1001,
             minWidth: "320px"
           }}>
-            <Dialog.Title>Save Flow</Dialog.Title>
-            <Dialog.Description>Enter a name for the current flow:</Dialog.Description>
+            <Dialog.Title>{saveDialogIsNewFlow ? 'New Flow' : 'Save Flow'}</Dialog.Title>
+            <Dialog.Description>Enter a name and choose a folder:</Dialog.Description>
             <input
               type="text"
               value={saveDialogName}
               onChange={e => setSaveDialogName(e.target.value)}
+              placeholder="Flow name"
               style={{
                 width: "100%",
                 marginTop: "12px",
+                marginBottom: "10px",
+                padding: "8px",
+                borderRadius: "4px",
+                border: "1px solid #444",
+                background: "#333",
+                color: "#fff",
+                boxSizing: "border-box",
+              }}
+              autoFocus
+            />
+            <label style={{ fontSize: 11, color: '#aaa', display: 'block', marginBottom: 4 }}>Folder (leave empty for root)</label>
+            <input
+              type="text"
+              list="save-dialog-folder-list"
+              value={saveDialogFolder}
+              onChange={e => setSaveDialogFolder(e.target.value)}
+              placeholder="Root"
+              style={{
+                width: "100%",
                 marginBottom: "16px",
                 padding: "8px",
                 borderRadius: "4px",
                 border: "1px solid #444",
                 background: "#333",
-                color: "#fff"
+                color: "#fff",
+                boxSizing: "border-box",
               }}
-              autoFocus
             />
+            <datalist id="save-dialog-folder-list">
+              {folderPaths.map(fp => <option key={fp} value={fp} />)}
+            </datalist>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
               <button
                 onClick={() => setSaveDialogOpen(false)}
