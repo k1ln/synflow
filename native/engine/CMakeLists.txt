@@ -23,3 +23,6 @@ target_link_libraries(builtin_test PRIVATE synflow_engine)
 
 add_executable(effects_test src/effects_test.cpp)
 target_link_libraries(effects_test PRIVATE synflow_engine)
+
+add_executable(vocoder_test src/vocoder_test.cpp)
+target_link_libraries(vocoder_test PRIVATE synflow_engine)

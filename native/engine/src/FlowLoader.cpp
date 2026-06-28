@@ -30,6 +30,7 @@
 #include "synflow/nodes/MasterOutNode.h"
 #include "synflow/nodes/OscillatorNode.h"
 #include "synflow/nodes/PassthroughNode.h"
+#include "synflow/nodes/VocoderNode.h"
 #include "synflow/nodes/SequencerNode.h"
 
 namespace synflow {
@@ -65,6 +66,7 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
     if (type == "ArpeggiatorFlowNode") return std::make_unique<ArpeggiatorNode>();
     if (type == "BlockingSwitchFlowNode") return std::make_unique<BlockingSwitchNode>();
     if (type == "MidiFileFlowNode") return std::make_unique<MidiFileNode>();
+    if (type == "VocoderFlowNode") return std::make_unique<VocoderNode>();
     if (type == "MicFlowNode") return std::make_unique<MicNode>();
     if (type == "LogFlowNode" || type == "EventFlowNode" || type == "CommandInFlowNode" || type == "CommandOutFlowNode")
         return std::make_unique<EventForwardNode>();
