@@ -92,6 +92,18 @@ class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {
 `; 
   // Script code & scripts list
   const [processorCode, setProcessorCode] = useState<string>(data.processorCode || defaultTemplate);
+  // AssemblyScript source compiled to WASM for the native plugin (and run in the
+  // browser via a generated shim, so web and native render the same module).
+  const defaultAsTemplate = `// AssemblyScript worklet -> compiles to WASM (native plugin + browser shim).
+// Write per-sample DSP; module-level globals persist as state.
+// Helpers: param(id: i32): f32  and  sampleRate(): f32
+let _z: f32 = 0;
+function userSample(x: f32, i: i32): f32 {
+  _z = _z + param(1) * (x - _z);   // param 1 = low-pass coeff (0..1)
+  return _z * param(0);            // param 0 = gain
+}`;
+  const [assemblyScript, setAssemblyScript] = useState<string>((data as any).assemblyScript || defaultAsTemplate);
+  const [nativeStatus, setNativeStatus] = useState<string>((data as any).wasmBase64 ? 'compiled ✓' : '');
   const [isExpanded, setIsExpanded] = useState<boolean>((data as any).expanded ?? false);
   const [isHidden, setIsHidden] = useState<boolean>((data as any).hidden ?? false);
   const [scriptName, setScriptName] = useState<string>((data as any).scriptName || 'unnamed');
@@ -284,6 +296,31 @@ class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {
       localStorage.removeItem('workletScripts');
     }
   }, []);
+
+  // Compile the AssemblyScript source to canonical-ABI WASM. Stores it on the node
+  // (data.wasmBase64 for native) and installs a JS shim as processorCode so the live
+  // browser worklet runs the SAME wasm. @synflow/core is untouched — it just loads
+  // whatever processorCode the node carries.
+  const compileNative = async () => {
+    try {
+      setNativeStatus('compiling…');
+      const [{ compileWorkletToWasm }, { generateWorkletShim }] = await Promise.all([
+        import('../host/compileWorklet'),
+        import('../host/workletWasmShim'),
+      ]);
+      const { base64 } = await compileWorkletToWasm(assemblyScript);
+      (data as any).assemblyScript = assemblyScript;
+      (data as any).wasmBase64 = base64;
+      const shim = generateWorkletShim(base64);
+      data.processorCode = shim;
+      setProcessorCode(shim);
+      const emitNodeId = nodeId || scriptName;
+      if (emitNodeId) eventBus.emit(emitNodeId + '.processor.save', { code: shim });
+      setNativeStatus(`compiled ✓ (${base64.length} b64 chars)`);
+    } catch (e: any) {
+      setNativeStatus('error: ' + (e?.message || String(e)).split('\n')[0]);
+    }
+  };
 
   const saveProcessorCode = async () => {
     let finalName = scriptName.trim();
@@ -643,6 +680,24 @@ class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {
                 <div style={{display:'flex', gap:6}}>
                   <button onClick={saveProcessorCode} style={{padding:'4px 10px', background:'#60a5fa', color:'#fff', border:'1px solid #1e4fb3', borderRadius:4, fontSize:'0.55rem'}}>Save</button>
                   <button onClick={closeEditor} style={{padding:'4px 10px', background:'#2f3338', color:'#ddd', border:'1px solid #444', borderRadius:4, fontSize:'0.55rem'}}>Close</button>
+                </div>
+              </div>
+              <div style={{marginTop:10, borderTop:'1px solid #333', paddingTop:8}}>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4}}>
+                  <span style={{fontSize:'0.6rem', color:'#aef7c2', fontWeight:600}}>AssemblyScript → WASM (native)</span>
+                  <span style={{fontSize:'0.5rem', opacity:0.7, color: nativeStatus.startsWith('error') ? '#ffb4b4' : '#9fe0b0'}}>{nativeStatus}</span>
+                </div>
+                <CodeMirror
+                  value={assemblyScript}
+                  height={'180px'}
+                  extensions={[javascript({ typescript: true })]}
+                  theme="dark"
+                  onChange={(value) => { setAssemblyScript(value); (data as any).assemblyScript = value; }}
+                  className="audio-codemirror nodrag"
+                />
+                <div style={{display:'flex', justifyContent:'space-between', marginTop:6}}>
+                  <span style={{fontSize:'0.5rem', opacity:0.6}}>Compiled at export too. Helpers: param(id), sampleRate()</span>
+                  <button onClick={compileNative} style={{padding:'4px 10px', background:'#1d3d25', color:'#aef7c2', border:'1px solid #2f5a3a', borderRadius:4, fontSize:'0.55rem'}}>Compile → WASM</button>
                 </div>
               </div>
             </div>

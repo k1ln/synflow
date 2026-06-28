@@ -1,10 +1,14 @@
 import { browserFlowLoader } from './browserFlowLoader';
 import { browserAssetStore } from './browserAssetStore';
+import { compileWorkletToWasm } from './compileWorklet';
+import { generateWorkletShim } from './workletWasmShim';
 
 // Produce a self-contained ("portable") flow: every FlowNode sub-flow is inlined
-// into data.embeddedFlow (recursively) and every disk-backed SampleFlowNode has
-// its audio embedded as base64 in data.arrayBuffer. The result plays in any host
-// with just an AudioContext — no FlowLoader / AssetStore needed.
+// into data.embeddedFlow (recursively), every disk-backed SampleFlowNode has its
+// audio embedded as base64 in data.arrayBuffer, and every AudioWorklet authored in
+// AssemblyScript is compiled to canonical-ABI wasm embedded in data.wasmBase64 (with
+// a JS shim set as processorCode so the browser runs the same module). The result
+// plays in any host — Web Audio OR the native plugin — with no loader/assets/toolchain.
 
 type Flow = { nodes: any[]; edges: any[] };
 
@@ -38,6 +42,19 @@ async function resolveNode(node: any, seen: Set<string>): Promise<any> {
     if (buf) {
       out.data.arrayBuffer = abToBase64(buf);
       out.data.diskFileName = undefined;
+    }
+  }
+
+  // AudioWorklet authored in AssemblyScript -> compile to canonical-ABI wasm so the
+  // native plugin can host it, and run the same bytes in the browser via a JS shim.
+  if (node.type === 'AudioWorkletFlowNode' && out.data.assemblyScript && !out.data.wasmBase64) {
+    try {
+      const { base64 } = await compileWorkletToWasm(out.data.assemblyScript);
+      out.data.wasmBase64 = base64;
+      out.data.processorCode = generateWorkletShim(base64); // web runs the same wasm
+    } catch (e) {
+      // Leave the node as-is (keeps its existing JS processorCode); surface the error.
+      console.warn('[exportPortableFlow] worklet compile failed for', node.id, e);
     }
   }
 

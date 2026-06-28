@@ -10,7 +10,8 @@
     "lucide-react": "^0.544.0",
     "radix-ui": "^1.4.1",
     "react": "^19.1.0",
-    "react-rotary-knob-react19": "^4.0.0"
+    "react-rotary-knob-react19": "^4.0.0",
+    "assemblyscript": "^0.28.19"
   },
   "name": "flowsynth",
   "version": "0.4.7",
