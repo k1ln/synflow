@@ -930,4 +930,22 @@ export class AudioGraphManager {
     public sendNodeOff(nodeId: string, handle = 'main-input', payload: Record<string, any> = {}): void {
         this.eventBus.emit(`${nodeId}.${handle}.sendNodeOff`, { nodeid: nodeId, ...payload });
     }
+
+    // ─── External audio routing (treat a flow as an FX insert) ──────────────────
+
+    /** The AudioNode external audio should connect INTO for a node (e.g. an FX input gain). */
+    public getAudioInput(nodeId: string): AudioNode | undefined {
+        const v: any = this.virtualNodes.get(nodeId);
+        if (!v) return undefined;
+        if (typeof v.getInputNode === 'function') { const n = v.getInputNode(); if (n instanceof AudioNode) return n; }
+        return v.audioNode instanceof AudioNode ? v.audioNode : undefined;
+    }
+
+    /** The AudioNode that carries a node's audio OUTPUT (e.g. an FX output gain). */
+    public getAudioOutput(nodeId: string): AudioNode | undefined {
+        const v: any = this.virtualNodes.get(nodeId);
+        if (!v) return undefined;
+        if (typeof v.getOutputNode === 'function') { const n = v.getOutputNode(); if (n instanceof AudioNode) return n; }
+        return v.audioNode instanceof AudioNode ? v.audioNode : undefined;
+    }
 }

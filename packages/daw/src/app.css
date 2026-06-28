@@ -92,3 +92,14 @@ body { margin: 0; background: var(--bg); color: var(--text);
 .pr-cell.on { background: var(--accent); border-color: var(--accent); }
 .pr-cell.note-start { box-shadow: inset 2px 0 0 #fff8; }
 .pr-cell.playhead { outline: 1px solid #fff5; outline-offset: -1px; }
+
+.mixer { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-top: 12px; }
+.mixer-title { font-size: 11px; opacity: 0.7; margin-bottom: 8px; letter-spacing: 0.05em; }
+.mx-sub { opacity: 0.5; margin-left: 6px; }
+.mx-strip { display: flex; align-items: center; gap: 12px; padding: 5px 0; border-top: 1px solid #22222a; }
+.mx-strip:first-of-type { border-top: none; }
+.mx-name { width: 90px; font-weight: 600; }
+.mx-vol { width: 140px; }
+.mx-fx { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fx-chip { background: #2a2a31; color: #cdebd8; border: 1px solid #3a3a44; border-radius: 12px; padding: 2px 8px; font-size: 11px; cursor: pointer; }
+.fx-add { background: #111; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; font-size: 11px; }
