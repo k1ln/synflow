@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Plus, Pencil, X } from 'lucide-react';
 import { EQ_FX_ID, type FxInsert, type EqSettings } from '../model/project';
 import { findEntry, type LibraryEntry } from '../synflow/library';
-import { flowKnobs, knob01, knobValue } from '../synflow/knobs';
+import { flowKnobs, knob01, knobReadout, knobValue } from '../synflow/knobs';
 import { eqMagnitudeDb, logFreqs } from '../audio/eqResponse';
 import { Knob } from './Knob';
 
@@ -58,6 +58,7 @@ export function FxBar({ label, color, fx, effects, onAdd, onRemove, onEdit, onKn
                   {knobs.map((k) => (
                     <Knob
                       key={`${k.nodeId}.${k.param}`} value={knob01(k)} color={c} size={34} label={k.label}
+                      format={(v01) => knobReadout(k, v01)}
                       onChange={onKnob ? (v) => onKnob(i, k.nodeId, k.param, knobValue(k, v)) : undefined}
                     />
                   ))}

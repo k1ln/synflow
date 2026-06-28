@@ -3,6 +3,7 @@
 // sample; the main thread feeds it ~0.5 s slices read straight off the on-disk WAV
 // (Blob.slice) so a dozen hour-long clips can play at once without decoding them.
 import { readWavFrames, type WavMeta } from './wavReader';
+import { scheduleFade } from './clipFade';
 
 // ── worklet processor (runs on the audio thread) ─────────────────────────────
 // Keeps a queue of planar Float32 chunks; outputs silence until the clock reaches
@@ -92,6 +93,8 @@ export interface ClipStreamOpts {
   offsetSec: number;   // seconds into the source file to start from
   durationSec: number; // how long to play
   gain: number;
+  fadeIn?: number;     // fade-in length (s)
+  fadeOut?: number;    // fade-out length (s)
   dest: AudioNode;
   onEnded?: () => void; // called once the clip finishes streaming
 }
@@ -117,7 +120,8 @@ export class ClipStreamer {
       numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2],
       processorOptions: { startTime: opts.startTime, total: totalOut, lowWater: Math.round(rate * 1.0) },
     });
-    this.gain = ctx.createGain(); this.gain.gain.value = opts.gain;
+    this.gain = ctx.createGain();
+    scheduleFade(this.gain.gain, opts.gain, opts.startTime, opts.durationSec, opts.fadeIn, opts.fadeOut);
     this.node.connect(this.gain).connect(opts.dest);
     this.node.port.onmessage = (e) => {
       const t = (e.data as any)?.type;

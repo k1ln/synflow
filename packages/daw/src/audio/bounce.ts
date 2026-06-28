@@ -6,6 +6,7 @@ import { Mixer, type ResolvedFx } from './Mixer';
 import { InstrumentHost } from './InstrumentHost';
 import { VoicePool } from './VoicePool';
 import { encodeWav } from './wav';
+import { scheduleFade } from './clipFade';
 import type { AudioAssets } from './AudioAssets';
 import { findEntry, cloneFlow } from '../synflow/library';
 import { trackActiveAt, songLengthSteps, songLengthSlots, type Project } from '../model/project';
@@ -48,10 +49,12 @@ export async function bounceProjectToWav(project: Project, assets: AudioAssets, 
         let buf = bufCache.get(asset.id);
         if (!buf) { const b = await assets.resolveBuffer(asset); if (!b) continue; buf = b; bufCache.set(asset.id, b); }
         const when = c.start * spp; if (when >= lengthSec) continue;
+        const dur = Math.min(c.duration, lengthSec - when);
         const src = ctx.createBufferSource(); src.buffer = buf;
-        const g = ctx.createGain(); g.gain.value = c.gain;
+        const g = ctx.createGain();
         src.connect(g).connect(t.sum);
-        src.start(when, c.offset, Math.min(c.duration, lengthSec - when));
+        scheduleFade(g.gain, c.gain, when, dur, c.fadeIn, c.fadeOut);
+        src.start(when, c.offset, dur);
       }
       continue;
     }

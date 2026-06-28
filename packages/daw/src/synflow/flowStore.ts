@@ -127,6 +127,37 @@ export async function writeAudio(root: any, fileName: string, blob: Blob): Promi
   await w.close();
 }
 
+// ─── video imports (container bytes, kept on disk under <folder>/video/) ──────
+/** Write video container bytes to <folder>/video/<fileName> (skips if present). */
+export async function writeVideoFile(root: any, fileName: string, blob: Blob): Promise<void> {
+  if (!(await ensurePermission(root, 'readwrite'))) throw new Error('write permission denied for the video folder');
+  const d = await dir(root, 'video');
+  let exists = true;
+  try { await d.getFileHandle(fileName); } catch { exists = false; }
+  if (exists) return;
+  const fh = await d.getFileHandle(fileName, { create: true });
+  const w = await fh.createWritable();
+  await w.write(blob);
+  await w.close();
+}
+
+/** Read video bytes from <folder>/video/<fileName> (null if missing). */
+export async function readVideoFile(root: any, fileName: string): Promise<Blob | null> {
+  try {
+    const d = await dir(root, 'video');
+    const fh = await d.getFileHandle(fileName);
+    return await fh.getFile();
+  } catch { return null; }
+}
+
+/** Open a streaming writable for an export at <folder>/exports/<fileName>. */
+export async function createExportWritable(root: any, fileName: string): Promise<any> {
+  if (!(await ensurePermission(root, 'readwrite'))) throw new Error('write permission denied for the exports folder');
+  const d = await dir(root, 'exports');
+  const fh = await d.getFileHandle(fileName, { create: true });
+  return fh.createWritable();
+}
+
 /** Open a streaming writable for a mixdown at <folder>/bounces/<fileName>. The
  *  caller writes the WAV header + frame chunks incrementally, then closes it. */
 export async function createBounceWritable(root: any, fileName: string): Promise<any> {

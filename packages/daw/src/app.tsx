@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Plus, Trash2, Drum, Music2, Repeat, AudioWaveform } from 'lucide-react';
+import { Plus, Trash2, Drum, Music2, Repeat, AudioWaveform, Film } from 'lucide-react';
 import { RealtimeClock } from './audio/ClockSource';
 import { Transport } from './audio/Transport';
 import { Scheduler } from './audio/Scheduler';
@@ -9,19 +9,25 @@ import { Mixer, FxChain, type ResolvedFx } from './audio/Mixer';
 import { AudioAssets } from './audio/AudioAssets';
 import { AudioClipPlayer } from './audio/AudioClipPlayer';
 import { pickAudioFile } from './audio/decodeAudioFile';
+import { pickVideoFile, probeVideo, extractAudioFromVideo } from './audio/video';
+import { encodeWav } from './audio/wav';
 import { Recorder } from './audio/Recorder';
 import { bounceProjectToWav } from './audio/bounce';
 import { bounceProjectStream } from './audio/bounceStream';
+import { exportVideo, type ExportOpts, type VideoBlobResolver } from './audio/videoExport';
 import {
   defaultProject, newNoteId, uid, fxInsert, blankSteps, trackActiveAt, patternLoopLength, songLengthSteps, songLengthSlots, normalizeProject,
   EQ_FX_ID, defaultEq,
-  type Project, type Track, type PoolItem, type FxInsert, type AudioAsset, type AudioClip, type EqSettings,
+  type Project, type Track, type PoolItem, type FxInsert, type AudioAsset, type AudioClip, type VideoAsset, type VideoClip, type SourceLayout, type EqSettings,
 } from './model/project';
 import { midiToFreq } from './model/pitch';
 import { type Flow, makeSynthVoice, makeKick } from './synflow/instruments';
 import { makeFilterFx } from './synflow/effects';
 import { LIBRARY, findEntry, cloneFlow, registerEntries, type LibraryEntry } from './synflow/library';
-import { fsSupported, restoreFolder, seedLibrary, readAllFlows, writeFlow, pickFolder, saveProject, loadProject, listSongs, songSlug, createBounceWritable, listAllAssets, listAudioFiles } from './synflow/flowStore';
+import { fsSupported, restoreFolder, seedLibrary, readAllFlows, writeFlow, pickFolder, saveProject, loadProject, listSongs, songSlug, createBounceWritable, createExportWritable, listAllAssets, listAudioFiles, writeVideoFile, readVideoFile } from './synflow/flowStore';
+import { ExportDialog } from './ui/ExportDialog';
+import { ProgramMonitor } from './ui/ProgramMonitor';
+import { loadTitleFonts } from './fonts';
 import { TopBar, type ViewId } from './ui/TopBar';
 import { Pool } from './ui/Pool';
 import { TrackEditor, type TrackEditorHandlers } from './ui/TrackEditor';
@@ -49,6 +55,7 @@ const fmtMB = (bytes: number) => `${(bytes / 1e6).toFixed(1)} MB`;
 function ImportOverlay({ info }: { info: ImportInfo }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const id = setInterval(() => setNow(Date.now()), 200); return () => clearInterval(id); }, []);
+  useEffect(() => { void loadTitleFonts(); }, []); // self-hosted title fonts (canvas needs them ready)
   const elapsed = now - info.startedAt;
   if (elapsed < 300) return null; // short imports: don't flash the bar
   const pct = info.phase === 'reading' && info.total > 0 ? Math.round((info.read / info.total) * 100) : null;
@@ -102,6 +109,8 @@ export function App() {
   const mixerRef = useRef<Mixer | null>(null);
   const assetsMgrRef = useRef<AudioAssets | null>(null);                // audio asset cache (disk/embedded)
   const audioPlayersRef = useRef<Map<string, AudioClipPlayer>>(new Map()); // audio-track clip players, keyed by track.id
+  const videoBlobsRef = useRef<Map<string, Blob>>(new Map());           // videoAssetId → container Blob (session cache for poster/export)
+  const videoUrlsRef = useRef<Map<string, string>>(new Map());          // videoAssetId → object URL (program-monitor preview)
   const projectRef = useRef(project); projectRef.current = project;
   const currentStepRef = useRef(currentStep); currentStepRef.current = currentStep;
   const seekRef = useRef(0);                                            // step playback starts from / playhead rests at
@@ -429,6 +438,67 @@ export function App() {
     } catch (e) { console.warn('[Mothscilla] export failed', e); window.alert('Export failed — see the console. Large audio can\'t be embedded; share the project folder or Bounce instead.'); }
     finally { setExporting(false); }
   }, [ensureAssets]);
+
+  // ── Detailed export popup (audio / video / both, via WebCodecs) ──────────────
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportPhase, setExportPhase] = useState('');
+  const runExport = useCallback(async (opts: ExportOpts) => {
+    setExporting(true); setExportProgress(0); setExportPhase('');
+    try {
+      const proj = projectRef.current;
+      // Resolve a video asset's bytes: session cache first, then disk.
+      const getVideoBlob: VideoBlobResolver = async (assetId) => {
+        const cached = videoBlobsRef.current.get(assetId); if (cached) return cached;
+        const va = (proj.videoAssets ?? []).find((a) => a.id === assetId);
+        if (va?.source.kind === 'disk' && folderRef.current) {
+          const blob = await readVideoFile(folderRef.current, va.source.fileName);
+          if (blob) videoBlobsRef.current.set(assetId, blob);
+          return blob;
+        }
+        return null;
+      };
+      const { blob, ext } = await exportVideo(proj, ensureAssets(), opts, getVideoBlob, (f, phase) => { setExportProgress(f); setExportPhase(phase); });
+      const file = `${songSlug(proj.name)}.${ext}`;
+      if (folderRef.current) {
+        const w = await createExportWritable(folderRef.current, file);
+        try { await w.write(blob); } finally { await w.close(); }
+        console.info('[Mothscilla] exported to exports/' + file);
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = file; a.click();
+        URL.revokeObjectURL(url);
+      }
+      flashSaved();
+      setExportOpen(false);
+    } catch (e) { console.warn('[Mothscilla] export failed', e); window.alert('Export failed: ' + ((e as Error)?.message ?? e)); }
+    finally { setExporting(false); setExportPhase(''); }
+  }, [ensureAssets]);
+
+  // ── Program monitor (live video preview synced to the playhead) ──────────────
+  const [monitorOpen, setMonitorOpen] = useState(true);
+  const [videoBlobTick, setVideoBlobTick] = useState(0); // bump to re-render when a disk video finishes loading
+  // Object URL for a video asset's bytes (session blob), created on demand + cached.
+  const getVideoUrl = useCallback((assetId: string): string | null => {
+    const cached = videoUrlsRef.current.get(assetId); if (cached) return cached;
+    const blob = videoBlobsRef.current.get(assetId); if (!blob) return null;
+    const url = URL.createObjectURL(blob); videoUrlsRef.current.set(assetId, url); return url;
+  }, []);
+  // Load disk-backed video bytes into the session cache (so a reopened project
+  // previews/exports its video). Re-renders via the tick when each one lands.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      for (const va of projectRef.current.videoAssets ?? []) {
+        if (videoBlobsRef.current.has(va.id)) continue;
+        if (va.source.kind === 'disk' && folderRef.current) {
+          const blob = await readVideoFile(folderRef.current, va.source.fileName);
+          if (blob && !cancelled) { videoBlobsRef.current.set(va.id, blob); setVideoBlobTick((n) => n + 1); }
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [project.videoAssets]);
+  void videoBlobTick; // referenced so the monitor re-renders when blobs load
 
   // Bounce the song to a WAV faster than realtime (OfflineAudioContext).
   const [bouncing, setBouncing] = useState(false);
@@ -850,17 +920,32 @@ export function App() {
     onPlayAudioClip: (clip) => auditionClip(clip),
   };
 
-  const addTrack = (type: 'drums' | 'synth' | 'audio') => {
+  const addTrack = (type: 'drums' | 'synth' | 'audio' | 'video') => {
     const id = uid('track');
-    const label = type === 'drums' ? 'Drums' : type === 'audio' ? 'Audio' : 'Synth';
+    const isMedia = type === 'audio' || type === 'video';
+    const label = type === 'drums' ? 'Drums' : type === 'audio' ? 'Audio' : type === 'video' ? 'Video' : 'Synth';
     setProject((p) => ({ ...p, tracks: [...p.tracks, {
       id, name: `${label} ${p.tracks.length + 1}`, type, volume: 0.8,
-      loop: type !== 'audio', length: p.totalSteps, uses: [],
-      clips: type === 'audio' ? [] : [{ id: uid('clip'), start: 0, length: 1, loop: true }],
-      audioClips: type === 'audio' ? [] : undefined, fx: [], automation: [],
+      loop: !isMedia, length: p.totalSteps, uses: [],
+      clips: isMedia ? [] : [{ id: uid('clip'), start: 0, length: 1, loop: true }],
+      audioClips: type === 'audio' ? [] : undefined,
+      videoClips: type === 'video' ? [] : undefined, fx: [], automation: [],
     }] }));
     setSelTrack(id);
-    if (type === 'audio') setSongMode(true); // audio plays on the song timeline
+    if (isMedia) setSongMode(true); // media plays on the song timeline
+    if (type === 'video') void importVideoClip(id); // immediately prompt for a file
+  };
+  // A title is a video-track clip with `text` (no asset) → reuses the whole video
+  // pipeline (compositing, transform, fades, trim/split, export burn-in).
+  const addTitle = () => {
+    const id = uid('track');
+    const start = Math.max(0, currentStepRef.current);
+    const clip: VideoClip = { id: uid('vclip'), assetId: '', start, offset: 0, duration: 4, text: 'Title', titleBg: true, titleFont: 'Inter', titleAppear: 'fade', fadeIn: 0.3, fadeOut: 0.3, transform: { y: 0.32 } };
+    setProject((p) => ({ ...p, tracks: [...p.tracks, {
+      id, name: `Title ${p.tracks.length + 1}`, type: 'video', volume: 0.8, loop: false, length: p.totalSteps,
+      uses: [], clips: [], videoClips: [clip], fx: [], automation: [],
+    }] }));
+    setSelTrack(id); setSongMode(true); setMonitorOpen(true);
   };
   const removeTrack = (trackId: string) => {
     setProject((p) => ({ ...p, tracks: p.tracks.filter((t) => t.id !== trackId) }));
@@ -906,6 +991,22 @@ export function App() {
   const moveAudioClip = (trackId: string, clipId: string, start: number) => mapTrack(trackId, (t) => ({ ...t, audioClips: (t.audioClips ?? []).map((c) => (c.id === clipId ? { ...c, start } : c)) }));
   const updateAudioClips = (trackId: string, fn: (cs: AudioClip[]) => AudioClip[]) => mapTrack(trackId, (t) => ({ ...t, audioClips: fn(t.audioClips ?? []) }));
   const removeAudioClip = (trackId: string, clipId: string) => updateAudioClips(trackId, (cs) => cs.filter((c) => c.id !== clipId));
+  const setAudioClip = (trackId: string, clipId: string, patch: Partial<AudioClip>) => { updateAudioClips(trackId, (cs) => cs.map((c) => (c.id === clipId ? { ...c, ...patch } : c))); void buildAudio(); };
+  const moveVideoClip = (trackId: string, clipId: string, start: number) => mapTrack(trackId, (t) => ({ ...t, videoClips: (t.videoClips ?? []).map((c) => (c.id === clipId ? { ...c, start } : c)) }));
+  const removeVideoClip = (trackId: string, clipId: string) => mapTrack(trackId, (t) => ({ ...t, videoClips: (t.videoClips ?? []).filter((c) => c.id !== clipId) }));
+  const setVideoClip = (trackId: string, clipId: string, patch: Partial<VideoClip>) => mapTrack(trackId, (t) => ({ ...t, videoClips: (t.videoClips ?? []).map((c) => (c.id === clipId ? { ...c, ...patch } : c)) }));
+  const splitVideoClip = (trackId: string, clipId: string, atSteps: number) => {
+    const secPerStep = 60 / projectRef.current.bpm / projectRef.current.stepsPerBeat;
+    mapTrack(trackId, (t) => ({ ...t, videoClips: (t.videoClips ?? []).flatMap((c) => {
+      if (c.id !== clipId) return [c];
+      const into = (atSteps - c.start) * secPerStep;                  // seconds into the clip
+      if (into <= 0.05 || into >= c.duration - 0.05) return [c];
+      return [
+        { ...c, duration: into, fadeOut: undefined },                 // first half keeps fade-in
+        { ...c, id: uid('vclip'), start: atSteps, offset: c.offset + into, duration: c.duration - into, fadeIn: undefined }, // second keeps fade-out
+      ];
+    }) }));
+  };
 
   // Drop a recording onto the selected audio track (or the first one, creating it
   // if there is none) at the playhead, then rebuild so it plays back with transport.
@@ -977,6 +1078,171 @@ export function App() {
     setSongMode(true); // audio plays on the song timeline
   };
 
+  // Turn video container bytes into a VideoAsset (+ extracted AudioAsset) and a
+  // VideoClip/AudioClip at `start`. Shared by file import and live recording.
+  const buildVideoEntities = async (bytes: ArrayBuffer, mime: string, baseName: string, start: number) => {
+    const probe = await probeVideo(bytes, mime);
+    const audioBuf = await extractAudioFromVideo(bytes);
+    let audioAsset: AudioAsset | null = null;
+    if (audioBuf) {
+      const chans = Array.from({ length: audioBuf.numberOfChannels }, (_, c) => audioBuf.getChannelData(c));
+      const wav = encodeWav(chans, audioBuf.sampleRate);
+      try { audioAsset = await ensureAssets().ingest(`${baseName} (audio)`, wav, 'audio/wav'); }
+      catch (e) { console.warn('[Mothscilla] extracted-audio ingest failed', e); }
+    }
+    const blob = new Blob([bytes], { type: mime });
+    const ext = mime.includes('webm') ? '.webm' : mime.includes('quicktime') ? '.mov' : '.mp4';
+    const fileName = `${baseName}${ext}`;
+    let source: VideoAsset['source'] = { kind: 'embedded', base64: '', mime }; // bytes live in videoBlobsRef this session
+    if (folderRef.current) {
+      try { await writeVideoFile(folderRef.current, fileName, blob); source = { kind: 'disk', fileName, mime }; } catch { /* keep session-only */ }
+    }
+    const videoAsset: VideoAsset = {
+      id: uid('vasset'), name: baseName, source,
+      duration: probe.duration || audioBuf?.duration || 0,
+      width: probe.width, height: probe.height, hasAudio: !!audioBuf,
+      audioAssetId: audioAsset?.id, poster: probe.poster,
+    };
+    videoBlobsRef.current.set(videoAsset.id, blob);
+    const vclip: VideoClip = { id: uid('vclip'), assetId: videoAsset.id, start, offset: 0, duration: videoAsset.duration };
+    const aclip: AudioClip | null = audioAsset ? { id: uid('aclip'), assetId: audioAsset.id, start, offset: 0, duration: audioAsset.duration, gain: 1 } : null;
+    return { videoAsset, audioAsset, vclip, aclip, hadAudio: !!audioBuf };
+  };
+
+  // Import a video onto a video track (+ the extracted audio on its audio lane).
+  const importVideoClip = async (trackId: string) => {
+    let startedAt = 0;
+    const picked = await pickVideoFile((read, total) => {
+      if (!startedAt) startedAt = Date.now();
+      setImporting({ name: '', phase: 'reading', read, total, startedAt });
+    });
+    if (!picked) { setImporting(null); return; }
+    if (!startedAt) startedAt = Date.now();
+    setImporting({ name: picked.name, phase: 'decoding', read: 0, total: 0, startedAt });
+    try {
+      await ensureAudio();
+      const baseName = picked.name.replace(/\.[^.]+$/, '');
+      const { videoAsset, audioAsset, vclip, aclip, hadAudio } = await buildVideoEntities(picked.bytes, picked.mime, baseName, Math.max(0, currentStepRef.current));
+      const cur = projectRef.current;
+      const next: Project = {
+        ...cur,
+        videoAssets: [...(cur.videoAssets ?? []), videoAsset],
+        assets: audioAsset ? [...cur.assets, audioAsset] : cur.assets,
+        tracks: cur.tracks.map((t) => (t.id !== trackId ? t : {
+          ...t, videoClips: [...(t.videoClips ?? []), vclip],
+          ...(aclip ? { audioClips: [...(t.audioClips ?? []), aclip] } : {}),
+        })),
+      };
+      projectRef.current = next; setProject(next);
+      await buildAudio();
+      if (!hadAudio) window.alert(`Imported "${baseName}". This file's audio couldn't be extracted in-browser (common for AVI). The video still imports; see docs/VIDEO.md for the demux fallback.`);
+    } catch (e) {
+      console.warn('[Mothscilla] video import failed', e);
+      window.alert('Video import failed — see the console.');
+    } finally { setImporting(null); }
+    setSongMode(true);
+  };
+
+  // ── Live capture: webcam (reaction) + screen, recorded to a clip ─────────────
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+  const [recording, setRecording] = useState(false);
+  const monitorCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const recRef = useRef<{ rec: MediaRecorder; chunks: Blob[]; dest: MediaStreamAudioDestinationNode } | null>(null);
+  const cameraOn = !!cameraStream, screenOn = !!screenStream;
+  // Live-source layout (fractions of the frame) — set in the monitor's Sources panel.
+  const [cameraLayout, setCameraLayout] = useState<SourceLayout>({ x: 0.70, y: 0.70, w: 0.28 });
+  const [screenLayout, setScreenLayout] = useState<SourceLayout>({ x: 0, y: 0, w: 1 });
+  const [camDeviceId, setCamDeviceId] = useState<string | undefined>();
+  const [micDeviceId, setMicDeviceId] = useState<string | undefined>();
+  const [mediaDevices, setMediaDevices] = useState<{ cams: MediaDeviceInfo[]; mics: MediaDeviceInfo[] }>({ cams: [], mics: [] });
+
+  const enumerateMedia = useCallback(async () => {
+    try {
+      const list = await navigator.mediaDevices.enumerateDevices();
+      setMediaDevices({ cams: list.filter((d) => d.kind === 'videoinput'), mics: list.filter((d) => d.kind === 'audioinput') });
+    } catch { /* no perms yet */ }
+  }, []);
+  useEffect(() => {
+    void enumerateMedia();
+    navigator.mediaDevices?.addEventListener?.('devicechange', enumerateMedia);
+    return () => navigator.mediaDevices?.removeEventListener?.('devicechange', enumerateMedia);
+  }, [enumerateMedia]);
+
+  const startCamera = useCallback(async (camId?: string, micId?: string) => {
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: camId ? { exact: camId } : undefined, width: 1280, height: 720 },
+        audio: micId ? { deviceId: { exact: micId } } : true,
+      });
+      setCameraStream((prev) => { prev?.getTracks().forEach((t) => t.stop()); return s; });
+      s.getVideoTracks()[0]?.addEventListener('ended', () => setCameraStream(null));
+      setView('song'); setMonitorOpen(true);
+      void enumerateMedia(); // labels are populated once permission is granted
+    } catch (e) { console.warn('[Mothscilla] camera denied', e); window.alert('Could not start the camera (permission denied or no device).'); }
+  }, [enumerateMedia]);
+
+  const toggleCamera = useCallback(() => {
+    if (cameraOn) { cameraStream?.getTracks().forEach((t) => t.stop()); setCameraStream(null); return; }
+    void startCamera(camDeviceId, micDeviceId);
+  }, [cameraOn, cameraStream, startCamera, camDeviceId, micDeviceId]);
+
+  const selectCamDevice = useCallback((id: string) => { setCamDeviceId(id); if (cameraOn) void startCamera(id, micDeviceId); }, [cameraOn, startCamera, micDeviceId]);
+  const selectMicDevice = useCallback((id: string) => { setMicDeviceId(id); if (cameraOn) void startCamera(camDeviceId, id); }, [cameraOn, startCamera, camDeviceId]);
+  const setSourceLayout = useCallback((key: 'camera' | 'screen', patch: Partial<SourceLayout>) => {
+    (key === 'camera' ? setCameraLayout : setScreenLayout)((l) => ({ ...l, ...patch }));
+  }, []);
+
+  const toggleScreen = useCallback(async () => {
+    setScreenStream((cur) => { cur?.getTracks().forEach((t) => t.stop()); return null; });
+    if (screenOn) return;
+    try {
+      const s = await (navigator.mediaDevices as any).getDisplayMedia({ video: { frameRate: 30 }, audio: true });
+      s.getVideoTracks()[0]?.addEventListener('ended', () => setScreenStream(null)); // user clicked "Stop sharing"
+      setScreenStream(s); setView('song'); setMonitorOpen(true);
+    } catch (e) { console.warn('[Mothscilla] display capture cancelled', e); }
+  }, [screenOn]);
+
+  // Record the program-monitor composite (screen + facecam + clips/titles) plus a
+  // mix of screen/camera/song audio → a WebM, ingested as a new video track.
+  const toggleRecord = useCallback(async () => {
+    if (recording) { recRef.current?.rec.stop(); return; }
+    const canvas = monitorCanvasRef.current;
+    if (!canvas) { window.alert('Start the camera or screen first, then record.'); return; }
+    await ensureAudio();
+    const ctx = ctxRef.current!;
+    const vstream = canvas.captureStream(30);
+    const dest = ctx.createMediaStreamDestination();
+    const tapTrack = (s: MediaStream | null) => { const tr = s?.getAudioTracks?.()[0]; if (tr) { try { ctx.createMediaStreamSource(new MediaStream([tr])).connect(dest); } catch { /* skip */ } } };
+    tapTrack(screenStream); tapTrack(cameraStream);
+    try { mixerRef.current?.masterSum.connect(dest); } catch { /* song mix optional */ }
+    const tracks = [...vstream.getVideoTracks(), ...dest.stream.getAudioTracks()];
+    const mime = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find((m) => MediaRecorder.isTypeSupported(m)) ?? 'video/webm';
+    const rec = new MediaRecorder(new MediaStream(tracks), { mimeType: mime });
+    const chunks: Blob[] = [];
+    rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+    rec.onstop = async () => {
+      setRecording(false);
+      try { mixerRef.current?.masterSum.disconnect(dest); } catch { /* noop */ }
+      recRef.current = null;
+      const blob = new Blob(chunks, { type: 'video/webm' });
+      try {
+        await ensureAudio();
+        const name = `Recording ${new Date().toLocaleTimeString()}`;
+        const { videoAsset, audioAsset, vclip, aclip } = await buildVideoEntities(await blob.arrayBuffer(), 'video/webm', name, Math.max(0, currentStepRef.current));
+        const id = uid('track');
+        const nt: Track = { id, name, type: 'video', volume: 0.8, loop: false, length: projectRef.current.totalSteps, uses: [], clips: [], videoClips: [vclip], audioClips: aclip ? [aclip] : [], fx: [], automation: [] };
+        const cur = projectRef.current;
+        const next: Project = { ...cur, videoAssets: [...(cur.videoAssets ?? []), videoAsset], assets: audioAsset ? [...cur.assets, audioAsset] : cur.assets, tracks: [...cur.tracks, nt] };
+        projectRef.current = next; setProject(next); setSelTrack(id);
+        await buildAudio();
+      } catch (e) { console.warn('[Mothscilla] recording ingest failed', e); }
+    };
+    recRef.current = { rec, chunks, dest };
+    rec.start(250);
+    setRecording(true);
+  }, [recording, screenStream, cameraStream, ensureAudio]);
+
   // Shared audio library: every disk asset used by any song in the folder, merged
   // with the open song's assets. Refreshed when the "from project" picker opens.
   const [audioLibrary, setAudioLibrary] = useState<AudioAsset[]>([]);
@@ -1047,6 +1313,7 @@ export function App() {
   // ─── position readout ──────────────────────────────────────────────────────
   const sib = currentStep < 0 ? 0 : currentStep % project.totalSteps;
   const pos = `001.${Math.floor(sib / project.stepsPerBeat) + 1}.${String((sib % project.stepsPerBeat) * 25).padStart(2, '0')}`;
+  const hasVideoContent = project.tracks.some((t) => t.type === 'video' && (t.videoClips?.length ?? 0) > 0);
 
   return (
     <div className="app-shell">
@@ -1055,7 +1322,8 @@ export function App() {
         armed={armed} onArm={() => setArmed((a) => !a)} bpm={project.bpm} onBpm={setBpm} position={pos}
         browserOpen={browserOpen} setBrowserOpen={setBrowserOpen}
         projectName={project.name} onProjectName={(name) => setProject((p) => ({ ...p, name }))}
-        onNewSong={newSong} onSave={saveSong} saved={saved} onOpenSong={openSong} onExport={exportSong} exporting={exporting} exportProgress={exportProgress} onBounce={bounceSong} bouncing={bouncing} bounceProgress={bounceProgress}
+        onNewSong={newSong} onSave={saveSong} saved={saved} onOpenSong={openSong} onExport={() => setExportOpen(true)} exporting={exporting} exportProgress={exportProgress} onBounce={bounceSong} bouncing={bouncing} bounceProgress={bounceProgress}
+        cameraOn={cameraOn} onToggleCamera={toggleCamera} screenOn={screenOn} onToggleScreen={toggleScreen} recording={recording} onToggleRecord={toggleRecord}
       />
       <div className="workspace">
         {browserOpen && <Pool pool={project.pool} effects={effects} instrumentLib={library.filter((e) => e.group === 'instrument')} armed={armedPool} recordings={project.assets} previewKey={previewKey} onPreview={auditionAsset} onPlaceRecording={placeAssetOnTrack} onRemoveRecording={removeRecording} onOpenInstrument={openInstrument} onEditEffect={openEffectPage} onRemoveInstrument={removePoolItem} onRemoveEffect={removeEffect} onAddFromFolder={addFromFolder} onAddInstrument={addInstrumentToPool} onNewEffect={newEffect} source={folder ? `disk · ${folder.name}` : 'built-in'} />}
@@ -1065,7 +1333,7 @@ export function App() {
               <div className="tracks-rail">
                 {project.tracks.map((t) => (
                   <div key={t.id} className={`trk ${t.id === selTrack ? 'sel' : ''}`} onClick={() => setSelTrack(t.id)}>
-                    {t.type === 'drums' ? <Drum size={13} /> : t.type === 'audio' ? <AudioWaveform size={13} /> : <Music2 size={13} />}
+                    {t.type === 'drums' ? <Drum size={13} /> : t.type === 'audio' ? <AudioWaveform size={13} /> : t.type === 'video' ? <Film size={13} /> : <Music2 size={13} />}
                     <span className="trk-name">{t.name}</span>
                     <button className={`trk-loop ${t.loop ? 'on' : ''}`} title={t.loop ? 'Looping' : 'Loop off'} onClick={(e) => { e.stopPropagation(); toggleTrackLoop(t.id); }}><Repeat size={12} /></button>
                     <button className="trk-del" title="Delete track" onClick={(e) => { e.stopPropagation(); removeTrack(t.id); }}><Trash2 size={12} /></button>
@@ -1075,6 +1343,8 @@ export function App() {
                   <button onClick={() => addTrack('drums')}><Plus size={12} /> Drums</button>
                   <button onClick={() => addTrack('synth')}><Plus size={12} /> Synth</button>
                   <button onClick={() => addTrack('audio')}><Plus size={12} /> Audio</button>
+                  <button onClick={() => addTrack('video')}><Plus size={12} /> Video</button>
+                  <button onClick={addTitle}><Plus size={12} /> Title</button>
                 </div>
               </div>
               <div className="track-editor-wrap">
@@ -1086,12 +1356,20 @@ export function App() {
           )}
 
           {view === 'song' && (
-            <Arrange
-              project={project} currentStep={currentStep} songMode={songMode} selTrack={selTrack}
-              onToggleSongMode={toggleSongMode} onSetSongSlots={setSongSlots} onSelectTrack={setSelTrack} onToggleMute={toggleTrackMute} onTrackVolume={setTrackVolume} onSeek={seekTo}
-              onAddClip={addClip} onRemoveClip={removeClip} onToggleLoop={toggleClipLoop} onClipLen={setClipLen}
-              onMoveClip={moveClip} onMoveAudioClip={moveAudioClip} onRemoveAudioClip={removeAudioClip} onPlayClip={auditionClip} previewKey={previewKey}
-            />
+            <>
+              <Arrange
+                project={project} currentStep={currentStep} songMode={songMode} selTrack={selTrack}
+                onToggleSongMode={toggleSongMode} onSetSongSlots={setSongSlots} onSelectTrack={setSelTrack} onToggleMute={toggleTrackMute} onTrackVolume={setTrackVolume} onSeek={seekTo}
+                onAddClip={addClip} onRemoveClip={removeClip} onToggleLoop={toggleClipLoop} onClipLen={setClipLen}
+                onMoveClip={moveClip} onMoveAudioClip={moveAudioClip} onRemoveAudioClip={removeAudioClip}
+                onMoveVideoClip={moveVideoClip} onRemoveVideoClip={removeVideoClip} onSetAudioClip={setAudioClip} onSetVideoClip={setVideoClip}
+                onSplitAudioClip={splitAudioClip} onSplitVideoClip={splitVideoClip} onPlayClip={auditionClip} previewKey={previewKey}
+              />
+              {(hasVideoContent || cameraOn || screenOn) && (monitorOpen
+                ? <ProgramMonitor project={project} currentStep={currentStep} isPlaying={isPlaying} getVideoUrl={getVideoUrl} onSetClip={setVideoClip} onClose={() => setMonitorOpen(false)} canvasRef={monitorCanvasRef}
+                    capture={{ cameraStream, screenStream, cameraLayout, screenLayout, setLayout: setSourceLayout, cams: mediaDevices.cams, mics: mediaDevices.mics, camDeviceId, micDeviceId, selectCam: selectCamDevice, selectMic: selectMicDevice }} />
+                : <button className="pgm-reopen" title="Show video preview" onClick={() => setMonitorOpen(true)}><Film size={14} /> Preview</button>)}
+            </>
           )}
 
           {view === 'live' && (() => {
@@ -1141,7 +1419,7 @@ export function App() {
               <div className="mx-tracks">
                 {project.tracks.map((t) => (
                   <div className="mx-strip" key={t.id}>
-                    <div className="mx-strip-head">{t.type === 'drums' ? <Drum size={13} /> : t.type === 'audio' ? <AudioWaveform size={13} /> : <Music2 size={13} />} {t.name}</div>
+                    <div className="mx-strip-head">{t.type === 'drums' ? <Drum size={13} /> : t.type === 'audio' ? <AudioWaveform size={13} /> : t.type === 'video' ? <Film size={13} /> : <Music2 size={13} />} {t.name}</div>
                     <input className="mx-vol" type="range" min={0} max={1} step={0.01} value={t.volume} onChange={(e) => setTrackVolume(t.id, parseFloat(e.target.value))} />
                     <FxBar label="Track FX" fx={t.fx} effects={effects} compact
                       onAdd={(fx) => { const ins = fxInsert(fx); mapTrack(t.id, (x) => ({ ...x, fx: [...x.fx, ins] })); rebuildTrackChain(t.id, [...t.fx, ins]); }}
@@ -1164,6 +1442,14 @@ export function App() {
       {editor && <SynflowEditor flow={editor.flow} title={editor.title} onSaved={editor.onSaved} onClose={() => setEditor(null)} />}
       {eqEditor && <EqEditor title={eqEditor.title} settings={eqEditor.settings} sampleRate={eqEditor.sampleRate} getAnalyser={eqEditor.getAnalyser} onChange={eqEditor.onChange} onClose={() => setEqEditor(null)} />}
       {storageSetup && <StorageSetup onFolder={(h2) => adoptFolder(h2, true)} onSkip={() => setStorageSetup(false)} />}
+      {exportOpen && (
+        <ExportDialog
+          hasVideo={project.tracks.some((t) => t.type === 'video' && (t.videoClips?.length ?? 0) > 0)}
+          bars={songLengthSlots(project)} secPerBar={project.totalSteps * (60 / project.bpm / project.stepsPerBeat)}
+          busy={exporting} progress={exportProgress} phase={exportPhase}
+          onClose={() => setExportOpen(false)} onRun={runExport} onExportProject={exportSong}
+        />
+      )}
       {importing && <ImportOverlay info={importing} />}
     </div>
   );

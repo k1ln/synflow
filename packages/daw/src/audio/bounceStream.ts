@@ -13,6 +13,7 @@ import { Mixer, type ResolvedFx } from './Mixer';
 import { InstrumentHost } from './InstrumentHost';
 import { VoicePool } from './VoicePool';
 import { wavHeader, encodeWavFrames } from './wav';
+import { scheduleFadeWindow } from './clipFade';
 import { readWavFrames } from './wavReader';
 import { findEntry, cloneFlow } from '../synflow/library';
 import { trackActiveAt, songLengthSteps, songLengthSlots, type Project } from '../model/project';
@@ -107,6 +108,11 @@ export async function bounceProjectStream(
           const src = ctx.createBufferSource(); src.buffer = buf;
           const g = ctx.createGain(); g.gain.value = c.gain;
           src.connect(g).connect(t.sum);
+          if (c.fadeIn || c.fadeOut) {
+            // Schedule just this window's slice of the clip's fade envelope.
+            scheduleFadeWindow(g.gain, c.gain, c.duration, c.fadeIn ?? 0, c.fadeOut ?? 0,
+              segStart - clipStart, segEnd - clipStart, (cl) => (clipStart + cl) - preStart);
+          }
           src.start(segStart - preStart);
         }
         continue;

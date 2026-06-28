@@ -29,7 +29,100 @@ export interface AudioClip {
   offset: number;      // trim start within the asset (s)
   duration: number;    // length played from the asset (s)
   gain: number;
+  fadeIn?: number;     // fade-in length (s) — overlap two clips for a crossfade
+  fadeOut?: number;    // fade-out length (s)
 }
+
+/** A decoded video import, referenced by clips on a video track. Container bytes
+ *  live on disk or embedded like {@link AudioAsset}. `audioAssetId` links the audio
+ *  track extracted from the video (edited/muted independently). Picture compositing
+ *  & preview are roadmap items — see docs/VIDEO.md. */
+export interface VideoAsset {
+  id: string;
+  name: string;
+  source: AudioSource;                 // container bytes (disk ref or embedded)
+  duration: number;                    // seconds
+  width: number;
+  height: number;
+  fps?: number;
+  hasAudio: boolean;
+  audioAssetId?: string;               // extracted audio (-> AudioAsset)
+  poster?: string;                     // first-frame thumbnail (data URL)
+}
+
+/** How a video layer combines with the layers below it (maps to a canvas
+ *  globalCompositeOperation — see {@link blendCompositeOp}). */
+export type VideoBlend = 'normal' | 'multiply' | 'screen' | 'overlay' | 'lighten' | 'darken' | 'add' | 'difference';
+export const VIDEO_BLENDS: VideoBlend[] = ['normal', 'multiply', 'screen', 'overlay', 'lighten', 'darken', 'add', 'difference'];
+export const blendCompositeOp = (b: VideoBlend | undefined): GlobalCompositeOperation =>
+  b === 'add' ? 'lighter' : (!b || b === 'normal') ? 'source-over' : (b as GlobalCompositeOperation);
+
+/** Placement of a live capture source (webcam/screen) in the program composite —
+ *  top-left `x`/`y` + width `w`, all fractions of the frame (height follows the
+ *  source aspect). Live-only (not saved with the song). */
+export interface SourceLayout { x: number; y: number; w: number }
+
+/** Keyframe easing (named cubic-bezier presets; 'hold' = stepped). */
+export type Easing = 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'hold';
+/** A keyframe: `t` is seconds from the clip's start; `ease` shapes the segment
+ *  AFTER it (toward the next keyframe). */
+export interface Keyframe { t: number; value: number; ease?: Easing }
+
+/** Per-clip transform. Static values (`x`/`y`/`scale`/`rotation`) are used unless
+ *  the matching keyframe list in `kf` is non-empty, in which case the property is
+ *  animated. `x`/`y` are fractions of the frame (0 = centered, 0.5 = half a frame).
+ *  `scale` multiplies the contain-fit size; `rotation` is degrees. Opacity reuses
+ *  {@link VideoClip.opacity} for its static value + `kf.opacity` for animation. */
+export interface ClipTransform {
+  x?: number;
+  y?: number;
+  scale?: number;
+  rotation?: number;
+  kf?: { x?: Keyframe[]; y?: Keyframe[]; scale?: Keyframe[]; rotation?: Keyframe[]; opacity?: Keyframe[] };
+}
+
+/** Basic per-clip color grade (Lumetri-style). Each value is -1..1 (0 = neutral);
+ *  applied as canvas filters + a warm/cool tint overlay. See `colorFilter`. */
+export interface ClipColor {
+  exposure?: number;     // brightness
+  contrast?: number;
+  saturation?: number;
+  temperature?: number;  // warm (+) / cool (−) white balance
+  tint?: number;         // magenta (+) / green (−)
+}
+
+/** A clip on a video track. Mirrors {@link AudioClip}: `start` in fractional steps,
+ *  `offset`/`duration` in seconds into the asset. `opacity`/`blend` drive multi-
+ *  track compositing (upper video tracks over lower); `transform` adds position/
+ *  scale/rotation with optional keyframes. */
+export interface VideoClip {
+  id: string;
+  assetId: string;       // -> VideoAsset
+  start: number;         // timeline position, fractional steps
+  offset: number;        // trim start within the asset (s)
+  duration: number;      // length played from the asset (s)
+  muted?: boolean;       // mute this clip's extracted audio
+  opacity?: number;      // 0..1 (default 1)
+  blend?: VideoBlend;    // default 'normal'
+  transform?: ClipTransform;
+  fadeIn?: number;       // opacity fade-in (s) — cross dissolve = overlap + fade
+  fadeOut?: number;      // opacity fade-out (s)
+  color?: ClipColor;     // basic color grade
+  // ── title clips: a VideoClip with `text` set is a TITLE (drawn as text, no
+  //    asset). Reuses position/scale/rotation (transform), fades and compositing. ──
+  text?: string;
+  titleColor?: string;
+  titleAlign?: 'left' | 'center' | 'right';
+  titleBold?: boolean;
+  titleBg?: boolean;     // lower-third background bar
+  titleSize?: number;    // font size as a fraction of frame height (default 0.08)
+  titleFont?: string;    // font family (see src/fonts.ts); default Inter
+  titleAppear?: TitleAppear; // intro animation
+}
+
+/** How a title animates in (over its fade-in duration / ~0.5s). */
+export type TitleAppear = 'none' | 'fade' | 'slide-up' | 'slide-down' | 'slide-left' | 'slide-right' | 'pop' | 'typewriter' | 'blur';
+export const TITLE_APPEARS: TitleAppear[] = ['none', 'fade', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'pop', 'typewriter', 'blur'];
 
 /**
  * A clip on the song timeline: the track's pattern placed at `start` (in pattern
@@ -93,12 +186,13 @@ export interface AutomationLane {
   values: (number | null)[];
 }
 
-/** A track: one TYPE (drums, synth, or audio). Drums/synth hold uses of pool
- *  instruments + a track FX chain; audio holds recorded/imported clips on the timeline. */
+/** A track: one TYPE (drums, synth, audio, or video). Drums/synth hold uses of pool
+ *  instruments + a track FX chain; audio holds recorded/imported clips on the timeline;
+ *  video holds video clips (picture handled later — see docs/VIDEO.md). */
 export interface Track {
   id: string;
   name: string;
-  type: 'drums' | 'synth' | 'audio';
+  type: 'drums' | 'synth' | 'audio' | 'video';
   volume: number;
   muted?: boolean;         // arrangement mute: skip this track entirely in the scheduler
   loop: boolean;           // live-performance loop: the track loops continuously
@@ -106,6 +200,7 @@ export interface Track {
   uses: TrackInstrument[];
   clips: Clip[];           // song arrangement: where this track's pattern plays (when loop is off, in Song mode)
   audioClips?: AudioClip[];// audio tracks: clips placed on the song timeline
+  videoClips?: VideoClip[];// video tracks: clips placed on the song timeline
   fx: FxInsert[];          // track-level FX (level 2)
   automation: AutomationLane[];
 }
@@ -119,6 +214,7 @@ export interface Project {
   pool: PoolItem[];        // left panel: instruments + drums loaded for the project
   tracks: Track[];
   assets: AudioAsset[];    // audio recordings/imports referenced by audio clips
+  videoAssets?: VideoAsset[]; // video imports referenced by video clips
   masterFx: FxInsert[];    // master FX (level 3)
 }
 
@@ -188,12 +284,16 @@ export function defaultProject(): Project {
 
 export const blankSteps = (n: number) => stepArr(n);
 
-/** Backfill fields missing from older saved songs (assets registry, audio clips). */
+/** Backfill fields missing from older saved songs (assets registry, audio/video clips). */
 export function normalizeProject(p: Project): Project {
   return {
     ...p,
     assets: p.assets ?? [],
-    tracks: (p.tracks ?? []).map((t) => (t.type === 'audio' ? { ...t, audioClips: t.audioClips ?? [] } : t)),
+    videoAssets: p.videoAssets ?? [],
+    tracks: (p.tracks ?? []).map((t) =>
+      t.type === 'audio' ? { ...t, audioClips: t.audioClips ?? [] }
+        : t.type === 'video' ? { ...t, videoClips: t.videoClips ?? [] }
+          : t),
   };
 }
 

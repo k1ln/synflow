@@ -28,11 +28,27 @@ export function Knob({
 
   const onDown = (e: React.PointerEvent) => {
     e.preventDefault(); e.stopPropagation();
+    (e.currentTarget as HTMLDivElement).setPointerCapture?.(e.pointerId);
+    const prevOverflow = document.body.style.overflow;
+    const prevTouchAction = document.body.style.touchAction;
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
     const start = { y: e.clientY, v };
-    const move = (ev: PointerEvent) => set(Math.max(0, Math.min(1, start.v + (start.y - ev.clientY) * 0.006)));
-    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
-    window.addEventListener('pointermove', move);
+    const sensitivity = e.pointerType === 'touch' ? 0.004 : 0.006;
+    const move = (ev: PointerEvent) => {
+      ev.preventDefault();
+      set(Math.max(0, Math.min(1, start.v + (start.y - ev.clientY) * sensitivity)));
+    };
+    const up = () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.touchAction = prevTouchAction;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+    window.addEventListener('pointermove', move, { passive: false });
     window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
   };
 
   const angle = -135 + v * 270;
@@ -41,7 +57,7 @@ export function Knob({
     <div className="knob-wrap">
       <div
         className="knob" onPointerDown={onDown} title="Drag to adjust"
-        style={{ width: size, height: size, borderColor: color, boxShadow: `0 0 9px 1px color-mix(in srgb, ${color} 30%, transparent), inset 0 2px 4px rgba(0,0,0,.5)` }}
+        style={{ width: size, height: size, touchAction: 'none', borderColor: color, boxShadow: `0 0 9px 1px color-mix(in srgb, ${color} 30%, transparent), inset 0 2px 4px rgba(0,0,0,.5)` }}
       >
         <div className="knob-rot" style={{ transform: `rotate(${angle}deg)` }}>
           <div className="knob-ptr" style={{ height: size * 0.3, background: color, boxShadow: `0 0 5px ${color}` }} />

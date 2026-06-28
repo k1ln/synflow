@@ -392,3 +392,40 @@
   box-shadow: 0 0 10px 3px rgba(200, 30, 30, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
   color: #fff !important;
 }
+
+@media (max-width: 768px) {
+  .audio-node,
+  .flow-node-shell {
+    min-width: 260px;
+    padding: 16px;
+  }
+
+  .flow-node {
+    min-width: 260px;
+    padding: 10px;
+  }
+
+  .node-row { gap: 10px; }
+  .node-field { gap: 6px; }
+
+  .react-flow__handle {
+    width: 24px;
+    height: 24px;
+  }
+
+  .node-input {
+    min-height: 44px;
+    font-size: 14px;
+    padding: 8px;
+  }
+  .node-select {
+    min-height: 44px;
+    font-size: 14px;
+    padding: 8px;
+  }
+  .node-btn {
+    min-height: 44px;
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+}

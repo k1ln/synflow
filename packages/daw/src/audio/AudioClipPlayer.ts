@@ -7,6 +7,7 @@
 import type { AudioAsset, AudioClip } from '../model/project';
 import type { AudioAssets } from './AudioAssets';
 import { ClipStreamer, ensureClipStreamModule } from './ClipStreamer';
+import { scheduleFade } from './clipFade';
 
 interface Active { stop: () => void }
 
@@ -44,6 +45,7 @@ export class AudioClipPlayer {
     const streamer = new ClipStreamer(this.ctx, blob, meta, {
       startTime: Math.max(when, this.ctx.currentTime),
       offsetSec: clip.offset, durationSec: clip.duration, gain: clip.gain, dest: this.dest,
+      fadeIn: clip.fadeIn, fadeOut: clip.fadeOut,
       onEnded: () => { this.active = this.active.filter((x) => x !== a); },
     });
     a.stop = () => streamer.stop();
@@ -54,9 +56,10 @@ export class AudioClipPlayer {
     const buf = this.assets.cachedBuffer(asset);
     const start = (b: AudioBuffer) => {
       const src = this.ctx.createBufferSource(); src.buffer = b;
-      const g = this.ctx.createGain(); g.gain.value = clip.gain;
+      const g = this.ctx.createGain();
       src.connect(g).connect(this.dest);
       const at = Math.max(when, this.ctx.currentTime);
+      scheduleFade(g.gain, clip.gain, at, clip.duration, clip.fadeIn, clip.fadeOut);
       src.start(at, clip.offset, clip.duration);
       const a: Active = { stop: () => { try { src.stop(); } catch { /* noop */ } try { src.disconnect(); } catch { /* noop */ } } };
       this.active.push(a);
