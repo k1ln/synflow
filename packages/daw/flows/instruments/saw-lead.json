@@ -11,6 +11,7 @@
       "type": "OscillatorFlowNode",
       "data": {
         "frequency": 220,
+        "detune": 110,
         "type": "sawtooth",
         "isPitch": true,
         "pitchParam": "frequency"

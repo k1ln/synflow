@@ -1,27 +1,28 @@
 import React from 'react';
-import type { Instrument } from '../model/project';
 
+/** One drum row: an instrument-in-track's step pattern. */
 export function StepGrid({
-  instrument, totalSteps, stepsPerBeat, currentStep, onToggle, onMute,
+  id, name, steps, muted, totalSteps, stepsPerBeat, currentStep, onToggle, onMute,
 }: {
-  instrument: Instrument;
+  id: string;
+  name: string;
+  steps: boolean[];
+  muted?: boolean;
   totalSteps: number;
   stepsPerBeat: number;
   currentStep: number;
-  onToggle: (instrumentId: string, step: number) => void;
-  onMute: (instrumentId: string) => void;
+  onToggle: (useId: string, step: number) => void;
+  onMute: (useId: string) => void;
 }) {
   return (
     <div className="channel">
-      <button className={`chan-name ${instrument.muted ? 'muted' : ''}`} onClick={() => onMute(instrument.id)} title="mute/unmute">
-        {instrument.name}
-      </button>
+      <button className={`chan-name ${muted ? 'muted' : ''}`} onClick={() => onMute(id)} title="mute/unmute">{name}</button>
       <div className="steps" style={{ gridTemplateColumns: `repeat(${totalSteps}, 1fr)` }}>
-        {instrument.steps.map((on, i) => (
+        {Array.from({ length: totalSteps }, (_, i) => (
           <button
             key={i}
-            className={['step', on ? 'on' : '', i === currentStep ? 'playhead' : '', i % stepsPerBeat === 0 ? 'beat' : ''].join(' ')}
-            onClick={() => onToggle(instrument.id, i)}
+            className={['step', steps[i] ? 'on' : '', i === currentStep ? 'playhead' : '', i % stepsPerBeat === 0 ? 'beat' : ''].join(' ')}
+            onClick={() => onToggle(id, i)}
           />
         ))}
       </div>

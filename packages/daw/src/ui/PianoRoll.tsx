@@ -1,30 +1,31 @@
 import React from 'react';
-import type { Instrument } from '../model/project';
+import type { PianoNote } from '../model/project';
 import { midiName, isBlackKey } from '../model/pitch';
 
 const LOW = 48;   // C3
 const HIGH = 72;  // C5
 
+/** Piano roll for one synth instrument-in-track (its own notes). */
 export function PianoRoll({
-  instrument, totalSteps, stepsPerBeat, currentStep, noteLength,
-  onAddNote, onRemoveNote,
+  id, name, notes, voices, totalSteps, stepsPerBeat, currentStep, onAddNote, onRemoveNote,
 }: {
-  instrument: Instrument;
+  id: string;
+  name: string;
+  notes: PianoNote[];
+  voices?: number;
   totalSteps: number;
   stepsPerBeat: number;
   currentStep: number;
-  noteLength: number;
-  onAddNote: (instrumentId: string, midi: number, start: number) => void;
-  onRemoveNote: (instrumentId: string, noteId: number) => void;
+  onAddNote: (useId: string, midi: number, start: number) => void;
+  onRemoveNote: (useId: string, noteId: number) => void;
 }) {
   const rows: number[] = [];
   for (let m = HIGH; m >= LOW; m--) rows.push(m);
   const noteAt = (midi: number, step: number) =>
-    instrument.notes?.find((n) => n.midi === midi && step >= n.start && step < n.start + n.length);
+    notes.find((n) => n.midi === midi && step >= n.start && step < n.start + n.length);
 
   return (
     <div className="pianoroll">
-      <div className="pr-title">{instrument.name} — piano roll <span className="pr-poly">{instrument.voices ?? 1} voices</span></div>
       <div className="pr-grid">
         {rows.map((midi) => (
           <div className="pr-row" key={midi}>
@@ -39,7 +40,7 @@ export function PianoRoll({
                       'pr-cell', note ? 'on' : '', note && note.start === s ? 'note-start' : '',
                       s % stepsPerBeat === 0 ? 'beat' : '', s === currentStep ? 'playhead' : '',
                     ].join(' ')}
-                    onClick={() => (note ? onRemoveNote(instrument.id, note.id) : onAddNote(instrument.id, midi, s))}
+                    onClick={() => (note ? onRemoveNote(id, note.id) : onAddNote(id, midi, s))}
                     title={`${midiName(midi)} @ step ${s + 1}`}
                   />
                 );

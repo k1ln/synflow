@@ -2,57 +2,59 @@ import type { Flow } from '../synflow/instruments';
 import { makeKick, makeBlip, makeBasicSynth, makeSynthVoice } from '../synflow/instruments';
 import { findEntry, cloneFlow } from '../synflow/library';
 
-// Prefer the editable library flow (it carries node positions so it opens cleanly
-// in the synflow editor); fall back to the code factory if the library is unavailable.
-const libFlow = (id: string, fallback: () => Flow): Flow => {
-  const e = findEntry(id);
-  return cloneFlow(e ? e.flow : fallback());
-};
-
 /** A note in a piano-roll instrument; start/length are in grid steps. */
-export interface PianoNote {
-  id: number;
-  midi: number;
-  start: number;
-  length: number;
-}
+export interface PianoNote { id: number; midi: number; start: number; length: number }
 
-/** One instrument inside a track (a synflow flow + its step/piano content). */
-export interface Instrument {
+/** An effect insert (any level). References a library effect; `flow` is an edited override. */
+export interface FxInsert { id: string; fxId: string; name: string; flow?: Flow }
+
+/**
+ * A pool item: an instrument or drum loaded for the PROJECT (shown on the left).
+ * Tracks reference these; the same pool item can be used in several tracks.
+ */
+export interface PoolItem {
   id: string;
   name: string;
+  libId?: string;          // source library flow id (save edits back to disk)
   flow: Flow;
-  libId?: string;          // source library flow id (for saving edits back to disk)
-  kind: 'step' | 'piano';
-  steps: boolean[];        // step instruments
-  notes?: PianoNote[];     // piano instruments
-  voices?: number;         // polyphony (piano)
-  muted?: boolean;
+  kind: 'synth' | 'drum';
 }
 
 /**
- * An automation lane drives one param over the pattern via @synflow/core.
- * target: an instrument param (instrumentId set) or a track FX param (fxIndex set).
+ * An instrument USED inside a track — its own pattern + its own FX chain.
+ * (Same pool instrument in two tracks → two independent uses.)
  */
-export interface AutomationLane {
+export interface TrackInstrument {
   id: string;
-  instrumentId?: string;   // automate a param of this instrument
-  fxIndex?: number;        // ...or of this track-FX insert
-  nodeId: string;          // param's node id within that flow
-  param: string;           // e.g. 'frequency', 'gain'
-  min: number;
-  max: number;
-  values: (number | null)[]; // per step; null = hold previous
+  poolId: string;          // -> PoolItem
+  fx: FxInsert[];          // instrument-in-track FX (level 1)
+  muted?: boolean;
+  steps?: boolean[];       // drums track: this row's step pattern
+  notes?: PianoNote[];     // synth track: this instrument's piano roll
+  voices?: number;         // synth polyphony
 }
 
-/** A track: a group of instruments routed through one FX chain + volume, with automation. */
+/** Automation lane: drives a param over the pattern, at instrument/track/master scope. */
+export interface AutomationLane {
+  id: string;
+  scope: 'instrument' | 'track' | 'master';
+  useId?: string;          // instrument-in-track (scope 'instrument')
+  fxIndex?: number;        // index into the FX chain at that scope (when automating an FX)
+  nodeId: string;
+  param: string;
+  min: number;
+  max: number;
+  values: (number | null)[];
+}
+
+/** A track: one TYPE (drums or synth). Holds uses of pool instruments + a track FX chain. */
 export interface Track {
   id: string;
   name: string;
+  type: 'drums' | 'synth';
   volume: number;
-  fx: string[];                  // flow-library effect ids (track insert chain)
-  fxFlows?: Flow[];              // sparse, index-aligned override when an FX flow is edited in Synflow
-  instruments: Instrument[];
+  uses: TrackInstrument[];
+  fx: FxInsert[];          // track-level FX (level 2)
   automation: AutomationLane[];
 }
 
@@ -60,39 +62,58 @@ export interface Project {
   bpm: number;
   stepsPerBeat: number;
   totalSteps: number;
+  pool: PoolItem[];        // left panel: instruments + drums loaded for the project
   tracks: Track[];
+  masterFx: FxInsert[];    // master FX (level 3)
 }
 
-const steps = (n: number, on: number[] = []): boolean[] =>
-  Array.from({ length: n }, (_, i) => on.includes(i));
-
+// ─── helpers ─────────────────────────────────────────────────────────────────
 let _id = 0;
 export const uid = (p: string): string => `${p}-${++_id}-${Math.random().toString(36).slice(2, 7)}`;
 let _noteId = 1000;
 export const newNoteId = (): number => ++_noteId;
 
-/** Default project: a Drums track (step instruments) + a Synth track (piano + FX + automation). */
+const stepArr = (n: number, on: number[] = []): boolean[] => Array.from({ length: n }, (_, i) => on.includes(i));
+
+// Prefer the editable library flow (carries node positions); fall back to the factory.
+const libFlow = (id: string, fallback: () => Flow): Flow => {
+  const e = findEntry(id);
+  return cloneFlow(e ? e.flow : fallback());
+};
+
+export function fxInsert(fxId: string): FxInsert {
+  return { id: uid('fx'), fxId, name: findEntry(fxId)?.name ?? fxId };
+}
+
+/** Default project: a Drums track + a Synth track, drawing from a small pool. */
 export function defaultProject(): Project {
   const total = 16;
-  const sweep: (number | null)[] = Array.from({ length: total }, (_, i) => 300 + Math.round((Math.sin((i / total) * Math.PI * 2) * 0.5 + 0.5) * 3000));
+  const pool: PoolItem[] = [
+    { id: 'kick', name: 'Kick', libId: 'kick', kind: 'drum', flow: libFlow('kick', makeKick) },
+    { id: 'snare', name: 'Snare', libId: 'snare', kind: 'drum', flow: libFlow('snare', () => makeBasicSynth({ frequency: 180, type: 'triangle', decay: 0.12 })) },
+    { id: 'hat', name: 'Hat', libId: 'hat', kind: 'drum', flow: libFlow('hat', () => makeBlip(1200)) },
+    { id: 'saw', name: 'Saw Lead', libId: 'saw-lead', kind: 'synth', flow: libFlow('saw-lead', () => makeSynthVoice('sawtooth')) },
+  ];
   return {
     bpm: 120,
     stepsPerBeat: 4,
     totalSteps: total,
+    pool,
+    masterFx: [],
     tracks: [
       {
-        id: 'drums', name: 'Drums', volume: 0.8, fx: [], automation: [],
-        instruments: [
-          { id: 'kick', name: 'Kick', libId: 'kick', kind: 'step', flow: libFlow('kick', makeKick), steps: steps(total, [0, 4, 8, 12]) },
-          { id: 'snare', name: 'Snare', libId: 'snare', kind: 'step', flow: libFlow('snare', () => makeBasicSynth({ frequency: 180, type: 'triangle', decay: 0.12 })), steps: steps(total, [4, 12]) },
-          { id: 'hat', name: 'Hat', libId: 'hat', kind: 'step', flow: libFlow('hat', () => makeBlip(1200)), steps: steps(total, [2, 6, 10, 14]) },
+        id: 'drums', name: 'Drums', type: 'drums', volume: 0.8, fx: [], automation: [],
+        uses: [
+          { id: uid('use'), poolId: 'kick', fx: [], steps: stepArr(total, [0, 4, 8, 12]) },
+          { id: uid('use'), poolId: 'snare', fx: [], steps: stepArr(total, [4, 12]) },
+          { id: uid('use'), poolId: 'hat', fx: [], steps: stepArr(total, [2, 6, 10, 14]) },
         ],
       },
       {
-        id: 'synth', name: 'Synth', volume: 0.8, fx: ['lowpass'],
-        instruments: [
+        id: 'synth', name: 'Synth', type: 'synth', volume: 0.8, fx: [fxInsert('lowpass')], automation: [],
+        uses: [
           {
-            id: 'lead', name: 'Lead', libId: 'saw-lead', kind: 'piano', flow: libFlow('saw-lead', () => makeSynthVoice('sawtooth')), steps: [], voices: 6,
+            id: uid('use'), poolId: 'saw', fx: [], voices: 6,
             notes: [
               { id: 1, midi: 60, start: 0, length: 4 },
               { id: 2, midi: 63, start: 4, length: 4 },
@@ -100,11 +121,9 @@ export function defaultProject(): Project {
             ],
           },
         ],
-        // A filter-cutoff sweep on the track's lowpass FX.
-        automation: [
-          { id: 'a1', fxIndex: 0, nodeId: 'filt.BiquadFilterFlowNode', param: 'frequency', min: 200, max: 5000, values: sweep },
-        ],
       },
     ],
   };
 }
+
+export const blankSteps = (n: number) => stepArr(n);
