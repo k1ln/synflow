@@ -74,6 +74,22 @@ function refSvf() {
   return out;
 }
 
+// --- freqshifter: effect, audio in -> out (AudioSignalFreqShifterProcessor.js) ---
+function refFreqShifter() {
+  const e = load('freq-shifter.wasm');
+  const state = e.freq_shifter_new(2048);
+  const pIn = e.alloc_f32(BLOCK), pOut = e.alloc_f32(BLOCK);
+  const ratio = Math.pow(2, 7 / 12); // shift = +7 semitones
+  const out = new Float32Array(N);
+  for (let i = 0; i < N; i += BLOCK) {
+    const m = new Float32Array(e.memory.buffer);
+    m.set(input.subarray(i, i + BLOCK), pIn >> 2);
+    e.freq_shifter_process(state, pIn, pOut, BLOCK, ratio);
+    out.set(m.subarray(pOut >> 2, (pOut >> 2) + BLOCK), i);
+  }
+  return out;
+}
+
 // --- envgen: gated envelope SIGNAL source (EnvGenProcessor.js) ---
 function refEnvGen() {
   const e = load('envgen.wasm');
@@ -103,7 +119,7 @@ function refNoise() {
   return out;
 }
 
-for (const [name, fn] of [['karplus', refKarplus], ['ladder', refLadder], ['noise', refNoise], ['svf', refSvf], ['envgen', refEnvGen]]) {
+for (const [name, fn] of [['karplus', refKarplus], ['ladder', refLadder], ['noise', refNoise], ['svf', refSvf], ['envgen', refEnvGen], ['freqshifter', refFreqShifter]]) {
   write(`ref_${name}.f32`, fn());
   console.log(`ref ${name}: ${N} samples`);
 }

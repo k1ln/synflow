@@ -11,6 +11,7 @@
 
 #include "synflow/AudioGraphManager.h"
 #include "synflow/nodes/WasmEnvGenNode.h"
+#include "synflow/nodes/WasmFreqShifterNode.h"
 #include "synflow/nodes/WasmKarplusNode.h"
 #include "synflow/nodes/WasmLadderNode.h"
 #include "synflow/nodes/WasmNoiseNode.h"
@@ -81,5 +82,10 @@ int main() {
     run("noise", std::make_unique<WasmNoiseNode>(readBin(pub + "noise-generator.wasm")), false);
     run("svf", std::make_unique<WasmSvfDriveNode>(readBin(pub + "svf-drive.wasm")), true);
     run("envgen", std::make_unique<WasmEnvGenNode>(readBin(pub + "envgen.wasm")), false);
+    {
+        auto fs = std::make_unique<WasmFreqShifterNode>(readBin(pub + "freq-shifter.wasm"));
+        fs->setNamedParam("shift", 7.0);
+        run("freqshifter", std::move(fs), true);
+    }
     return 0;
 }
