@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Repeat, Upload, Mic, Square, FolderOpen, Volume2 } from 'lucide-react';
+import { Plus, Sparkles, Trash2, Repeat, Upload, Mic, Square, FolderOpen, Volume2 } from 'lucide-react';
 import type { Project, Track, AudioClip, AudioAsset } from '../model/project';
 import { StepGrid } from './StepGrid';
 import { PianoRoll } from './PianoRoll';
@@ -26,6 +26,7 @@ export interface TrackEditorHandlers {
   onKeyDown: (useId: string, midi: number) => void;
   onKeyUp: (useId: string, midi: number) => void;
   onAddUse: (poolId: string) => void;
+  onCreateUse: () => void;
   onRemoveUse: (useId: string) => void;
   onUseFxAdd: (useId: string, fxId: string) => void;
   onUseFxRemove: (useId: string, index: number) => void;
@@ -106,6 +107,7 @@ export function TrackEditor({ project, track, effects, currentStep, recTrack, pr
             <label className="te-length" title="Pattern length (steps)">len
               <input type="number" min={1} max={256} value={track.length} onChange={(e) => h.onSetLength(parseInt(e.target.value, 10) || 1)} />
             </label>
+            <button className="te-addbtn" onClick={() => h.onCreateUse()} title={`Create a brand-new ${track.type === 'drums' ? 'drum' : 'synth'} in Synflow and add it here`}><Sparkles size={13} /> new {track.type === 'drums' ? 'drum' : 'synth'}</button>
             <div className="te-add">
               <button className="te-addbtn" onClick={() => setPicking((p) => !p)}><Plus size={14} /> add {track.type === 'drums' ? 'drum' : 'synth'}</button>
               {picking && (

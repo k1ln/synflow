@@ -18,9 +18,10 @@ import {
   type Project, type Track, type PoolItem, type FxInsert, type AudioAsset, type AudioClip, type EqSettings,
 } from './model/project';
 import { midiToFreq } from './model/pitch';
-import { type Flow } from './synflow/instruments';
-import { LIBRARY, findEntry, cloneFlow, type LibraryEntry } from './synflow/library';
-import { fsSupported, restoreFolder, seedLibrary, readAllFlows, writeFlow, pickFolder, saveProject, loadProject, songSlug, createBounceWritable, listAllAssets, listAudioFiles } from './synflow/flowStore';
+import { type Flow, makeSynthVoice, makeKick } from './synflow/instruments';
+import { makeFilterFx } from './synflow/effects';
+import { LIBRARY, findEntry, cloneFlow, registerEntries, type LibraryEntry } from './synflow/library';
+import { fsSupported, restoreFolder, seedLibrary, readAllFlows, writeFlow, pickFolder, saveProject, loadProject, listSongs, songSlug, createBounceWritable, listAllAssets, listAudioFiles } from './synflow/flowStore';
 import { TopBar, type ViewId } from './ui/TopBar';
 import { Pool } from './ui/Pool';
 import { TrackEditor, type TrackEditorHandlers } from './ui/TrackEditor';
@@ -111,6 +112,10 @@ export function App() {
   const effects: LibraryEntry[] = [{ id: EQ_FX_ID, name: 'Equalizer', category: 'Built-in', group: 'effect', flow: { nodes: [], edges: [] } as any }, ...library.filter((e) => e.group === 'effect')];
   const selectedTrack = project.tracks.find((t) => t.id === selTrack) ?? project.tracks[0];
 
+  // Keep findEntry's catalog in sync so flows added at runtime (folder-loaded or
+  // newly created in Synflow) resolve their name/flow when added to an FX chain.
+  useEffect(() => registerEntries(library), [library]);
+
   // ─── flow folder (File System Access) ──────────────────────────────────────
   const adoptFolder = useCallback(async (handle: FileSystemDirectoryHandle, intoPool = false) => {
     try {
@@ -158,6 +163,12 @@ export function App() {
   // Return a copy of a flow with node.data[param] set (knob value lives in the flow).
   const setFlowParam = (flow: Flow, nodeId: string, param: string, value: number): Flow =>
     ({ ...flow, nodes: flow.nodes.map((n: any) => (n.id === nodeId ? { ...n, data: { ...n.data, [param]: value } } : n)) });
+
+  // Return a copy of a flow with an exposed knob's label renamed (lives in node.data.knobs).
+  const setFlowKnobLabel = (flow: Flow, nodeId: string, param: string, label: string): Flow =>
+    ({ ...flow, nodes: flow.nodes.map((n: any) => (n.id === nodeId && Array.isArray(n.data?.knobs)
+      ? { ...n, data: { ...n.data, knobs: n.data.knobs.map((k: any) => (k.param === param ? { ...k, label } : k)) } }
+      : n)) });
 
   // Debounced disk write (knob drags fire continuously). Keyed by group:id.
   const persistTimers = useRef<Map<string, number>>(new Map());
@@ -486,6 +497,28 @@ export function App() {
     } catch (e: any) { if (e?.name !== 'AbortError') console.warn('[Mothscilla] open song failed', e); }
   }, [loadProjectState]);
 
+  // Start a brand-new song: a fresh default project (unique name so it doesn't
+  // clobber an existing file) loaded into the editor and written to disk at once,
+  // so it persists alongside the others and Save targets it from here on.
+  const newSong = useCallback(async () => {
+    const root = folderRef.current;
+    let name = 'New Song';
+    if (root) {
+      try {
+        const taken = new Set((await listSongs(root)).map((s) => songSlug(s.name)));
+        if (taken.has(songSlug(name))) { let n = 2; while (taken.has(songSlug(`New Song ${n}`))) n++; name = `New Song ${n}`; }
+      } catch { /* fall back to plain "New Song" */ }
+    }
+    const proj: Project = { ...defaultProject(), name };
+    loadProjectState(proj);
+    if (root) {
+      try { const file = await saveProject(root, proj); localStorage.setItem('mothscilla:lastSong', file); flashSaved(); console.info('[Mothscilla] created new song on disk:', file); }
+      catch (e) { console.warn('[Mothscilla] new song save failed', e); }
+    } else {
+      try { localStorage.setItem('mothscilla:localSong', JSON.stringify(proj)); flashSaved(); } catch { /* ignore */ }
+    }
+  }, [loadProjectState]);
+
   // ─── audition (click feedback) + live performance ──────────────────────────
   const audition = useCallback(async (useId: string, payload?: { frequency: number }) => {
     await ensureAudio(); await ctxRef.current?.resume();
@@ -594,40 +627,74 @@ export function App() {
     persistDebounced(`instrument:${pool.libId ?? pool.id}`, { group: 'instrument', id: pool.libId ?? pool.id, name: pool.name, category: pool.kind === 'synth' ? 'Synths' : 'Drums', kind: pool.kind === 'synth' ? 'piano' : 'step', flow });
   };
 
+  // Rename an exposed knob's label; persists to the flow so it sticks on reopen/save.
+  const onInstrumentKnobRename = (poolId: string, nodeId: string, param: string, label: string) => {
+    const pool = projectRef.current.pool.find((p) => p.id === poolId); if (!pool) return;
+    const flow = setFlowKnobLabel(pool.flow, nodeId, param, label);
+    mapPool(poolId, (pi) => ({ ...pi, flow }));
+    persistDebounced(`instrument:${pool.libId ?? pool.id}`, { group: 'instrument', id: pool.libId ?? pool.id, name: pool.name, category: pool.kind === 'synth' ? 'Synths' : 'Drums', kind: pool.kind === 'synth' ? 'piano' : 'step', flow });
+  };
+
   const onInstrumentGain = (poolId: string, v: number) => {
     mapPool(poolId, (pi) => ({ ...pi, gain: v }));
     for (const u of usesOfPool(poolId)) mixerRef.current?.setUseGain(u.id, v);
     const g = liveGainRef.current.get(poolId); if (g) g.gain.value = v;
   };
 
-  // Edit an instrument flow in Synflow → replace the pool flow + rebuild engines + persist.
-  const editInstrument = (poolId: string) => {
-    const pool = projectRef.current.pool.find((p) => p.id === poolId); if (!pool) return;
+  // Open an instrument flow in Synflow → on save replace the pool flow + rebuild engines + persist.
+  const openInstrumentEditor = (pool: PoolItem) => {
     setEditor({ flow: pool.flow, title: pool.name, onSaved: (f) => {
-      mapPool(poolId, (pi) => ({ ...pi, flow: f }));
-      for (const u of usesOfPool(poolId)) {
+      mapPool(pool.id, (pi) => ({ ...pi, flow: f }));
+      for (const u of usesOfPool(pool.id)) {
         const t = trackOfUse(u.id); const strip = t ? mixerRef.current?.use(u.id, t.id) : undefined;
         hostsRef.current.get(u.id)?.dispose(); hostsRef.current.delete(u.id);
         poolsRef.current.get(u.id)?.dispose(); poolsRef.current.delete(u.id);
         if (strip) void buildUse(u.id, { ...pool, flow: f }, strip, u.voices);
       }
-      liveSynthsRef.current.get(poolId)?.dispose(); liveSynthsRef.current.delete(poolId);
-      liveDrumsRef.current.get(poolId)?.dispose(); liveDrumsRef.current.delete(poolId);
+      liveSynthsRef.current.get(pool.id)?.dispose(); liveSynthsRef.current.delete(pool.id);
+      liveDrumsRef.current.get(pool.id)?.dispose(); liveDrumsRef.current.delete(pool.id);
       const root = folderRef.current;
       if (root) writeFlow(root, { group: 'instrument', id: pool.libId ?? pool.id, name: pool.name, category: pool.kind === 'synth' ? 'Synths' : 'Drums', kind: pool.kind === 'synth' ? 'piano' : 'step', flow: f }).then(() => console.info('[Mothscilla] saved instrument to disk')).catch((e) => console.warn('[Mothscilla] save instrument failed', e));
       else console.info('[Mothscilla] no folder set — instrument edit kept in project only');
     } });
   };
+  const editInstrument = (poolId: string) => {
+    const pool = projectRef.current.pool.find((p) => p.id === poolId); if (pool) openInstrumentEditor(pool);
+  };
 
-  // Edit an effect flow in Synflow → update the library entry + persist (future inserts use it).
-  const editEffect = (effectId: string) => {
-    const e = library.find((x) => x.id === effectId && x.group === 'effect'); if (!e) return;
+  // Open an effect flow in Synflow → on save update the library entry + persist (future inserts use it).
+  const openEffectEditor = (e: LibraryEntry) => {
     setEditor({ flow: e.flow, title: e.name, onSaved: (f) => {
-      setLibrary((lib) => lib.map((x) => (x.id === effectId && x.group === 'effect' ? { ...x, flow: f } : x)));
+      setLibrary((lib) => lib.map((x) => (x.id === e.id && x.group === 'effect' ? { ...x, flow: f } : x)));
       const root = folderRef.current;
-      if (root) writeFlow(root, { group: 'effect', id: effectId, name: e.name, category: e.category, flow: f }).then(() => console.info('[Mothscilla] saved effect to disk')).catch((er) => console.warn('[Mothscilla] save effect failed', er));
+      if (root) writeFlow(root, { group: 'effect', id: e.id, name: e.name, category: e.category, flow: f }).then(() => console.info('[Mothscilla] saved effect to disk')).catch((er) => console.warn('[Mothscilla] save effect failed', er));
       else console.info('[Mothscilla] no folder set — effect edit kept in project only');
     } });
+  };
+  const editEffect = (effectId: string) => {
+    const e = library.find((x) => x.id === effectId && x.group === 'effect'); if (e) openEffectEditor(e);
+  };
+
+  // Add an EXISTING library instrument/drum to the project pool (a copy of its flow,
+  // tracking libId so edits save back to the same file). Already on disk → no write.
+  const addInstrumentToPool = (entry: LibraryEntry) => {
+    const kind: 'synth' | 'drum' = entry.kind === 'piano' ? 'synth' : entry.kind === 'step' ? 'drum' : entry.category === 'Drums' ? 'drum' : 'synth';
+    const item: PoolItem = { id: uid('pool'), name: entry.name, libId: entry.id, kind, flow: cloneFlow(entry.flow) };
+    setProject((p) => ({ ...p, pool: [...p.pool, item] }));
+  };
+
+  // Create a brand-new effect from a starter flow: add it to the library, show its
+  // live view, and open Synflow to add/edit nodes. Testable by adding it to any FX chain.
+  const newEffect = () => {
+    const id = uid('fx');
+    const name = 'New Effect';
+    const flow = cloneFlow(makeFilterFx({ type: 'lowpass', frequency: 1200 }));
+    const entry: LibraryEntry = { id, name, category: 'Effects', group: 'effect', flow };
+    setLibrary((lib) => [...lib, entry]);
+    const root = folderRef.current;
+    if (root) writeFlow(root, { group: 'effect', id, name, category: 'Effects', flow }).catch((e) => console.warn('[Mothscilla] save effect failed', e));
+    setOpenItem({ kind: 'effect', id }); setView('live');
+    openEffectEditor(entry);
   };
 
   // Remove an instrument/drum from the pool: drop its uses from every track,
@@ -702,6 +769,25 @@ export function App() {
       mapTrack(track.id, (t) => ({ ...t, uses: [...t.uses, use] }));
       const dest = mixerRef.current?.use(use.id, track.id);
       if (dest) void buildUse(use.id, pool, dest, use.voices);
+    },
+    // Create a brand-new instrument from scratch (in Synflow) for THIS track: add it
+    // to the pool, drop a use onto the track, persist, then open the node editor.
+    onCreateUse: () => {
+      const track = selectedTrack; if (!track) return;
+      const kind: 'synth' | 'drum' = track.type === 'drums' ? 'drum' : 'synth';
+      const id = uid('pool');
+      const name = kind === 'synth' ? 'New Synth' : 'New Drum';
+      const flow = cloneFlow(kind === 'synth' ? makeSynthVoice('sawtooth') : makeKick());
+      const item: PoolItem = { id, name, libId: id, kind, flow };
+      const use = kind === 'drum'
+        ? { id: uid('use'), poolId: id, fx: [], steps: blankSteps(project.totalSteps) }
+        : { id: uid('use'), poolId: id, fx: [], notes: [], voices: 6 };
+      setProject((p) => ({ ...p, pool: [...p.pool, item], tracks: p.tracks.map((t) => (t.id === track.id ? { ...t, uses: [...t.uses, use] } : t)) }));
+      const dest = mixerRef.current?.use(use.id, track.id);
+      if (dest) void buildUse(use.id, item, dest, use.voices);
+      const root = folderRef.current;
+      if (root) writeFlow(root, { group: 'instrument', id, name, category: kind === 'synth' ? 'Synths' : 'Drums', kind: kind === 'synth' ? 'piano' : 'step', flow }).catch((e) => console.warn('[Mothscilla] save instrument failed', e));
+      openInstrumentEditor(item);
     },
     onRemoveUse: (useId) => {
       mapTrack(trackOfUse(useId)?.id ?? '', (t) => ({ ...t, uses: t.uses.filter((u) => u.id !== useId) }));
@@ -969,10 +1055,10 @@ export function App() {
         armed={armed} onArm={() => setArmed((a) => !a)} bpm={project.bpm} onBpm={setBpm} position={pos}
         browserOpen={browserOpen} setBrowserOpen={setBrowserOpen}
         projectName={project.name} onProjectName={(name) => setProject((p) => ({ ...p, name }))}
-        onSave={saveSong} saved={saved} onOpenSong={openSong} onExport={exportSong} exporting={exporting} exportProgress={exportProgress} onBounce={bounceSong} bouncing={bouncing} bounceProgress={bounceProgress}
+        onNewSong={newSong} onSave={saveSong} saved={saved} onOpenSong={openSong} onExport={exportSong} exporting={exporting} exportProgress={exportProgress} onBounce={bounceSong} bouncing={bouncing} bounceProgress={bounceProgress}
       />
       <div className="workspace">
-        {browserOpen && <Pool pool={project.pool} effects={effects} armed={armedPool} recordings={project.assets} previewKey={previewKey} onPreview={auditionAsset} onPlaceRecording={placeAssetOnTrack} onRemoveRecording={removeRecording} onOpenInstrument={openInstrument} onEditEffect={openEffectPage} onRemoveInstrument={removePoolItem} onRemoveEffect={removeEffect} onAddFromFolder={addFromFolder} source={folder ? `disk · ${folder.name}` : 'built-in'} />}
+        {browserOpen && <Pool pool={project.pool} effects={effects} instrumentLib={library.filter((e) => e.group === 'instrument')} armed={armedPool} recordings={project.assets} previewKey={previewKey} onPreview={auditionAsset} onPlaceRecording={placeAssetOnTrack} onRemoveRecording={removeRecording} onOpenInstrument={openInstrument} onEditEffect={openEffectPage} onRemoveInstrument={removePoolItem} onRemoveEffect={removeEffect} onAddFromFolder={addFromFolder} onAddInstrument={addInstrumentToPool} onNewEffect={newEffect} source={folder ? `disk · ${folder.name}` : 'built-in'} />}
         <div className="main">
           {view === 'tracks' && (
             <div className="tracks-view">
@@ -1021,6 +1107,7 @@ export function App() {
                   name={pool.name} kind={pool.kind} flow={pool.flow} gain={pool.gain ?? 1}
                   onGain={(v) => onInstrumentGain(pool.id, v)}
                   onKnob={(nodeId, param, v) => onInstrumentKnob(pool.id, nodeId, param, v)}
+                  onKnobRename={(nodeId, param, label) => onInstrumentKnobRename(pool.id, nodeId, param, label)}
                   onEdit={() => editInstrument(pool.id)}
                   onNoteOn={(m) => void liveNoteOn(pool.id, m)} onNoteOff={(m) => liveNoteOff(pool.id, m)} onHit={() => void liveDrumDown(pool.id)}
                   fx={pool.fx ?? []} effects={effects}

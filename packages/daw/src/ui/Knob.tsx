@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 
 /** Drag-interactive rotary knob (vertical drag), styled per the Mothscilla design. */
 export function Knob({
-  value = 0.5, onChange, color = 'var(--accent)', size = 44, label, readout,
+  value = 0.5, onChange, color = 'var(--accent)', size = 44, label, readout, format, onLabelChange,
 }: {
   value?: number;
   onChange?: (v: number) => void;
@@ -10,10 +10,21 @@ export function Knob({
   size?: number;
   label?: string;
   readout?: string;
+  // Live value formatter: maps the knob's 0..1 position to a display string. When
+  // set, the readout tracks the drag instantly (no parent re-render needed).
+  format?: (v01: number) => string;
+  // When set, the label becomes editable (double-click) and commits on blur/Enter.
+  onLabelChange?: (label: string) => void;
 }) {
   const [v, setV] = useState(value);
   useEffect(() => setV(value), [value]);
   const set = (nv: number) => { setV(nv); onChange?.(nv); };
+
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(label ?? '');
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (editing) { setDraft(label ?? ''); inputRef.current?.select(); } }, [editing, label]);
+  const commit = () => { setEditing(false); const t = draft.trim(); if (t && t !== label) onLabelChange?.(t); };
 
   const onDown = (e: React.PointerEvent) => {
     e.preventDefault(); e.stopPropagation();
@@ -25,6 +36,7 @@ export function Knob({
   };
 
   const angle = -135 + v * 270;
+  const shown = format ? format(v) : readout;
   return (
     <div className="knob-wrap">
       <div
@@ -35,8 +47,17 @@ export function Knob({
           <div className="knob-ptr" style={{ height: size * 0.3, background: color, boxShadow: `0 0 5px ${color}` }} />
         </div>
       </div>
-      {label && <span className="knob-label">{label}</span>}
-      {readout !== undefined && <span className="knob-readout">{readout}</span>}
+      {editing ? (
+        <input ref={inputRef} className="knob-label-input" value={draft} spellCheck={false}
+          onChange={(e) => setDraft(e.target.value)} onBlur={commit}
+          onKeyDown={(e) => { if (e.key === 'Enter') commit(); else if (e.key === 'Escape') setEditing(false); }}
+          onPointerDown={(e) => e.stopPropagation()} />
+      ) : (
+        label && <span className={`knob-label ${onLabelChange ? 'editable' : ''}`}
+          title={onLabelChange ? 'Double-click to rename' : undefined}
+          onDoubleClick={onLabelChange ? () => setEditing(true) : undefined}>{label}</span>
+      )}
+      {shown !== undefined && <span className="knob-readout">{shown}</span>}
     </div>
   );
 }

@@ -58,9 +58,15 @@ body {
 .browser { width: 230px; flex-shrink: 0; background: var(--bg-panel); border-right: 1px solid var(--border-strong); display: flex; flex-direction: column; overflow: hidden; }
 .browser-search { display: flex; align-items: center; gap: 8px; padding: 11px 12px; border-bottom: 1px solid var(--border-strong); color: var(--ink-3); font-size: 12px; }
 .browser-list { flex: 1; overflow-y: auto; }
-.browser-group { width: 100%; display: flex; align-items: center; gap: 7px; padding: 9px 12px; background: transparent; border: none; cursor: pointer; color: var(--ink-2); }
+.browser-group-row { display: flex; align-items: center; position: relative; }
+.browser-group { flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px; padding: 9px 12px; background: transparent; border: none; cursor: pointer; color: var(--ink-2); }
 .bg-name { font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
 .bg-count { margin-left: auto; font-size: 9px; color: var(--ink-3); font-family: var(--font-mono); }
+.bg-new { flex: none; width: 22px; height: 22px; margin-right: 8px; border-radius: 5px; display: grid; place-items: center; cursor: pointer; color: var(--ink-3); background: transparent; border: 1px solid var(--border-strong); }
+.bg-new:hover { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.pool-addmenu { position: absolute; top: calc(100% - 2px); right: 8px; z-index: 50; min-width: 160px; max-height: 280px; overflow-y: auto; background: var(--surface-1, #0c0f16); border: 1px solid var(--border-strong); border-radius: var(--r-sm); padding: 5px; box-shadow: 0 12px 30px rgba(0,0,0,.5); display: flex; flex-direction: column; gap: 2px; }
+.pool-addmenu button { text-align: left; font-size: 12px; padding: 7px 9px; border-radius: 5px; cursor: pointer; color: var(--ink-2); background: transparent; border: none; }
+.pool-addmenu button:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
 .browser-item { display: flex; align-items: center; gap: 9px; padding: 6px 12px 6px 26px; cursor: pointer; }
 .browser-item:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
 .browser-item.sel { background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: inset 2px 0 0 var(--accent); }
@@ -207,7 +213,10 @@ body {
 .knob { border-radius: 50%; cursor: ns-resize; position: relative; background: var(--glass-field); border: 2px solid var(--accent); }
 .knob-rot { position: absolute; inset: 0; }
 .knob-ptr { position: absolute; top: 3px; left: 50%; transform: translateX(-50%); width: 2.6px; border-radius: 2px; }
-.knob-label { font-family: var(--font-ui); font-weight: 600; font-size: 9px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--ink-2); }
+.knob-label { font-family: var(--font-ui); font-weight: 600; font-size: 9px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--ink-2); max-width: 72px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.knob-label.editable { cursor: text; }
+.knob-label.editable:hover { color: var(--ink-1); text-decoration: underline dotted; }
+.knob-label-input { width: 72px; text-align: center; font-family: var(--font-ui); font-weight: 600; font-size: 9px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--ink-1); background: var(--glass-field); border: 1px solid var(--accent); border-radius: 4px; padding: 1px 3px; }
 .knob-readout { font-family: var(--font-mono); font-size: 10px; color: var(--ink-1); font-variant-numeric: tabular-nums; }
 
 /* ── FX chain (device bar) ──────────────────────────────────────────────── */
@@ -436,6 +445,8 @@ body {
 .inst-gain input { width: 96px; accent-color: var(--accent); }
 .inst-gain b { font-family: var(--font-mono); color: var(--accent); min-width: 26px; text-align: right; }
 .inst-knobs { display: flex; flex-wrap: wrap; gap: 16px; padding: 16px 14px; align-items: flex-start; }
+/* Matrix: knobs fill a row of fixed-width columns, then wrap to the next row. */
+.inst-knobs-matrix { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 18px 12px; justify-items: center; }
 .inst-noknobs { font-size: 12px; color: var(--ink-3); line-height: 1.5; }
 .inst-octrow { display: flex; align-items: center; gap: 8px; padding: 0 14px 8px; }
 .inst-kb { margin: 0 14px 16px; height: 150px; }
