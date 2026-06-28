@@ -34,9 +34,10 @@ const NoiseFlowNode: React.FC<NoiseFlowNodeProps> = ({ data }) => {
   }, [noiseType]);
 
   return (
-    <div style={{ ...(data.style||{}), width: 80, padding: 4, textAlign:'center' }}>
+    <div style={{ ...(data.style||{}), width: 80, padding: 6, textAlign:'center' }}>
+      <div className="node-title">NOISE</div>
       <Handle type="source" position={Position.Right} id="output" style={{ top: '50%', width:10, height:10, background:'#444', border:'1px solid #888' }} />
-      <select value={noiseType} onChange={e=> setNoiseType(e.target.value as NoiseKind)} style={{background:'#1e1e1e', color:'#eee', border:'1px solid #444', borderRadius:4, padding:'2px 4px', fontSize:'0.6rem', width:'100%', textAlign:'center'}}>
+      <select value={noiseType} onChange={e=> setNoiseType(e.target.value as NoiseKind)} className="node-select wide">
         {NOISE_TYPES.map(nt => <option key={nt} value={nt}>{nt}</option>)}
       </select>
     </div>

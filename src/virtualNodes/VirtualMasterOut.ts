@@ -1,4 +1,3 @@
-import VirtualNode from "./VirtualNode";
 import { CustomNode } from "../sys/AudioGraphManager";
 import EventBus from "../sys/EventBus";
 export class VirtualMasterOut {

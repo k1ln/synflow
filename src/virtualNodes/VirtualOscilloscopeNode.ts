@@ -1,4 +1,3 @@
-import { a } from "vitest/dist/chunks/suite.d.BJWk38HB";
 import { CustomNode } from "../sys/AudioGraphManager";
 import EventBus from "../sys/EventBus";
 import VirtualNode from "./VirtualNode";

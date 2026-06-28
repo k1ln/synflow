@@ -74,21 +74,13 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
     <div
       style={data.style}
     >
-      <div style={{ textAlign: "center", marginBottom: "0px", display: "flex", justifyContent: "space-around", alignItems: "center", padding: "2px 4px" }}>
-        <span><b>FILTER</b></span>
+      <div className="node-row" style={{ justifyContent: "space-between", padding: "0 2px", marginBottom: 6 }}>
+        <b className="node-title" style={{ margin: 0, padding: 0, border: 0, textShadow: "none" }}>FILTER</b>
         <select
           value={type}
           onChange={(e) => setType(e.target.value as BiquadFilterType)}
-          style={{ 
-            width: 72, 
-            background: '#222', 
-            color: '#eee', 
-            border: '1px solid #444', 
-            borderRadius: 4, 
-            padding: '1px 2px',
-            marginLeft: 6, 
-            fontSize: 9, 
-            textAlign: 'center' }}
+          className="node-select"
+          style={{ width: 72 }}
         >
           {[
             "lowpass",
@@ -124,10 +116,10 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
       />
 
       {/* Frequency and Detune side by side */}
-      <div style={{ display: "flex", justifyContent: "space-around", gap: 4 }}>
+      <div className="node-row" style={{ gap: 4 }}>
         {/* Frequency Input with MIDI-learnable knob */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span>Freq.</span>
+        <div className="node-field">
+          <span className="node-label">Freq.</span>
           <MidiKnob
             accentColor="#60a5fa"
             min={0}
@@ -156,18 +148,8 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
                 setFreqKnobNorm(normFromFreq(clamped));
               }
             }}
-            className=""
-            style={{ 
-              width: 50, 
-              background: '#222', 
-              color: '#eee', 
-              border: '1px solid #444', 
-              borderRadius: 4, 
-              padding: '1px 3px', 
-              fontSize: 10, 
-              textAlign: 'center',
-              marginBottom: '3px' 
-            }}
+            className="node-input"
+            style={{ width: 50 }}
           />
           <Handle
             type="target"
@@ -178,8 +160,8 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
         </div>
 
         {/* Detune Input with MIDI-learnable knob */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span>Detune</span>
+        <div className="node-field">
+          <span className="node-label">Detune</span>
           <MidiKnob
             accentColor="#60a5fa"
             min={-1200}
@@ -196,18 +178,8 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
             type="text"
             value={detune}
             onChange={(e) => setDetune(parseFloat(e.target.value))}
-            className=""
-            style={{ 
-              width: 50, 
-              background: '#222', 
-              color: '#eee', 
-              border: '1px solid #444', 
-              borderRadius: 4, 
-              padding: '1px 3px', 
-              fontSize: 10, 
-              textAlign: 'center',
-              marginBottom: '3px' 
-            }}
+            className="node-input"
+            style={{ width: 50 }}
           />
           <Handle
             type="target"
@@ -219,10 +191,10 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
       </div>
 
       {/* Q and Gain side by side */}
-      <div style={{ display: "flex", justifyContent: "space-around", gap: 4 }}>
+      <div className="node-row" style={{ gap: 4 }}>
         {/* Q Input with MIDI-learnable knob */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span>Q</span>
+        <div className="node-field">
+          <span className="node-label">Q</span>
           <MidiKnob
             accentColor="#60a5fa"
             min={0.0001}
@@ -239,18 +211,8 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
             type="text"
             value={Q}
             onChange={(e) => setQ(parseFloat(e.target.value))}
-            className=""
-            style={{ 
-              width: 50, 
-              background: '#222', 
-              color: '#eee', 
-              border: '1px solid #444', 
-              borderRadius: 4, 
-              padding: '1px 3px', 
-              fontSize: 10, 
-              textAlign: 'center',
-              marginBottom: '3px' 
-            }}
+            className="node-input"
+            style={{ width: 50 }}
           />
           <Handle
             type="target"
@@ -261,8 +223,8 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
         </div>
 
         {/* Gain Input with MIDI-learnable knob */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span>Gain</span>
+        <div className="node-field">
+          <span className="node-label">Gain</span>
           <MidiKnob
             accentColor="#60a5fa"
             min={-40}
@@ -279,18 +241,8 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
             type="text"
             value={gain}
             onChange={(e) => setGain(parseFloat(e.target.value))}
-            className=""
-            style={{ 
-              width: 50, 
-              background: '#222', 
-              color: '#eee', 
-              border: '1px solid #444', 
-              borderRadius: 4, 
-              padding: '1px 3px', 
-              fontSize: 10, 
-              textAlign: 'center',
-              marginBottom: '3px' 
-            }}
+            className="node-input"
+            style={{ width: 50 }}
           />
           <Handle
             type="target"

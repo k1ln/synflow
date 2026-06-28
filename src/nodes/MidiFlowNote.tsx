@@ -153,7 +153,7 @@ const MidiFlowNote: React.FC<{ data: MidiFlowNoteData }> = ({ data }) => {
         }
       };
     }
-    (async () => {
+    void (async () => {
       try {
         // Ensure requestMIDIAccess is called with the navigator binding to avoid
         // "Illegal invocation" errors in some environments.
@@ -195,35 +195,23 @@ const MidiFlowNote: React.FC<{ data: MidiFlowNoteData }> = ({ data }) => {
   const nodeHeight = baseHeight + messageTypes.length * handleHeight;
 
   return (
-    <div style={
-      { 
-        padding: 8, 
-        paddingRight: 8, 
-        border: '1px solid #555', 
-        borderRadius: 6, 
-        width: "120px", 
-        height: nodeHeight, 
-        background: '#2d2d2d', 
-        color: '#eee', 
-        position: 'relative' }}>
-      <div style={{ fontWeight: 600, marginBottom: 4, fontSize: 12 }}>Midi Note</div>
+    <div className="flow-node-shell" style={{ width: 120, height: nodeHeight, position: 'relative', padding: 8, textAlign: 'left' }}>
+      <div className="node-title">Midi Note</div>
       <div style={{ fontSize: 10, marginBottom: 4 }}>
-        <label style={{ display: 'block', marginBottom: 3 }}>Device
-        </label>
+        <label className="node-label" style={{ display: 'block', marginBottom: 3 }}>Device</label>
         <select
           value={data.device || ''}
           onChange={e => {
             const val = e.target.value;
             data.onChange({ ...data, device: val === '' ? undefined : val });
           }}
-          style={{ width: '100%', background: '#444', color: '#fff', border: '1px solid #666', padding: 2, marginTop: 2, fontSize: 10 }}
+          className="node-select wide"
         >
           <option value=''>Any</option>
           {devices.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
 
-        <label style={{ display: 'block', marginBottom: 3 }}>Ch (1-16)
-        </label>
+        <label className="node-label" style={{ display: 'block', margin: '4px 0 3px' }}>Ch (1-16)</label>
         <input
           type='number'
           min={1}
@@ -239,21 +227,12 @@ const MidiFlowNote: React.FC<{ data: MidiFlowNoteData }> = ({ data }) => {
             // store 0-based internally
             data.onChange({ ...data, channel: num - 1 });
           }}
-          style={{
-            width: '100%',
-            background: '#444',
-            color: '#fff',
-            border: '1px solid #666',
-            padding: 2,
-            marginTop: 2,
-            marginRight: 2,
-            fontSize: 10
-          }}
+          className="nodrag node-input wide"
         />
         {/* Start/Stop button removed (auto-start enabled). */}
       </div>
       {accessError && <div style={{ color: '#f66', fontSize: 10 }}>{accessError}</div>}
-      <div style={{ fontSize: 10, marginTop: 4 }}>Dev: {deviceName || 'n/a'}</div>
+      <div className="node-readout" style={{ marginTop: 4 }}>Dev: {deviceName || 'n/a'}</div>
       <div style={{ fontSize: 10 }}>
         {messageTypes.map((m, idx) => {
           // Render note-on and note-off as a single visual group labelled "Note"

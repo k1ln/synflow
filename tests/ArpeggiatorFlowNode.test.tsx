@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import React from 'react';
 import { render, fireEvent, screen } from '@testing-library/react';
 import ArpeggiatorFlowNode, { ArpeggiatorFlowNodeProps } from '../src/nodes/ArpeggiatorFlowNode';

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Handle, Position } from "@xyflow/react";
-import EventBus from "../sys/EventBus";
 
 export type ConstantNodeProps = {
   data: {
@@ -19,17 +18,7 @@ const ConstantFlowNode: React.FC<ConstantNodeProps> = ({ data }) => {
     }
   }, [value]);
   return (
-    <div
-      style={{
-        padding: 4,
-        border: "1px solid #555",
-        borderRadius: 6,
-        width: 72,
-        textAlign: "center",
-        background: "#333",
-        color: "#eee",
-      }}
-    >
+    <div className="flow-node-shell" style={{ width: 72, padding: 6 }}>
       {/* Input Handle */}
       <Handle
         type="target"
@@ -39,13 +28,7 @@ const ConstantFlowNode: React.FC<ConstantNodeProps> = ({ data }) => {
       />
 
       {/* Node Content */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <div className="node-row">
         <input
           type="text"
           value={value}
@@ -70,16 +53,8 @@ const ConstantFlowNode: React.FC<ConstantNodeProps> = ({ data }) => {
               setValue(String(num + delta));
             }
           }}
-          style={{
-            width: 50,
-            background: '#222',
-            color: '#eee',
-            border: '1px solid #444',
-            borderRadius: 4,
-            padding: '1px 3px',
-            fontSize: 10,
-            textAlign: 'center',
-          }}
+          className="nodrag node-input"
+          style={{ width: 50 }}
         />
       </div>
 

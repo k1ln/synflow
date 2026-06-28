@@ -40,7 +40,7 @@ export class VirtualMicNode extends VirtualNode<
     this.eventBus.subscribe(this.node.id + '.params.updateParams', (payload: any) => {
       const devId = payload?.data?.selectedDeviceId;
       if (typeof devId === 'string' || devId === '') {
-        this.setDevice(devId || undefined);
+        void this.setDevice(devId || undefined);
       }
     });
   }

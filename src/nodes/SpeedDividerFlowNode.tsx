@@ -129,72 +129,32 @@ const SpeedDividerFlowNode: React.FC<SpeedDividerFlowNodeProps> = ({
         id="output"
         style={{ top: '50%' }}
       />
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          marginBottom: 6
-        }}
-      >
-        <span style={{ fontSize: 10, width: 24 }}>÷</span>
+      <div className="node-title">SPEED DIVIDER</div>
+      <div className="node-row" style={{ justifyContent: 'flex-start', gap: 6, marginBottom: 6 }}>
+        <span className="node-label" style={{ width: 16 }}>÷</span>
         <input
           type="number"
           min={1}
           max={10}
           value={divider}
           onChange={handleDividerChange}
-          style={{
-            width: 40,
-            fontSize: 11,
-            padding: '2px 4px',
-            background: '#333',
-            color: '#eee',
-            border: '1px solid #444',
-            borderRadius: 3
-          }}
+          className="nodrag node-input sm"
         />
-        <span
-          style={{
-            fontSize: 10,
-            fontFamily: 'monospace',
-            opacity: 0.7
-          }}
-        >
+        <span className="node-readout" style={{ fontFamily: 'monospace' }}>
           {hitCount}/{divider}
         </span>
       </div>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6
-        }}
-      >
-        <span style={{ fontSize: 10, width: 24 }}>×</span>
+      <div className="node-row" style={{ justifyContent: 'flex-start', gap: 6 }}>
+        <span className="node-label" style={{ width: 16 }}>×</span>
         <input
           type="number"
           min={1}
           max={10}
           value={multiplier}
           onChange={handleMultiplierChange}
-          style={{
-            width: 40,
-            fontSize: 11,
-            padding: '2px 4px',
-            background: '#333',
-            color: '#eee',
-            border: '1px solid #444',
-            borderRadius: 3
-          }}
+          className="nodrag node-input sm"
         />
-        <span
-          style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            opacity: 0.6
-          }}
-        >
+        <span className="node-readout" style={{ fontFamily: 'monospace' }}>
           {incomingBpm > 0 ? incomingBpm + ' bpm' : '--'}
         </span>
       </div>

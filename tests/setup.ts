@@ -1,3 +1,6 @@
+import path from 'path';
+import os from 'os';
+
 // Polyfill minimal browser APIs needed by apiClient in Node environment
 if (!(globalThis as any).localStorage) {
   const store = new Map<string,string>();
@@ -14,4 +17,4 @@ if (!(globalThis as any).window) {
 
 // JWT secret & temp DB for backend when imported
 process.env.JWT_SECRET = 'frontend-int-test-secret';
-process.env.DB_FILE = require('path').join(require('os').tmpdir(), 'flowsynth-frontend-int.db');
+process.env.DB_FILE = path.join(os.tmpdir(), 'flowsynth-frontend-int.db');

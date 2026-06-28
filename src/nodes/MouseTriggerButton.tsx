@@ -59,20 +59,14 @@ const MouseTriggerButton: React.FC<MouseTriggerButtonProps> = ({ data }) => {
       <Handle type='target' id='main-input' position={Position.Left} style={{ top:'50%', width:10, height:10 }} />
       <Handle type='source' id='output' position={Position.Right} className='mainOutput' style={{ top:'50%' }} />
       <button
-          className='nodrag nowheel nopan'
+          className={`nodrag nowheel nopan node-btn${active ? ' node-state-btn-on' : ''}`}
           style={{
             padding: '12px 10px',
             width: '100%',
             height: '100%',
             minHeight: 36,
-            borderRadius: 4,
-            border: 'none',
-            background: active ? '#1fa64d' : '#2f2f2f',
-            color: '#fff',
-            cursor: 'pointer',
             whiteSpace: 'nowrap',
             fontSize: 13,
-            fontWeight: 'bold'
           }}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}

@@ -1,5 +1,4 @@
 import { Edge } from "@xyflow/react";
-import { CustomNode } from "../sys/AudioGraphManager";
 import EventBus from "../sys/EventBus";
 
 export class VirtualNode<U extends { id: string; data?: any }, T extends AudioNode | undefined = AudioNode> {
@@ -54,7 +53,7 @@ export class VirtualNode<U extends { id: string; data?: any }, T extends AudioNo
                     }
                     if (target !== undefined) {
                         let incoming = data.data[key];
-                        let potentialNumber = incoming * 1;
+                        const potentialNumber = incoming * 1;
                         if (typeof potentialNumber == "number" && !isNaN(potentialNumber)) { incoming = data.data[key] * 1; }
                         if (target instanceof AudioParam) {
                             if (typeof incoming === 'number' && Number.isFinite(incoming)) {

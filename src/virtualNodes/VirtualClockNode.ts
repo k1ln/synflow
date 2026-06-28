@@ -1,6 +1,6 @@
 import VirtualNode from "./VirtualNode";
 import { CustomNode } from "../sys/AudioGraphManager";
-import EventBus, { EventCallback } from "../sys/EventBus";
+import EventBus from "../sys/EventBus";
 import { ClockNodeProps } from "../nodes/ClockFlowNode";
 
 /**
@@ -95,7 +95,13 @@ export class VirtualClockNode extends VirtualNode<CustomNode & ClockNodeProps, u
             this.handleBpmInput(data);
         });
 
-        // Only start if isEmitting is true (respects saved off state)
+        // Note: starting is deferred to startIfEmitting() so AudioGraphManager
+        // can call it AFTER connectVirtualNodes(), ensuring the first tick has
+        // edges to traverse.
+    }
+
+    /** Start the clock if its saved state has isEmitting=true. */
+    startIfEmitting() {
         if (this.isEmitting) {
             this.start();
         }
@@ -281,7 +287,7 @@ export class VirtualClockNode extends VirtualNode<CustomNode & ClockNodeProps, u
         // Emit ON first with BPM/speed metadata
         this.eventBus.emit(
             `${this.node.id}.main-input.sendNodeOn`,
-            { nodeId: this.node.id, bpm: bpm, intervalMs: intervalMs }
+            { nodeId: this.node.id, bpm, intervalMs }
         );
         this.tickCount++;
 

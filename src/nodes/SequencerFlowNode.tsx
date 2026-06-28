@@ -325,14 +325,14 @@ const SequencerFlowNode: React.FC<SequencerFlowNodeProps> = ({
   const StepDot = React.useMemo(
     () =>
       React.memo(
-        function StepDot(props: {
+        (props: {
           index: number;
           rowIndex: number;
           enabled: boolean;
           selected: boolean;
           pointer: boolean;
           pulseMs: number;
-        }) {
+        }) => {
           const {
             index,
             rowIndex,
@@ -538,13 +538,8 @@ const SequencerFlowNode: React.FC<SequencerFlowNodeProps> = ({
         >
           <label
             title="Toggle graphic updates"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
-              fontSize: 9,
-              color: 'inherit'
-            }}
+            className="node-label"
+            style={{ display: 'flex', alignItems: 'center', gap: 2 }}
           >
             <input
               type="checkbox"
@@ -559,10 +554,10 @@ const SequencerFlowNode: React.FC<SequencerFlowNodeProps> = ({
             />
             <span style={{ userSelect: 'none' }}>G</span>
           </label>
-          <button style={squareBtnStyle} onClick={advance} title="Advance">
+          <button className="node-btn" style={squareBtnSize} onClick={advance} title="Advance">
             ▶
           </button>
-          <button style={squareBtnStyle} onClick={reset} title="Reset">
+          <button className="node-btn" style={squareBtnSize} onClick={reset} title="Reset">
             ↺
           </button>
           <input
@@ -598,7 +593,8 @@ const SequencerFlowNode: React.FC<SequencerFlowNodeProps> = ({
             onBlur={() => {
               if (rawTotal === '') setRawTotal('1');
             }}
-            style={inputStyle}
+            className="nodrag node-input"
+            style={{ width: 32 }}
           />
           <input
             type="text"
@@ -628,10 +624,12 @@ const SequencerFlowNode: React.FC<SequencerFlowNodeProps> = ({
                 );
               }
             }}
-            style={inputStyle}
+            className="nodrag node-input"
+            style={{ width: 32 }}
           />
           <button
-            style={{ ...squareBtnStyle, width: 40, fontSize: 8 }}
+            className="node-btn"
+            style={{ ...squareBtnSize, width: 40, fontSize: 8 }}
             title="Set all pulses"
             onClick={() =>
               setPulseLengths((pl) => pl.map(() => defaultPulseMs))
@@ -648,20 +646,20 @@ const SequencerFlowNode: React.FC<SequencerFlowNodeProps> = ({
             }}
           >
             <button
-              style={squareBtnStyle}
+              className="node-btn"
+              style={squareBtnSize}
               onClick={removeRow}
               disabled={rows <= 1}
               title="Remove row"
             >
               −
             </button>
-            <span
-              style={{ fontSize: 9, minWidth: 16, textAlign: 'center' }}
-            >
+            <span className="node-readout" style={{ minWidth: 16, textAlign: 'center' }}>
               {rows}
             </span>
             <button
-              style={squareBtnStyle}
+              className="node-btn"
+              style={squareBtnSize}
               onClick={addRow}
               disabled={rows >= 25}
               title="Add row"
@@ -763,31 +761,15 @@ const SequencerFlowNode: React.FC<SequencerFlowNodeProps> = ({
   );
 };
 
-const squareBtnStyle: React.CSSProperties = {
-  background: '#1d2530',
-  color: '#e6e8ea',
-  border: '1px solid #303842',
+const squareBtnSize: React.CSSProperties = {
   width: 18,
   height: 18,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  borderRadius: 3,
   fontSize: 10,
-  cursor: 'pointer',
   lineHeight: 1,
   padding: 0
-};
-
-const inputStyle: React.CSSProperties = {
-  width: 32,
-  background: '#14191f',
-  color: 'inherit',
-  border: '1px solid #2a3139',
-  borderRadius: 3,
-  fontSize: 9,
-  padding: '2px 3px',
-  textAlign: 'center'
 };
 
 export default SequencerFlowNode;

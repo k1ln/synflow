@@ -119,18 +119,16 @@ registerProcessor('RecorderProcessor', RecorderProcessor);
         if (!this.recording) {
           this.startRecording();
         }
-      } else {
-        if (this.recording) {
-          this.stopRecording();
+      } else if (this.recording) {
+          void this.stopRecording();
         } else {
           this.startRecording();
         }
-      }
     };
     const handleOff = () => {
       const holdMode = !!(this.node.data as any)?.holdMode;
       if (holdMode) {
-        if (this.recording) this.stopRecording();
+        if (this.recording) void this.stopRecording();
       }
     };
     onChannels.forEach(c => this.eventBus.subscribe(c, handleOn));
@@ -263,7 +261,7 @@ registerProcessor('RecorderProcessor', RecorderProcessor);
       const elapsedSec = (performance.now() - this.startTime) / 1000;
       if (elapsedSec > this.maxSeconds) {
         this.eventBus.emit(this.node.id + '.status.update', { error: 'max_duration_exceeded' });
-        this.stopRecording();
+        void this.stopRecording();
         return;
       }
     }
@@ -272,7 +270,7 @@ registerProcessor('RecorderProcessor', RecorderProcessor);
     const estimatedBytes = sampleCount * 2 + 44;
     if (estimatedBytes > this.maxBytes) {
       this.eventBus.emit(this.node.id + '.status.update', { error: 'max_size_exceeded' });
-      this.stopRecording();
+      void this.stopRecording();
     }
   }
 

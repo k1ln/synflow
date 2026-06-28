@@ -116,6 +116,7 @@ const RecordingFlowNode: React.FC<RecordingFlowNodeProps> = ({ data }) => {
 
   return (
     <div style={data.style}>
+      <div className="node-title">REC</div>
       {/* Pass-through input */}
       <Handle
         type="target"
@@ -161,19 +162,8 @@ const RecordingFlowNode: React.FC<RecordingFlowNodeProps> = ({ data }) => {
             toggleRecording();
           }
         }}
-        style={{
-          padding: '4px 8px',
-          fontSize: 11,
-          background: isRecording
-            ? 'linear-gradient(90deg,#ff4d4d,#cc0000)'
-            : '#222',
-          color: isRecording ? '#fff' : '#ddd',
-          border: '1px solid ' + (isRecording ? '#ff6b6b' : '#444'),
-          borderRadius: 4,
-          cursor: 'pointer',
-          fontWeight: 600,
-          width: '100%'
-        }}
+        className={`nodrag node-btn${isRecording ? ' node-state-btn-stop' : ''}`}
+        style={{ padding: '4px 8px', fontSize: 11, width: '100%' }}
         title={
           holdMode
             ? 'Press & hold to record'
@@ -192,7 +182,7 @@ const RecordingFlowNode: React.FC<RecordingFlowNodeProps> = ({ data }) => {
           fontSize: 11
         }}
       >
-        <span style={{ fontFamily: 'monospace', opacity: 0.85 }}>
+        <span className="node-readout" style={{ fontFamily: 'monospace', opacity: 0.85 }}>
           {isRecording
             ? (elapsedMs / 1000).toFixed(2) + 's'
             : elapsedMs > 0
@@ -200,14 +190,8 @@ const RecordingFlowNode: React.FC<RecordingFlowNodeProps> = ({ data }) => {
               : 'Idle'}
         </span>
         <label
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 3,
-            fontSize: 10,
-            cursor: 'pointer',
-            userSelect: 'none'
-          }}
+          className="node-label"
+          style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer', userSelect: 'none' }}
           title="Hold mode: press to start, release to stop"
         >
           <input

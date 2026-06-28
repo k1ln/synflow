@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Handle, Position } from "@xyflow/react";
 import "./AudioNode.css";
-import { ConvolverData, ConvolverDataSchema, defaultConvolverData } from "../types/ConvolverData.schema";
+import { ConvolverData, defaultConvolverData } from "../types/ConvolverData.schema";
 
 export type ConvolverFlowNodeProps = {
   data: ConvolverData;

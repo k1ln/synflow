@@ -1,6 +1,5 @@
 ﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
-import { Knob } from "react-rotary-knob-react19";
 import EventBus from '../sys/EventBus';
 import './AudioNode.css';
 import MidiKnob from '../components/MidiKnob';
@@ -548,7 +547,7 @@ const SequencerFrequencyFlowNode: React.FC<SequencerFrequencyFlowNodeProps> = ({
   }, [total]);
 
   // Memoized step box so only the changed step re-renders on state updates
-  const StepBox = React.useMemo(() => React.memo(function StepBox(props: {
+  const StepBox = React.useMemo(() => React.memo((props: {
     index: number;
     rowIndex: number;
     enabled: boolean;
@@ -556,7 +555,7 @@ const SequencerFrequencyFlowNode: React.FC<SequencerFrequencyFlowNodeProps> = ({
     note: string;
     freq: number;
     pulseMs: number;
-  }) {
+  }) => {
     const { index, rowIndex, enabled, selected, note, freq, pulseMs } = props;
     const baseStyle: React.CSSProperties = {
       width: 28,
@@ -660,31 +659,15 @@ const SequencerFrequencyFlowNode: React.FC<SequencerFrequencyFlowNodeProps> = ({
     }
   };
 
-  const squareBtnStyle: React.CSSProperties = {
-    background: '#1d2530',
-    color: '#e6e8ea',
-    border: '1px solid #303842',
+  const squareBtnSize: React.CSSProperties = {
     width: 18,
     height: 18,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 3,
     fontSize: 10,
-    cursor: 'pointer',
     lineHeight: 1,
     padding: 0
-  };
-
-  const inputStyle: React.CSSProperties = {
-    width: 32,
-    background: '#14191f',
-    color: 'inherit',
-    border: '1px solid #2a3139',
-    borderRadius: 3,
-    fontSize: 9,
-    padding: '2px 3px',
-    textAlign: 'center'
   };
 
   return (
@@ -820,13 +803,8 @@ const SequencerFrequencyFlowNode: React.FC<SequencerFrequencyFlowNodeProps> = ({
         >
           <label
             title="Toggle graphic updates"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
-              fontSize: 9,
-              color: 'inherit'
-            }}
+            className="node-label"
+            style={{ display: 'flex', alignItems: 'center', gap: 2 }}
           >
             <input
               type="checkbox"
@@ -860,7 +838,8 @@ const SequencerFrequencyFlowNode: React.FC<SequencerFrequencyFlowNodeProps> = ({
                 setTotal(Math.min(128, Math.max(1, num)));
               }
             }}
-            style={inputStyle}
+            className="nodrag node-input"
+            style={{ width: 32 }}
           />
           <input
             type="text"
@@ -880,10 +859,12 @@ const SequencerFrequencyFlowNode: React.FC<SequencerFrequencyFlowNodeProps> = ({
                 setDefaultPulseMs(Math.max(1, Math.min(5000, num)));
               }
             }}
-            style={{ ...inputStyle, width: 36 }}
+            className="nodrag node-input"
+            style={{ width: 36 }}
           />
           <button
-            style={{ ...squareBtnStyle, width: 40, fontSize: 8 }}
+            className="node-btn"
+            style={{ ...squareBtnSize, width: 40, fontSize: 8 }}
             title="Set all pulses"
             onClick={() =>
               setPulseLengths((pl) => pl.map(() => defaultPulseMs))
@@ -896,14 +877,8 @@ const SequencerFrequencyFlowNode: React.FC<SequencerFrequencyFlowNodeProps> = ({
             onChange={(e) =>
               updateKnobRange(e.target.value as FrequencyType)
             }
-            style={{
-              color: 'inherit',
-              background: '#121212',
-              border: '1px solid #555',
-              borderRadius: 3,
-              fontSize: 9,
-              padding: '2px'
-            }}
+            className="node-select"
+            style={{ width: 56 }}
           >
             {['midi', 'hz', 'lfo'].map((t) => (
               <option key={t} value={t}>
@@ -920,20 +895,20 @@ const SequencerFrequencyFlowNode: React.FC<SequencerFrequencyFlowNodeProps> = ({
             }}
           >
             <button
-              style={squareBtnStyle}
+              className="node-btn"
+              style={squareBtnSize}
               onClick={removeRow}
               disabled={rows <= 1}
               title="Remove row"
             >
               −
             </button>
-            <span
-              style={{ fontSize: 9, minWidth: 16, textAlign: 'center' }}
-            >
+            <span className="node-readout" style={{ minWidth: 16, textAlign: 'center' }}>
               {rows}
             </span>
             <button
-              style={squareBtnStyle}
+              className="node-btn"
+              style={squareBtnSize}
               onClick={addRow}
               disabled={rows >= 25}
               title="Add row"
@@ -943,7 +918,7 @@ const SequencerFrequencyFlowNode: React.FC<SequencerFrequencyFlowNodeProps> = ({
           </div>
           {selectedStep !== null && (
             <>
-              <span style={{ fontSize: 9, color: 'inherit' }}>
+              <span className="node-readout">
                 R{selectedRow + 1} S{selectedStep + 1}:
               </span>
               <MidiKnob
@@ -954,7 +929,7 @@ const SequencerFrequencyFlowNode: React.FC<SequencerFrequencyFlowNodeProps> = ({
                 value={knobValues[selectedRow]?.[selectedStep] || 69}
                 onChange={(e) => changeKnobValue(e)}
               />
-              <span style={{ fontSize: 9, color: 'inherit' }}>
+              <span className="node-readout">
                 {notes[selectedRow]?.[selectedStep] || 'A4'} (
                 {Math.round(
                   frequencies[selectedRow]?.[selectedStep] || 440
@@ -1007,7 +982,8 @@ const SequencerFrequencyFlowNode: React.FC<SequencerFrequencyFlowNodeProps> = ({
                     );
                   }
                 }}
-                style={{ ...inputStyle, width: 36 }}
+                className="nodrag node-input"
+            style={{ width: 36 }}
               />
             </>
           )}

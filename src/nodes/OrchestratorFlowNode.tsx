@@ -72,28 +72,12 @@ const OrchestratorFlowNode: React.FC<OrchestratorFlowNodeProps> = ({ data }) => 
   return (
     <div style={style}>
       {/* Node title */}
-      <div
-        style={{
-          fontSize: '12px',
-          fontWeight: 'bold',
-          marginBottom: '6px',
-          cursor: 'pointer',
-          padding: '2px'
-        }}
-        onClick={openEditor}
-      >
+      <div className="node-title" style={{ cursor: 'pointer' }} onClick={openEditor}>
         {label}
       </div>
 
       {/* Time display */}
-      <div
-        style={{
-          fontSize: '11px',
-          color: '#aaa',
-          marginBottom: '6px',
-          fontFamily: 'monospace'
-        }}
-      >
+      <div className="node-readout" style={{ marginBottom: 6, fontFamily: 'monospace' }}>
         {formatTime(currentPosition)} / {formatTime(orchestratorData.duration)}
       </div>
 
@@ -126,26 +110,8 @@ const OrchestratorFlowNode: React.FC<OrchestratorFlowNodeProps> = ({ data }) => 
       {/* Edit button */}
       <button
         onClick={openEditor}
-        style={{
-          width: '100%',
-          padding: '6px 8px',
-          background: '#00ff88',
-          color: '#000',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          fontSize: '12px',
-          fontWeight: 'bold',
-          transition: 'all 0.2s'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = '#00dd6f';
-          e.currentTarget.style.boxShadow = '0 0 8px rgba(0,255,136,0.6)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = '#00ff88';
-          e.currentTarget.style.boxShadow = 'none';
-        }}
+        className="node-btn active"
+        style={{ width: '100%', padding: '6px 8px', fontSize: 12 }}
       >
         Edit
       </button>

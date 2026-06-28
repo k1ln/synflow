@@ -331,9 +331,7 @@ const OscilloscopeFlowNode: React.FC<OscilloscopeFlowNodeProps> = ({
 
   return (
     <div style={panelStyle}>
-      <div style={{ textAlign: "center", marginBottom: "5px" }}>
-        <span><b>SCOPE</b></span>
-      </div>
+      <div className="node-title">SCOPE</div>
 
       <Handle
         type="target"
@@ -384,44 +382,44 @@ const OscilloscopeFlowNode: React.FC<OscilloscopeFlowNodeProps> = ({
       </div>
 
       {/* Controls with MidiKnobs - All in one line */}
-      <div className="nodrag" style={{ display: "flex", justifyContent: "space-around", alignItems: "flex-start", flexWrap: "wrap", gap: "4px" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: "9px" }}>Zoom X</span>
+      <div className="nodrag node-row" style={{ alignItems: "flex-start", flexWrap: "wrap", gap: 4 }}>
+        <div className="node-field" style={{ marginBottom: 0 }}>
+          <span className="node-label">Zoom X</span>
           <MidiKnob min={0} max={200} value={zoomX} onChange={setZoomX} label="ZoomX" accentColor="#f87171" />
-          <span style={{ fontSize: "8px" }}>{Math.round(zoomX)}</span>
+          <span className="node-readout">{Math.round(zoomX)}</span>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: "9px" }}>Zoom Y</span>
+        <div className="node-field" style={{ marginBottom: 0 }}>
+          <span className="node-label">Zoom Y</span>
           <MidiKnob min={10} max={400} value={Math.round(zoomY * 100)} onChange={(v) => setZoomY(v / 100)} label="ZoomY" accentColor="#f87171" />
-          <span style={{ fontSize: "8px" }}>{zoomY.toFixed(1)}</span>
+          <span className="node-readout">{zoomY.toFixed(1)}</span>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: "9px" }}>Time</span>
+        <div className="node-field" style={{ marginBottom: 0 }}>
+          <span className="node-label">Time</span>
           <MidiKnob min={25} max={400} value={Math.round(timeScale * 100)} onChange={(v) => setTimeScale(v / 100)} label="Time" accentColor="#f87171" />
-          <span style={{ fontSize: "8px" }}>{timeScale.toFixed(1)}</span>
+          <span className="node-readout">{timeScale.toFixed(1)}</span>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: "9px" }}>Pan X</span>
+        <div className="node-field" style={{ marginBottom: 0 }}>
+          <span className="node-label">Pan X</span>
           <MidiKnob min={0} max={100} value={Math.round(panOffset * 100)} onChange={(v) => setPanOffset(v / 100)} label="PanX" accentColor="#f87171" />
-          <span style={{ fontSize: "8px" }}>{Math.round(panOffset * 100)}</span>
+          <span className="node-readout">{Math.round(panOffset * 100)}</span>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: "9px" }}>Pan Y</span>
+        <div className="node-field" style={{ marginBottom: 0 }}>
+          <span className="node-label">Pan Y</span>
           <MidiKnob min={-100} max={100} value={Math.round(panY * 100)} onChange={(v) => setPanY(v / 100)} label="PanY" accentColor="#f87171" />
-          <span style={{ fontSize: "8px" }}>{Math.round(panY * 100)}</span>
+          <span className="node-readout">{Math.round(panY * 100)}</span>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: "9px" }}>Trig</span>
+        <div className="node-field" style={{ marginBottom: 0 }}>
+          <span className="node-label">Trig</span>
           <MidiKnob min={-100} max={100} value={Math.round(triggerLevel * 100)} onChange={(v) => setTriggerLevel(v / 100)} label="Trig" accentColor="#f87171" />
-          <span style={{ fontSize: "8px" }}>{Math.round(triggerLevel * 100)}</span>
+          <span className="node-readout">{Math.round(triggerLevel * 100)}</span>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: "9px" }}>FPS</span>
+        <div className="node-field" style={{ marginBottom: 0 }}>
+          <span className="node-label">FPS</span>
           <MidiKnob min={1} max={600} value={Math.round(fps * 10)} onChange={(v) => setFps(v / 10)} label="FPS" accentColor="#f87171" />
-          <span style={{ fontSize: "8px" }}>{fps.toFixed(1)}</span>
+          <span className="node-readout">{fps.toFixed(1)}</span>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: "9px" }}>Color</span>
+        <div className="node-field" style={{ marginBottom: 0 }}>
+          <span className="node-label">Color</span>
           <input
             className="nodrag"
             type="color"

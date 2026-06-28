@@ -35,7 +35,7 @@ export class VirtualFrequencyShifterNode extends VirtualNode<
   ) {
     super(audioContext, undefined, eventBus, node);
     this.shift = node.data?.shift ?? 0;
-    this.initWorklet();
+    void this.initWorklet();
     this.subscribeToFlowEvents();
   }
 

@@ -25,8 +25,8 @@ export class VirtualDelayNode extends VirtualNode<CustomNode & DelayFlowNodeProp
         const delayNode = this.audioNode as unknown as DelayNode;
         Object.keys(data.data).forEach((key) => {
             if (key === 'delayTime') {
-                let incoming = data.data[key];
-                let num = incoming * 1;
+                const incoming = data.data[key];
+                const num = incoming * 1;
                 if (typeof num === 'number' && !isNaN(num)) {
                     // Treat value as milliseconds
                     const seconds = Math.min(this.MAX_SECONDS, Math.max(0, num / 1000));

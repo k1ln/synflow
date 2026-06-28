@@ -434,36 +434,14 @@ const EqualizerFlowNode: React.FC<EqualizerFlowNodeProps> =
     return (
       <div style={panelStyle}>
         {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: "6px",
-            gap: "6px",
-          }}
-        >
+        <div className="node-row" style={{ justifyContent: "space-between", marginBottom: 6, gap: 6 }}>
           <input
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            style={{
-              flex: 1,
-              background: "#070a16",
-              border: "1px solid #1f2b46",
-              borderRadius: "8px",
-              padding: "4px 8px",
-              color: "#f4f6ff",
-              fontSize: "12px",
-            }}
+            className="nodrag node-input"
+            style={{ flex: 1, width: "auto" }}
           />
-          <span
-            style={{
-              fontSize: "11px",
-              color: "#9db0ff",
-            }}
-          >
-            5-Band EQ
-          </span>
+          <span className="node-sub" style={{ margin: 0 }}>5-Band EQ</span>
         </div>
 
         {/* Canvas */}
@@ -508,12 +486,8 @@ const EqualizerFlowNode: React.FC<EqualizerFlowNodeProps> =
             }}
           >
             <label
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                fontSize: "10px",
-                color: "#9db0ff",
-              }}
+              className="node-label"
+              style={{ display: "flex", flexDirection: "column", gap: 2 }}
             >
               Frequency
               <input
@@ -539,12 +513,8 @@ const EqualizerFlowNode: React.FC<EqualizerFlowNodeProps> =
               />
             </label>
             <label
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                fontSize: "10px",
-                color: "#9db0ff",
-              }}
+              className="node-label"
+              style={{ display: "flex", flexDirection: "column", gap: 2 }}
             >
               Gain (dB)
               <input
@@ -571,12 +541,8 @@ const EqualizerFlowNode: React.FC<EqualizerFlowNodeProps> =
               />
             </label>
             <label
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                fontSize: "10px",
-                color: "#9db0ff",
-              }}
+              className="node-label"
+              style={{ display: "flex", flexDirection: "column", gap: 2 }}
             >
               Q Factor
               <input
@@ -603,12 +569,8 @@ const EqualizerFlowNode: React.FC<EqualizerFlowNodeProps> =
               />
             </label>
             <label
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                fontSize: "10px",
-                color: "#9db0ff",
-              }}
+              className="node-label"
+              style={{ display: "flex", flexDirection: "column", gap: 2 }}
             >
               Type
               <select
@@ -653,19 +615,8 @@ const EqualizerFlowNode: React.FC<EqualizerFlowNodeProps> =
             <button
               key={band.id}
               onClick={() => setSelectedBand(idx)}
-              style={{
-                width: "50px",
-                padding: "4px",
-                fontSize: "10px",
-                background:
-                  selectedBand === idx
-                    ? "#60a5fa"
-                    : "#0a0d1a",
-                border: "1px solid #1f2b46",
-                borderRadius: "6px",
-                color: "#f4f6ff",
-                cursor: "pointer",
-              }}
+              className={`node-btn${selectedBand === idx ? ' active' : ''}`}
+              style={{ width: 50, padding: 4 }}
             >
               {band.frequency >= 1000
                 ? `${(band.frequency / 1000).toFixed(1)}k`

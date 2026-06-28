@@ -24,7 +24,7 @@ export class VirtualOnOffButtonNode extends VirtualNode<CustomNode & OnOffButton
     audioContext: AudioContext,
     eventBus: EventBus,
     node: CustomNode & OnOffButtonNodeProps) {
-    let audioNode = audioContext.createGain();
+    const audioNode = audioContext.createGain();
     audioNode.gain.value = node.data.isOn ? 1 : 0;
     super(audioContext, audioNode, eventBus, node);
     // Dummy audio node

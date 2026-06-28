@@ -48,22 +48,6 @@ const BlockingSwitchFlowNode: React.FC<BlockingSwitchFlowNodeProps> = ({ data })
 
     const clampOutputs = (value: number) => Math.max(1, Math.min(100, value));
     const nodeHeight = useMemo(() => Math.max(110, numOutputs * 22), [numOutputs]);
-    const divStyle = useMemo(
-        () => ({
-            padding: "4px",
-            border: "1px solid #555",
-            borderRadius: "6px",
-            width: "120px",
-            height: `${nodeHeight}px`,
-            textAlign: "center",
-            background: "#1f1f1f",
-            color: "#eee",
-            position: "relative",
-            fontFamily: "Arial, sans-serif",
-            ...(data.style || {}),
-        }),
-        [nodeHeight, data.style]
-    );
     const handleStyle = useMemo(
         () => ({
             width: "10px",
@@ -80,11 +64,9 @@ const BlockingSwitchFlowNode: React.FC<BlockingSwitchFlowNodeProps> = ({ data })
     }, [numOutputs, nodeHeight]);
 
     return (
-        <div style={divStyle}>
-            <div style={{ textAlign: "center", marginBottom: "2px", fontSize: "12px" }}>
-                <span><b>Blocking Switch</b></span>
-            </div>
-            <div style={{ fontSize: "9px", opacity: 0.7 }}>locks occupied lanes</div>
+        <div className="flow-node-shell" style={{ width: 120, height: nodeHeight, position: "relative", padding: 4, ...((data as any).style || {}) }}>
+            <div className="node-title">BLOCKING SWITCH</div>
+            <div className="node-sub">locks occupied lanes</div>
 
             {/* Main Input Handle */}
             <Handle
@@ -113,28 +95,14 @@ const BlockingSwitchFlowNode: React.FC<BlockingSwitchFlowNodeProps> = ({ data })
             <span style={{ position: "absolute", left: "-8px", top: "75%", fontSize: "9px", color: "#e55" }}>RST</span>
 
             {/* Number of Outputs Control */}
-            <div style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "3px",
-                marginTop: "4px"
-            }}>
-                <span style={{ fontSize: "11px" }}>No. steps</span>
-                <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+            <div className="node-field" style={{ gap: 3, marginTop: 4 }}>
+                <span className="node-label">No. steps</span>
+                <div className="node-row" style={{ gap: 4 }}>
                     <button
                         type="button"
                         onClick={() => setNumOutputs((n) => clampOutputs(n - 1))}
-                        style={{
-                            width: "18px",
-                            height: "18px",
-                            background: "#272727",
-                            color: "#fff",
-                            border: "1px solid #444",
-                            borderRadius: "3px",
-                            fontSize: "12px",
-                            cursor: "pointer"
-                        }}
+                        className="node-btn"
+                        style={{ width: 18, height: 18, padding: 0 }}
                         aria-label="Decrease outputs"
                     >−</button>
                     <input
@@ -169,30 +137,13 @@ const BlockingSwitchFlowNode: React.FC<BlockingSwitchFlowNodeProps> = ({ data })
                                 setNumOutputsInput(String(updated));
                             }
                         }}
-                        style={{
-                            width: 40,
-                            background: "#222",
-                            color: "#eee",
-                            border: "1px solid #444",
-                            borderRadius: 4,
-                            padding: "1px 3px",
-                            fontSize: 10,
-                            textAlign: "center"
-                        }}
+                        className="nodrag node-input sm"
                     />
                     <button
                         type="button"
                         onClick={() => setNumOutputs((n) => clampOutputs(n + 1))}
-                        style={{
-                            width: "18px",
-                            height: "18px",
-                            background: "#272727",
-                            color: "#fff",
-                            border: "1px solid #444",
-                            borderRadius: "3px",
-                            fontSize: "12px",
-                            cursor: "pointer"
-                        }}
+                        className="node-btn"
+                        style={{ width: 18, height: 18, padding: 0 }}
                         aria-label="Increase outputs"
                     >+</button>
                 </div>

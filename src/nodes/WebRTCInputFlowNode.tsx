@@ -179,18 +179,18 @@ const WebRTCInputFlowNode: React.FC<WebRTCInputFlowNodeProps> = ({ data }) => {
   return (
     <div style={{ ...(data.style || {}), width: 240, padding: 8 }}>
       <Handle type="source" position={Position.Right} id="output" style={{ top: 20, width: 10, height: 10 }} />
-      <div className="audio-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
-        <span><b>WebRTC In</b></span>
+      <div className="node-row" style={{ justifyContent: 'space-between', gap: 6 }}>
+        <span className="node-title" style={{ margin: 0, padding: 0, border: 0, textShadow: 'none', whiteSpace: 'nowrap' }}>WebRTC In</span>
         <input
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          className="audio-label-input"
-          style={{ flex: 1, color: data.style?.color || '#eee' }}
+          className="nodrag node-input"
+          style={{ flex: 1, width: 'auto' }}
         />
       </div>
       <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <label style={{ fontSize: '0.6rem', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <label className="node-label" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           WebRTC Server URL
           <input
             type="text"
@@ -198,16 +198,16 @@ const WebRTCInputFlowNode: React.FC<WebRTCInputFlowNodeProps> = ({ data }) => {
             onChange={(e) => setServerUrlInput(e.target.value)}
             onBlur={() => setServerUrlInput((prev) => normalizeBaseUrl(prev) || prev)}
             placeholder={DEFAULT_URL}
-            style={{ background: '#1e1e1e', color: '#eee', border: '1px solid #444', borderRadius: 4, padding: '4px 6px', fontSize: '0.65rem' }}
+            className="nodrag node-input wide"
           />
         </label>
-        <label style={{ fontSize: '0.6rem', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          Session {loading && <span style={{ fontSize: '0.5rem', opacity: 0.6 }}> (loading...)</span>}
+        <label className="node-label" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          Session {loading && <span className="node-readout" style={{ opacity: 0.6 }}> (loading...)</span>}
           <select
             value={sessionId || ''}
             onChange={(e) => setSessionId(e.target.value || undefined)}
             disabled={!sessions.length}
-            style={{ background: '#1e1e1e', color: '#eee', border: '1px solid #444', borderRadius: 4, padding: '4px 6px', fontSize: '0.65rem' }}
+            className="node-select wide"
           >
             <option value="">(select capture session)</option>
             {sessions.map((item) => (
@@ -220,9 +220,9 @@ const WebRTCInputFlowNode: React.FC<WebRTCInputFlowNodeProps> = ({ data }) => {
         <button
           type="button"
           onClick={() => loadSessions().catch(() => undefined)}
-          style={{ fontSize: '0.6rem', background: 'transparent', color: '#ccc', border: '1px solid #444', borderRadius: 4, padding: '4px 6px', cursor: 'pointer' }}
+          className="node-btn"
         >Refresh</button>
-        <div style={{ fontSize: '0.55rem', opacity: 0.7 }}>Status: {statusLabel}</div>
+        <div className="node-readout" style={{ opacity: 0.7 }}>Status: {statusLabel}</div>
         {fetchError && <div style={{ color: '#f55', fontSize: '0.55rem' }}>{fetchError}</div>}
         {connectionError && !fetchError && <div style={{ color: '#f55', fontSize: '0.55rem' }}>{connectionError}</div>}
         {!connectionError && !fetchError && <div style={{ fontSize: '0.55rem', opacity: 0.6 }}>Outputs audio from the selected WebRTC capture session.</div>}

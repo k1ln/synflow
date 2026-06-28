@@ -1,4 +1,4 @@
-﻿import { useRef, useCallback, useMemo, JSX, useState, use } from 'react';
+﻿import { useRef, useCallback, useMemo, useState } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -13,7 +13,6 @@ import { Connection, Edge, Node } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './Flow.css';
 
-import { Handle, Position } from '@xyflow/react';
 import OscillatorFlowNode from './nodes/OscillatorFlowNode';
 import AudioWorkletOscillatorFlowNode from './nodes/AudioWorkletOscillatorFlowNode';
 import MasterOutFlowNode from './nodes/MasterOutFlowNode';
@@ -28,7 +27,6 @@ import DistortionFlowNode from './nodes/DistortionFlowNode';
 import AudioWorkletFlowNode from './nodes/AudioWorkletFlowNode';
 import { useEffect } from 'react';
 import { AudioGraphManager } from './sys/AudioGraphManager';
-import { applyNodeChanges } from '@xyflow/react';
 import ADSRFlowNode from './nodes/ADSRFlowNode';
 import ButtonFlowNode from './nodes/ButtonFlowNode';
 import MidiButtonFlowNode from './nodes/MidiButtonFlowNode';
@@ -42,7 +40,6 @@ import BlockingSwitchFlowNode from './nodes/BlockingSwitchFlowNode';
 import FunctionFlowNode from './nodes/FunctionFlowNode';
 import SampleFlowNode from './nodes/SampleFlowNode';
 import MidiFlowNote from './nodes/MidiFlowNote';
-import { OpenDialog } from './util/OpenDialog';
 import ExplorerDialog, { ExplorerFlowItem } from './components/ExplorerDialog';
 import { v4 as uuidv4 } from 'uuid';
 import { SimpleIndexedDB } from './util/SimpleIndexedDB';
@@ -51,7 +48,6 @@ import OutputNode from './nodes/OutputNode';
 import { measureMicLatency, autoMeasureLatency } from './utils/latencyTest';
 import InputNode from './nodes/InputNode';
 import FlowNode from './nodes/FlowNode';
-import SignalRouterFlowNode from './nodes/SignalRouterFlowNode';
 import EventManager from './sys/EventManager';
 import SequencerFlowNode from './nodes/SequencerFlowNode';
 import SequencerFrequencyFlowNode from './nodes/SequencerFrequencyFlowNode';
@@ -59,21 +55,16 @@ import ScriptSequencerFlowNode from './nodes/ScriptSequencerFlowNode';
 // File System Audio storage utilities
 import {
   loadRootHandle as loadAudioRootHandle,
-  verifyPermission,
   selectAndPrepareRoot,
-  clearRootHandle,
   listAudioInSubdirectory,
-  ListedAudioFile,
   saveFlowToDisk,
   deleteFlowFromDisk,
   FlowData,
-  syncFlowsToDisk,
   syncDiskToDb,
   hasFsApi,
   getFileObjectURL,
   migrateIndexedDbRecordings,
   listAllSubdirectories,
-  listFlowsOnDisk,
   loadFlowFromDisk,
   makeFlowDbKey,
 } from './util/FileSystemAudioStore';
@@ -90,8 +81,6 @@ import NoiseFlowNode from './nodes/NoiseFlowNode';
 import LogFlowNode from './nodes/LogFlowNode';
 import RecordingFlowNode from './nodes/RecordingFlowNode';
 import MicFlowNode from './nodes/MicFlowNode';
-import WebRTCInputFlowNode from './nodes/WebRTCInputFlowNode';
-import WebRTCOutputFlowNode from './nodes/WebRTCOutputFlowNode';
 import MiniPlayer from './components/MiniPlayer';
 import AudioExplorer from './components/AudioExplorer';
 import AnalyzerNodeGPT from './nodes/AnalyzerNodeGPT';
@@ -121,14 +110,14 @@ function makeDistortionCurve(amount: number) {
   return curve;
 }
 
-let timeout = Date.now();
+const timeout = Date.now();
 
 const initialNodes = [];
 
 const nodeStyleObj = {
   padding: "5px",
   border: "1px solid rgba(80, 95, 130, 0.50)",
-  borderRadius: "5px",
+  borderRadius: "7px",
   textAlign: "center",
   background: "rgba(18, 19, 36, 0.52)",
   backdropFilter: "blur(6px)",
@@ -191,7 +180,7 @@ function normalizeNodeStylesForTheme(arr: any[] | undefined): any[] {
     if (!style.backdropFilter) style.backdropFilter = 'blur(6px)';
     // Ensure a consistent border and subtle glow for legacy nodes
     if (!style.border) style.border = '1px solid rgba(80, 95, 130, 0.50)';
-    if (!style.borderRadius) style.borderRadius = '5px';
+    if (!style.borderRadius) style.borderRadius = '7px';
     if (!style.glowColor) style.glowColor = '#00ff88';
     if (!style.boxShadow) style.boxShadow = makeGlow(style.glowColor, 'normal');
     if (!style.color) style.color = '#eeeeee';
@@ -211,56 +200,56 @@ function normalizeNodeStylesForTheme(arr: any[] | undefined): any[] {
 }
 
 const nodeTypes = {
-  MasterOutFlowNode: MasterOutFlowNode,
-  OscillatorFlowNode: OscillatorFlowNode,
-  AudioWorkletOscillatorFlowNode: AudioWorkletOscillatorFlowNode,
-  FlowNode: FlowNode,
-  BiquadFilterFlowNode: BiquadFilterFlowNode,
-  DynamicCompressorFlowNode: DynamicCompressorFlowNode,
-  GainFlowNode: GainFlowNode,
-  DelayFlowNode: DelayFlowNode,
-  ReverbFlowNode: ReverbFlowNode,
-  DistortionFlowNode: DistortionFlowNode,
-  AudioWorkletFlowNode: AudioWorkletFlowNode,
-  IIRFilterFlowNode: IIRFilterFlowNode,
-  ADSRFlowNode: ADSRFlowNode,
-  ButtonFlowNode: ButtonFlowNode,
-  MidiButtonFlowNode: MidiButtonFlowNode,
-  OnOffButtonFlowNode: OnOffButtonFlowNode,
-  ClockFlowNode: ClockFlowNode,
-  FrequencyFlowNode: FrequencyFlowNode,
-  ConstantFlowNode: ConstantFlowNode,
-  SwitchFlowNode: SwitchFlowNode,
-  BlockingSwitchFlowNode: BlockingSwitchFlowNode,
-  FunctionFlowNode: FunctionFlowNode,
-  InputNode: InputNode,
-  OutputNode: OutputNode,
+  MasterOutFlowNode,
+  OscillatorFlowNode,
+  AudioWorkletOscillatorFlowNode,
+  FlowNode,
+  BiquadFilterFlowNode,
+  DynamicCompressorFlowNode,
+  GainFlowNode,
+  DelayFlowNode,
+  ReverbFlowNode,
+  DistortionFlowNode,
+  AudioWorkletFlowNode,
+  IIRFilterFlowNode,
+  ADSRFlowNode,
+  ButtonFlowNode,
+  MidiButtonFlowNode,
+  OnOffButtonFlowNode,
+  ClockFlowNode,
+  FrequencyFlowNode,
+  ConstantFlowNode,
+  SwitchFlowNode,
+  BlockingSwitchFlowNode,
+  FunctionFlowNode,
+  InputNode,
+  OutputNode,
   //SignalRouterFlowNode: SignalRouterFlowNode,
-  SampleFlowNode: SampleFlowNode,
-  MidiFlowNote: MidiFlowNote,
-  SequencerFlowNode: SequencerFlowNode,
-  SequencerFrequencyFlowNode: SequencerFrequencyFlowNode,
-  ScriptSequencerFlowNode: ScriptSequencerFlowNode,
-  AutomationFlowNode: AutomationFlowNode,
-  ArpeggiatorFlowNode: ArpeggiatorFlowNode,
-  AnalyzerNodeGPT: AnalyzerNodeGPT,
-  OscilloscopeFlowNode: OscilloscopeFlowNode,
-  LogFlowNode: LogFlowNode,
-  MidiKnobFlowNode: MidiKnobFlowNode,
-  EventFlowNode: EventFlowNode,
-  MouseTriggerButton: MouseTriggerButton,
-  NoiseFlowNode: NoiseFlowNode,
-  MicFlowNode: MicFlowNode,
-  RecordingFlowNode: RecordingFlowNode,
-  SpeedDividerFlowNode: SpeedDividerFlowNode,
-  AudioSignalFreqShifterFlowNode: AudioSignalFreqShifterFlowNode,
-  FlowEventFreqShifterFlowNode: FlowEventFreqShifterFlowNode,
-  EqualizerFlowNode: EqualizerFlowNode,
-  VocoderFlowNode: VocoderFlowNode,
-  MidiFileFlowNode: MidiFileFlowNode,
-  OrchestratorFlowNode: OrchestratorFlowNode,
-  UnisonBeginFlowNode: UnisonBeginFlowNode,
-  UnisonEndFlowNode: UnisonEndFlowNode,
+  SampleFlowNode,
+  MidiFlowNote,
+  SequencerFlowNode,
+  SequencerFrequencyFlowNode,
+  ScriptSequencerFlowNode,
+  AutomationFlowNode,
+  ArpeggiatorFlowNode,
+  AnalyzerNodeGPT,
+  OscilloscopeFlowNode,
+  LogFlowNode,
+  MidiKnobFlowNode,
+  EventFlowNode,
+  MouseTriggerButton,
+  NoiseFlowNode,
+  MicFlowNode,
+  RecordingFlowNode,
+  SpeedDividerFlowNode,
+  AudioSignalFreqShifterFlowNode,
+  FlowEventFreqShifterFlowNode,
+  EqualizerFlowNode,
+  VocoderFlowNode,
+  MidiFileFlowNode,
+  OrchestratorFlowNode,
+  UnisonBeginFlowNode,
+  UnisonEndFlowNode,
 };
 const orderedNodeTypes = Object.fromEntries(
   Object.entries(nodeTypes).sort(([a], [b]) => a.localeCompare(b))
@@ -270,7 +259,30 @@ const orderedNodeTypes = Object.fromEntries(
 
 
 
-const currentFlow = localStorage.getItem('currentFlow');
+// Per-tab pointer to the currently open flow. sessionStorage is scoped to the
+// tab and survives reload, so two tabs editing different flows stay independent.
+// localStorage is kept in sync as a fallback for brand-new tabs (no session yet)
+// so they open on the last-known flow instead of blank.
+const readCurrentFlowPointer = () => ({
+  name: sessionStorage.getItem('currentFlow') ?? localStorage.getItem('currentFlow'),
+  folder: sessionStorage.getItem('currentFlowFolder') ?? localStorage.getItem('currentFlowFolder') ?? '',
+});
+const writeCurrentFlowName = (name: string) => {
+  sessionStorage.setItem('currentFlow', name);
+  localStorage.setItem('currentFlow', name);
+};
+const writeCurrentFlowFolder = (folder: string) => {
+  sessionStorage.setItem('currentFlowFolder', folder);
+  localStorage.setItem('currentFlowFolder', folder);
+};
+const clearCurrentFlowPointer = () => {
+  sessionStorage.removeItem('currentFlow');
+  sessionStorage.removeItem('currentFlowFolder');
+  localStorage.removeItem('currentFlow');
+  localStorage.removeItem('currentFlowFolder');
+};
+
+const currentFlow = readCurrentFlowPointer().name;
 
 let ctx: AudioContext;
 
@@ -291,6 +303,14 @@ function Flow() {
   // Persist AudioGraphManager instance across renders using a ref
   const managerRef = useRef<AudioGraphManager | undefined>(undefined);
   let manager = managerRef.current;
+  // Audio output latency mode, selectable in the top bar and persisted across
+  // reloads. `latencyHint` can only be set when the AudioContext is created, so
+  // the ref lets init() always read the latest value, and changing it while
+  // playing re-initializes the graph to apply it.
+  const latencyHintRef = useRef<AudioContextLatencyCategory>(
+    (localStorage.getItem('audioLatencyHint') as AudioContextLatencyCategory) || 'interactive'
+  );
+  const [latencyHint, setLatencyHint] = useState<AudioContextLatencyCategory>(latencyHintRef.current);
   const reactFlow = useReactFlow();
   const eventBus = EventBus.getInstance();
   // Local flow storage (IndexedDB)
@@ -348,7 +368,7 @@ function Flow() {
             if (node.matches && node.matches('.react-flow__handle, .xyflow-handle, .react-flow__handle--target, .react-flow__handle--source')) {
               setHandleTitle(node);
             }
-            node.querySelectorAll && node.querySelectorAll('.react-flow__handle, .xyflow-handle, .react-flow__handle--target, .react-flow__handle--source').forEach(setHandleTitle);
+            if (node.querySelectorAll) node.querySelectorAll('.react-flow__handle, .xyflow-handle, .react-flow__handle--target, .react-flow__handle--source').forEach(setHandleTitle);
           }
         }
       }
@@ -358,8 +378,8 @@ function Flow() {
   }, []);
 
 
-  let storedNodes: Node[] = [];
-  let storedEdges: Edge[] = [];
+  const storedNodes: Node[] = [];
+  const storedEdges: Edge[] = [];
 
   const [nodes, setNodes, onNodesChange] = useNodesState(storedNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(storedEdges);
@@ -418,8 +438,8 @@ function Flow() {
     nodes.forEach((node: any) => {
       node.data.onChange = (data: any) => {
         //console.log("Node data changed:", node.id, data);
-        eventBus.emit(node.id + ".params.updateParams", { nodeid: node.id, data: data });
-        eventBus.emit("params.updateParams", { nodeid: node.id, data: data });
+        eventBus.emit(node.id + ".params.updateParams", { nodeid: node.id, data });
+        eventBus.emit("params.updateParams", { nodeid: node.id, data });
 
         setNodes((nds) =>
           nds.map((n) => (n.id === node.id ? { ...n, data: { ...n.data, ...data } } : n))
@@ -562,8 +582,8 @@ function Flow() {
       setEdges(recEdges);
       setFlowNameInput(flowName);
       setCurrentFlowFolder(recFolder);
-      localStorage.setItem('currentFlow', flowName);
-      localStorage.setItem('currentFlowFolder', recFolder);
+      writeCurrentFlowName(flowName);
+      writeCurrentFlowFolder(recFolder);
       // Record last opened flow; freshness check runs in effect once auth state & ensureFlowFresh are ready
       lastOpenedFlowRef.current = flowName;
     } finally {
@@ -593,8 +613,7 @@ function Flow() {
     const loadInitial = async () => {
       try {
         // Removed URL path parsing (/editNode/, /editFlow/) due to bugs
-        const storedFlow = localStorage.getItem('currentFlow');
-        const storedFolder = localStorage.getItem('currentFlowFolder') || '';
+        const { name: storedFlow, folder: storedFolder } = readCurrentFlowPointer();
         if (storedFlow) {
           setIsFlowLoading(true);
           await openFlowFromIndexedDB(storedFlow, storedFolder);
@@ -607,9 +626,9 @@ function Flow() {
         setIsFlowLoading(false);
       }
     };
-    loadInitial();
+    void loadInitial();
 
-    (async () => {
+    void (async () => {
       const flows = await db.get("*");
       //console.log("Flows from IndexedDB:", flows);
       const names = flows.map((flow: any) => flow.id);
@@ -726,7 +745,7 @@ function Flow() {
         // Set flow name from file name (without .json extension) or from data
         const flowName = flowData.name || file.name.replace(/\.json$/i, '');
         setFlowNameInput(flowName);
-        localStorage.setItem('currentFlow', flowName);
+        writeCurrentFlowName(flowName);
         showToast?.(`Imported flow: ${flowName}`, 'info');
       } catch (err) {
         console.error('Failed to import flow:', err);
@@ -911,7 +930,7 @@ function Flow() {
 
         setAllFolderAudio(folderData);
         // Keep recordings state for backward compatibility (use 'recording' folder if exists)
-        setRecordings(folderData['recording'] || []);
+        setRecordings(folderData.recording || []);
       } catch (e) { console.warn('[FS recordings] list failed', e); }
       lastFsScanRef.current = performance.now();
       fsScanInFlightRef.current = false;
@@ -934,7 +953,7 @@ function Flow() {
   }, [fsRootHandle]);
   // Initial FS setup attempt (run once on mount)
   useEffect(() => {
-    (async () => {
+    void (async () => {
       const supported = await hasFsApi();
       setFsSupported(supported);
       if (!supported) { return; }
@@ -961,17 +980,17 @@ function Flow() {
         setShowFsFolderPrompt(true);
       }
     })();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);  
 
   // Trigger refresh when fsRootHandle is first set (but not on initial null)
   const hasInitializedFsRef = useRef(false);
   useEffect(() => {
     if (fsRootHandle && !hasInitializedFsRef.current) {
       hasInitializedFsRef.current = true;
-      refreshRecordings();
+      void refreshRecordings();
 
       // Sync flows from disk to DB (disk is leader)
-      (async () => {
+      void (async () => {
         try {
           const diskSyncResult = await syncDiskToDb(fsRootHandle, db);
           if (diskSyncResult.synced > 0) {
@@ -1068,14 +1087,14 @@ function Flow() {
         console.warn('[Flow Sync] Error syncing from disk', e);
       }
 
-      refreshRecordings();
+      void refreshRecordings();
       showToast('Folder selected and flows loaded');
     } else {
       showToast('Folder selection cancelled', 'error');
     }
   }, [refreshRecordings, showToast, db]);
   // Expose toggle for TopBar button
-  useEffect(() => { (window as any).flowSynth.toggleRecordingsPanel = () => { setRecordingsPanelOpen(o => !o); if (!recordingsPanelOpen) refreshRecordings(); }; }, [recordingsPanelOpen, refreshRecordings]);
+  useEffect(() => { (window as any).flowSynth.toggleRecordingsPanel = () => { setRecordingsPanelOpen(o => !o); if (!recordingsPanelOpen) void refreshRecordings(); }; }, [recordingsPanelOpen, refreshRecordings]);
   // Recording ready events now handled internally by VirtualRecordingNode (legacy listener removed)
 
 
@@ -1104,8 +1123,8 @@ function Flow() {
     if (!flowNameInput) return;
 
     const name = flowNameInput.trim();
-    localStorage.setItem('currentFlow', name);
-    localStorage.setItem('currentFlowFolder', currentFlowFolder);
+    writeCurrentFlowName(name);
+    writeCurrentFlowFolder(currentFlowFolder);
     // Always assign a fresh updated_at so
     // "newest wins" sync logic is straightforward
     const updated_at = new Date().toISOString();
@@ -1157,7 +1176,7 @@ function Flow() {
 
     // Always sync to IndexedDB as well (cache/fallback)
     const dbKey = makeFlowDbKey(name, currentFlowFolder);
-    db.put(dbKey, payloadLocal);
+    void db.put(dbKey, payloadLocal);
 
     setFlowNameInput(name);
     setSaveDialogOpen(false);
@@ -1213,8 +1232,8 @@ function Flow() {
     }
 
     setCurrentFlowFolder(folder);
-    localStorage.setItem('currentFlow', name);
-    localStorage.setItem('currentFlowFolder', folder);
+    writeCurrentFlowName(name);
+    writeCurrentFlowFolder(folder);
     const payloadNodes = strippEverythingButData(nodes);
     const payloadEdges = strippEverythingButData(edges);
     const updated_at = new Date().toISOString();
@@ -1240,7 +1259,7 @@ function Flow() {
 
     // Always sync to IndexedDB as well (cache/fallback)
     const dbKey = makeFlowDbKey(name, folder);
-    db.put(dbKey, {
+    void db.put(dbKey, {
       nodes: payloadNodes,
       edges: payloadEdges,
       folder_path: folder,
@@ -1462,11 +1481,11 @@ function Flow() {
   const init = () => {
     //console.log("Initializing AudioGraphManager...");
     if (ctx !== undefined) {
-      ctx.close();
+      void ctx.close();
     }
     // Create AudioContext with low latency settings
     ctx = new AudioContext({
-      latencyHint: 'interactive',  // Lowest latency mode (typically 3-6ms)
+      latencyHint: latencyHintRef.current,  // 'interactive' = lowest latency; 'playback' = most buffer headroom
       sampleRate: 48000,
       // Higher sample rate for better quality
     });
@@ -1485,7 +1504,7 @@ function Flow() {
     }
     managerRef.current = new AudioGraphManager(ctx, nodesRef, edgesRef);
     manager = managerRef.current;
-    manager.initialize();
+    void manager.initialize();
     audioGraphManagerRef.current = manager;
     setIsPlaying(true);
     try { EventBus.getInstance().emit('audio.started', {}); } catch { /* noop */ }
@@ -1663,7 +1682,7 @@ function Flow() {
         ...data,
         bpm: 120,
         isEmitting: true,
-        eventBus: eventBus,
+        eventBus,
         style: nodeStyleObj
       }
     }
@@ -1675,7 +1694,7 @@ function Flow() {
         style: nodeStyleObj
       }
     }
-    else if (type == "FrequencyFlowNode") {
+    else if (type === "FrequencyFlowNode") {
       data = {
         ...data,
         value: 440,
@@ -1685,21 +1704,21 @@ function Flow() {
         style: nodeStyleObj
       }
     }
-    else if (type == "ConstantFlowNode") {
+    else if (type === "ConstantFlowNode") {
       data = {
         ...data,
         value: 1,
         style: nodeStyleObj
       }
     }
-    else if (type == "SwitchFlowNode") {
+    else if (type === "SwitchFlowNode") {
       data = {
         ...data,
         numOutputs: 2,
         activeOutput: 1,
       }
     }
-    else if (type == "BlockingSwitchFlowNode") {
+    else if (type === "BlockingSwitchFlowNode") {
       data = {
         ...data,
         numOutputs: 2,
@@ -1713,7 +1732,7 @@ function Flow() {
         db: dbRef.current,
       }
     }
-    else if (type == "FunctionFlowNode") {
+    else if (type === "FunctionFlowNode") {
       data = {
         functionCode: "function process(value) {\n  // Modify the value here\n  return value;\n}",
         value: "",
@@ -1899,14 +1918,14 @@ function Flow() {
     if (copy && copiedNode) {
       // If copying, use the copied node's data
       newNode = {
-        id: id,
-        type: type,
+        id,
+        type,
         position: basePosition,
         data: {
-          ...copiedNode.data, id: id, onChange: (data: any) => {
+          ...copiedNode.data, id, onChange: (data: any) => {
             //console.log("Node data changed:", data);
-            eventBus.emit(id + ".params.updateParams", { nodeid: id, data: data });
-            eventBus.emit("params.updateParams", { nodeid: id, data: data });
+            eventBus.emit(id + ".params.updateParams", { nodeid: id, data });
+            eventBus.emit("params.updateParams", { nodeid: id, data });
           }
         },
         zIndex,
@@ -1914,14 +1933,14 @@ function Flow() {
       };
     } else {
       newNode = {
-        id: id,
-        type: type,
+        id,
+        type,
         position: basePosition,
         data: {
-          ...data, id: id, style: { ...styleObj }, onChange: (data: any) => {
+          ...data, id, style: { ...styleObj }, onChange: (data: any) => {
             // console.log("Node data changed:", data);
-            eventBus.emit(id + ".params.updateParams", { nodeid: id, data: data });
-            eventBus.emit("params.updateParams", { nodeid: id, data: data });
+            eventBus.emit(id + ".params.updateParams", { nodeid: id, data });
+            eventBus.emit("params.updateParams", { nodeid: id, data });
           }
         },
         zIndex,
@@ -2138,8 +2157,8 @@ function Flow() {
               ...node.data,
               id: newId,
               onChange: (data: any) => {
-                eventBus.emit(newId + ".params.updateParams", { nodeid: newId, data: data });
-                eventBus.emit("params.updateParams", { nodeid: newId, data: data });
+                eventBus.emit(newId + ".params.updateParams", { nodeid: newId, data });
+                eventBus.emit("params.updateParams", { nodeid: newId, data });
               },
             },
           } as Node;
@@ -2182,9 +2201,9 @@ function Flow() {
   function saveFlowToIndexedDB(name: string) {
     if (!name) return;
     const dbKey = makeFlowDbKey(name, currentFlowFolder);
-    db.put(dbKey, { nodes, edges, folder_path: currentFlowFolder });
-    localStorage.setItem('currentFlow', name);
-    localStorage.setItem('currentFlowFolder', currentFlowFolder);
+    void db.put(dbKey, { nodes, edges, folder_path: currentFlowFolder });
+    writeCurrentFlowName(name);
+    writeCurrentFlowFolder(currentFlowFolder);
     setFlowNameInput(name);
     setFlowItems((prev) => prev.includes(name) ? prev : [...prev, name]);
   }
@@ -2198,7 +2217,7 @@ function Flow() {
     const payloadEdges = strippEverythingButData(edges);
     const updatedAt = new Date().toISOString();
 
-    (async () => {
+    void (async () => {
       try {
         if (oldName && oldName !== trimmed) {
           try {
@@ -2248,7 +2267,7 @@ function Flow() {
       }
     })();
 
-    localStorage.setItem('currentFlow', trimmed);
+    writeCurrentFlowName(trimmed);
     setFlowNameInput(trimmed);
     setFlowItems((items) => {
       const withoutOld = oldName
@@ -2281,7 +2300,7 @@ function Flow() {
           setSaveDialogIsNewFlow(true);
           setSaveDialogOpen(true);
         }}
-        onOpenFlow={() => { refreshFlowList(); setOpenDialogFlows(true); }}
+        onOpenFlow={() => { void refreshFlowList(); setOpenDialogFlows(true); }}
         onTogglePalette={() => setNodePaletteOpen(prev => !prev)}
         onSaveFlow={triggerSave}
         onExportFlowJson={exportFlowAsJSON}
@@ -2289,6 +2308,14 @@ function Flow() {
         onImportFlowJsonClick={() => document.getElementById('import-flow-json-input')?.click()}
         onImportAllJsonClick={() => document.getElementById('import-all-json-input')?.click()}
         onInitAudio={() => { if (!isPlaying) { init(); } }}
+        latencyHint={latencyHint}
+        onLatencyHintChange={(hint) => {
+          latencyHintRef.current = hint;
+          setLatencyHint(hint);
+          try { localStorage.setItem('audioLatencyHint', hint); } catch { /* noop */ }
+          // latencyHint is fixed at context creation — re-init to apply it live.
+          if (isPlaying) { init(); }
+        }}
         onStopAudio={() => {
           try {
             if (managerRef.current) {
@@ -2362,8 +2389,7 @@ function Flow() {
           setFlowItems(items => items.filter(i => i !== flowNameInput));
           setLocalFlowMeta(meta => meta.filter(m => m.name !== flowNameInput));
           setFlowNameInput('');
-          localStorage.removeItem('currentFlow');
-          localStorage.removeItem('currentFlowFolder');
+          clearCurrentFlowPointer();
           setNodes([]); setEdges([]);
         } : undefined}
       />
@@ -2419,14 +2445,14 @@ function Flow() {
               // Extract just the filename from the ID
               const fname = item.name || (item.id.split('-fs-')[0] + '.wav');
               await (dir as any).removeEntry(fname).catch(() => { });
-              refreshRecordings();
+              void refreshRecordings();
             } catch (e) {
               console.warn('[FS delete] failed', e);
             }
           } else {
             try {
               await recordingsDbRef.current.delete(item.id);
-              refreshRecordings();
+              void refreshRecordings();
             } catch (e) {
               console.warn('[IDB delete] failed', e);
             }
@@ -2568,7 +2594,7 @@ function Flow() {
         loading={false}
         usePortal
         fullScreen={false}
-        onOpenLocal={(name, folder_path) => { openFlowFromIndexedDB(name, folder_path); setOpenDialogFlows(false); }}
+        onOpenLocal={(name, folder_path) => { void openFlowFromIndexedDB(name, folder_path); setOpenDialogFlows(false); }}
         onClose={() => setOpenDialogFlows(false)}
         onDeleteLocal={async (name, folder_path) => {
           try {
@@ -2579,7 +2605,7 @@ function Flow() {
           setLocalFlowMeta(meta => meta.filter(m => m.name !== name));
           if (flowNameInput === name) {
             setFlowNameInput('');
-            localStorage.removeItem('currentFlow');
+            clearCurrentFlowPointer();
             setNodes([]); setEdges([]);
           }
         }}
@@ -2590,7 +2616,7 @@ function Flow() {
         }}
         onRenameFolder={(oldP, newP) => {
           setFolderPaths(prev => prev.map(p => p === oldP || p.startsWith(oldP + '/') ? newP + p.slice(oldP.length) : p));
-          (async () => {
+          void (async () => {
             const all = await db.get('*');
             for (const rec of all) {
               const fp = rec.folder_path || rec.value?.folder_path || '';
@@ -2608,7 +2634,7 @@ function Flow() {
           })();
         }}
         onMoveFlow={(flow, targetFolder) => {
-          (async () => {
+          void (async () => {
             const oldKey = makeFlowDbKey(flow.name, flow.folder_path || '');
             const recs = await db.get(oldKey);
             if (recs && recs[0]) {
@@ -2618,7 +2644,7 @@ function Flow() {
               await db.put(newKey, { nodes: r.nodes || r.value?.nodes || [], edges: r.edges || r.value?.edges || [], folder_path: targetFolder, updated_at: r.updated_at });
               if (flowNameInput === flow.name) {
                 setCurrentFlowFolder(targetFolder);
-                localStorage.setItem('currentFlowFolder', targetFolder);
+                writeCurrentFlowFolder(targetFolder);
               }
               const refreshed = await db.get('*');
               setLocalFlowMeta(refreshed.map((f: any) => ({ id: f.id, name: (f.id || '').split('/').pop() || f.id, folder_path: f.folder_path || f.value?.folder_path || '', updated_at: f.updated_at, _source: 'local' })));
@@ -2629,7 +2655,7 @@ function Flow() {
           })();
         }}
         onRenameFlow={(flow, newName) => {
-          (async () => {
+          void (async () => {
             // Handle local flows
             if (flow._source === 'local') {
               const oldKey = makeFlowDbKey(flow.name, flow.folder_path || '');
@@ -2648,7 +2674,7 @@ function Flow() {
                 await db.put(newKey, { nodes: nodesToSave, edges: edgesToSave, folder_path: folderPath, updated_at });
                 setFlowItems(prev => prev.filter(n => n !== flow.name).concat(newName));
                 setLocalFlowMeta(meta => meta.filter(m => m.name !== flow.name).concat({ id: newName, name: newName, folder_path: flow.folder_path || '', updated_at, _source: 'local' }));
-                if (isCurrentFlow) { setFlowNameInput(newName); localStorage.setItem('currentFlow', newName); }
+                if (isCurrentFlow) { setFlowNameInput(newName); writeCurrentFlowName(newName); }
 
                 // Also rename on disk if fs handle is present
                 if (fsRootHandle) {

@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { Knob } from 'react-rotary-knob-react19';
 import EventBus from '../sys/EventBus';
 import MidiKnob from '../components/MidiKnob';
 
 export type CurveType = 'linear' | 'logarithmic' | 'exponential';
-let render = 0;
+const render = 0;
 export type MidiKnobMapping = {
   type: 'cc';
   channel: number; // 0-based
@@ -134,31 +133,24 @@ const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
             placeholder="name"
             value={label}
             onChange={(e)=> setLabel(e.target.value)}
-            style={{ width: 50, background: 'transparent', color: '#eee', border: '1px solid #555', borderRadius: 4, padding: '1px 3px', fontSize: 10 }}
+            className="nodrag node-input"
+            style={{ width: 50 }}
             title="Module name (right-click to MIDI learn)"
           />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+        <div className="node-col" style={{ gap: 2 }}>
           <div style={{ width:44, height:44, display:'flex', alignItems:'center', justifyContent:'center' }}>
             <MidiKnob min={knobMin} max={knobMax} value={knobVal} onChange={onKnobChange} accentColor="#facc15" />
           </div>
-          <div style={{ fontSize: 10, color: '#aaa' }}>
+          <div className="node-readout">
             {isFinite(value) ? value.toFixed(4) : '0.0000'}
           </div>
         {/* Caret toggle */}
         <div style={{ marginTop: 2, width: '100%', display: 'flex', justifyContent: 'center' }}>
           <button
             onClick={() => setControlsOpen(o => !o)}
-            style={{
-              background: 'transparent',
-              color: '#ccc',
-              cursor: 'pointer',
-              fontSize: 9,
-              padding: '2px 4px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4
-            }}
+            className="node-btn"
+            style={{ fontSize: 9, padding: '2px 6px', display: 'flex', alignItems: 'center', gap: 4 }}
             title={controlsOpen ? 'Hide advanced controls' : 'Show advanced controls'}
           >
             <span style={{ display:'inline-block', transform: controlsOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 120ms' }}>▶</span>
@@ -167,8 +159,8 @@ const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
         </div>
         {controlsOpen && (
         <div style={{ display:'flex', flexDirection:'column', gap:2, marginTop:2 }}>
-            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
-              <label style={{ fontSize: 10 }}>Min</label>
+            <div className="node-field" style={{ gap: 1, marginBottom: 0 }}>
+              <label className="node-label">Min</label>
               <input
                 type="text"
                 inputMode="decimal"
@@ -181,7 +173,7 @@ const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
                     return;
                   }
                   // Basic filter: keep digits, optional leading '-', one '.'
-                  let cleaned = raw.replace(/[^0-9+\-\.]/g, '');
+                  let cleaned = raw.replace(/[^0-9+\-.]/g, '');
                   // Ensure only first '-' and only at start
                   cleaned = cleaned.replace(/(?!^)-/g, '');
                   // Collapse multiple dots
@@ -205,11 +197,12 @@ const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
                     setMinText(String(min));
                   }
                 }}
-                style={{ width:52, background:'transparent', color:'#eee', border:'1px solid #555', borderRadius: 4, padding:'1px 2px', fontSize: 9 }}
+                className="nodrag node-input"
+                style={{ width: 52 }}
               />
             </div>
-            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
-              <label style={{ fontSize: 10 }}>Max</label>
+            <div className="node-field" style={{ gap: 1, marginBottom: 0 }}>
+              <label className="node-label">Max</label>
               <input
                 type="text"
                 inputMode="decimal"
@@ -220,7 +213,7 @@ const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
                     setMaxText(raw);
                     return;
                   }
-                  let cleaned = raw.replace(/[^0-9+\-\.]/g, '');
+                  let cleaned = raw.replace(/[^0-9+\-.]/g, '');
                   cleaned = cleaned.replace(/(?!^)-/g, '');
                   const parts = cleaned.split('.');
                   if (parts.length > 2) {
@@ -241,12 +234,13 @@ const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
                     setMaxText(String(max));
                   }
                 }}
-                style={{ width:52, background:'transparent', color:'#eee', border:'1px solid #555', borderRadius: 4, padding:'1px 2px', fontSize: 9 }}
+                className="nodrag node-input"
+                style={{ width: 52 }}
               />
             </div>
-            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
-              <label style={{ fontSize: 10 }}>Curve</label>
-              <select value={curve} onChange={(e)=> setCurve(e.target.value as CurveType)} style={{ width:62, background:'transparent', color:'#eee', border:'1px solid #555', borderRadius:4, padding:'1px 2px', fontSize: 9 }}>
+            <div className="node-field" style={{ gap: 1, marginBottom: 0 }}>
+              <label className="node-label">Curve</label>
+              <select value={curve} onChange={(e)=> setCurve(e.target.value as CurveType)} className="node-select" style={{ width: 62 }}>
                 <option value="linear">linear</option>
                 <option value="logarithmic">logarithmic</option>
                 <option value="exponential">exponential</option>

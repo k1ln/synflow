@@ -18,7 +18,7 @@ export class VirtualMidiButtonNode extends VirtualNode<CustomNode & MidiButtonNo
     this.eventManager = eventManager;
     this.oldButton = this.node.data.assignedKey;
     this.midiMapping = (this.node.data as any).midiMapping || null;
-    this.setupMidi();
+    void this.setupMidi();
   }
 
   render() {

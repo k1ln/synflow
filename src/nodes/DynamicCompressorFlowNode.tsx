@@ -57,9 +57,7 @@ const DynamicCompressorFlowNode: React.FC<DynamicCompressorFlowNodeProps> = ({ d
   }
   return (
     <div style={data.style}>
-      <div style={{ textAlign: "center", marginBottom: "0px", padding: "2px 4px" }}>
-        <span><b>COMPRESSOR</b></span>
-      </div>
+      <div className="node-title">COMPRESSOR</div>
       
       {/* Main Input */}
       <Handle
@@ -78,10 +76,10 @@ const DynamicCompressorFlowNode: React.FC<DynamicCompressorFlowNodeProps> = ({ d
       />
 
       {/* Threshold and Knee side by side */}
-      <div style={{ display: "flex", justifyContent: "space-around", gap: 4 }}>
+      <div className="node-row" style={{ gap: 4 }}>
         {/* Threshold Input with MIDI-learnable knob */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span>Thresh.</span>
+        <div className="node-field">
+          <span className="node-label">Thresh.</span>
           <MidiKnob
             accentColor="#60a5fa"
             min={-100}
@@ -101,17 +99,8 @@ const DynamicCompressorFlowNode: React.FC<DynamicCompressorFlowNodeProps> = ({ d
               const val = parseFloat(e.target.value);
               if (!isNaN(val)) setThreshold(Math.min(0, Math.max(-100, val)));
             }}
-            style={{ 
-              width: 50, 
-              background: '#222', 
-              color: '#eee', 
-              border: '1px solid #444', 
-              borderRadius: 4, 
-              padding: '1px 3px', 
-              fontSize: 10, 
-              textAlign: 'center',
-              marginBottom: '3px' 
-            }}
+            className="node-input"
+            style={{ width: 50 }}
           />
           <Handle
             type="target"
@@ -122,8 +111,8 @@ const DynamicCompressorFlowNode: React.FC<DynamicCompressorFlowNodeProps> = ({ d
         </div>
 
         {/* Knee Input with MIDI-learnable knob */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span>Knee</span>
+        <div className="node-field">
+          <span className="node-label">Knee</span>
           <MidiKnob
             accentColor="#60a5fa"
             min={0}
@@ -143,17 +132,8 @@ const DynamicCompressorFlowNode: React.FC<DynamicCompressorFlowNodeProps> = ({ d
               const val = parseFloat(e.target.value);
               if (!isNaN(val)) setKnee(Math.min(40, Math.max(0, val)));
             }}
-            style={{ 
-              width: 50, 
-              background: '#222', 
-              color: '#eee', 
-              border: '1px solid #444', 
-              borderRadius: 4, 
-              padding: '1px 3px', 
-              fontSize: 10, 
-              textAlign: 'center',
-              marginBottom: '3px' 
-            }}
+            className="node-input"
+            style={{ width: 50 }}
           />
           <Handle
             type="target"
@@ -165,10 +145,10 @@ const DynamicCompressorFlowNode: React.FC<DynamicCompressorFlowNodeProps> = ({ d
       </div>
 
       {/* Ratio and Attack side by side */}
-      <div style={{ display: "flex", justifyContent: "space-around", gap: 4 }}>
+      <div className="node-row" style={{ gap: 4 }}>
         {/* Ratio Input with MIDI-learnable knob */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span>Ratio</span>
+        <div className="node-field">
+          <span className="node-label">Ratio</span>
           <MidiKnob
             accentColor="#60a5fa"
             min={1}
@@ -188,17 +168,8 @@ const DynamicCompressorFlowNode: React.FC<DynamicCompressorFlowNodeProps> = ({ d
               const val = parseFloat(e.target.value);
               if (!isNaN(val)) setRatio(Math.min(20, Math.max(1, val)));
             }}
-            style={{ 
-              width: 50, 
-              background: '#222', 
-              color: '#eee', 
-              border: '1px solid #444', 
-              borderRadius: 4, 
-              padding: '1px 3px', 
-              fontSize: 10, 
-              textAlign: 'center',
-              marginBottom: '3px' 
-            }}
+            className="node-input"
+            style={{ width: 50 }}
           />
           <Handle
             type="target"
@@ -209,8 +180,8 @@ const DynamicCompressorFlowNode: React.FC<DynamicCompressorFlowNodeProps> = ({ d
         </div>
 
         {/* Attack Input with MIDI-learnable knob */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span>Attack</span>
+        <div className="node-field">
+          <span className="node-label">Attack</span>
           <MidiKnob
             accentColor="#60a5fa"
             min={0}
@@ -230,17 +201,8 @@ const DynamicCompressorFlowNode: React.FC<DynamicCompressorFlowNodeProps> = ({ d
               const val = parseFloat(e.target.value);
               if (!isNaN(val)) setAttack(Math.min(1, Math.max(0, val)));
             }}
-            style={{ 
-              width: 50, 
-              background: '#222', 
-              color: '#eee', 
-              border: '1px solid #444', 
-              borderRadius: 4, 
-              padding: '1px 3px', 
-              fontSize: 10, 
-              textAlign: 'center',
-              marginBottom: '3px' 
-            }}
+            className="node-input"
+            style={{ width: 50 }}
           />
           <Handle
             type="target"
@@ -252,10 +214,10 @@ const DynamicCompressorFlowNode: React.FC<DynamicCompressorFlowNodeProps> = ({ d
       </div>
 
       {/* Release (single control, centered) */}
-      <div style={{ display: "flex", justifyContent: "center", gap: 4 }}>
+      <div className="node-row" style={{ gap: 4 }}>
         {/* Release Input with MIDI-learnable knob */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span>Release</span>
+        <div className="node-field">
+          <span className="node-label">Release</span>
           <MidiKnob
             accentColor="#60a5fa"
             min={0}
@@ -275,17 +237,8 @@ const DynamicCompressorFlowNode: React.FC<DynamicCompressorFlowNodeProps> = ({ d
               const val = parseFloat(e.target.value);
               if (!isNaN(val)) setRelease(Math.min(1, Math.max(0, val)));
             }}
-            style={{ 
-              width: 50, 
-              background: '#222', 
-              color: '#eee', 
-              border: '1px solid #444', 
-              borderRadius: 4, 
-              padding: '1px 3px', 
-              fontSize: 10, 
-              textAlign: 'center',
-              marginBottom: '3px' 
-            }}
+            className="node-input"
+            style={{ width: 50 }}
           />
           <Handle
             type="target"

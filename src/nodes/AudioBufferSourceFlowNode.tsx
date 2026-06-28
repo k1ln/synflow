@@ -107,7 +107,7 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
     if(prefetchingRef.current) return; // avoid parallel
     if(!fileId && !fileUrl) return; // nothing to fetch
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         prefetchingRef.current = true;
         let url = fileUrl;

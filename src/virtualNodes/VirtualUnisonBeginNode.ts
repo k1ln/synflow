@@ -14,6 +14,14 @@ export class VirtualUnisonBeginNode extends VirtualNode<UnisonBeginRuntimeNode, 
     private handleConnectedEdgesCb: (node: CustomNode, data: any, eventType: string) => void;
     private getVirtualEdges: (nodeId: string) => Edge[] | undefined;
 
+    /**
+     * Per-voice spread factors in [-1, 1] (evenly distributed with light
+     * jitter). Each voice keeps its own value so the detuning is stable across
+     * notes (a consistent fat unison rather than pitch that warbles every
+     * keypress). Regenerated only when the voice count changes.
+     */
+    private voiceDetuneFactors: number[] = [];
+
     constructor(
         audioContext: AudioContext | undefined,
         eventBus: EventBus,
@@ -32,15 +40,41 @@ export class VirtualUnisonBeginNode extends VirtualNode<UnisonBeginRuntimeNode, 
     }
 
     /**
-     * Frequency-dependent detune amount in cents. Linear in Hz: the deviation
-     * equals `detuneFreqDeviation` cents at the A440 reference and scales
-     * proportionally with the incoming note frequency — higher notes detune
-     * more, lower notes less. Returns 0 when no frequency is available.
+     * Maximum detune spread (in cents) for a given note. This is the ± bound
+     * that the per-voice random factors are scaled by. Linear in Hz: equals
+     * `detuneFreqDeviation` cents at the A440 reference and scales
+     * proportionally with the incoming note frequency — higher notes spread
+     * wider, lower notes tighter. Returns 0 when no frequency is available.
      */
-    private detuneCentsForFrequency(frequency: number): number {
+    private detuneSpreadForFrequency(frequency: number): number {
         const dev = this.node.data.detuneFreqDeviation || 0;
         if (dev === 0 || !(frequency > 0)) return 0;
         return dev * (frequency / VirtualUnisonBeginNode.REF_FREQ);
+    }
+
+    /**
+     * Spread factors in [-1, 1], one per voice. Voices are distributed evenly
+     * across the range (symmetric around 0, so no overall pitch shift) with a
+     * little random jitter so the unison isn't perfectly rigid. A single voice
+     * is always centred (factor 0) so unison-of-1 stays in tune. Cached and
+     * only regenerated when the voice count changes, keeping each voice's
+     * detune stable from note to note.
+     */
+    private detuneFactorsFor(n: number): number[] {
+        if (this.voiceDetuneFactors.length !== n) {
+            if (n === 1) {
+                this.voiceDetuneFactors = [0];
+            } else {
+                const spacing = 2 / (n - 1);     // gap between adjacent voice slots
+                const jitter = spacing * 0.25;   // stay close to the even slot
+                this.voiceDetuneFactors = Array.from({ length: n }, (_, i) => {
+                    const base = (i / (n - 1)) * 2 - 1;            // -1 .. +1, evenly spaced
+                    const f = base + (Math.random() * 2 - 1) * jitter;
+                    return Math.max(-1, Math.min(1, f));
+                });
+            }
+        }
+        return this.voiceDetuneFactors;
     }
 
     private subscribeEvents() {
@@ -93,6 +127,21 @@ export class VirtualUnisonBeginNode extends VirtualNode<UnisonBeginRuntimeNode, 
         if (detuneEdges.length === 0) return;
         for (const edge of detuneEdges) {
             const voiceTarget = this.voiceTargetFor(edge.target, voiceIndex);
+            // A WebAudio AudioParam handle (e.g. an Oscillator/Filter `detune`
+            // pin) only consumes values through `params.updateParams`; those
+            // nodes never subscribe to `<handle>.receiveNodeOn`. Emit that too
+            // so a detune-output wired straight to an AudioParam actually moves
+            // it (same routing every other source in AudioGraphManager uses).
+            this.eventBus.emit(
+                `${voiceTarget}.params.updateParams`,
+                {
+                    nodeId: voiceTarget,
+                    source: this.node.id,
+                    data: { [edge.targetHandle as string]: detune },
+                }
+            );
+            // Plain value event for the standard FlowNode `input-N` pin case,
+            // which forwards the detune on into the sub-flow.
             this.eventBus.emit(
                 `${voiceTarget}.${edge.targetHandle}.receiveNodeOn`,
                 { value: detune, detune, nodeId: voiceTarget, source: this.node.id }
@@ -105,11 +154,12 @@ export class VirtualUnisonBeginNode extends VirtualNode<UnisonBeginRuntimeNode, 
         const gainDeviation = this.node.data.gainDeviation || 0;
         const startDevMs = this.node.data.msTimeStartDeviation || 0;
 
-        // Frequency-dependent detune (cents), linear in Hz relative to A440.
-        // Computed from the incoming note — the same value for every voice,
-        // since it tracks pitch rather than spreading voices apart.
+        // Max detune spread (cents) for this note, linear in Hz relative to
+        // A440. Each voice takes a fixed random fraction of this, so the voices
+        // are spread apart rather than all sharing one offset.
         const freq = (typeof data.frequency === 'number' && data.frequency > 0) ? data.frequency : 0;
-        const detuneInCents = this.detuneCentsForFrequency(freq);
+        const detuneSpread = this.detuneSpreadForFrequency(freq);
+        const factors = this.detuneFactorsFor(n);
 
         // When a `detune-output` is wired, the detune is delivered through that
         // handle — so don't also bake it into the frequency (would double up).
@@ -119,10 +169,12 @@ export class VirtualUnisonBeginNode extends VirtualNode<UnisonBeginRuntimeNode, 
         for (let i = 0; i < n; i++) {
             const delay = Math.random() * startDevMs;
             const gain = 1 + (Math.random() * 2 - 1) * gainDeviation;
+            // Per-voice random detune (cents), fixed for this voice.
+            const voiceDetune = detuneSpread * factors[i];
 
             const voiceData: any = { ...data };
             if (!hasDetuneOutput && freq > 0) {
-                voiceData.frequency = freq * Math.pow(2, detuneInCents / 1200);
+                voiceData.frequency = freq * Math.pow(2, voiceDetune / 1200);
             }
             if (typeof voiceData.velocity === 'number') {
                 voiceData.velocity = Math.max(0, Math.min(127, voiceData.velocity * gain));
@@ -130,8 +182,9 @@ export class VirtualUnisonBeginNode extends VirtualNode<UnisonBeginRuntimeNode, 
 
             const voiceIndex = i;
             const capturedData = voiceData;
+            const capturedDetune = voiceDetune;
             const emit = () => {
-                this.emitDetuneToVoice(voiceIndex, detuneInCents);
+                this.emitDetuneToVoice(voiceIndex, capturedDetune);
                 this.emitToVoice(voiceIndex, capturedData, 'receiveNodeOn');
             };
             if (delay > 0) {

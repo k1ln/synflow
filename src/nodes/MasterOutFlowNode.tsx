@@ -25,6 +25,7 @@ const MasterOutFlowNode: React.FC<MasterOutFlowNodeProps> = ({ data }) => {
     <div
       style={data.style}
     >
+      <div className="node-title">MASTER OUT</div>
       <Volume2 size={48} color="#ffffff" strokeWidth={1.5} />
 
       <Handle

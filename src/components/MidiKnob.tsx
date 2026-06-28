@@ -192,7 +192,7 @@ const MidiKnob: React.FC<MidiKnobProps> = ({ value, min, max, detent, onChange, 
         }
       }
     });
-    return () => { unsub && unsub(); };
+    return () => { if (unsub) unsub(); };
   }, [isLearning, activeMapping, min, max, onChange, onMidiLearnChange, smoothFactor, sensitivity]);
 
   const knobChange = useCallback((v: number) => { 

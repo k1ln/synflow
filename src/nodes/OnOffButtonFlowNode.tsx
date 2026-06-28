@@ -25,7 +25,7 @@ const OnOffButtonFlowNode: React.FC<OnOffButtonFlowNodeProps> = ({ data }) => {
   const [label, setLabel] = useState<string>(data.label || 'Gate');
   const [style, setStyle] = useState<React.CSSProperties>(data.style || { padding: '10px', border: '1px solid #555', borderRadius: 5, width:110, maxHeight: 70, background: 'transparent', color: '#eee' });
 
-  const nodeStyle = {
+  const nodeStyle: React.CSSProperties = {
     ...style,
     display: 'flex',
     alignItems: 'center',
@@ -53,14 +53,7 @@ const OnOffButtonFlowNode: React.FC<OnOffButtonFlowNodeProps> = ({ data }) => {
         onClick={() => {
           setIsOn(o => !o);
         }}
-        style={{
-          padding: '2px 6px',
-          width: 68,
-          fontSize: 18,
-          cursor: 'pointer',
-          borderRadius: 4,
-          alignContent: 'left'
-        }}
+        style={{ padding: '2px 6px', width: 68, fontSize: 18, cursor: 'pointer' }}
         title='Toggle gate enable'
       >
         {isOn ? 'ON' : 'OFF'}

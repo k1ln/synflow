@@ -219,9 +219,7 @@ const DistortionFlowNode: React.FC<DistortionFlowNodeProps> = ({ data }) => {
 
   return (
     <div style={data.style}>
-      <div style={{ textAlign: "center", marginBottom: "4px", fontSize: "10px" }}>
-        <span><b>DISTORTION</b></span>
-      </div>
+      <div className="node-title">DISTORTION</div>
 
       {/* Main Input */}
       <Handle
@@ -240,22 +238,22 @@ const DistortionFlowNode: React.FC<DistortionFlowNodeProps> = ({ data }) => {
       />
 
       {/* Canvas and Drive side by side */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center', justifyContent: 'center' }}>
+      <div className="node-row" style={{ gap: 8, marginBottom: 8 }}>
         {/* Canvas visualization */}
         <canvas
           ref={canvasRef}
           width={82}
           height={60}
           style={{
-            border: '1px solid #444',
+            border: '1px solid color-mix(in srgb, var(--node-accent, #444) 40%, transparent)',
             borderRadius: 4,
-            background: '#1a1a1a',
+            background: '#14151f',
           }}
         />
 
         {/* Drive control */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: 9, marginBottom: 2 }}>Drive</span>
+        <div className="node-field">
+          <span className="node-label">Drive</span>
           <MidiKnob
             accentColor="#60a5fa"
             min={DRIVE_KNOB_MIN}
@@ -278,36 +276,18 @@ const DistortionFlowNode: React.FC<DistortionFlowNodeProps> = ({ data }) => {
                 setDriveKnob(driveMultiplierToKnob(clamped));
               }
             }}
-            style={{
-              width: 45,
-              background: '#222',
-              color: '#eee',
-              border: '1px solid #444',
-              borderRadius: 4,
-              padding: '1px 2px',
-              fontSize: 9,
-              textAlign: 'center',
-              marginTop: 2,
-            }}
+            className="node-input sm"
           />
         </div>
       </div>
 
       {/* Preset selector */}
-      <div style={{ marginBottom: 8 }}>
-        <label style={{ fontSize: 10, display: 'block', marginBottom: 2 }}>Preset</label>
+      <div className="node-field" style={{ alignItems: 'stretch' }}>
+        <label className="node-label" style={{ textAlign: 'left' }}>Preset</label>
         <select
           value={preset}
           onChange={(e) => handlePresetChange(e.target.value)}
-          style={{
-            width: '100%',
-            background: '#222',
-            color: '#eee',
-            border: '1px solid #444',
-            borderRadius: 4,
-            padding: '2px 4px',
-            fontSize: 10,
-          }}
+          className="node-select wide"
         >
           {PRESETS.map(p => (
             <option key={p.name} value={p.name}>{p.name}</option>
@@ -316,19 +296,11 @@ const DistortionFlowNode: React.FC<DistortionFlowNodeProps> = ({ data }) => {
       </div>
 
       {/* Formula input (toggle) */}
-      <div style={{ marginBottom: 8 }}>
+      <div className="node-field" style={{ alignItems: 'stretch' }}>
         <button
+          className="node-btn"
           onClick={() => setShowFormula(!showFormula)}
-          style={{
-            width: '100%',
-            background: '#333',
-            color: '#eee',
-            border: '1px solid #555',
-            borderRadius: 4,
-            padding: '3px 4px',
-            fontSize: 9,
-            cursor: 'pointer',
-          }}
+          style={{ width: '100%' }}
         >
           {showFormula ? '▼' : '▶'} Formula
         </button>
@@ -337,38 +309,19 @@ const DistortionFlowNode: React.FC<DistortionFlowNodeProps> = ({ data }) => {
             value={formula}
             onChange={(e) => setFormula(e.target.value)}
             placeholder="e.g., Math.tanh(x*3) or Math.sin(x*3.14159)"
-            style={{
-              width: '100%',
-              height: 50,
-              background: '#222',
-              color: '#eee',
-              border: '1px solid #444',
-              borderRadius: 4,
-              padding: '3px',
-              fontSize: 9,
-              fontFamily: 'monospace',
-              marginTop: 4,
-              resize: 'none',
-            }}
+            className="nodrag"
+            style={{ width: '100%', height: 50, padding: 3, fontSize: 9, fontFamily: 'monospace', resize: 'none', boxSizing: 'border-box' }}
           />
         )}
       </div>
 
       {/* Oversample selector */}
-      <div style={{ marginBottom: 4 }}>
-        <label style={{ fontSize: 10, display: 'block', marginBottom: 2 }}>Oversample</label>
+      <div className="node-field" style={{ alignItems: 'stretch' }}>
+        <label className="node-label" style={{ textAlign: 'left' }}>Oversample</label>
         <select
           value={oversample}
           onChange={(e) => setOversample(e.target.value as OverSampleType)}
-          style={{
-            width: '100%',
-            background: '#222',
-            color: '#eee',
-            border: '1px solid #444',
-            borderRadius: 4,
-            padding: '2px 4px',
-            fontSize: 10,
-          }}
+          className="node-select wide"
         >
           <option value="none">None</option>
           <option value="2x">2x</option>

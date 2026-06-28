@@ -154,7 +154,7 @@ function parseMidiFile(buffer: ArrayBuffer, fileName: string): ParsedMidiFile {
                 note: activeNote.note,
                 velocity: activeNote.velocity,
                 startTick: activeNote.startTick,
-                durationTicks: durationTicks,
+                durationTicks,
                 channel: activeNote.channel
               });
               activeNotes.delete(key);
@@ -175,7 +175,7 @@ function parseMidiFile(buffer: ArrayBuffer, fileName: string): ParsedMidiFile {
               note: activeNote.note,
               velocity: activeNote.velocity,
               startTick: activeNote.startTick,
-              durationTicks: durationTicks,
+              durationTicks,
               channel: activeNote.channel
             });
             activeNotes.delete(key);
@@ -404,9 +404,7 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
         title="Tempo Output (BPM)"
       />
 
-      <div style={{ marginBottom: 8, fontWeight: 'bold', fontSize: 13 }}>
-        MIDI File Player
-      </div>
+      <div className="node-title">MIDI File Player</div>
 
       {/* File upload */}
       <input
@@ -418,17 +416,8 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
       />
       <button
         onClick={() => fileInputRef.current?.click()}
-        style={{
-          width: '100%',
-          padding: '6px 10px',
-          marginBottom: 8,
-          background: baseStyle.background || '#333',
-          color: baseStyle.color || '#fff',
-          border: '1px solid #555',
-          borderRadius: 4,
-          cursor: 'pointer',
-          fontSize: 12
-        }}
+        className="node-btn"
+        style={{ width: '100%', padding: '6px 10px', marginBottom: 8, fontSize: 12 }}
       >
         {midiFile ? `📁 ${midiFile.name}` : '📁 Load MIDI File...'}
       </button>
@@ -463,13 +452,13 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
           </div>
 
           {/* Current position */}
-          <div style={{ fontSize: 12, marginBottom: 8, textAlign: 'center' }}>
+          <div className="node-readout strong" style={{ marginBottom: 8, textAlign: 'center', display: 'block' }}>
             Bar: {currentBar + 1} / {midiFile.totalBars}
           </div>
 
           {/* Jump to bar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
-            <span style={{ fontSize: 11 }}>Jump to:</span>
+            <span className="node-label">Jump to:</span>
             <CustomNumberInput
               value={jumpToBar + 1}
               min={1}
@@ -480,22 +469,15 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
             />
             <button
               onClick={handleJumpToBar}
-              style={{
-                padding: '4px 8px',
-                background: '#2a5a2a',
-                color: '#fff',
-                border: '1px solid #3a7a3a',
-                borderRadius: 4,
-                cursor: 'pointer',
-                fontSize: 11
-              }}
+              className="node-btn"
+              style={{ padding: '4px 8px', fontSize: 11 }}
             >
               Go
             </button>
           </div>
 
           {/* Loop toggle */}
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, marginBottom: 8 }}>
+          <label className="node-label" style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
             <input
               type="checkbox"
               checked={loop}
@@ -505,7 +487,7 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
           </label>
 
           {/* Single Voice Mode toggle */}
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, marginBottom: 8 }}>
+          <label className="node-label" style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
             <input
               type="checkbox"
               checked={singleVoiceMode}
@@ -523,7 +505,7 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
 
           {/* Subdivision control */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
-            <span style={{ fontSize: 11 }}>Clock = 1/</span>
+            <span className="node-label">Clock = 1/</span>
             <select
               value={subdivision}
               onChange={(e) => {
@@ -534,14 +516,8 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
                   data: { subdivision: newSub }
                 });
               }}
-              style={{
-                background: baseStyle.background || '#333',
-                color: baseStyle.color || '#fff',
-                border: '1px solid #555',
-                borderRadius: 4,
-                padding: '2px 4px',
-                fontSize: 11
-              }}
+              className="node-select"
+              style={{ width: 'auto' }}
             >
               <option value={1}>1 (beat)</option>
               <option value={2}>2 (8th)</option>
@@ -555,7 +531,7 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
 
           {/* Transpose control */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
-            <span style={{ fontSize: 11 }}>Transpose:</span>
+            <span className="node-label">Transpose:</span>
             <select
               value={transpose}
               onChange={(e) => {
@@ -566,14 +542,8 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
                   data: { transpose: newTranspose }
                 });
               }}
-              style={{
-                background: baseStyle.background || '#333',
-                color: baseStyle.color || '#fff',
-                border: '1px solid #555',
-                borderRadius: 4,
-                padding: '2px 4px',
-                fontSize: 11
-              }}
+              className="node-select"
+              style={{ width: 'auto' }}
             >
               <option value={-24}>-24 (2 oct down)</option>
               <option value={-12}>-12 (1 oct down)</option>
@@ -586,16 +556,8 @@ const MidiFileFlowNode: React.FC<MidiFileFlowNodeProps> = ({ id, data }) => {
           {/* Reset button */}
           <button
             onClick={handleReset}
-            style={{
-              width: '100%',
-              padding: '6px 10px',
-              background: '#5a2a2a',
-              color: '#fff',
-              border: '1px solid #7a3a3a',
-              borderRadius: 4,
-              cursor: 'pointer',
-              fontSize: 12
-            }}
+            className="node-btn node-btn-danger"
+            style={{ width: '100%', padding: '6px 10px', fontSize: 12 }}
           >
             Reset to Start
           </button>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Handle, Position } from "@xyflow/react";
-import { Knob } from "react-rotary-knob-react19";
 
 import "./AudioNode.css";
 import MidiKnob from "../components/MidiKnob";
@@ -106,11 +105,9 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
 
   return (
     <div style={data.style}>
-      <div className="audio-header">
-        <label><b>ADSR</b></label>
-      </div>
-      <div style={{display:'flex', alignItems:'center', gap:6, marginBottom:6}}>
-  <label style={{fontSize:11}}>Phase Max (s)</label>
+      <div className="node-title">ADSR</div>
+      <div className="node-row" style={{ gap: 6, marginBottom: 6 }}>
+        <label className="node-label">Phase Max (s)</label>
         <input
           type="text"
           value={lengthSec.toFixed(3)}
@@ -132,7 +129,8 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
               applyNewLength(lengthSec + delta);
             }
           }}
-          style={{width:70, background:'#111', color:'#eee', border:'1px solid #333', fontSize:11, padding:'2px 4px', height:20}}
+          className="nodrag node-input"
+          style={{ width: 70 }}
           title="Upper bound for each phase (Attack/Sustain/Release). Up/Down: ±0.01s, Left/Right: ±1s"
         />
       </div>
@@ -203,9 +201,9 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
       />
 
       {/* ADSR Phase Controls */}
-      <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: 10 }}>
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', minWidth:50 }}>
-          <label style={{fontSize:10}}>Attack</label>
+      <div className="node-row" style={{ marginBottom: 10 }}>
+        <div className="node-field" style={{ minWidth: 50, marginBottom: 0 }}>
+          <label className="node-label">Attack</label>
           <MidiKnob
             style={{ display: 'inline-block' }}
             accentColor="#facc15"
@@ -214,10 +212,10 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
             value={attackTime}
             onChange={(e)=> changeAttackTime(e)}
           />
-          <span style={{fontSize:10}}>{attackTime.toFixed(3)}</span>
+          <span className="node-readout">{attackTime.toFixed(3)}</span>
         </div>
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', minWidth:50 }}>
-          <label style={{fontSize:10}}>Decay</label>
+        <div className="node-field" style={{ minWidth: 50, marginBottom: 0 }}>
+          <label className="node-label">Decay</label>
           <MidiKnob
             style={{ display: 'inline-block' }}
             accentColor="#facc15"
@@ -226,10 +224,10 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
             value={sustainTime}
             onChange={(e)=> changeSustainTime(e)}
           />
-          <span style={{fontSize:10}}>{sustainTime.toFixed(3)}</span>
+          <span className="node-readout">{sustainTime.toFixed(3)}</span>
         </div>
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', minWidth:50 }}>
-          <label style={{fontSize:10}}>Level</label>
+        <div className="node-field" style={{ minWidth: 50, marginBottom: 0 }}>
+          <label className="node-label">Level</label>
           <MidiKnob
             style={{ display: 'inline-block' }}
             accentColor="#facc15"
@@ -238,10 +236,10 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
             value={sustainLevel}
             onChange={(e)=> changeSustainLevel(e)}
           />
-          <span style={{fontSize:10}}>{sustainLevel.toFixed(3)}</span>
+          <span className="node-readout">{sustainLevel.toFixed(3)}</span>
         </div>
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', minWidth:50 }}>
-          <label style={{fontSize:10}}>Release</label>
+        <div className="node-field" style={{ minWidth: 50, marginBottom: 0 }}>
+          <label className="node-label">Release</label>
           <MidiKnob
             style={{ display: 'inline-block' }}
             accentColor="#facc15"
@@ -250,12 +248,12 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
             value={releaseTime}
             onChange={(e)=> changeReleaseTime(e)}
           />
-          <span style={{fontSize:10}}>{releaseTime.toFixed(3)}</span>
+          <span className="node-readout">{releaseTime.toFixed(3)}</span>
         </div>
       </div>
-      <div style={{ display:'flex', justifyContent:'space-evenly', marginTop:4 }}>
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
-          <label style={{fontSize:10}}>Min %</label>
+      <div className="node-row" style={{ marginTop: 4 }}>
+        <div className="node-field" style={{ marginBottom: 0 }}>
+          <label className="node-label">Min %</label>
           <MidiKnob
             accentColor="#facc15"
             min={-1000}
@@ -264,10 +262,10 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
             onChange={(e)=> changeMinPercent(e)}
             style={{ display:'inline-block' }}
           />
-          <span style={{fontSize:10}}>{minPercent}</span>
+          <span className="node-readout">{minPercent}</span>
         </div>
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
-          <label style={{fontSize:10}}>Max %</label>
+        <div className="node-field" style={{ marginBottom: 0 }}>
+          <label className="node-label">Max %</label>
           <MidiKnob
             accentColor="#facc15"
             min={-1000}
@@ -276,7 +274,7 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
             onChange={(e)=> changeMaxPercent(e)}
             style={{ display:'inline-block' }}
           />
-          <span style={{fontSize:10}}>{maxPercent}</span>
+          <span className="node-readout">{maxPercent}</span>
         </div>
       </div>
     </div>

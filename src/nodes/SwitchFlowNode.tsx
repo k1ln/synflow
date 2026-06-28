@@ -11,7 +11,7 @@ export type SwitchFlowNodeProps = {
     onChange: (data: any) => void;
   };
 };
-let irender = 0;
+const irender = 0;
 const SwitchFlowNode: React.FC<SwitchFlowNodeProps> = ({ data }) => {
   const [numOutputs, setNumOutputs] = useState(data.numOutputs || 2); // Default to 2 outputs
   const [numOutputsInput, setNumOutputsInput] = useState(
@@ -66,21 +66,6 @@ const SwitchFlowNode: React.FC<SwitchFlowNodeProps> = ({ data }) => {
 
   // Memoized styles
   const nodeHeight = useMemo(() => Math.max(100, numOutputs * 20), [numOutputs]);
-  const divStyle = useMemo(
-    () => ({
-      padding: "4px",
-      border: "1px solid #555",
-      borderRadius: "6px",
-      width: "72px",
-      height: `${nodeHeight}px`,
-      textAlign: "center",
-      background: "#1f1f1f",
-      color: "#eee",
-      position: "relative",
-      fontFamily: "Arial, sans-serif",
-    }),
-    [nodeHeight]
-  );
 
   const handleStyle = useMemo(
     () => ({
@@ -97,10 +82,8 @@ const SwitchFlowNode: React.FC<SwitchFlowNodeProps> = ({ data }) => {
     }));
   }, [numOutputs, nodeHeight]);
   return (
-    <div style={divStyle}>
-      <div style={{ textAlign: "center", marginBottom: "0px" }}>
-        <span><b>Switch</b></span>
-      </div>
+    <div className="flow-node-shell" style={{ width: 72, height: nodeHeight, position: "relative", padding: 4 }}>
+      <div className="node-title">SWITCH</div>
 
       {/* Input Handle */}
       <Handle
@@ -118,12 +101,8 @@ const SwitchFlowNode: React.FC<SwitchFlowNodeProps> = ({ data }) => {
       />
 
       {/* Number of Outputs Input */}
-      <div style={{ 
-        display: "flex", 
-        flexDirection: "column", 
-        alignItems: "center" 
-      }}>
-        <span>No. steps</span>
+      <div className="node-field">
+        <span className="node-label">No. steps</span>
         <input
           type="text"
           value={numOutputsInput}
@@ -156,17 +135,8 @@ const SwitchFlowNode: React.FC<SwitchFlowNodeProps> = ({ data }) => {
               setNumOutputsInput(String(updated));
             }
           }}
-          style={{
-            width: 50,
-            background: '#222',
-            color: '#eee',
-            border: '1px solid #444',
-            borderRadius: 4,
-            padding: '1px 3px',
-            fontSize: 10,
-            textAlign: 'center',
-            marginBottom: '3px'
-          }}
+          className="nodrag node-input"
+          style={{ width: 50 }}
         />
       </div>
 

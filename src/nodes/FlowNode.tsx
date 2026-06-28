@@ -1,4 +1,4 @@
-import React, { use, useEffect, useMemo, useRef, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Handle, Position, useUpdateNodeInternals } from "@xyflow/react";
 import { SimpleIndexedDB } from "../util/SimpleIndexedDB";
 import EventBus from "../sys/EventBus";
@@ -84,7 +84,7 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
     };
 
     useEffect(() => {
-        data.onChange?.({ selectedNode, selectedNodeFolderPath, outputArr: outputArr, inputArr: inputArr });
+        data.onChange?.({ selectedNode, selectedNodeFolderPath, outputArr, inputArr });
         const timeout = setTimeout(() => {
             updateNodeInternals(id);
         }, 10); // Throttle by 100ms
@@ -202,14 +202,14 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
         }
 
         data.onChange?.({
-            selectedNode,            selectedNodeFolderPath,            outputArr: outputArr,
-            inputArr: inputArr,
+            selectedNode,            selectedNodeFolderPath,            outputArr,
+            inputArr,
         });
         updateNodeInternals(id);
     };
 
     useEffect(() => {
-    updateInputsOutputs();
+    void updateInputsOutputs();
         // Fetch available custom nodes from IndexedDB
         
 
@@ -238,7 +238,7 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
         setSelectedNode(nodeName);
         setSelectedNodeFolderPath(nodeInfo?.folder_path || '');
         data.onChange?.({ ...data, selectedNode: nodeName, selectedNodeFolderPath: nodeInfo?.folder_path || '' });
-        updateInputsOutputs();
+        void updateInputsOutputs();
     };
 
     const handleEdit = () => {
@@ -254,7 +254,7 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
     // Refresh IO whenever selectedNode changes (ensures handles stay synced)
     useEffect(()=>{
         if(selectedNode){
-            updateInputsOutputs();
+            void updateInputsOutputs();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedNode]);
@@ -263,7 +263,7 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
     const prevDialogRef = useRef(showExplorerDialog);
     useEffect(()=>{
         if(prevDialogRef.current && !showExplorerDialog && selectedNode){
-            updateInputsOutputs();
+            void updateInputsOutputs();
         }
         prevDialogRef.current = showExplorerDialog;
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -271,43 +271,31 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
 
     return (
         <div
+            className="flow-node-shell"
             style={{
-                padding: 10,
-                border: "1px solid #888",
-                borderRadius: 6,
-                background: "#222",
                 position: "relative", // <-- Important for handle positioning
                 minHeight: Math.max(10, 0 + Math.max(inputArr.length, outputArr.length) * 24), // Ensure enough height
                 width: 120, // 60% of typical 200px node width
-                ...(data.style || {}),
+                padding: 10,
+                ...((data as any).style || {}),
             }}
         >
-            <div style={{ textAlign: "center" }}>
-                <strong>Flow</strong>
-            </div>
+            <div className="node-title">Flow</div>
             <div style={{ margin: "8px 0" }}>
                 <input
                     type="text"
                     value={flowQuery || selectedNode}
                     placeholder={selectedNode ? selectedNode : 'Select flow...'}
-                    onFocus={()=>{ setFlowQuery(''); if(!remoteLoadedRef.current) refreshRemoteFlows(); setShowExplorerDialog(true); }}
-                    onClick={()=>{ if(!remoteLoadedRef.current) refreshRemoteFlows(); setShowExplorerDialog(true); }}
+                    onFocus={()=>{ setFlowQuery(''); if(!remoteLoadedRef.current) void refreshRemoteFlows(); setShowExplorerDialog(true); }}
+                    onClick={()=>{ if(!remoteLoadedRef.current) void refreshRemoteFlows(); setShowExplorerDialog(true); }}
                     readOnly
-                    style={{
-                        width: '90%',
-                        background: '#333',
-                        color: '#eee',
-                        padding: '1px 6px',
-                        borderRadius: 4,
-                        border: '1px solid #555',
-                        fontSize: 13,
-                        cursor:'pointer'
-                    }}
+                    className="nodrag node-input"
+                    style={{ width: '90%', cursor: 'pointer', fontSize: 13 }}
                 />
             </div>
                                     {embeddedKnobs.length > 0 && (
                             <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #444' }}>
-                                <div style={{ color:'#ccc', fontSize: 12, marginBottom: 6 }}>Controls</div>
+                                <div className="node-label" style={{ marginBottom: 6 }}>Controls</div>
                                             <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:10 }}>
                                                                     {embeddedKnobs.map(kn => {
                                                     const knobMin = 0, knobMax = 1000;
@@ -322,7 +310,8 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
                                                                                         setEmbeddedKnobs(prev => prev.map(p => p.id===kn.id ? { ...p, label: lbl } : p));
                                                                                         eventBus.emit(id + '.' + kn.id + '.params.updateParams', { nodeid: id + '.' + kn.id, data: { label: lbl } });
                                                                                     }}
-                                                                                    style={{ background:'#222', color:'#eee', border:'1px solid #555', borderRadius:4, padding:'2px 4px', fontSize:12, width: 120 }}
+                                                                                    className="nodrag node-input"
+                                                                                    style={{ width: 120, fontSize: 12 }}
                                                                                     title="Knob label"
                                                                                 />
                                                             <div style={{ display:'flex', alignItems:'center', gap:10 }}>
@@ -340,9 +329,9 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
                                                                         eventBus.emit(id + '.' + kn.id + '.params.updateParams', { nodeid: id + '.' + kn.id, data: { value: v } });
                                                                         eventBus.emit(id + '.' + kn.id + '.main-input.receiveNodeOn', { nodeid: id + '.' + kn.id, data: { value: v } });
                                                                     }}
-                                                                    style={{ width:90, background:'#333', color:'#eee', border:'1px solid #555', borderRadius:4, padding:'2px 4px' }} />
+                                                                    className="nodrag node-input" style={{ width: 90 }} />
                                                             </div>
-                                                            <div style={{ fontSize:10, color:'#aaa' }}>{kn.curve}</div>
+                                                            <div className="node-readout">{kn.curve}</div>
                                                         </div>
                                                     );
                                                 })}
@@ -389,7 +378,7 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
                     loading={loadingRemote}
                     onRefresh={refreshRemoteFlows}
                     onRenameFlow={(flow, newName) => {
-                        (async () => {
+                        void (async () => {
                             // Handle local flows
                             if (flow._source === 'local') {
                                 const oldKey = makeFlowDbKey(flow.name, flow.folder_path || '');
@@ -440,7 +429,7 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
                         setFlowQuery('');
                         data.onChange?.({ ...data, selectedNode: name, selectedNodeFolderPath: nodeInfo?.folder_path || '' });
                         setShowExplorerDialog(false);
-                        updateInputsOutputs();
+                        void updateInputsOutputs();
                     }}
                     onClose={()=> setShowExplorerDialog(false)}
                     title="Select Flow"

@@ -291,7 +291,7 @@ export class VirtualSequencerNode extends VirtualNode<
           }
         }
       );
-      this.persistPatternSnapshot();
+      void this.persistPatternSnapshot();
     }
   }
 

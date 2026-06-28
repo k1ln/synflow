@@ -1,5 +1,3 @@
-import EventBus from "./EventBus";
-import { AudioGraphManager } from "./AudioGraphManager";
 
 export default class EventManager {
     private btnAndCallbacksDown: Record<string, { [nodeId: string]: (...args: unknown[]) => void }>;
@@ -87,13 +85,13 @@ export default class EventManager {
         //eventBus.emit(node.id + ".main-input.sendNodeOn", { nodeid: node.id });
     }
     addButtonDownCallback(key: string, nodeId:string, callback: (...args: unknown[]) => void) {
-        if (this.btnAndCallbacksDown[key]==undefined) {
+        if (this.btnAndCallbacksDown[key]===undefined) {
             this.btnAndCallbacksDown[key] = {};
         }
         this.btnAndCallbacksDown[key][nodeId] = callback;
     }
     addButtonUpCallback(key: string, nodeId:string, callback: (...args: unknown[]) => void) {
-        if (this.btnAndCallbacksUp[key]==undefined) {   
+        if (this.btnAndCallbacksUp[key]===undefined) {   
             this.btnAndCallbacksUp[key] = {};
         }    
         this.btnAndCallbacksUp[key][nodeId] = callback;
