@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Repeat } from 'lucide-react';
 import type { Project, Track } from '../model/project';
 import { StepGrid } from './StepGrid';
 import { PianoRoll } from './PianoRoll';
@@ -21,6 +21,10 @@ export interface TrackEditorHandlers {
   onTrackFxEdit: (index: number) => void;
   onUseFxKnob: (useId: string, index: number, nodeId: string, param: string, value: number) => void;
   onTrackFxKnob: (index: number, nodeId: string, param: string, value: number) => void;
+  onRename: (name: string) => void;
+  onToggleLoop: () => void;
+  onSetLength: (length: number) => void;
+  onSetVoices: (useId: string, voices: number) => void;
 }
 
 export function TrackEditor({ project, track, effects, currentStep, h }: {
@@ -33,13 +37,20 @@ export function TrackEditor({ project, track, effects, currentStep, h }: {
   const [picking, setPicking] = useState(false);
   const poolName = (id: string) => project.pool.find((p) => p.id === id)?.name ?? '?';
   const addable = project.pool.filter((p) => (track.type === 'drums' ? p.kind === 'drum' : p.kind === 'synth'));
-  const T = project.totalSteps, S = project.stepsPerBeat;
+  const T = track.length, S = project.stepsPerBeat;
+  const cs = currentStep < 0 ? -1 : currentStep % track.length; // per-track playhead
 
   return (
     <div className="trackeditor">
       <div className="te-head">
-        <span className="te-title">{track.name}</span>
+        <input className="te-name" value={track.name} onChange={(e) => h.onRename(e.target.value)} spellCheck={false} />
         <span className={`te-type ${track.type}`}>{track.type}</span>
+        <button className={`te-loop ${track.loop ? 'on' : ''}`} onClick={h.onToggleLoop} title={track.loop ? 'Looping (click to stop)' : 'Loop this track'}><Repeat size={13} /> loop</button>
+        <label className="te-length" title="Pattern length (steps)">len
+          <select value={track.length} onChange={(e) => h.onSetLength(parseInt(e.target.value, 10))}>
+            {[4, 8, 12, 16, 24, 32, 48, 64].map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </label>
         <div className="te-add">
           <button className="te-addbtn" onClick={() => setPicking((p) => !p)}><Plus size={14} /> add {track.type === 'drums' ? 'drum' : 'synth'}</button>
           {picking && (
@@ -59,18 +70,21 @@ export function TrackEditor({ project, track, effects, currentStep, h }: {
               {track.type === 'drums' ? (
                 <StepGrid
                   id={use.id} name={poolName(use.poolId)} steps={use.steps ?? []} muted={use.muted}
-                  totalSteps={T} stepsPerBeat={S} currentStep={currentStep}
+                  totalSteps={T} stepsPerBeat={S} currentStep={cs}
                   onToggle={h.onToggleStep} onMute={h.onMuteUse}
                 />
               ) : (
                 <div className="te-synth">
                   <div className="te-synth-head">
                     <span className="te-synth-name">{poolName(use.poolId)}</span>
-                    <span className="te-synth-poly">{use.voices ?? 1} voices</span>
+                    <label className="te-voices" title="Polyphony — number of voices">
+                      voices
+                      <input type="number" min={1} max={16} value={use.voices ?? 1} onChange={(e) => h.onSetVoices(use.id, parseInt(e.target.value, 10) || 1)} />
+                    </label>
                   </div>
                   <PianoRoll
                     id={use.id} name={poolName(use.poolId)} notes={use.notes ?? []} voices={use.voices}
-                    totalSteps={T} stepsPerBeat={S} currentStep={currentStep}
+                    totalSteps={T} stepsPerBeat={S} currentStep={cs}
                     onAddNote={h.onAddNote} onRemoveNote={h.onRemoveNote}
                   />
                 </div>

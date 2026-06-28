@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Plus, Trash2, Drum, Music2 } from 'lucide-react';
+import { Plus, Trash2, Drum, Music2, Repeat } from 'lucide-react';
 import { RealtimeClock } from './audio/ClockSource';
 import { Transport } from './audio/Transport';
 import { Scheduler } from './audio/Scheduler';
@@ -7,7 +7,7 @@ import { InstrumentHost } from './audio/InstrumentHost';
 import { VoicePool } from './audio/VoicePool';
 import { Mixer, type ResolvedFx } from './audio/Mixer';
 import {
-  defaultProject, newNoteId, uid, fxInsert, blankSteps, trackActiveAt,
+  defaultProject, newNoteId, uid, fxInsert, blankSteps, trackPlaysAt, patternLoopLength,
   type Project, type Track, type PoolItem, type FxInsert,
 } from './model/project';
 import { midiToFreq } from './model/pitch';
@@ -158,13 +158,14 @@ export function App() {
     const scheduler = new Scheduler(clock, transport, (s, time) => {
       const proj = projectRef.current;
       const song = songModeRef.current;
-      const step = song ? s % proj.totalSteps : s;     // position within the pattern
       const slot = song ? Math.floor(s / proj.totalSteps) : 0;
       const lead = Math.max(0, (time - clock.currentTime) * 1000);
       const stepMs = transport.secondsPerStep * 1000;
       const gateMs = Math.min(transport.secondsPerStep * 0.9, 0.5) * 1000;
       for (const track of proj.tracks) {
-        if (song && !trackActiveAt(track.clips, slot, proj.songSlots)) continue; // arrangement gate
+        // Live loop gate: a looping track always plays; in Song mode clips can too.
+        if (song ? !trackPlaysAt(track, slot, proj.songSlots) : !track.loop) continue;
+        const step = s % Math.max(1, track.length);    // each track loops at its own length
         for (const use of track.uses) {
           if (use.muted) continue;
           if (track.type === 'synth' && use.notes) {
@@ -193,7 +194,7 @@ export function App() {
     await ctxRef.current!.resume();
     transportRef.current!.bpm = projectRef.current.bpm;
     const proj = projectRef.current;
-    schedulerRef.current!.totalSteps = songModeRef.current ? proj.songSlots * proj.totalSteps : proj.totalSteps;
+    schedulerRef.current!.totalSteps = songModeRef.current ? proj.songSlots * proj.totalSteps : patternLoopLength(proj.tracks);
     transportRef.current!.start(); schedulerRef.current!.start();
     setIsPlaying(true);
   }, [ensureAudio]);
@@ -368,11 +369,15 @@ export function App() {
       const flow = setFlowParam(base, nodeId, param, value);
       mapTrack(t.id, (x) => ({ ...x, fx: x.fx.map((y, j) => (j === i ? { ...y, flow } : y)) }));
     },
+    onRename: (name) => { if (selectedTrack) renameTrack(selectedTrack.id, name); },
+    onToggleLoop: () => { if (selectedTrack) toggleTrackLoop(selectedTrack.id); },
+    onSetLength: (length) => { if (selectedTrack) setTrackLength(selectedTrack.id, length); },
+    onSetVoices: (useId, voices) => setUseVoices(useId, voices),
   };
 
   const addTrack = (type: 'drums' | 'synth') => {
     const id = uid('track');
-    setProject((p) => ({ ...p, tracks: [...p.tracks, { id, name: `${type === 'drums' ? 'Drums' : 'Synth'} ${p.tracks.length + 1}`, type, volume: 0.8, uses: [], clips: [{ id: uid('clip'), start: 0, length: 1, loop: true }], fx: [], automation: [] }] }));
+    setProject((p) => ({ ...p, tracks: [...p.tracks, { id, name: `${type === 'drums' ? 'Drums' : 'Synth'} ${p.tracks.length + 1}`, type, volume: 0.8, loop: true, length: p.totalSteps, uses: [], clips: [{ id: uid('clip'), start: 0, length: 1, loop: true }], fx: [], automation: [] }] }));
     setSelTrack(id);
   };
   const removeTrack = (trackId: string) => {
@@ -384,11 +389,29 @@ export function App() {
     mixerRef.current?.removeTrack(trackId);
   };
   const setTrackVolume = (trackId: string, v: number) => { mapTrack(trackId, (t) => ({ ...t, volume: v })); mixerRef.current?.setTrackVolume(trackId, v); };
+  const renameTrack = (trackId: string, name: string) => mapTrack(trackId, (t) => ({ ...t, name }));
+  const toggleTrackLoop = (trackId: string) => mapTrack(trackId, (t) => ({ ...t, loop: !t.loop })); // scheduler reads loop live
+  const setTrackLength = (trackId: string, length: number) => {
+    const len = Math.max(1, Math.min(64, length));
+    mapTrack(trackId, (t) => ({
+      ...t, length: len,
+      uses: t.uses.map((u) => (u.steps ? { ...u, steps: Array.from({ length: len }, (_, i) => u.steps![i] ?? false) } : u)),
+    }));
+    if (schedulerRef.current && !songModeRef.current) schedulerRef.current.totalSteps = patternLoopLength(projectRef.current.tracks.map((t) => (t.id === trackId ? { ...t, length: len } : t)));
+  };
+  const setUseVoices = (useId: string, voices: number) => {
+    const v = Math.max(1, Math.min(16, voices));
+    mapUse(useId, (u) => ({ ...u, voices: v }));
+    // rebuild this synth use's voice pool with the new polyphony
+    const track = trackOfUse(useId); const u = useById(useId); const pool = u && projectRef.current.pool.find((p) => p.id === u.poolId);
+    const dest = track ? mixerRef.current?.use(useId, track.id) : undefined;
+    if (pool && dest) { poolsRef.current.get(useId)?.dispose(); poolsRef.current.delete(useId); void buildUse(useId, pool, dest, v); }
+  };
 
   // ─── arrangement (song) ─────────────────────────────────────────────────────
   const toggleSongMode = () => setSongMode((m) => {
     const next = !m;
-    if (schedulerRef.current) schedulerRef.current.totalSteps = next ? projectRef.current.songSlots * projectRef.current.totalSteps : projectRef.current.totalSteps;
+    if (schedulerRef.current) schedulerRef.current.totalSteps = next ? projectRef.current.songSlots * projectRef.current.totalSteps : patternLoopLength(projectRef.current.tracks);
     return next;
   });
   const setSongSlots = (n: number) => setProject((p) => ({ ...p, songSlots: n }));
@@ -425,7 +448,7 @@ export function App() {
                   <div key={t.id} className={`trk ${t.id === selTrack ? 'sel' : ''}`} onClick={() => setSelTrack(t.id)}>
                     {t.type === 'drums' ? <Drum size={13} /> : <Music2 size={13} />}
                     <span className="trk-name">{t.name}</span>
-                    <span className="trk-count">{t.uses.length}</span>
+                    <button className={`trk-loop ${t.loop ? 'on' : ''}`} title={t.loop ? 'Looping' : 'Loop off'} onClick={(e) => { e.stopPropagation(); toggleTrackLoop(t.id); }}><Repeat size={12} /></button>
                     <button className="trk-del" title="Delete track" onClick={(e) => { e.stopPropagation(); removeTrack(t.id); }}><Trash2 size={12} /></button>
                   </div>
                 ))}
