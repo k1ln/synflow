@@ -20,6 +20,7 @@ dist/
 build/
 .vite/
 *.tsbuildinfo
+packages/*/dist/
 
 # Docker
 .dockerignore

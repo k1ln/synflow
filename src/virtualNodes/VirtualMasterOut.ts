@@ -1,18 +1,3 @@
-import { CustomNode } from "../sys/AudioGraphManager";
-import EventBus from "../sys/EventBus";
-export class VirtualMasterOut {
-    public audioNode: AudioContext;
-    public eventBus: EventBus;
-    public node: CustomNode;
-
-    constructor(audioContext: AudioContext, eventBus: EventBus, node: CustomNode) {
-        this.audioNode = audioContext;
-        this.eventBus = eventBus;
-        this.node = node;
-    }
-
-    // You can add context-specific methods here if needed
-}
-
-
-export default VirtualMasterOut;
+// AUTO-GENERATED re-export shim (Stage 2). Removed in Stage 9.
+export * from '../../packages/core/src/virtualNodes/VirtualMasterOut';
+export { default } from '../../packages/core/src/virtualNodes/VirtualMasterOut';

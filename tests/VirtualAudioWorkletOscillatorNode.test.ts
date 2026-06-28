@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-vi.mock('../src/sys/wasmUtils', () => ({ compileWasmModule: vi.fn(async () => ({})) }));
+vi.mock('../packages/core/src/wasmUtils', () => ({ compileWasmModule: vi.fn(async () => ({})) }));
 vi.mock('../src/nodes/OscillatorFlowNode', () => ({
   buildPulsePeriodicWave: vi.fn(() => ({})),
   buildWavetablePeriodicWave: vi.fn(() => ({})),
