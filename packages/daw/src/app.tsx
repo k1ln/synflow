@@ -8,7 +8,8 @@ import { Mixer } from './audio/Mixer';
 import { defaultProject, newNoteId, uid, type Instrument, type Project, type Track } from './model/project';
 import { midiToFreq } from './model/pitch';
 import { makeBlip, makeSynthVoice, type Flow } from './synflow/instruments';
-import { FX_LIBRARY } from './synflow/effects';
+import { findEntry, cloneFlow, type LibraryEntry } from './synflow/library';
+import { openInSynflow } from './synflow/editorBridge';
 import { TopBar, type ViewId } from './ui/TopBar';
 import { Browser } from './ui/Browser';
 import { Arrange } from './ui/Arrange';
@@ -56,9 +57,10 @@ export function App() {
     const mixer = mixerRef.current;
     if (!mixer || !ctxRef.current) return;
     const strip = mixer.strip(track.id, track.volume);
-    for (const fxId of track.fx) {
-      const def = FX_LIBRARY.find((f) => f.id === fxId);
-      if (def && strip.fxNames.length < track.fx.length) await strip.addFx(def.name, def.make());
+    for (let i = 0; i < track.fx.length; i++) {
+      const def = findEntry(track.fx[i]);
+      const flow = track.fxFlows?.[i] ?? def?.flow; // edited-in-Synflow override wins
+      if (flow && strip.fxNames.length <= i) await strip.addFx(def?.name ?? track.fx[i], cloneFlow(flow));
     }
     for (const inst of track.instruments) await buildInstrumentAudio(inst, strip.destination);
   }, [buildInstrumentAudio]);
@@ -166,9 +168,9 @@ export function App() {
     onVolume: (trackId, v) => { mapTrack(trackId, (t) => ({ ...t, volume: v })); mixerRef.current?.get(trackId)?.setVolume(v); },
     onAddFx: async (trackId, fxId) => {
       mapTrack(trackId, (t) => ({ ...t, fx: [...t.fx, fxId] }));
-      const def = FX_LIBRARY.find((f) => f.id === fxId);
+      const def = findEntry(fxId);
       const strip = mixerRef.current?.get(trackId);
-      if (def && strip) await strip.addFx(def.name, def.make());
+      if (def && strip) await strip.addFx(def.name, cloneFlow(def.flow));
     },
     onRemoveFx: (trackId, index) => { mapTrack(trackId, (t) => ({ ...t, fx: t.fx.filter((_, i) => i !== index) })); mixerRef.current?.get(trackId)?.removeFx(index); },
     onToggleStep: (instId, step) => mapInstrument(instId, (i) => {
@@ -199,6 +201,52 @@ export function App() {
         tracks: p.tracks.map((t) => ({ ...t, automation: t.automation.map((l) => (l.id === laneId ? { ...l, values: l.values.map((v, i) => (i === step ? value : v)) } : l)) })),
       })),
     onAddTrack: () => setProject((p) => ({ ...p, tracks: [...p.tracks, { id: uid('track'), name: `Track ${p.tracks.length + 1}`, volume: 0.8, fx: [], instruments: [], automation: [] }] })),
+  };
+
+  // Browser → add a library flow (instrument or effect) to the selected track.
+  const addFromLibrary = (entry: LibraryEntry) => {
+    const trackId = selTrack || projectRef.current.tracks[0]?.id;
+    if (!trackId) return;
+    if (entry.group === 'effect') { void h.onAddFx(trackId, entry.id); return; }
+    const total = projectRef.current.totalSteps;
+    const inst: Instrument = entry.kind === 'piano'
+      ? { id: uid('inst'), name: entry.name, kind: 'piano', flow: cloneFlow(entry.flow), steps: [], notes: [], voices: 6 }
+      : { id: uid('inst'), name: entry.name, kind: 'step', flow: cloneFlow(entry.flow), steps: Array(total).fill(false) };
+    mapTrack(trackId, (t) => ({ ...t, instruments: [...t.instruments, inst] }));
+    const strip = mixerRef.current?.get(trackId);
+    if (strip) void buildInstrumentAudio(inst, strip.destination);
+  };
+
+  // Replace an instrument's flow (e.g. after editing it in Synflow) and rebuild
+  // its live engine in place, keeping it routed to the same track strip.
+  const reloadInstrument = (instId: string, flow: Flow) => {
+    mapInstrument(instId, (i) => ({ ...i, flow }));
+    const track = projectRef.current.tracks.find((t) => t.instruments.some((i) => i.id === instId));
+    const inst = track?.instruments.find((i) => i.id === instId);
+    const strip = track ? mixerRef.current?.get(track.id) : undefined;
+    if (!inst || !strip || !ctxRef.current) return;
+    hostsRef.current.get(instId)?.dispose(); hostsRef.current.delete(instId);
+    poolsRef.current.get(instId)?.dispose(); poolsRef.current.delete(instId);
+    void buildInstrumentAudio({ ...inst, flow }, strip.destination);
+  };
+
+  // Replace a track FX flow (after editing in Synflow): persist as an override
+  // and swap the live insert in place.
+  const reloadFx = (trackId: string, fxIndex: number, flow: Flow) => {
+    mapTrack(trackId, (t) => {
+      const fxFlows = [...(t.fxFlows ?? [])];
+      fxFlows[fxIndex] = flow;
+      return { ...t, fxFlows };
+    });
+    const def = findEntry(projectRef.current.tracks.find((t) => t.id === trackId)?.fx[fxIndex] ?? '');
+    void mixerRef.current?.get(trackId)?.replaceFx(fxIndex, def?.name ?? 'FX', cloneFlow(flow));
+  };
+
+  // "Edit in Synflow" — open the flow in the editor window; reload on save.
+  const editInstrument = (inst: Instrument) => openInSynflow(inst.flow, (f) => reloadInstrument(inst.id, f));
+  const editFx = (track: Track, fxIndex: number) => {
+    const flow = track.fxFlows?.[fxIndex] ?? findEntry(track.fx[fxIndex])?.flow;
+    if (flow) openInSynflow(flow, (f) => reloadFx(track.id, fxIndex, f));
   };
 
   const addSampleInstrument = useCallback((name: string, flow: Flow) => {
@@ -252,7 +300,7 @@ export function App() {
         browserOpen={browserOpen} setBrowserOpen={setBrowserOpen}
       />
       <div className="workspace">
-        {browserOpen && <Browser />}
+        {browserOpen && <Browser onAdd={addFromLibrary} />}
         <div className="main">
           {view === 'arrange' && (
             <Arrange
@@ -280,10 +328,14 @@ export function App() {
             <MixerView project={project} selId={selTrack} onSelect={setSelTrack} onVolume={h.onVolume} />
           )}
           {view !== 'mix' && selectedTrack && (
-            <FXChain track={selectedTrack} onOpenInstrument={setOpenPlugin} onFxParam={fxParam(selectedTrack)} />
+            <FXChain
+              track={selectedTrack} onOpenInstrument={setOpenPlugin} onFxParam={fxParam(selectedTrack)}
+              onEditInstrument={(id) => { const inst = selectedTrack.instruments.find((i) => i.id === id); if (inst) editInstrument(inst); }}
+              onEditFx={(i) => editFx(selectedTrack, i)}
+            />
           )}
         </div>
-        {openInst && <PluginPanel instrument={openInst} onClose={() => setOpenPlugin(null)} onParam={pluginParam(openInst)} />}
+        {openInst && <PluginPanel instrument={openInst} onClose={() => setOpenPlugin(null)} onParam={pluginParam(openInst)} onEdit={() => editInstrument(openInst)} />}
       </div>
       {samplerTrack && <SamplerEditor onCreate={addSampleInstrument} onClose={() => setSamplerTrack(null)} />}
     </div>

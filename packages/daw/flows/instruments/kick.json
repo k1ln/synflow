@@ -1,0 +1,108 @@
+{
+  "name": "Kick",
+  "daw": {
+    "id": "kick",
+    "category": "Drums",
+    "kind": "step"
+  },
+  "nodes": [
+    {
+      "id": "osc.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "data": {
+        "frequency": 140,
+        "type": "sine"
+      },
+      "position": {
+        "x": 80,
+        "y": 120
+      }
+    },
+    {
+      "id": "amp.ADSRFlowNode",
+      "type": "ADSRFlowNode",
+      "data": {
+        "attackTime": 0.001,
+        "decayTime": 0.3,
+        "sustainLevel": 0,
+        "releaseTime": 0.02,
+        "maxTime": 10,
+        "minPercent": 0,
+        "maxPercent": 100,
+        "isTrigger": true
+      },
+      "position": {
+        "x": 320,
+        "y": 250
+      }
+    },
+    {
+      "id": "pitch.ADSRFlowNode",
+      "type": "ADSRFlowNode",
+      "data": {
+        "attackTime": 0.001,
+        "decayTime": 0.08,
+        "sustainLevel": 0.32,
+        "releaseTime": 0.02,
+        "maxTime": 10,
+        "minPercent": 30,
+        "maxPercent": 100,
+        "isTrigger": true
+      },
+      "position": {
+        "x": 560,
+        "y": 120
+      }
+    },
+    {
+      "id": "gain.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": {
+        "gain": 1
+      },
+      "position": {
+        "x": 800,
+        "y": 250
+      }
+    },
+    {
+      "id": "master.MasterOutFlowNode",
+      "type": "MasterOutFlowNode",
+      "data": {},
+      "position": {
+        "x": 1040,
+        "y": 120
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "k-amp-gain",
+      "source": "amp.ADSRFlowNode",
+      "target": "gain.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "gain"
+    },
+    {
+      "id": "k-pitch-osc",
+      "source": "pitch.ADSRFlowNode",
+      "target": "osc.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "frequency"
+    },
+    {
+      "id": "k-osc-gain",
+      "source": "osc.OscillatorFlowNode",
+      "target": "gain.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "k-gain-master",
+      "source": "gain.GainFlowNode",
+      "target": "master.MasterOutFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "destination-input"
+    }
+  ]
+}

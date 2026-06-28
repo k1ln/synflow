@@ -1,0 +1,62 @@
+{
+  "name": "Highpass",
+  "daw": {
+    "id": "highpass",
+    "category": "Filter"
+  },
+  "nodes": [
+    {
+      "id": "in.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": {
+        "gain": 1,
+        "isInput": true
+      },
+      "position": {
+        "x": 80,
+        "y": 120
+      }
+    },
+    {
+      "id": "filt.BiquadFilterFlowNode",
+      "type": "BiquadFilterFlowNode",
+      "data": {
+        "filterType": "highpass",
+        "frequency": 400,
+        "Q": 1
+      },
+      "position": {
+        "x": 320,
+        "y": 250
+      }
+    },
+    {
+      "id": "out.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": {
+        "gain": 1,
+        "isOutput": true
+      },
+      "position": {
+        "x": 560,
+        "y": 120
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "fx-in-filt",
+      "source": "in.GainFlowNode",
+      "target": "filt.BiquadFilterFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "fx-filt-out",
+      "source": "filt.BiquadFilterFlowNode",
+      "target": "out.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    }
+  ]
+}

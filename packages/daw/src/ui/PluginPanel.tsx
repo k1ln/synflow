@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Pencil } from 'lucide-react';
 import type { Instrument } from '../model/project';
 import { Knob } from './Knob';
 
@@ -27,11 +27,13 @@ function Scope({ color }: { color: string }) {
   );
 }
 
-export function PluginPanel({ instrument, onClose, onParam }: {
+export function PluginPanel({ instrument, onClose, onParam, onEdit }: {
   instrument: Instrument;
   onClose: () => void;
   /** role -> 0..1 value; the app maps the role to a real engine param. */
   onParam?: (role: string, value: number) => void;
+  /** Open this instrument's flow in the synflow editor. */
+  onEdit?: () => void;
 }) {
   const cat = 'var(--cat-source)';
   const [wave, setWave] = useState('saw');
@@ -55,6 +57,7 @@ export function PluginPanel({ instrument, onClose, onParam }: {
         <span className="pp-dot" style={{ background: cat, boxShadow: `0 0 8px ${cat}` }} />
         <span className="pp-name" style={{ color: cat, textShadow: `0 0 10px color-mix(in srgb, ${cat} 40%, transparent)` }}>{instrument.name}</span>
         <span className="pp-kind">{instrument.kind === 'piano' ? 'Synth' : 'Sampler'}</span>
+        {onEdit && <button className="pp-edit" onClick={onEdit} title="Edit this flow in Synflow"><Pencil size={13} /> Edit flow</button>}
         <button className="pp-close" onClick={onClose} title="Close"><X size={15} /></button>
       </div>
       <div className="pp-body">

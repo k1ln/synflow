@@ -1,0 +1,66 @@
+{
+  "instruments": [
+    {
+      "id": "kick",
+      "name": "Kick",
+      "category": "Drums",
+      "kind": "step",
+      "file": "instruments/kick.json"
+    },
+    {
+      "id": "snare",
+      "name": "Snare",
+      "category": "Drums",
+      "kind": "step",
+      "file": "instruments/snare.json"
+    },
+    {
+      "id": "hat",
+      "name": "Hi-Hat",
+      "category": "Drums",
+      "kind": "step",
+      "file": "instruments/hat.json"
+    },
+    {
+      "id": "blip",
+      "name": "Blip",
+      "category": "Drums",
+      "kind": "step",
+      "file": "instruments/blip.json"
+    },
+    {
+      "id": "saw-lead",
+      "name": "Saw Lead",
+      "category": "Synths",
+      "kind": "piano",
+      "file": "instruments/saw-lead.json"
+    },
+    {
+      "id": "square-lead",
+      "name": "Square Lead",
+      "category": "Synths",
+      "kind": "piano",
+      "file": "instruments/square-lead.json"
+    }
+  ],
+  "effects": [
+    {
+      "id": "lowpass",
+      "name": "Lowpass",
+      "category": "Filter",
+      "file": "effects/lowpass.json"
+    },
+    {
+      "id": "highpass",
+      "name": "Highpass",
+      "category": "Filter",
+      "file": "effects/highpass.json"
+    },
+    {
+      "id": "delay",
+      "name": "Delay",
+      "category": "Filter",
+      "file": "effects/delay.json"
+    }
+  ]
+}

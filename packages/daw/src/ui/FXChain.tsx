@@ -1,14 +1,14 @@
 import React from 'react';
-import { ChevronRight, Plus, Piano } from 'lucide-react';
+import { ChevronRight, Plus, Piano, Pencil } from 'lucide-react';
 import type { Track } from '../model/project';
-import { FX_LIBRARY } from '../synflow/effects';
+import { findEntry } from '../synflow/library';
 import { Knob } from './Knob';
 
 const CATS = ['var(--cat-source)', 'var(--cat-gain)', 'var(--cat-mod)', 'var(--cat-fx)', 'var(--cat-midi)'];
 
-function Device({ name, cat, knobs, onClick, isInstrument, onKnob }: {
+function Device({ name, cat, knobs, onClick, isInstrument, onKnob, onEdit }: {
   name: string; cat: string; knobs: { label: string; val: number }[]; onClick?: () => void; isInstrument?: boolean;
-  onKnob?: (i: number, value: number) => void;
+  onKnob?: (i: number, value: number) => void; onEdit?: () => void;
 }) {
   return (
     <div
@@ -19,17 +19,22 @@ function Device({ name, cat, knobs, onClick, isInstrument, onKnob }: {
         {isInstrument ? <Piano size={12} style={{ color: cat }} /> : <span className="fxc-dot" style={{ background: cat, boxShadow: `0 0 6px ${cat}` }} />}
         <span className="fxc-dev-name" style={{ color: cat, textShadow: `0 0 10px color-mix(in srgb, ${cat} 40%, transparent)` }}>{name}</span>
         {isInstrument && <span className="fxc-inst">inst</span>}
+        {onEdit && <button className="fxc-edit" title="Edit this flow in Synflow" onClick={(e) => { e.stopPropagation(); onEdit(); }}><Pencil size={11} /></button>}
       </div>
       <div className="fxc-knobs">{knobs.map((k, i) => <Knob key={i} value={k.val} color={cat} size={40} label={k.label} onChange={onKnob ? (v) => onKnob(i, v) : undefined} />)}</div>
     </div>
   );
 }
 
-export function FXChain({ track, onOpenInstrument, onFxParam }: {
+export function FXChain({ track, onOpenInstrument, onFxParam, onEditInstrument, onEditFx }: {
   track: Track;
   onOpenInstrument: (id: string) => void;
   /** (fxIndex, knobIndex, 0..1) — the app maps it to the FX flow's real param. */
   onFxParam?: (fxIndex: number, knobIndex: number, value: number) => void;
+  /** Open an instrument's flow in the synflow editor. */
+  onEditInstrument?: (instId: string) => void;
+  /** Open an FX insert's flow in the synflow editor. */
+  onEditFx?: (fxIndex: number) => void;
 }) {
   const instKnobs = [{ label: 'Cutoff', val: .6 }, { label: 'Reso', val: .35 }, { label: 'Drive', val: .45 }];
   const fxKnobs = [{ label: 'Cutoff', val: .6 }, { label: 'Reso', val: .4 }, { label: 'Mix', val: .45 }];
@@ -45,15 +50,15 @@ export function FXChain({ track, onOpenInstrument, onFxParam }: {
       <div className="fxc-row">
         {track.instruments.map((inst, i) => (
           <React.Fragment key={inst.id}>
-            <Device name={inst.name} cat={CATS[i % CATS.length]} knobs={instKnobs} isInstrument onClick={() => onOpenInstrument(inst.id)} />
+            <Device name={inst.name} cat={CATS[i % CATS.length]} knobs={instKnobs} isInstrument onClick={() => onOpenInstrument(inst.id)} onEdit={onEditInstrument ? () => onEditInstrument(inst.id) : undefined} />
             <ChevronRight size={16} className="fxc-chev" />
           </React.Fragment>
         ))}
         {track.fx.map((fxId, i) => {
-          const def = FX_LIBRARY.find((f) => f.id === fxId);
+          const def = findEntry(fxId);
           return (
             <React.Fragment key={i}>
-              <Device name={def?.name ?? fxId} cat="var(--cat-fx)" knobs={fxKnobs} onKnob={onFxParam ? (ki, v) => onFxParam(i, ki, v) : undefined} />
+              <Device name={def?.name ?? fxId} cat="var(--cat-fx)" knobs={fxKnobs} onKnob={onFxParam ? (ki, v) => onFxParam(i, ki, v) : undefined} onEdit={onEditFx ? () => onEditFx(i) : undefined} />
               {i < track.fx.length - 1 && <ChevronRight size={16} className="fxc-chev" />}
             </React.Fragment>
           );

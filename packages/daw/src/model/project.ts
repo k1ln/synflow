@@ -41,7 +41,8 @@ export interface Track {
   id: string;
   name: string;
   volume: number;
-  fx: string[];                  // FX_LIBRARY ids (track insert chain)
+  fx: string[];                  // flow-library effect ids (track insert chain)
+  fxFlows?: Flow[];              // sparse, index-aligned override when an FX flow is edited in Synflow
   instruments: Instrument[];
   automation: AutomationLane[];
 }

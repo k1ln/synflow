@@ -53,6 +53,7 @@ import MiniPlayer from './components/MiniPlayer';
 import AudioExplorer from './components/AudioExplorer';
 import OrchestratorDialog from './nodes/OrchestratorDialog';
 import DocsPlayground from './components/DocsPlayground';
+import { DawEditorBridge } from './host/dawEditorBridge';
 import {
   makeDistortionCurve,
   hexToRgb,
@@ -2147,6 +2148,8 @@ function Flow() {
 
   return (
     <div style={{ display: 'flex', height: "100vh", width: "100%", paddingTop: 44, background: '#07070d' }} onContextMenu={(e) => { e.preventDefault(); setNodePaletteOpen(prev => !prev); }}>
+      {/* DAW bridge: when opened by Mothscilla (#mothscilla), load the incoming flow + show "Send to Mothscilla". No-op otherwise. */}
+      <DawEditorBridge nodes={nodes} edges={edges} setNodes={setNodes as any} setEdges={setEdges as any} />
       {/* Flow container */}
       <div style={{ flex: 1, display: orchestratorEditorOpen ? 'none' : 'flex', flexDirection: 'column', minWidth: 0 }}>
       {/* Inline controls: color pickers for selected node and edge */}

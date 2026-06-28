@@ -1,0 +1,86 @@
+{
+  "name": "Square Lead",
+  "daw": {
+    "id": "square-lead",
+    "category": "Synths",
+    "kind": "piano"
+  },
+  "nodes": [
+    {
+      "id": "osc.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "data": {
+        "frequency": 220,
+        "type": "square",
+        "isPitch": true,
+        "pitchParam": "frequency"
+      },
+      "position": {
+        "x": 80,
+        "y": 120
+      }
+    },
+    {
+      "id": "adsr.ADSRFlowNode",
+      "type": "ADSRFlowNode",
+      "isTrigger": true,
+      "data": {
+        "attackTime": 0.005,
+        "decayTime": 0.12,
+        "sustainLevel": 0.7,
+        "releaseTime": 0.14,
+        "maxTime": 10,
+        "minPercent": 0,
+        "maxPercent": 100,
+        "isTrigger": true
+      },
+      "position": {
+        "x": 320,
+        "y": 250
+      }
+    },
+    {
+      "id": "gain.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": {
+        "gain": 1
+      },
+      "position": {
+        "x": 560,
+        "y": 120
+      }
+    },
+    {
+      "id": "master.MasterOutFlowNode",
+      "type": "MasterOutFlowNode",
+      "data": {},
+      "position": {
+        "x": 800,
+        "y": 250
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-adsr-gain",
+      "source": "adsr.ADSRFlowNode",
+      "target": "gain.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "gain"
+    },
+    {
+      "id": "e-osc-gain",
+      "source": "osc.OscillatorFlowNode",
+      "target": "gain.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-gain-master",
+      "source": "gain.GainFlowNode",
+      "target": "master.MasterOutFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "destination-input"
+    }
+  ]
+}
