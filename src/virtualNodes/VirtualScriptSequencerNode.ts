@@ -287,6 +287,8 @@ export class VirtualScriptSequencerNode extends VirtualNode<
       data: {
         activeLine: this.active,
         tickIntervalMs: this.tickIntervalMs,
+        vars: this.vars,
+        execLines: this._lastExecLines,
         from: 'VirtualScriptSequencerNode'
       }
     });
@@ -356,6 +358,7 @@ export class VirtualScriptSequencerNode extends VirtualNode<
 
     // Skip init: lines (already ran at startup); execute exec: lines for free.
     // Both run without consuming a tick.
+    this._lastExecLines = [];
     const drainFree = () => {
       let g = 0;
       while (g++ < this.lines.length) {
@@ -363,6 +366,7 @@ export class VirtualScriptSequencerNode extends VirtualNode<
         if (/^init:/i.test(_l)) {
           this.active = (this.active + 1) % this.lines.length;
         } else if (/^exec:/i.test(_l)) {
+          this._lastExecLines.push(this.active);
           const body = _l.slice(5).trim();
           this._jumped = false; // clear before exec body so we can detect jumps
           if (body) this.executeLine(body);
@@ -403,6 +407,8 @@ export class VirtualScriptSequencerNode extends VirtualNode<
   private _inRepeatCycle = false;
   /** Line indices (0-based) that have already been run via `once:` prefix. */
   private _onceFired: Set<number> = new Set();
+  /** Exec: line indices that fired in the most recent clock tick (for UI flash). */
+  private _lastExecLines: number[] = [];
 
   // ---- execution -----------------------------------------------------------
 
