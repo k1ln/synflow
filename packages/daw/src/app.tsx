@@ -138,6 +138,22 @@ export function App() {
     setCurrentStep(-1);
   }, []);
 
+  // Audition: trigger an instrument immediately on click (builds/resumes audio on
+  // the user gesture). Gives instant feedback that the controls are live.
+  const audition = useCallback(async (instId: string, payload?: { frequency: number }) => {
+    await ensureAudio();
+    await ctxRef.current?.resume();
+    const pool = poolsRef.current.get(instId);
+    if (pool) {
+      const nid = -Math.floor(performance.now());
+      pool.noteOn(nid, payload?.frequency ?? 440);
+      window.setTimeout(() => pool.noteOff(nid), 350);
+      return;
+    }
+    const host = hostsRef.current.get(instId);
+    if (host) { host.trigger(payload ?? {}); window.setTimeout(() => host.release(payload ?? {}), 220); }
+  }, [ensureAudio]);
+
   // ─── project edits ──────────────────────────────────────────────────────────
   const setBpm = (bpm: number) => { setProject((p) => ({ ...p, bpm })); if (transportRef.current) transportRef.current.bpm = bpm; };
 
@@ -155,9 +171,12 @@ export function App() {
       if (def && strip) await strip.addFx(def.name, def.make());
     },
     onRemoveFx: (trackId, index) => { mapTrack(trackId, (t) => ({ ...t, fx: t.fx.filter((_, i) => i !== index) })); mixerRef.current?.get(trackId)?.removeFx(index); },
-    onToggleStep: (instId, step) => mapInstrument(instId, (i) => ({ ...i, steps: i.steps.map((s, n) => (n === step ? !s : s)) })),
+    onToggleStep: (instId, step) => mapInstrument(instId, (i) => {
+      if (!i.steps[step]) void audition(instId); // audition when turning a step ON
+      return { ...i, steps: i.steps.map((s, n) => (n === step ? !s : s)) };
+    }),
     onMute: (instId) => mapInstrument(instId, (i) => ({ ...i, muted: !i.muted })),
-    onAddNote: (instId, midi, start) => mapInstrument(instId, (i) => ({ ...i, notes: [...(i.notes ?? []), { id: newNoteId(), midi, start, length: noteLength }] })),
+    onAddNote: (instId, midi, start) => { void audition(instId, { frequency: midiToFreq(midi) }); mapInstrument(instId, (i) => ({ ...i, notes: [...(i.notes ?? []), { id: newNoteId(), midi, start, length: noteLength }] })); },
     onRemoveNote: (instId, noteId) => mapInstrument(instId, (i) => ({ ...i, notes: (i.notes ?? []).filter((n) => n.id !== noteId) })),
     onAddInstrument: (trackId, kind) => {
       const total = projectRef.current.totalSteps;
@@ -236,7 +255,14 @@ export function App() {
         {browserOpen && <Browser />}
         <div className="main">
           {view === 'arrange' && (
-            <Arrange project={project} selId={selTrack} onSelect={setSelTrack} currentStep={currentStep} />
+            <Arrange
+              project={project} selId={selTrack} onSelect={setSelTrack} currentStep={currentStep}
+              onOpen={(id) => {
+                setSelTrack(id);
+                const t = project.tracks.find((tr) => tr.id === id);
+                setView(t?.instruments.some((i) => i.kind === 'piano') ? 'piano' : 'rack');
+              }}
+            />
           )}
           {(view === 'rack' || view === 'piano') && (
             <div className="editor-scroll">
