@@ -69,7 +69,7 @@ export class VirtualOnOffButtonNode extends VirtualNode<CustomNode & OnOffButton
   private handleIncoming(kind: 'On' | 'Off', payload: any) {
     
     if (!this.isOn) return; // gate closed
-    console.log("Handle Incoming");
+    
     
     const path = `${this.node.id}.main-input.sendNode${kind}`;
     // Forward original payload so downstream nodes receive the same data, with gate metadata attached
