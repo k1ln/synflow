@@ -33,6 +33,7 @@
 #include "synflow/nodes/DelayNode.h"
 #include "synflow/nodes/DistortionNode.h"
 #include "synflow/nodes/DynamicCompressorNode.h"
+#include "synflow/nodes/FlowEventFreqShifterNode.h"
 #include "synflow/nodes/FunctionNode.h"
 #include "synflow/nodes/GainNode.h"
 #include "synflow/nodes/MasterOutNode.h"
@@ -78,6 +79,13 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
     if (type == "ScriptSequencerFlowNode") return std::make_unique<ScriptSequencerNode>();
     if (type == "FunctionFlowNode") return std::make_unique<FunctionNode>();
     if (type == "InputNode" || type == "OutputNode") return std::make_unique<BoundaryNode>();
+    if (type == "FlowEventFreqShifterFlowNode") return std::make_unique<FlowEventFreqShifterNode>();
+    // Visualization taps / recording are transparent on the audio path (their audio
+    // node is a passthrough gain; the scope/meter/record is a side-branch handled in
+    // the GUI/host). Pass audio in[0] -> out[0] so they don't break flows.
+    if (type == "OscilloscopeFlowNode" || type == "AnalyzerNodeGPT"
+        || type == "AnalyzerFlowNode" || type == "RecordingFlowNode")
+        return std::make_unique<PassthroughNode>();
     if (type == "MicFlowNode") return std::make_unique<MicNode>();
     if (type == "LogFlowNode" || type == "EventFlowNode" || type == "CommandInFlowNode" || type == "CommandOutFlowNode")
         return std::make_unique<EventForwardNode>();
@@ -98,7 +106,7 @@ bool isEventEmitterType(const std::string& type) {
         || type == "SwitchFlowNode" || type == "SequencerFrequencyFlowNode"
         || type == "BlockingSwitchFlowNode" || type == "MidiFileFlowNode"
         || type == "ScriptSequencerFlowNode" || type == "FunctionFlowNode"
-        || type == "ArpeggiatorFlowNode"
+        || type == "ArpeggiatorFlowNode" || type == "FlowEventFreqShifterFlowNode"
         || type == "EventFlowNode" || type == "LogFlowNode"
         || type == "CommandInFlowNode" || type == "CommandOutFlowNode"
         || type == "AutomationFlowNode";

@@ -17,6 +17,7 @@
 #include "synflow/nodes/AutomationNode.h"
 #include "synflow/nodes/BlockingSwitchNode.h"
 #include "synflow/nodes/ClockNode.h"
+#include "synflow/nodes/FlowEventFreqShifterNode.h"
 #include "synflow/nodes/FunctionNode.h"
 #include "synflow/nodes/MidiFileNode.h"
 #include "synflow/nodes/ScriptSequencerNode.h"
@@ -741,6 +742,22 @@ int main() {
         // ~440 Hz over 0.5 s -> ~220 zero crossings; just confirm the sub-flow osc reaches master
         check(rms(out, 1000, 4000) > 0.1 && crossings > 200 && crossings < 240,
               "audio sub-flow: inner oscillator (440 Hz) reaches the outer master output");
+    }
+
+    // --- Test 24: FlowEventFreqShifter transposes event frequencies by semitones ---
+    {
+        AudioGraphManager g(RuntimeMode::Plugin);
+        auto sh = std::make_unique<FlowEventFreqShifterNode>(); sh->setNamedParam("shift", 12.0); // +1 octave
+        const int si = g.addNode(std::move(sh));
+        auto probe = std::make_unique<ProbeNode>(); ProbeNode* pr = probe.get();
+        const int pi = g.addNode(std::move(probe));
+        g.connectEvent(si, 0, pi, 0, "frequency");
+        g.prepare(SR, BLOCK);
+        std::vector<float> out(BLOCK, 0.0f);
+        g.queueInputEvent(si, 0, EventType::NoteOn, 440.0, 0); // 440 +12st -> 880
+        g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        check(!pr->values.empty() && std::fabs(pr->values.back() - 880.0) < 0.5 && !pr->onSamples.empty(),
+              "FlowEventFreqShifter transposes 440 Hz up an octave (880) + forwards the gate");
     }
 
     std::printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "ALL PASS", failures, failures == 1 ? "" : "s");
