@@ -13,6 +13,7 @@
 #include "synflow/AudioGraphManager.h"
 #include "synflow/FlowLoader.h"
 #include "synflow/nodes/ADSRNode.h"
+#include "synflow/nodes/AutomationNode.h"
 #include "synflow/nodes/ClockNode.h"
 #include "synflow/nodes/ConstantNode.h"
 #include "synflow/nodes/GainNode.h"
@@ -448,6 +449,36 @@ int main() {
         // ticks 0,24000,48000,72000 -> on,off,on,off
         check(pr->onSamples == std::vector<long>{0, 48000} && pr->offSamples == std::vector<long>{24000, 72000},
               "OnOffButton latches on/off across triggers");
+    }
+
+    // --- Test 14: Automation ramps a steered param through a point curve on trigger ---
+    {
+        // 0.5 s ramp, value = max - y*(max-min), points: (0,0)->(1,1) i.e. y rises 0->1
+        // so value falls max(1000)->min(100) over the ramp. Probe the emitted Values.
+        AudioGraphManager g(RuntimeMode::Plugin);
+        auto gate = std::make_unique<GateNode>(); gate->onAt = 0; gate->offAt = -1;
+        const int gi = g.addNode(std::move(gate));
+        auto autom = std::make_unique<AutomationNode>();
+        autom->setNamedParam("lengthSec", 0.5);
+        autom->setNamedParam("min", 100.0);
+        autom->setNamedParam("max", 1000.0);
+        autom->setArrayParam("points", {0.0, 0.0, 1.0, 1.0}); // linear y 0->1
+        const int ai = g.addNode(std::move(autom));
+        auto probe = std::make_unique<ProbeNode>(); ProbeNode* pr = probe.get();
+        const int pi = g.addNode(std::move(probe));
+        g.connectEvent(gi, 0, ai, 0);
+        g.connectEvent(ai, 0, pi, 0, "frequency");
+        g.prepare(SR, BLOCK);
+        const int N = 48000; // 1 s -> ramp completes at 0.5 s
+        std::vector<float> out(BLOCK, 0.0f);
+        for (int i = 0; i < N; i += BLOCK) g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        bool ok = !pr->values.empty();
+        if (ok) ok = std::fabs(pr->values.front() - 1000.0) < 1.0;   // t=0 -> y=0 -> max
+        // last emitted value while ramping should be near min (100)
+        if (ok) ok = std::fabs(pr->values.back() - 100.0) < 30.0;
+        // monotonic decrease
+        for (size_t k = 1; ok && k < pr->values.size(); ++k) ok = pr->values[k] <= pr->values[k - 1] + 1e-6;
+        check(ok, "Automation ramps steered param max->min through linear point curve on trigger");
     }
 
     std::printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "ALL PASS", failures, failures == 1 ? "" : "s");

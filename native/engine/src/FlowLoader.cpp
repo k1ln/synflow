@@ -8,6 +8,7 @@
 #include "synflow/nodes/BiquadFilterNode.h"
 #include "synflow/nodes/ChorusNode.h"
 #include "synflow/nodes/ClockNode.h"
+#include "synflow/nodes/AutomationNode.h"
 #include "synflow/nodes/ButtonNode.h"
 #include "synflow/nodes/ConstantNode.h"
 #include "synflow/nodes/MicNode.h"
@@ -57,6 +58,7 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
     if (type == "SequencerFrequencyFlowNode") return std::make_unique<SequencerFrequencyNode>();
     if (type == "RingModFlowNode") return std::make_unique<RingModNode>();
     if (type == "IIRFilterFlowNode") return std::make_unique<IIRFilterNode>();
+    if (type == "AutomationFlowNode") return std::make_unique<AutomationNode>();
     if (type == "MicFlowNode") return std::make_unique<MicNode>();
     if (type == "LogFlowNode" || type == "EventFlowNode" || type == "CommandInFlowNode" || type == "CommandOutFlowNode")
         return std::make_unique<EventForwardNode>();
@@ -77,7 +79,8 @@ bool isEventEmitterType(const std::string& type) {
         || type == "SwitchFlowNode" || type == "SequencerFrequencyFlowNode"
         || type == "ArpeggiatorFlowNode"
         || type == "EventFlowNode" || type == "LogFlowNode"
-        || type == "CommandInFlowNode" || type == "CommandOutFlowNode";
+        || type == "CommandInFlowNode" || type == "CommandOutFlowNode"
+        || type == "AutomationFlowNode";
 }
 
 } // namespace
@@ -123,6 +126,14 @@ FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string&
                         nums.reserve(val.arr.size());
                         for (const auto& e : val.arr) nums.push_back(e.asNumber(0));
                         node->setArrayParam(key, nums);
+                    } else if (val.isArray() && !val.arr.empty() && val.arr.front().isObject()) {
+                        // object array (e.g. automation points {x,y}) -> [x0,y0,x1,y1,...]
+                        std::vector<double> flat;
+                        for (const auto& e : val.arr) {
+                            if (const JsonValue* x = e.find("x")) flat.push_back(x->asNumber(0));
+                            if (const JsonValue* y = e.find("y")) flat.push_back(y->asNumber(0));
+                        }
+                        if (!flat.empty()) node->setArrayParam(key, flat);
                     }
                     if (key == "isOutput" && val.asBool()) isOutputFlag = true;
                     if (key == "isInput" && val.asBool()) isInputFlag = true;
