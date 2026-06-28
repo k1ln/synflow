@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
+import { OptionSelect } from "../components/OptionSelect";
+import { NumberField } from "../components/NumberField";
 import "./AudioNode.css";
 
 export type LadderFilterFlowNodeProps = {
@@ -67,16 +69,16 @@ const LadderFilterFlowNode: React.FC<LadderFilterFlowNodeProps> = ({ data }) => 
     <div className="flow-node" style={data.style}>
       <div className="node-row" style={{ justifyContent: "space-between", padding: "0 2px", marginBottom: 6 }}>
         <b className="node-title" style={{ margin: 0, padding: 0, border: 0, textShadow: "none" }}>LADDER</b>
-        <select
+        <OptionSelect
           value={poles}
-          onChange={(e) => setPoles(parseInt(e.target.value, 10))}
-          className="node-select"
-          style={{ width: 64 }}
-          title="Slope — 2-pole (12 dB) or 4-pole Moog (24 dB)"
-        >
-          <option value={4}>24 dB</option>
-          <option value={2}>12 dB</option>
-        </select>
+          onChange={(v) => setPoles(Number(v))}
+          options={[
+            { value: 4, label: '24 dB', title: '4-pole Moog (24 dB/oct)' },
+            { value: 2, label: '12 dB', title: '2-pole (12 dB/oct)' },
+          ]}
+          accentColor={ACCENT}
+          aria-label="Slope"
+        />
       </div>
 
       {/* Main Input */}
@@ -101,19 +103,12 @@ const LadderFilterFlowNode: React.FC<LadderFilterFlowNodeProps> = ({ data }) => 
             label="Cutoff"
             persistKey={`ladder:${flowId}:${nodeId}:cutoffLog`}
           />
-          <input
-            type="text"
+          <NumberField
             value={Math.round(cutoff * 100) / 100}
-            onChange={(e) => {
-              const val = parseFloat(e.target.value);
-              if (!isNaN(val)) {
-                const clamped = Math.min(FREQ_MAX, Math.max(FREQ_MIN, val));
-                setCutoff(clamped);
-                setCutoffNorm(normFromFreq(clamped));
-              }
-            }}
-            className="node-input"
-            style={{ width: 50 }}
+            onCommit={(v) => { setCutoff(v); setCutoffNorm(normFromFreq(v)); }}
+            min={FREQ_MIN}
+            max={FREQ_MAX}
+            width={50}
           />
           <Handle type="target" position={Position.Left} id="cutoff" style={{ top: 70 }} />
         </div>
@@ -132,12 +127,12 @@ const LadderFilterFlowNode: React.FC<LadderFilterFlowNodeProps> = ({ data }) => 
             label="Reso"
             persistKey={`ladder:${flowId}:${nodeId}:reso`}
           />
-          <input
-            type="text"
+          <NumberField
             value={Math.round(resonance * 1000) / 1000}
-            onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) setResonance(Math.min(1, Math.max(0, v))); }}
-            className="node-input"
-            style={{ width: 50 }}
+            onCommit={setResonance}
+            min={0}
+            max={1}
+            width={50}
           />
           <Handle type="target" position={Position.Left} id="resonance" style={{ top: 110 }} />
         </div>
@@ -159,12 +154,12 @@ const LadderFilterFlowNode: React.FC<LadderFilterFlowNodeProps> = ({ data }) => 
             label="Drive"
             persistKey={`ladder:${flowId}:${nodeId}:drive`}
           />
-          <input
-            type="text"
+          <NumberField
             value={Math.round(drive * 100) / 100}
-            onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) setDrive(Math.min(20, Math.max(0.1, v))); }}
-            className="node-input"
-            style={{ width: 50 }}
+            onCommit={setDrive}
+            min={0.1}
+            max={20}
+            width={50}
           />
         </div>
       </div>

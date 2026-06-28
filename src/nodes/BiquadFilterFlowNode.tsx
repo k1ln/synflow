@@ -1,6 +1,9 @@
 ﻿import React, { useState, useEffect } from "react";
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
+import { OptionSelect } from "../components/OptionSelect";
+import { NumberField } from "../components/NumberField";
+import { BIQUAD_FILTER_OPTIONS } from "../components/nodeSymbols";
 import "./AudioNode.css";
 
 export type BiquadFilterFlowNodeProps = {
@@ -64,29 +67,15 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
       className="flow-node"
       style={data.style}
     >
-      <div className="node-row" style={{ justifyContent: "space-between", padding: "0 2px", marginBottom: 6 }}>
+      <div className="node-field" style={{ marginBottom: 6 }}>
         <b className="node-title" style={{ margin: 0, padding: 0, border: 0, textShadow: "none" }}>FILTER</b>
-        <select
+        <OptionSelect
           value={type}
-          onChange={(e) => setType(e.target.value as BiquadFilterType)}
-          className="node-select"
-          style={{ width: 72 }}
-        >
-          {[
-            "lowpass",
-            "highpass",
-            "bandpass",
-            "lowshelf",
-            "highshelf",
-            "peaking",
-            "notch",
-            "allpass",
-          ].map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+          onChange={(v) => setType(v as BiquadFilterType)}
+          options={BIQUAD_FILTER_OPTIONS}
+          columns={4}
+          aria-label="Filter type"
+        />
       </div>
       
       {/* Main Input */}
@@ -127,19 +116,12 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
             label="Freq"
             persistKey={`filter:${flowId}:${nodeId}:freqLog`}
           />
-          <input
-            type="text"
+          <NumberField
             value={Math.round(frequency * 100) / 100}
-            onChange={(e) => {
-              const val = parseFloat(e.target.value);
-              if (!isNaN(val)) {
-                const clamped = Math.min(FREQ_MAX, Math.max(FREQ_MIN, val));
-                setFrequency(clamped);
-                setFreqKnobNorm(normFromFreq(clamped));
-              }
-            }}
-            className="node-input"
-            style={{ width: 50 }}
+            onCommit={(v) => { setFrequency(v); setFreqKnobNorm(normFromFreq(v)); }}
+            min={FREQ_MIN}
+            max={FREQ_MAX}
+            width={50}
           />
           <Handle
             type="target"
@@ -164,12 +146,12 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
             label="Detune"
             persistKey={`filter:${flowId}:${nodeId}:detune`}
           />
-          <input
-            type="text"
+          <NumberField
             value={detune}
-            onChange={(e) => setDetune(parseFloat(e.target.value))}
-            className="node-input"
-            style={{ width: 50 }}
+            onCommit={setDetune}
+            min={-1200}
+            max={1200}
+            width={50}
           />
           <Handle
             type="target"
@@ -197,12 +179,12 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
             label="Q"
             persistKey={`filter:${flowId}:${nodeId}:q`}
           />
-          <input
-            type="text"
+          <NumberField
             value={Q}
-            onChange={(e) => setQ(parseFloat(e.target.value))}
-            className="node-input"
-            style={{ width: 50 }}
+            onCommit={setQ}
+            min={0.0001}
+            max={40}
+            width={50}
           />
           <Handle
             type="target"
@@ -227,12 +209,12 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
             label="Gain"
             persistKey={`filter:${flowId}:${nodeId}:gain`}
           />
-          <input
-            type="text"
+          <NumberField
             value={gain}
-            onChange={(e) => setGain(parseFloat(e.target.value))}
-            className="node-input"
-            style={{ width: 50 }}
+            onCommit={setGain}
+            min={-40}
+            max={40}
+            width={50}
           />
           <Handle
             type="target"

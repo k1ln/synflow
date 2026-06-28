@@ -13,7 +13,14 @@
         "frequency": 220,
         "type": "sawtooth",
         "isPitch": true,
-        "pitchParam": "frequency"
+        "pitchParam": "frequency",
+        "options": [
+          {
+            "param": "type",
+            "label": "Wave",
+            "choices": ["sine", "square", "sawtooth", "triangle"]
+          }
+        ]
       },
       "position": {
         "x": 100,

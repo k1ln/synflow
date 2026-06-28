@@ -1,6 +1,9 @@
 ﻿import React, { useEffect, useRef, useState } from "react";
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
+import { OptionSelect } from "../components/OptionSelect";
+import { NumberField } from "../components/NumberField";
+import { WAVEFORM_OPTIONS_CUSTOM } from "../components/nodeSymbols";
 import EventBus from "../sys/EventBus";
 import "./AudioNode.css";
 
@@ -25,8 +28,6 @@ export type AudioWorkletOscillatorFlowNodeProps = {
     syncConnected?: boolean;
   };
 };
-
-const oscillatorTypes = ["sine", "square", "sawtooth", "triangle", "custom"];
 
 const AudioWorkletOscillatorFlowNode: React.FC<AudioWorkletOscillatorFlowNodeProps> = ({ data }) => {
   const [frequency, setFrequency] = useState(data.frequency || 440);
@@ -93,7 +94,7 @@ const AudioWorkletOscillatorFlowNode: React.FC<AudioWorkletOscillatorFlowNodePro
 
   // UI
   return (
-    <div className="flow-node" style={style}>
+    <div className="flow-node" style={{ ...style, width: 'auto' }}>
       <div className="node-title">AW OSC</div>
       {/* FM Input (for frequency modulation) */}
       <Handle
@@ -123,77 +124,77 @@ const AudioWorkletOscillatorFlowNode: React.FC<AudioWorkletOscillatorFlowNodePro
         id="output"
         className="mainOutput"
       />
-      {/* Frequency Knob */}
-      <div className="node-field">
-        <span className="node-label">Freq.</span>
-        <MidiKnob
-          accentColor="#4ade80"
-          min={oscFrequencyType === "midi" ? 24 : oscFrequencyType === "lfo" ? 0 : 0}
-          max={oscFrequencyType === "midi" ? 96 : oscFrequencyType === "lfo" ? 250 : 100}
-          value={knobValue}
-          onChange={changeValue}
-          midiMapping={freqMidiMapping}
-          midiSmoothing={1}
-          midiSensitivity={0.5}
-          onMidiLearnChange={setFreqMidiMapping}
-          label="Freq"
-          persistKey={`awosc:${data.flowId || 'default'}:${data.id}:freq`}
-        />
-        <input
-          type="text"
-          value={frequency}
-          onChange={e => setFrequency(parseFloat(e.target.value))}
-          className="node-input"
-          style={{ width: 50 }}
-        />
-      </div>
-      {/* Detune Knob */}
-      <div className="node-field">
-        <span className="node-label">Detune</span>
-        <MidiKnob
-          accentColor="#4ade80"
-          min={-100}
-          max={100}
-          value={knobDetuneValue}
-          onChange={changeDetuneValue}
-          midiMapping={detuneMidiMapping}
-          onMidiLearnChange={setDetuneMidiMapping}
-          label="Detune"
-          persistKey={`awosc:${data.flowId || 'default'}:${data.id}:detune`}
-        />
-        <input
-          type="text"
-          value={detune}
-          onChange={e => setDetune(parseFloat(e.target.value))}
-          className="node-input"
-          style={{ width: 50 }}
-        />
-      </div>
-      {/* Type Selector */}
-      <div className="node-field">
-        <select
-          value={waveform}
-          onChange={e => setWaveform(e.target.value as OscillatorType)}
-          className="node-select"
-          style={{ width: 62 }}
-        >
-          {oscillatorTypes.map(t => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
-      </div>
-      {/* Frequency Type Selector */}
-      <div className="node-field">
-        <select
-          value={oscFrequencyType}
-          onChange={e => setOscFrequencyType(e.target.value as FrequencyType)}
-          className="node-select"
-          style={{ width: 62 }}
-        >
-          {["midi", "hz", "lfo"].map(t => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
+
+      {/* Two-column control grid (Freq|Detune / Wave|Mode) */}
+      <div className="osc-grid">
+        {/* Frequency Knob */}
+        <div className="node-field">
+          <span className="node-label">Freq.</span>
+          <MidiKnob
+            accentColor="#4ade80"
+            min={oscFrequencyType === "midi" ? 24 : oscFrequencyType === "lfo" ? 0 : 0}
+            max={oscFrequencyType === "midi" ? 96 : oscFrequencyType === "lfo" ? 250 : 100}
+            value={knobValue}
+            onChange={changeValue}
+            midiMapping={freqMidiMapping}
+            midiSmoothing={1}
+            midiSensitivity={0.5}
+            onMidiLearnChange={setFreqMidiMapping}
+            label="Freq"
+            persistKey={`awosc:${data.flowId || 'default'}:${data.id}:freq`}
+          />
+          <NumberField
+            value={frequency}
+            onCommit={setFrequency}
+            min={0}
+            width={50}
+          />
+        </div>
+        {/* Detune Knob */}
+        <div className="node-field">
+          <span className="node-label">Detune</span>
+          <MidiKnob
+            accentColor="#4ade80"
+            min={-100}
+            max={100}
+            value={knobDetuneValue}
+            onChange={changeDetuneValue}
+            midiMapping={detuneMidiMapping}
+            onMidiLearnChange={setDetuneMidiMapping}
+            label="Detune"
+            persistKey={`awosc:${data.flowId || 'default'}:${data.id}:detune`}
+          />
+          <NumberField
+            value={detune}
+            onCommit={setDetune}
+            width={50}
+          />
+        </div>
+        {/* Type Selector */}
+        <div className="node-field">
+          <span className="node-label">Wave</span>
+          <OptionSelect
+            value={waveform}
+            onChange={(v) => setWaveform(v as OscillatorType)}
+            options={WAVEFORM_OPTIONS_CUSTOM}
+            columns={2}
+            aria-label="Waveform"
+          />
+        </div>
+        {/* Frequency Type Selector */}
+        <div className="node-field">
+          <span className="node-label">Mode</span>
+          <OptionSelect
+            value={oscFrequencyType}
+            onChange={(v) => setOscFrequencyType(v as FrequencyType)}
+            options={[
+              { value: 'midi', label: 'MIDI' },
+              { value: 'hz', label: 'Hz' },
+              { value: 'lfo', label: 'LFO' },
+            ]}
+            aria-label="Frequency mode"
+          />
+        </div>
       </div>
     </div>
   );

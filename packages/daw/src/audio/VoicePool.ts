@@ -46,7 +46,7 @@ export class VoicePool {
   }
 
   /** Automate a param across all voices (control-rate). */
-  setParam(nodeId: string, param: string, value: number): void {
+  setParam(nodeId: string, param: string, value: number | string): void {
     for (const v of this.voices) (v as any).setParam?.(nodeId, param, value);
   }
 

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
+import { OptionSelect } from "../components/OptionSelect";
+import { NumberField } from "../components/NumberField";
+import { filterSymbol } from "../components/nodeSymbols";
 import "./AudioNode.css";
 
 export type SvfDriveFilterFlowNodeProps = {
@@ -24,6 +27,8 @@ export type SvfDriveFilterFlowNodeProps = {
 };
 
 const MODES = ["LP", "HP", "BP", "Notch"];
+const MODE_FILTERS = ["lowpass", "highpass", "bandpass", "notch"];
+const MODE_OPTIONS = MODES.map((m, i) => ({ value: i, symbol: filterSymbol(MODE_FILTERS[i]), label: m, title: m }));
 
 const SvfDriveFilterFlowNode: React.FC<SvfDriveFilterFlowNodeProps> = ({ data }) => {
   const FREQ_MIN = 20;
@@ -76,28 +81,25 @@ const SvfDriveFilterFlowNode: React.FC<SvfDriveFilterFlowNodeProps> = ({ data })
     <div className="flow-node" style={data.style}>
       <div className="node-row" style={{ justifyContent: "space-between", padding: "0 2px", marginBottom: 6 }}>
         <b className="node-title" style={{ margin: 0, padding: 0, border: 0, textShadow: "none" }}>SVF DRIVE</b>
-        <div style={{ display: "flex", gap: 4 }}>
-          <select
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <OptionSelect
             value={mode}
-            onChange={(e) => setMode(parseInt(e.target.value, 10))}
-            className="node-select"
-            style={{ width: 56 }}
-            title="Filter mode"
-          >
-            {MODES.map((m, i) => (
-              <option key={m} value={i}>{m}</option>
-            ))}
-          </select>
-          <select
+            onChange={(v) => setMode(Number(v))}
+            options={MODE_OPTIONS}
+            columns={2}
+            accentColor="#f59e0b"
+            aria-label="Filter mode"
+          />
+          <OptionSelect
             value={slope}
-            onChange={(e) => setSlope(parseInt(e.target.value, 10))}
-            className="node-select"
-            style={{ width: 56 }}
-            title="Slope"
-          >
-            <option value={1}>12 dB</option>
-            <option value={2}>24 dB</option>
-          </select>
+            onChange={(v) => setSlope(Number(v))}
+            options={[
+              { value: 1, label: '12 dB', title: '12 dB/oct' },
+              { value: 2, label: '24 dB', title: '24 dB/oct' },
+            ]}
+            accentColor="#f59e0b"
+            aria-label="Slope"
+          />
         </div>
       </div>
 
@@ -123,19 +125,12 @@ const SvfDriveFilterFlowNode: React.FC<SvfDriveFilterFlowNodeProps> = ({ data })
             label="Cutoff"
             persistKey={`svf:${flowId}:${nodeId}:cutoffLog`}
           />
-          <input
-            type="text"
+          <NumberField
             value={Math.round(cutoff * 100) / 100}
-            onChange={(e) => {
-              const val = parseFloat(e.target.value);
-              if (!isNaN(val)) {
-                const clamped = Math.min(FREQ_MAX, Math.max(FREQ_MIN, val));
-                setCutoff(clamped);
-                setCutoffNorm(normFromFreq(clamped));
-              }
-            }}
-            className="node-input"
-            style={{ width: 50 }}
+            onCommit={(v) => { setCutoff(v); setCutoffNorm(normFromFreq(v)); }}
+            min={FREQ_MIN}
+            max={FREQ_MAX}
+            width={50}
           />
           <Handle type="target" position={Position.Left} id="cutoff" style={{ top: 70 }} />
         </div>
@@ -154,12 +149,12 @@ const SvfDriveFilterFlowNode: React.FC<SvfDriveFilterFlowNodeProps> = ({ data })
             label="Reso"
             persistKey={`svf:${flowId}:${nodeId}:reso`}
           />
-          <input
-            type="text"
+          <NumberField
             value={Math.round(resonance * 1000) / 1000}
-            onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) setResonance(Math.min(0.99, Math.max(0, v))); }}
-            className="node-input"
-            style={{ width: 50 }}
+            onCommit={setResonance}
+            min={0}
+            max={0.99}
+            width={50}
           />
           <Handle type="target" position={Position.Left} id="resonance" style={{ top: 110 }} />
         </div>
@@ -181,12 +176,12 @@ const SvfDriveFilterFlowNode: React.FC<SvfDriveFilterFlowNodeProps> = ({ data })
             label="Drive"
             persistKey={`svf:${flowId}:${nodeId}:drive`}
           />
-          <input
-            type="text"
+          <NumberField
             value={Math.round(drive * 100) / 100}
-            onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) setDrive(Math.min(20, Math.max(1, v))); }}
-            className="node-input"
-            style={{ width: 50 }}
+            onCommit={setDrive}
+            min={1}
+            max={20}
+            width={50}
           />
         </div>
 
@@ -204,12 +199,12 @@ const SvfDriveFilterFlowNode: React.FC<SvfDriveFilterFlowNodeProps> = ({ data })
             label="Mix"
             persistKey={`svf:${flowId}:${nodeId}:mix`}
           />
-          <input
-            type="text"
+          <NumberField
             value={Math.round(mix * 100) / 100}
-            onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) setMix(Math.min(1, Math.max(0, v))); }}
-            className="node-input"
-            style={{ width: 50 }}
+            onCommit={setMix}
+            min={0}
+            max={1}
+            width={50}
           />
         </div>
       </div>

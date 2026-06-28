@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import EventBus from '../sys/EventBus';
+import { OptionSelect } from '../components/OptionSelect';
+import { NOISE_OPTIONS } from '../components/nodeSymbols';
+import './AudioNode.css';
 
 export type NoiseKind = 'white' | 'pink' | 'brown' | 'blue' | 'violet' | 'gray' | 'velvet' | 'green' | 'infrared' | 'binary' | 'crackle';
 
@@ -15,7 +18,6 @@ export interface NoiseFlowNodeData {
 
 interface NoiseFlowNodeProps { data: NoiseFlowNodeData; }
 
-const NOISE_TYPES: NoiseKind[] = ['white','pink','brown','blue','violet','gray','velvet','green','infrared','binary','crackle'];
 
 
 const NoiseFlowNode: React.FC<NoiseFlowNodeProps> = ({ data }) => {
@@ -34,12 +36,16 @@ const NoiseFlowNode: React.FC<NoiseFlowNodeProps> = ({ data }) => {
   }, [noiseType]);
 
   return (
-    <div style={{ ...(data.style||{}), width: 80, padding: 6, textAlign:'center' }}>
+    <div style={{ ...(data.style||{}), width: 132, padding: 6, textAlign:'center' }}>
       <div className="node-title">NOISE</div>
       <Handle type="source" position={Position.Right} id="output" style={{ top: '50%', width:10, height:10, background:'#444', border:'1px solid #888' }} />
-      <select value={noiseType} onChange={e=> setNoiseType(e.target.value as NoiseKind)} className="node-select wide">
-        {NOISE_TYPES.map(nt => <option key={nt} value={nt}>{nt}</option>)}
-      </select>
+      <OptionSelect
+        value={noiseType}
+        onChange={(v) => setNoiseType(v as NoiseKind)}
+        options={NOISE_OPTIONS}
+        columns={2}
+        aria-label="Noise type"
+      />
     </div>
   );
 };

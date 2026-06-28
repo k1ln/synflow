@@ -5,7 +5,12 @@ import { StepGrid } from './StepGrid';
 import { PianoRoll } from './PianoRoll';
 import { AudioTrackLane } from './AudioTrackLane';
 import { FxBar } from './FxBar';
-import type { LibraryEntry } from '../synflow/library';
+import { AutomationLaneRow } from './AutomationLaneRow';
+import { flowKnobs } from '../synflow/knobs';
+import { findEntry, type LibraryEntry } from '../synflow/library';
+
+/** A parameter a track automation lane can target (volume or a track-FX knob). */
+export interface AutoTarget { key: string; label: string; nodeId: string; param: string; min: number; max: number; fxIndex?: number }
 
 /** seconds → m:ss (or h:mm:ss past an hour) for the clip-length hint. */
 const fmtDur = (s: number) => {
@@ -27,6 +32,10 @@ export interface TrackEditorHandlers {
   onTranspose: (useId: string, semitones: number) => void;
   onHumanize: (useId: string) => void;
   onSetKey: (key: import('../model/project').MusicalKey | null) => void;
+  onAddChord: (useId: string, midis: number[], start: number) => void;
+  onAddAutomation: (trackId: string, target: AutoTarget) => void;
+  onPaintAutomation: (trackId: string, laneId: string, step: number, value: number) => void;
+  onRemoveAutomation: (trackId: string, laneId: string) => void;
   onPlayNote: (useId: string, midi: number) => void;
   onKeyDown: (useId: string, midi: number) => void;
   onKeyUp: (useId: string, midi: number) => void;
@@ -39,8 +48,8 @@ export interface TrackEditorHandlers {
   onTrackFxAdd: (fxId: string) => void;
   onTrackFxRemove: (index: number) => void;
   onTrackFxEdit: (index: number) => void;
-  onUseFxKnob: (useId: string, index: number, nodeId: string, param: string, value: number) => void;
-  onTrackFxKnob: (index: number, nodeId: string, param: string, value: number) => void;
+  onUseFxKnob: (useId: string, index: number, nodeId: string, param: string, value: number | string) => void;
+  onTrackFxKnob: (index: number, nodeId: string, param: string, value: number | string) => void;
   onRename: (name: string) => void;
   onToggleLoop: () => void;
   onSetLength: (length: number) => void;
@@ -72,6 +81,12 @@ export function TrackEditor({ project, track, effects, currentStep, recTrack, pr
   h: TrackEditorHandlers;
 }) {
   const [picking, setPicking] = useState(false);
+  const [autoSel, setAutoSel] = useState('');
+  const autoTargets: AutoTarget[] = [
+    { key: 'vol', label: 'Volume', nodeId: '__volume__', param: 'volume', min: 0, max: 1 },
+    ...track.fx.flatMap((ins, fxIndex) =>
+      flowKnobs(ins.flow ?? findEntry(ins.fxId)?.flow).map((k) => ({ key: `${fxIndex}:${k.nodeId}:${k.param}`, label: `${ins.name}: ${k.label}`, nodeId: k.nodeId, param: k.param, min: k.min, max: k.max, fxIndex }))),
+  ];
   const poolName = (id: string) => project.pool.find((p) => p.id === id)?.name ?? '?';
   const addable = project.pool.filter((p) => (track.type === 'drums' ? p.kind === 'drum' : p.kind === 'synth'));
   const T = track.length, S = project.stepsPerBeat;
@@ -167,7 +182,7 @@ export function TrackEditor({ project, track, effects, currentStep, recTrack, pr
                     onAddNote={h.onAddNote} onRemoveNote={h.onRemoveNote}
                     onMoveNote={h.onMoveNote} onResizeNote={h.onResizeNote} onSetVelocity={h.onSetVelocity} onPlayNote={h.onPlayNote} onQuantize={h.onQuantize}
                     onTranspose={h.onTranspose} onHumanize={h.onHumanize}
-                    musicalKey={project.key} onSetKey={h.onSetKey}
+                    musicalKey={project.key} onSetKey={h.onSetKey} onAddChord={h.onAddChord}
                     onKeyDown={h.onKeyDown} onKeyUp={h.onKeyUp}
                   />
                 </div>
@@ -188,6 +203,26 @@ export function TrackEditor({ project, track, effects, currentStep, recTrack, pr
         label="Track FX" fx={track.fx} effects={effects}
         onAdd={h.onTrackFxAdd} onRemove={h.onTrackFxRemove} onEdit={h.onTrackFxEdit} onKnob={h.onTrackFxKnob}
       />
+
+      {(track.type === 'drums' || track.type === 'synth') && (
+        <div className="te-automation">
+          <div className="te-auto-head">
+            <span className="fxbar-label">Automation</span>
+            <select className="pr-qgrid" value={autoSel} onChange={(e) => setAutoSel(e.target.value)} title="Parameter to automate">
+              <option value="">param…</option>
+              {autoTargets.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
+            </select>
+            <button className="pr-quant" disabled={!autoSel} title="Add automation lane" onClick={() => { const tgt = autoTargets.find((t) => t.key === autoSel); if (tgt) h.onAddAutomation(track.id, tgt); }}>＋ Lane</button>
+          </div>
+          {track.automation.map((lane) => (
+            <div className="te-auto-lane" key={lane.id}>
+              <span className="te-auto-name" title={`${lane.nodeId === '__volume__' ? 'Volume' : lane.param}`}>{lane.nodeId === '__volume__' ? 'Volume' : `${lane.param}`}</span>
+              <AutomationLaneRow values={lane.values} min={lane.min} max={lane.max} onPaint={(step, value) => h.onPaintAutomation(track.id, lane.id, step, value)} />
+              <button className="te-auto-x" title="Remove lane" onClick={() => h.onRemoveAutomation(track.id, lane.id)}><Trash2 size={12} /></button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

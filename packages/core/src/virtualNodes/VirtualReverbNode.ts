@@ -19,6 +19,20 @@ export class VirtualReverbNode extends VirtualNode<CustomNode & ReverbFlowNodePr
         super(audioContext, audioContext.createConvolver(), eventBus, node);
     }
 
+    /** Load a real impulse response (WAV/etc.) from a URL into the convolver. When
+     *  set, it replaces the formula-generated impulse; clearing it reverts. */
+    private async loadIR(url: string) {
+        const ctx = this.audioContext; const conv = this.audioNode as unknown as ConvolverNode;
+        if (!ctx || !conv || !url) return;
+        try {
+            const bytes = await (await fetch(url)).arrayBuffer();
+            conv.buffer = await ctx.decodeAudioData(bytes);
+        } catch (err) {
+            console.warn('[VirtualReverbNode] IR load failed, using formula', err);
+            this.rebuildImpulse();
+        }
+    }
+
     handleUpdateParams(node: CustomNode & ReverbFlowNodeProps, payload: any) {
         if (!payload || !payload.data) return;
         const data = node.data;
@@ -26,6 +40,10 @@ export class VirtualReverbNode extends VirtualNode<CustomNode & ReverbFlowNodePr
         Object.keys(payload.data).forEach((key) => {
             const value = payload.data[key];
             switch (key) {
+                case "irUrl":
+                    (data as any).irUrl = typeof value === "string" ? value : "";
+                    if ((data as any).irUrl) { void this.loadIR((data as any).irUrl); } else { shouldRebuild = true; }
+                    break;
                 case "seconds":
                     data.seconds = this.normalizeSeconds(value);
                     shouldRebuild = true;
@@ -68,7 +86,9 @@ export class VirtualReverbNode extends VirtualNode<CustomNode & ReverbFlowNodePr
             data.reverse = data.reverse ?? reverse;
             data.formula = typeof data.formula === "string" && data.formula.trim().length > 0 ? data.formula : (formula ?? DEFAULT_FORMULA);
         }
-        this.rebuildImpulse();
+        const irUrl = (this.node?.data as any)?.irUrl;
+        if (typeof irUrl === "string" && irUrl) void this.loadIR(irUrl);
+        else this.rebuildImpulse();
     }
 
     private rebuildImpulse() {

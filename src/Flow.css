@@ -293,6 +293,49 @@ body {
 .flow-toast--ok { background: #0f2b12; border-color: #2aff9a; }
 .flow-toast--error { background: #2b0f12; border-color: #ff5a6b; }
 
+/* ── Node right-click context menu ──────────────────────────────────────── */
+.flow-ctxmenu {
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+    padding: 5px;
+    gap: 2px;
+    background: #15161f;
+    border: 1px solid #2c2e3c;
+    border-radius: 9px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.6);
+    font-size: 12px;
+    user-select: none;
+}
+.flow-ctxmenu-item {
+    text-align: left;
+    padding: 6px 9px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #e2e8f0;
+    cursor: pointer;
+    transition: background 0.1s ease;
+}
+.flow-ctxmenu-item:hover { background: #262838; }
+.flow-ctxmenu-item.danger { color: #ff9d9d; }
+.flow-ctxmenu-item.danger:hover { background: #3a1c1f; }
+.flow-ctxmenu-swatches {
+    display: flex;
+    gap: 5px;
+    padding: 6px 9px;
+    flex-wrap: wrap;
+}
+.flow-ctxmenu-swatch {
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    cursor: pointer;
+}
+.flow-ctxmenu-swatch:hover { transform: scale(1.18); box-shadow: 0 0 7px 1px currentColor; }
+
 .flow-canvas-col,
 .flow-orch-col {
     -webkit-overflow-scrolling: touch;

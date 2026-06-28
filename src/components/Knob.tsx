@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 /** Drag-interactive rotary knob (vertical drag) for the Live UI panel.
  *  Ported from the DAW so Synflow's instrument panel matches Mothscilla. */
 export function Knob({
-  value = 0.5, onChange, color = '#6ee7a8', size = 44, label, readout, format, onLabelChange,
+  value = 0.5, onChange, color = '#6ee7a8', size = 44, label, readout, format, onLabelChange, defaultValue,
 }: {
   value?: number;
   onChange?: (v: number) => void;
@@ -16,10 +16,13 @@ export function Knob({
   format?: (v01: number) => string;
   // When set, the label becomes editable (double-click) and commits on blur/Enter.
   onLabelChange?: (label: string) => void;
+  // Double-click the knob to reset to this 0..1 position (knob convention).
+  defaultValue?: number;
 }) {
   const [v, setV] = useState(value);
-  useEffect(() => setV(value), [value]);
-  const set = (nv: number) => { setV(nv); onChange?.(nv); };
+  const vRef = useRef(value);
+  useEffect(() => { setV(value); vRef.current = value; }, [value]);
+  const set = (nv: number) => { const c = Math.max(0, Math.min(1, nv)); setV(c); vRef.current = c; onChange?.(c); };
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(label ?? '');
@@ -33,10 +36,12 @@ export function Knob({
     const prevTouchAction = document.body.style.touchAction;
     document.body.style.touchAction = 'none';
     const start = { y: e.clientY, v };
-    const sensitivity = e.pointerType === 'touch' ? 0.004 : 0.006;
+    const baseSens = e.pointerType === 'touch' ? 0.004 : 0.006;
     const move = (ev: PointerEvent) => {
       ev.preventDefault();
-      set(Math.max(0, Math.min(1, start.v + (start.y - ev.clientY) * sensitivity)));
+      // Shift = fine control.
+      const sensitivity = ev.shiftKey ? baseSens * 0.2 : baseSens;
+      set(start.v + (start.y - ev.clientY) * sensitivity);
     };
     const up = () => {
       document.body.style.touchAction = prevTouchAction;
@@ -49,12 +54,35 @@ export function Knob({
     window.addEventListener('pointercancel', up);
   };
 
+  // Wheel adjust (Shift = fine). Native non-passive so preventDefault works.
+  const knobElRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = knobElRef.current;
+    if (!el) return;
+    const onWheel = (ev: WheelEvent) => {
+      ev.preventDefault(); ev.stopPropagation();
+      const step = (ev.shiftKey ? 0.005 : 0.03) * (ev.deltaY < 0 ? 1 : -1);
+      set(vRef.current + step);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onDoubleClick = (e: React.MouseEvent) => {
+    if (defaultValue === undefined) return;
+    e.preventDefault(); e.stopPropagation();
+    set(defaultValue);
+  };
+
   const angle = -135 + v * 270;
   const shown = format ? format(v) : readout;
   return (
     <div className="lui-knob-wrap">
       <div
-        className="lui-knob" onPointerDown={onDown} title="Drag to adjust"
+        ref={knobElRef}
+        className="lui-knob" onPointerDown={onDown} onDoubleClick={onDoubleClick}
+        title={defaultValue !== undefined ? 'Drag to adjust · Shift = fine · scroll · double-click resets' : 'Drag to adjust · Shift = fine · scroll'}
         style={{ width: size, height: size, touchAction: 'none', borderColor: color, boxShadow: `0 0 9px 1px color-mix(in srgb, ${color} 30%, transparent), inset 0 2px 4px rgba(0,0,0,.5)` }}
       >
         <div className="lui-knob-rot" style={{ transform: `rotate(${angle}deg)` }}>

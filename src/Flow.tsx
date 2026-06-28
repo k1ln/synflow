@@ -79,6 +79,17 @@ const DEFAULT_EDGE_OPTIONS = {
 };
 const CONNECTION_LINE_STYLE = { stroke: '#ffffff', strokeWidth: 1.5 };
 
+// Trigger-excited *source* synths: their `main-input` is a note trigger
+// (receiveNodeOn) — optionally also an audio exciter — NOT a plain audio input.
+// So the "main-input needs an audio source" rule must not apply to them, or you
+// can't wire a MIDI/Button/Sequencer trigger into them.
+const TRIGGER_EXCITED_NODE_TYPES = new Set<string>([
+  'KarplusFlowNode',
+  'FMFlowNode',
+  'WavetableFlowNode',
+  'EnvGenFlowNode',
+]);
+
 // The shared base node look now lives in the `.flow-node` CSS class
 // (nodes/AudioNode.css); nodes that need it in JS import `baseNodeStyle` from
 // ./utils/styleUtils. Per-node default data lives in ./constants/nodeDefaults.
@@ -712,6 +723,83 @@ function Flow() {
     }
   }, [nodes, edges]);
 
+  // ── Undo / redo ───────────────────────────────────────────────────────────
+  // Snapshot-based history. We capture the node+edge graph (functions stripped
+  // via strippEverythingButData) before each mutating action and on drag start,
+  // then restore by re-theming + re-attaching onChange handlers. Bounded so a
+  // long session can't grow the stacks without limit.
+  type GraphSnapshot = { nodes: any[]; edges: any[] };
+  const historyRef = useRef<{ past: GraphSnapshot[]; future: GraphSnapshot[] }>({ past: [], future: [] });
+  const HISTORY_LIMIT = 60;
+  const snapshotNow = useCallback((): GraphSnapshot => ({
+    nodes: strippEverythingButData(nodesRef.current),
+    edges: strippEverythingButData(edgesRef.current),
+  }), []);
+  const pushHistory = useCallback(() => {
+    const h = historyRef.current;
+    h.past.push(snapshotNow());
+    if (h.past.length > HISTORY_LIMIT) h.past.shift();
+    h.future = [];
+  }, [snapshotNow]);
+  const restoreSnapshot = useCallback((snap: GraphSnapshot) => {
+    const themed = normalizeNodeStylesForTheme(JSON.parse(JSON.stringify(snap.nodes)));
+    addOnchangeToNodes(themed);
+    setNodes(themed);
+    setEdges(JSON.parse(JSON.stringify(snap.edges)));
+    // Rebuild the audio graph to match the restored topology.
+    if (ctx !== undefined) requestAnimationFrame(() => { try { init(); } catch { /* noop */ } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setNodes, setEdges]);
+  const undo = useCallback(() => {
+    const h = historyRef.current;
+    const prev = h.past.pop();
+    if (!prev) return;
+    h.future.push(snapshotNow());
+    restoreSnapshot(prev);
+  }, [snapshotNow, restoreSnapshot]);
+  const redo = useCallback(() => {
+    const h = historyRef.current;
+    const next = h.future.pop();
+    if (!next) return;
+    h.past.push(snapshotNow());
+    restoreSnapshot(next);
+  }, [snapshotNow, restoreSnapshot]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = navigator.platform.toUpperCase().includes('MAC') ? e.metaKey : e.ctrlKey;
+      if (!mod) return;
+      const key = e.key.toLowerCase();
+      const isUndo = key === 'z' && !e.shiftKey;
+      const isRedo = (key === 'z' && e.shiftKey) || key === 'y';
+      if (!isUndo && !isRedo) return;
+      // Don't hijack undo while editing text fields.
+      const a = document.activeElement as HTMLElement | null;
+      if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (isRedo) redo(); else undo();
+    };
+    window.addEventListener('keydown', onKey, { capture: true });
+    return () => window.removeEventListener('keydown', onKey, { capture: true } as any);
+  }, [undo, redo]);
+
+  // ── Node right-click context menu ───────────────────────────────────────
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; node: any } | null>(null);
+  const onNodeContextMenu = useCallback((e: React.MouseEvent, node: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCtxMenu({ x: e.clientX, y: e.clientY, node });
+  }, []);
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const close = () => setCtxMenu(null);
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setCtxMenu(null); };
+    window.addEventListener('click', close);
+    window.addEventListener('keydown', onEsc);
+    return () => { window.removeEventListener('click', close); window.removeEventListener('keydown', onEsc); };
+  }, [ctxMenu]);
+
   const updateNodes = (node: any) => {
     setNodes((nds) =>
       nds.map((n) =>
@@ -1210,9 +1298,10 @@ function Flow() {
 
   const onEdgeDelete = useCallback(
     (edgeId: string) => {
+      pushHistory();
       setEdges((eds) => eds.filter((edge) => edge.id !== edgeId));
     },
-    [setEdges]
+    [setEdges, pushHistory]
   );
 
 
@@ -1244,6 +1333,7 @@ function Flow() {
 
   const onNodeDelete =
     (node: any) => {
+      pushHistory();
       setNodes((nds) => nds.filter((n) => n.id !== node.id));
       setEdges((eds) => eds.filter((edge) => edge.source !== node.id && edge.target !== node.id));
     };
@@ -1268,6 +1358,7 @@ function Flow() {
       
       if (selectedNodes.length > 0) {
         // Delete all selected nodes
+        pushHistory();
         const selectedIds = new Set(selectedNodes.map((n) => n.id));
         selectedNodes.forEach((node) => {
           if (audioGraphManagerRef.current !== null) {
@@ -1296,7 +1387,7 @@ function Flow() {
       }
     };
     eventManagerRef.current?.setHandleDelete(handleDelete);
-  }, [selectedEdge, onEdgeDelete, selectedNode, onNodeDelete, nodeCount, edges, nodes]);
+  }, [selectedEdge, onEdgeDelete, selectedNode, onNodeDelete, nodeCount, edges, nodes, pushHistory]);
 
 
 
@@ -1468,7 +1559,7 @@ function Flow() {
     window.setTimeout(() => { for (const t of ts) mgr.receiveNodeOff(t.id, handleOf(t), {}); }, 220);
   };
   // Set an exposed param live (engine) and persist it into node.data.
-  const setLiveParam = (nodeId: string, param: string, value: number) => {
+  const setLiveParam = (nodeId: string, param: string, value: number | string) => {
     managerRef.current?.setParam(nodeId, param, value);
     setNodes((nds) => nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, [param]: value } } : n)));
   };
@@ -1491,6 +1582,7 @@ function Flow() {
 
 
   const addNode = (type: string, copy: boolean = false, copiedNode: any | null = null) => {
+    pushHistory();
     // Determine raw center of viewport in flow coordinates first; we'll adjust for node size later.
     let flowCenter = { x: 0, y: 0 };
     try {
@@ -1539,6 +1631,17 @@ function Flow() {
     // Height isn't explicitly defined; approximate via padding & content. Use 120 as heuristic unless provided.
     const nodeHeight = styleObj?.height ? parseInt(styleObj.height, 10) || 120 : 120;
     const centeredPosition = { x: flowCenter.x - nodeWidth / 2, y: flowCenter.y - nodeHeight / 2 };
+    // Stay oriented to the viewport center, but cascade down-right if a node is
+    // already (nearly) here so repeated adds don't pile up on the same spot.
+    if (!copy) {
+      const occupied = (p: { x: number; y: number }) =>
+        nodesRef.current.some((n: any) => n.position
+          && Math.abs(n.position.x - p.x) < 28 && Math.abs(n.position.y - p.y) < 28);
+      let guard = 0;
+      while (occupied(centeredPosition) && guard < 40) {
+        centeredPosition.x += 34; centeredPosition.y += 34; guard++;
+      }
+    }
     // When copying, prefer the original node position (possibly offset beforehand)
     let basePosition = centeredPosition;
     if (copy && copiedNode) {
@@ -1640,42 +1743,47 @@ function Flow() {
 
   const isAudioNodeType = useCallback((t?: string) => !!(t && AUDIO_NODE_TYPES.has(t)), [AUDIO_NODE_TYPES]);
 
+  // Shared connection rule used by BOTH isValidConnection (live, during the drag)
+  // and onConnect (final guard). Returns false for connections we won't allow so
+  // React Flow can grey out the incompatible handles while the user is dragging.
+  const connectionAllowed = useCallback((c: Connection | Edge): boolean => {
+    try {
+      const sourceNode = nodesRef.current.find((n) => n.id === (c as Connection).source);
+      const targetNode = nodesRef.current.find((n) => n.id === (c as Connection).target);
+      if (!sourceNode || !targetNode) return false;
+      // Don't allow a node to connect to itself.
+      if (sourceNode.id === targetNode.id) return false;
+      // main-input of an audio node only accepts an audio-capable source
+      // (or a FlowNode sub-graph, which may end in an audio node) — EXCEPT for
+      // trigger-excited synths, whose main-input is a note trigger that any
+      // event/MIDI/button source may drive.
+      if ((c as Connection).targetHandle === 'main-input'
+        && isAudioNodeType(targetNode.type)
+        && !TRIGGER_EXCITED_NODE_TYPES.has(targetNode.type || '')) {
+        if (!isAudioNodeType(sourceNode.type) && sourceNode.type !== 'FlowNode') return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }, [isAudioNodeType]);
+
+  // Live validation: greys out handles the current drag can't legally land on.
+  const isValidConnection = useCallback(
+    (c: Connection | Edge) => connectionAllowed(c),
+    [connectionAllowed]
+  );
+
   const onConnect = useCallback(
     (params: Connection | Edge) => {
-      // Validate: only allow connecting to the main-input of an audio node
-      // if the source is an audio-capable node (AudioNode or AudioWorklet node)
-      try {
-        const srcId = (params as Connection).source;
-        const tgtId = (params as Connection).target;
-        const tgtHandle = (params as Connection).targetHandle;
-        const sourceNode = nodesRef.current.find((n) => n.id === srcId);
-        const targetNode = nodesRef.current.find((n) => n.id === tgtId);
-        if (!sourceNode || !targetNode) {
-          // If we can't resolve nodes, be safe and block
-          console.debug('[onConnect] Missing source/target node, blocking connection');
-          return;
-        }
-        // Rule applies only when target is main-input of an audio node
-        if (tgtHandle === 'main-input' && isAudioNodeType(targetNode.type)) {
-          if (!isAudioNodeType(sourceNode.type)) {
-            //TODO Check if node before output Node in custom Node is Audio Node
-            if (sourceNode.type !== 'FlowNode') {
-
-              console.info('[onConnect] Blocked: main-input of audio node requires an AudioNode/AudioWorklet source', { sourceType: sourceNode.type, targetType: targetNode.type });
-              showToast('Only Audio/Worklet sources can connect to main-input', 'error');
-              return; // block connection
-            }
-          }
-        }
-      } catch (e) {
-        // On any unexpected error, block silently to avoid corrupt graph
-        console.warn('[onConnect] Validation error, blocking connection', e);
-        showToast('Connection failed due to an internal error', 'error');
+      if (!connectionAllowed(params)) {
+        showToast('Only Audio/Worklet sources can connect to main-input', 'error');
         return;
       }
+      pushHistory();
       setEdges((eds) => addEdge(params, eds));
     },
-    [setEdges, isAudioNodeType, showToast]
+    [setEdges, connectionAllowed, showToast, pushHistory]
   );
 
   const cssButton: React.CSSProperties = {
@@ -2413,7 +2521,10 @@ function Flow() {
         onPaneClick={onPaneClick}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        isValidConnection={isValidConnection}
         onNodeClick={onNodeClick}
+        onNodeContextMenu={onNodeContextMenu}
+        onNodeDragStart={pushHistory}
         nodeTypes={nodeTypes as any}
         proOptions={{ hideAttribution: true }}
         onlyRenderVisibleElements={false}
@@ -2425,6 +2536,51 @@ function Flow() {
         <Controls />
         <Background color="#030308" gap={40} size={1} />
       </ReactFlow>
+
+      {/* Node right-click context menu */}
+      {ctxMenu && (
+        <div
+          className="flow-ctxmenu"
+          style={{ position: 'fixed', top: ctxMenu.y, left: ctxMenu.x, zIndex: 4000 }}
+          onClick={(e) => e.stopPropagation()}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <button className="flow-ctxmenu-item" onClick={() => {
+            const n = ctxMenu.node;
+            addNode(n.type, true, { ...n, position: { x: (n.position?.x || 0) + 40, y: (n.position?.y || 0) + 40 } });
+            setCtxMenu(null);
+          }}>Duplicate</button>
+          <button className="flow-ctxmenu-item" onClick={() => {
+            const n = ctxMenu.node;
+            const z = ++nextNodeZRef.current;
+            setNodes((nds) => nds.map((x) => (x.id === n.id ? { ...x, zIndex: z } : x)));
+            setCtxMenu(null);
+          }}>Bring to front</button>
+          <div className="flow-ctxmenu-swatches">
+            {['#00ff88', '#60a5fa', '#f87171', '#facc15', '#c084fc', '#34d399', '#fb923c', '#94a3b8'].map((c) => (
+              <button key={c} className="flow-ctxmenu-swatch" title={c} style={{ background: c }} onClick={() => {
+                pushHistory();
+                const n = ctxMenu.node;
+                setNodes((nds) => nds.map((x) => {
+                  if (x.id !== n.id) return x;
+                  const style = { ...(x.data?.style || {}), glowColor: c, boxShadow: makeGlow(c, 'normal'), ['--node-accent' as any]: c };
+                  return { ...x, data: { ...x.data, style } };
+                }));
+                setCtxMenu(null);
+              }} />
+            ))}
+          </div>
+          <button className="flow-ctxmenu-item danger" onClick={() => {
+            const n = ctxMenu.node;
+            if (audioGraphManagerRef.current) {
+              try { audioGraphManagerRef.current.deleteVirtualNode(n.id); } catch { /* noop */ }
+            }
+            onNodeDelete(n);
+            if (selectedNode?.id === n.id) { setSelectedNode(undefined); setSelectedNodeType(''); }
+            setCtxMenu(null);
+          }}>Delete</button>
+        </div>
+      )}
 
       {/* Inline Toasts */}
       {toasts.length > 0 && (

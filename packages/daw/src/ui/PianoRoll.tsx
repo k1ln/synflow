@@ -16,7 +16,7 @@ const snapTo = (v: number, unit: number) => (unit > 0 ? Math.round(v / unit) * u
  *  click empty space to add, drag the body to move (pitch+time), drag the right
  *  edge to resize, right-click / Delete to remove. Snap is optional. */
 export function PianoRoll({
-  id, notes, totalSteps, stepsPerBeat, currentStep, onAddNote, onRemoveNote, onMoveNote, onResizeNote, onSetVelocity, onPlayNote, onQuantize, onTranspose, onHumanize, musicalKey, onSetKey,
+  id, notes, totalSteps, stepsPerBeat, currentStep, onAddNote, onRemoveNote, onMoveNote, onResizeNote, onSetVelocity, onPlayNote, onQuantize, onTranspose, onHumanize, musicalKey, onSetKey, onAddChord,
   onKeyDown: onGutterDown, onKeyUp: onGutterUp,
 }: {
   id: string;
@@ -37,6 +37,7 @@ export function PianoRoll({
   onHumanize: (useId: string) => void;
   musicalKey?: MusicalKey;
   onSetKey: (key: MusicalKey | null) => void;
+  onAddChord: (useId: string, midis: number[], start: number) => void;
   onKeyDown: (useId: string, midi: number) => void;
   onKeyUp: (useId: string, midi: number) => void;
 }) {
@@ -46,8 +47,17 @@ export function PianoRoll({
   const [snap, setSnap] = useState<SnapMode>('quarter');
   const [qGrid, setQGrid] = useState(stepsPerBeat / 4);   // quantize grid in steps (default 1/16)
   const QGRID: [string, number][] = [['¼', stepsPerBeat], ['⅛', stepsPerBeat / 2], ['1/16', stepsPerBeat / 4], ['1/32', stepsPerBeat / 8]];
+  const [chord, setChord] = useState(false);             // chord mode: clicks stamp a triad
   // Snap an entered pitch into the key when snap is on (no-op otherwise).
   const keyed = (m: number) => (musicalKey?.snap ? snapToScale(m, musicalKey.root, musicalKey.scale) : m);
+  // A triad rooted at `root`: diatonic (root/3rd/5th up the scale) when a key is
+  // set, else a plain major triad.
+  const triadFrom = (root: number): number[] => {
+    if (!musicalKey) return [root, root + 4, root + 7];
+    const asc = [root];
+    for (let m = root + 1; asc.length < 5 && m < root + 24; m++) if (inScale(m, musicalKey.root, musicalKey.scale)) asc.push(m);
+    return [asc[0], asc[2] ?? root + 4, asc[4] ?? root + 7];
+  };
   const [sel, setSel] = useState<number | null>(null);
   const drag = useRef<null | {
     mode: 'move' | 'resize'; noteId: number; startX: number; startY: number;
@@ -88,8 +98,9 @@ export function PianoRoll({
     const rawStart = stepFromX(e.clientX - rect.left, rect.width);
     const start = Math.max(0, Math.min(totalSteps - 0.25, snapTo(rawStart, unit || 0.25)));
     const row = Math.floor((e.clientY - rect.top) / ROW_H);
-    const midi = Math.max(LOW, Math.min(HIGH, HIGH - row));
-    onAddNote(id, keyed(midi), start);
+    const root = keyed(Math.max(LOW, Math.min(HIGH, HIGH - row)));
+    if (chord) onAddChord(id, triadFrom(root), start);
+    else onAddNote(id, root, start);
   };
 
   const beginDrag = (e: React.PointerEvent, note: PianoNote, mode: 'move' | 'resize') => {
@@ -158,6 +169,7 @@ export function PianoRoll({
           {(Object.keys(SCALE_LABELS) as ScaleType[]).map((s) => <option key={s} value={s}>{SCALE_LABELS[s]}</option>)}
         </select>
         <button className={`pr-snap ${musicalKey?.snap ? 'on' : ''}`} disabled={!musicalKey} title="Snap entered notes into the scale" onClick={() => musicalKey && onSetKey({ ...musicalKey, snap: !musicalKey.snap })}>snap</button>
+        <button className={`pr-snap ${chord ? 'on' : ''}`} title="Chord mode: each click stamps a triad (diatonic when a key is set)" onClick={() => setChord((c) => !c)}>chord</button>
         <span className="pr-hint">click to add · drag to move · drag edge to resize · right-click / Delete to remove</span>
       </div>
       <div className="pr-body">

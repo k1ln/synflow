@@ -4,15 +4,15 @@ import { Play, Pause, Square, Circle, SkipBack, Grid3x3, Layers, SlidersHorizont
 export type ViewId = 'tracks' | 'song' | 'live' | 'mix';
 
 const TABS: [ViewId, string, React.ComponentType<any>][] = [
-  ['song', 'Arrangement', Layers],
+  ['song', 'Song', Layers],
   ['tracks', 'Tracks', Grid3x3],
   ['live', 'Live', Piano],
   ['mix', 'Mixer', SlidersHorizontal],
 ];
 
 export function TopBar({
-  view, setView, isPlaying, onPlay, onStop, armed, onArm, metronome, onToggleMetronome, bpm, onBpm, swing, onSwing, position, browserOpen, setBrowserOpen,
-  projectName, onProjectName, onNewSong, onSave, saved, onOpenSong, onExport, exporting, exportProgress, onBounce, bouncing, bounceProgress,
+  view, setView, isPlaying, onPlay, onStop, armed, onArm, metronome, onToggleMetronome, bpm, onBpm, swing, onSwing, beatsPerBar, onTimeSig, position, browserOpen, setBrowserOpen,
+  projectName, onProjectName, onNewSong, onSave, saved, onOpenSong, onExport, exporting, exportProgress, onBounce, bouncing, bounceProgress, onExportMidi, onExportStems,
   canUndo, canRedo, onUndo, onRedo,
   cameraOn, onToggleCamera, screenOn, onToggleScreen, micOn, onToggleMic, recording, onToggleRecord,
   midiConnected, midiTitle,
@@ -30,6 +30,8 @@ export function TopBar({
   onBpm: (v: number) => void;
   swing: number;
   onSwing: (v: number) => void;
+  beatsPerBar: number;
+  onTimeSig: (beatsPerBar: number) => void;
   position: string;
   browserOpen: boolean;
   setBrowserOpen: (v: boolean) => void;
@@ -43,6 +45,8 @@ export function TopBar({
   exporting: boolean;
   exportProgress: number;
   onBounce: () => void;
+  onExportMidi: () => void;
+  onExportStems: () => void;
   bouncing: boolean;
   bounceProgress: number;
   canUndo: boolean;
@@ -111,6 +115,10 @@ export function TopBar({
             <input type="number" min={0} max={100} step={1} value={Math.round((swing ?? 0) * 100)} onChange={(e) => onSwing(Math.max(0, Math.min(100, parseInt(e.target.value, 10) || 0)) / 100)} />
             <span>Swing %</span>
           </label>
+          <label className="t-tempo t-swing" title="Time signature (beats per bar; quarter-note beats). Resizes the bar.">
+            <span className="t-timesig"><input type="number" min={1} max={16} value={beatsPerBar} onChange={(e) => onTimeSig(Math.max(1, Math.min(16, parseInt(e.target.value, 10) || beatsPerBar)))} />/4</span>
+            <span>Time</span>
+          </label>
         </div>
       </div>
 
@@ -129,6 +137,8 @@ export function TopBar({
         <button className={`icon-btn ${bouncing ? 'busy' : ''}`} title="Bounce song to WAV (offline, faster than realtime)" onClick={onBounce} disabled={bouncing}>
           {bouncing ? <><Loader size={16} className="spin" /><span className="btn-pct">{pct(bounceProgress)}</span></> : <FileAudio size={18} />}
         </button>
+        <button className="icon-btn" title="Export MIDI (.mid — synth tracks' notes)" onClick={onExportMidi}><Piano size={18} /></button>
+        <button className={`icon-btn ${bouncing ? 'busy' : ''}`} title="Export stems (one pre-master WAV per track)" onClick={onExportStems} disabled={bouncing}><Layers size={18} /></button>
         <button className="icon-btn" title="Settings (coming soon)"><Settings size={18} /></button>
       </div>
     </div>

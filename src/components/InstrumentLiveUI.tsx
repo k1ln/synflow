@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, LayoutDashboard, GripVertical } from 'lucide-react';
-import { flowKnobs, knob01, knobValue, knobReadout, flowKind, type ExposedKnob } from '../host/flowKnobs';
+import { flowKnobs, flowOptions, knob01, knobValue, knobReadout, flowKind, type ExposedKnob, type ExposedOption } from '../host/flowKnobs';
 import { Knob } from './Knob';
 import { CustomInstrumentUI } from './CustomInstrumentUI';
 import './InstrumentLiveUI.css';
@@ -24,7 +24,7 @@ export function InstrumentLiveUI({ title, nodes, customUi, valueOf, onKnob, onKn
   nodes: any[];
   customUi?: string;
   valueOf: (nodeId: string, param: string) => number | undefined;
-  onKnob: (nodeId: string, param: string, value: number) => void;
+  onKnob: (nodeId: string, param: string, value: number | string) => void;
   onKnobRename?: (nodeId: string, param: string, label: string) => void;
   onNoteOn?: (midi: number, velocity?: number) => void;
   onNoteOff?: (midi: number) => void;
@@ -34,6 +34,7 @@ export function InstrumentLiveUI({ title, nodes, customUi, valueOf, onKnob, onKn
 }) {
   const kind = flowKind(nodes);
   const knobs: ExposedKnob[] = flowKnobs(nodes);
+  const options: ExposedOption[] = flowOptions(nodes);
   const hasCustom = kind !== 'effect' && !!customUi;
   const [customMode, setCustomMode] = useState(hasCustom);
   useEffect(() => { setCustomMode(hasCustom); }, [hasCustom]);
@@ -98,8 +99,23 @@ export function InstrumentLiveUI({ title, nodes, customUi, valueOf, onKnob, onKn
           <CustomInstrumentUI className="lui-custom" html={customUi} knobs={knobs} valueOf={valueOf}
             onKnob={onKnob} onNoteOn={onNoteOn} onNoteOff={onNoteOff} onHit={onHit} />
         ) : (<>
-          {knobs.length === 0 && (
-            <div className="lui-noknobs">No knobs exposed. Open <b>Expose to DAW</b> in the toolbar and tick params on a node to make them playable here.</div>
+          {knobs.length === 0 && options.length === 0 && (
+            <div className="lui-noknobs">No params exposed. Open <b>Expose to DAW</b> in the toolbar and tick knobs or option buttons on a node to make them playable here.</div>
+          )}
+          {options.length > 0 && (
+            <div className="lui-opts">
+              {options.map((o) => (
+                <div className="lui-opt" key={`${o.nodeId}.${o.param}`}>
+                  <span className="lui-opt-label">{o.label}</span>
+                  <div className="lui-opt-btns">
+                    {o.choices.map((c) => (
+                      <button key={c.value} className={`lui-opt-btn ${c.value === o.value ? 'on' : ''}`}
+                        onClick={() => onKnob(o.nodeId, o.param, c.value)} title={c.label}>{c.label}</button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
           {knobs.length > 0 && (
             <div className="lui-knobs">

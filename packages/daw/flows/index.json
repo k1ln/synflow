@@ -97,6 +97,12 @@
       "name": "Granular",
       "category": "Texture",
       "file": "effects/granular.json"
+    },
+    {
+      "id": "conv-reverb",
+      "name": "Conv Reverb",
+      "category": "Reverb",
+      "file": "effects/conv-reverb.json"
     }
   ]
 }

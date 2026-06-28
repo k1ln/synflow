@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useRef, useState } from "react";
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
+import { OptionSelect } from "../components/OptionSelect";
 import "./AudioNode.css";
 import { makeDistortionCurve } from "../utils/styleUtils";
 
@@ -308,15 +309,16 @@ const DistortionFlowNode: React.FC<DistortionFlowNodeProps> = ({ data }) => {
       {/* Oversample selector */}
       <div className="node-field" style={{ alignItems: 'stretch' }}>
         <label className="node-label" style={{ textAlign: 'left' }}>Oversample</label>
-        <select
+        <OptionSelect
           value={oversample}
-          onChange={(e) => setOversample(e.target.value as OverSampleType)}
-          className="node-select wide"
-        >
-          <option value="none">None</option>
-          <option value="2x">2x</option>
-          <option value="4x">4x</option>
-        </select>
+          onChange={(v) => setOversample(v as OverSampleType)}
+          options={[
+            { value: 'none', label: 'None' },
+            { value: '2x', label: '2x' },
+            { value: '4x', label: '4x' },
+          ]}
+          aria-label="Oversample"
+        />
       </div>
     </div>
   );

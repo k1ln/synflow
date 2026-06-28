@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useState } from "react";
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
+import { NumberField } from "../components/NumberField";
 import "./AudioNode.css";
 
 const DEFAULT_FORMULA = "(Math.random() * 2 - 1) * Math.pow(1 - n / length, decay)";
@@ -110,18 +111,13 @@ const ReverbFlowNode: React.FC<ReverbFlowNodeProps> = ({ data }) => {
           midiSmoothing={0.4}
         />
         <span className="node-label">Time (s)</span>
-        <input
-          type="text"
-          value={Number.isFinite(seconds) ? seconds.toFixed(2) : ""}
-          onChange={(event) => {
-            const parsed = parseFloat(event.target.value);
-            if (isNaN(parsed)) return;
-            const clamped = clamp(parsed, MIN_SECONDS, MAX_SECONDS);
-            setSeconds(clamped);
-            setSecondsKnob(secondsToKnob(clamped));
-          }}
-          className="node-input"
-          style={{ width: 60 }}
+        <NumberField
+          value={Number.isFinite(seconds) ? Math.round(seconds * 100) / 100 : 0}
+          onCommit={(v) => { setSeconds(v); setSecondsKnob(secondsToKnob(v)); }}
+          min={MIN_SECONDS}
+          max={MAX_SECONDS}
+          precision={2}
+          width={60}
         />
         <Handle
           type="target"
@@ -150,18 +146,13 @@ const ReverbFlowNode: React.FC<ReverbFlowNodeProps> = ({ data }) => {
           midiSmoothing={0.4}
         />
         <span className="node-label">Decay</span>
-        <input
-          type="text"
-          value={Number.isFinite(decay) ? decay.toFixed(2) : ""}
-          onChange={(event) => {
-            const parsed = parseFloat(event.target.value);
-            if (isNaN(parsed)) return;
-            const clamped = clamp(parsed, MIN_DECAY, MAX_DECAY);
-            setDecay(clamped);
-            setDecayKnob(decayToKnob(clamped));
-          }}
-          className="node-input"
-          style={{ width: 60 }}
+        <NumberField
+          value={Number.isFinite(decay) ? Math.round(decay * 100) / 100 : 0}
+          onCommit={(v) => { setDecay(v); setDecayKnob(decayToKnob(v)); }}
+          min={MIN_DECAY}
+          max={MAX_DECAY}
+          precision={2}
+          width={60}
         />
         <Handle
           type="target"

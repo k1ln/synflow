@@ -103,6 +103,8 @@ body {
 .t-tempo { display: flex; flex-direction: column; align-items: center; }
 .t-tempo input { width: 56px; background: transparent; border: none; color: var(--ink-1); font-family: var(--font-mono); font-weight: 500; font-size: 14px; text-align: center; }
 .t-tempo span { font-size: 8px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+.t-timesig { display: inline-flex; align-items: baseline; font-family: var(--font-mono); font-weight: 500; font-size: 14px; color: var(--ink-1); }
+.t-timesig input { width: 26px; }
 
 .tb-tools { display: flex; align-items: center; gap: 2px; }
 .tb-status { font-size: 11px; color: var(--ink-3); margin-right: 6px; }
@@ -478,6 +480,15 @@ body {
 .te-menu-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .te-menu-dur { flex-shrink: 0; font-family: var(--font-mono); font-size: 10px; color: var(--ink-3); }
 .te-uses { display: flex; flex-direction: column; gap: 12px; }
+/* automation lanes (per track) */
+.te-automation { margin-top: 10px; border-top: 1px solid var(--border-subtle); padding-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.te-auto-head { display: flex; align-items: center; gap: 8px; }
+.te-auto-lane { display: flex; align-items: center; gap: 8px; }
+.te-auto-name { flex: 0 0 84px; font-size: 10px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.aut-lane { position: relative; flex: 1; height: 44px; background: rgba(0,0,0,.3); border: 1px solid var(--border-subtle); border-radius: 4px; overflow: hidden; cursor: crosshair; }
+.aut-bar { position: absolute; bottom: 0; background: color-mix(in srgb, var(--cat-mod, #b06cff) 70%, transparent); border-right: 1px solid rgba(0,0,0,.3); }
+.te-auto-x { width: 22px; height: 22px; display: grid; place-items: center; border: none; background: var(--glass-field); color: var(--ink-2); border-radius: 4px; cursor: pointer; }
+.te-auto-x:hover { color: #ff5a5a; }
 .te-empty { font-size: 12px; color: var(--ink-3); padding: 18px; text-align: center; opacity: .7; }
 .te-use { border: 1px solid var(--border-subtle); border-radius: var(--r-sm); padding: 10px; background: rgba(255,255,255,.012); }
 .te-use-main { display: flex; align-items: flex-start; gap: 8px; }
@@ -551,6 +562,7 @@ body {
 .inst-knobs { display: flex; flex-wrap: wrap; gap: 16px; padding: 16px 14px; align-items: flex-start; }
 /* Matrix: knobs fill a row of fixed-width columns, then wrap to the next row. */
 .inst-knobs-matrix { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 18px 12px; justify-items: center; }
+.inst-opts { display: flex; flex-direction: column; gap: 10px; padding: 14px 14px 6px; }
 .inst-noknobs { font-size: 12px; color: var(--ink-3); line-height: 1.5; }
 .inst-octrow { display: flex; align-items: center; gap: 8px; padding: 0 14px 8px; }
 .inst-kb { margin: 0 14px 16px; height: 150px; }
@@ -563,6 +575,17 @@ body {
 .fxdev-head { display: flex; align-items: center; gap: 5px; }
 .fxdev-name { font-size: 11px; font-weight: 700; letter-spacing: .02em; margin-right: 2px; }
 .fxdev-knobs { display: flex; gap: 12px; align-items: flex-start; padding-top: 2px; }
+.fxdev-opts { display: flex; flex-direction: column; gap: 6px; padding-top: 2px; }
+
+/* ── Exposed option buttons (discrete enum params, e.g. oscillator waveform) ── */
+.fxopt { display: flex; flex-direction: column; gap: 4px; }
+.fxopt:not(.compact) { flex-direction: row; align-items: center; gap: 10px; flex-wrap: wrap; }
+.fxopt-label { font-size: 11px; color: var(--ink-3); }
+.fxopt:not(.compact) .fxopt-label { min-width: 56px; }
+.fxopt-btns { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; border-radius: 7px; background: var(--bg-inset); border: 1px solid var(--border-strong); }
+.fxopt-btn { font-size: 11px; font-weight: 600; padding: 3px 9px; border: 1px solid transparent; border-radius: 5px; cursor: pointer; background: transparent; color: var(--ink-2); text-transform: capitalize; }
+.fxopt-btn:hover { color: var(--ink-1); }
+.fxopt.compact .fxopt-btn { padding: 2px 7px; font-size: 10px; }
 
 /* ── Song arrangement ─────────────────────────────────────────────────────── */
 .arrange2 { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }

@@ -23,6 +23,10 @@ export interface MidiKnobProps {
   persistKey?: string;
   /** Accent color for the knob border and indicator. Defaults to #4ade80. */
   accentColor?: string;
+  /** Double-click resets to this value (knob convention). No reset if omitted. */
+  defaultValue?: number;
+  /** Wheel step in value units. Defaults to 1% of the min..max range. */
+  wheelStep?: number;
 }
 
 export interface MidiMapping {
@@ -66,8 +70,9 @@ function makeKnobSkin(accentColor: string) {
   };
 }
 
-const MidiKnob: React.FC<MidiKnobProps> = ({ value, min, max, detent, onChange, midiMapping, onMidiLearnChange, style, disabled, midiSmoothing = 0.25, midiSensitivity = 2, persistKey, accentColor = '#4ade80' }) => {
+const MidiKnob: React.FC<MidiKnobProps> = ({ value, min, max, detent, onChange, midiMapping, onMidiLearnChange, style, disabled, midiSmoothing = 0.25, midiSensitivity = 2, persistKey, accentColor = '#4ade80', defaultValue, wheelStep }) => {
   const knobSkin = React.useMemo(() => makeKnobSkin(accentColor), [accentColor]);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const [isLearning, setIsLearning] = useState(false);
   // Track last received MIDI channel (0-based internally). Shows real arrival channel even if mapping fixed.
   const [internalMapping, setInternalMapping] = useState<MidiMapping | null>(midiMapping || null);
@@ -78,6 +83,35 @@ const MidiKnob: React.FC<MidiKnobProps> = ({ value, min, max, detent, onChange, 
   useEffect(()=> { valueRef.current = value; }, [value]);
   const smoothFactor = Math.min(1, Math.max(0, midiSmoothing));
   const sensitivity = Math.max(0.01, midiSensitivity);
+
+  // Knob conventions: scroll-wheel adjusts (Shift = fine). Registered as a
+  // non-passive native listener because React's synthetic onWheel is passive,
+  // so preventDefault there can't stop React Flow's scroll-to-zoom.
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (disabled) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const range = max - min || 1;
+      const base = wheelStep ?? range / 100;
+      const stepAmt = base * (e.shiftKey ? 0.15 : 1);
+      const dir = e.deltaY < 0 ? 1 : -1;
+      const next = Math.min(max, Math.max(min, valueRef.current + dir * stepAmt));
+      onChange(next);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [disabled, max, min, wheelStep, onChange]);
+
+  // Double-click resets to the supplied default (knob convention).
+  const handleDoubleClick: React.MouseEventHandler = (e) => {
+    if (disabled || defaultValue === undefined) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onChange(Math.min(max, Math.max(min, defaultValue)));
+  };
 
   useEffect(() => { setInternalMapping(midiMapping || null); }, [midiMapping]);
 
@@ -211,8 +245,12 @@ const MidiKnob: React.FC<MidiKnobProps> = ({ value, min, max, detent, onChange, 
 
   return (
     <div
+      ref={wrapRef}
+      className="nodrag"
       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', ...style }}
       onContextMenu={handleContextMenu}
+      onDoubleClick={handleDoubleClick}
+      title={defaultValue !== undefined ? 'Scroll to adjust · Shift = fine · double-click resets · right-click MIDI learn' : 'Scroll to adjust · Shift = fine · right-click MIDI learn'}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       onBlur={() => setHover(false)}

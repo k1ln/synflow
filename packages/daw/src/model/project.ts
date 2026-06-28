@@ -223,6 +223,8 @@ export interface Track {
   name: string;
   type: 'drums' | 'synth' | 'audio' | 'video';
   volume: number;
+  trim?: number;           // pre-FX input gain (linear, default 1) — gain staging
+  phase?: boolean;         // invert polarity (ø)
   pan?: number;            // stereo pan, −1 (left) … +1 (right); default 0 (center)
   muted?: boolean;         // arrangement mute: skip this track entirely in the scheduler
   soloed?: boolean;        // solo: when any track is soloed, only soloed tracks sound

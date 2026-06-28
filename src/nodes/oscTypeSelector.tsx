@@ -1,4 +1,6 @@
 import React from "react";
+import { OptionSelect } from "../components/OptionSelect";
+import { WAVEFORM_OPTIONS_CUSTOM } from "../components/nodeSymbols";
 
 type OscillatorType = "sine" | "square" | "sawtooth" | "triangle" | "custom";
 
@@ -10,27 +12,17 @@ interface OscillatorTypeSelectorProps {
 const OscillatorTypeSelector: React.FC<OscillatorTypeSelectorProps> = ({
   type,
   onTypeChange,
-}) => {
-  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    onTypeChange(event.target.value as OscillatorType); // Notify parent
-  };
-
-  return (
-    <div>
-      <label htmlFor="oscillator-type">Select Oscillator Type:</label>
-      <select
-        id="oscillator-type"
-        value={type}
-        onChange={handleChange}
-      >
-        {["sine", "square", "sawtooth", "triangle", "custom"].map((oscType) => (
-          <option key={oscType} value={oscType}>
-            {oscType}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-};
+}) => (
+  <div className="node-field">
+    <span className="node-label">Waveform</span>
+    <OptionSelect
+      value={type}
+      onChange={(v) => onTypeChange(v as OscillatorType)}
+      options={WAVEFORM_OPTIONS_CUSTOM}
+      columns={2}
+      aria-label="Oscillator type"
+    />
+  </div>
+);
 
 export default OscillatorTypeSelector;

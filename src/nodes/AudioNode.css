@@ -148,6 +148,17 @@
   gap: 4px;
 }
 
+/* Compact 2-column control grid (used by the Oscillator node). */
+.osc-grid {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 8px 10px;
+  align-items: start;
+  justify-items: center;
+  margin-bottom: 4px;
+}
+.osc-grid .node-field { margin-bottom: 0; }
+
 .node-label {
   font-size: 9px;
   font-weight: 600;
@@ -201,6 +212,60 @@
   transition: border-color 0.13s ease, box-shadow 0.13s ease;
 }
 .node-select.wide { width: 100%; box-sizing: border-box; }
+
+/* ── Option picker (segmented light-up buttons; replaces option <select>) ────
+   !important is needed to win over the global `.react-flow__node button` reset
+   above, which forces color/border. Accent comes from --node-accent. */
+.node-opts {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+.node-opts.vertical { flex-direction: column; }
+.node-opts.grid { display: grid; gap: 3px; }
+
+/* Glyph stacked over its abbreviation (e.g. filter shapes: ∿ + "LP"). */
+.node-opt-stack { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.node-opt-cap { font-size: 8px; line-height: 1; letter-spacing: 0.06em; }
+
+.node-opt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 24px;
+  min-height: 20px;
+  padding: 3px 6px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+  cursor: pointer;
+  background: var(--node-field-bg) !important;
+  color: var(--node-ink-dim) !important;
+  border: 1px solid color-mix(in srgb, var(--node-accent, #556) 28%, transparent) !important;
+  border-radius: var(--node-radius-sm);
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease, transform 0.06s ease;
+}
+.node-opt svg { width: 18px; height: 12px; display: block; }
+.node-opt:hover {
+  color: var(--node-ink) !important;
+  border-color: color-mix(in srgb, var(--node-accent, #777) 55%, transparent) !important;
+}
+.node-opt:active { transform: translateY(1px); }
+.node-opt.on {
+  color: #0b0f16 !important;
+  background: var(--node-accent, #6ee7a8) !important;
+  border-color: var(--node-accent, #6ee7a8) !important;
+  box-shadow: 0 0 8px 1px color-mix(in srgb, var(--node-accent, #6ee7a8) 45%, transparent),
+              inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  font-weight: 700;
+}
+.node-opt.on svg { stroke-width: 1.9; }
 
 .node-btn {
   background: var(--node-field-bg);
@@ -289,14 +354,17 @@
 }
 
 /* ── Handles (ports) ─────────────────────────────────────────────────────────
-   Nodes that set an inline background keep their custom color; uncolored
-   handles inherit a tasteful accent-tinted default with a hover glow. */
+   Grayscale by role so the canvas reads at a glance without turning into a
+   rainbow: outputs (source) are light, control/modulation inputs (target) are
+   dimmer, and the primary audio in (`main-input`) is the largest, brightest
+   port. Sizes are forced with !important so they win over the legacy inline
+   width/height some nodes still set on individual handles. */
 .react-flow__handle {
-  width: 9px;
-  height: 9px;
+  width: 11px !important;
+  height: 11px !important;
   border-radius: 50%;
-  background: #cfd6e6;
-  border: 1.5px solid #11131f;
+  background: #b8c0d0;
+  border: 1.5px solid #0e1019;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
   /* Grow on hover via width/height (NOT transform): React Flow uses
      transform: translate(±50%, -50%) to center handles on the node edge, so
@@ -304,17 +372,47 @@
      relative to the handle's own size, growing width/height keeps it centered. */
   transition: box-shadow 0.14s ease, width 0.1s ease, height 0.1s ease, background 0.14s ease;
 }
+/* Outputs: light. Control inputs: dimmer. */
+.react-flow__handle.source { background: #dfe5f0; }
+.react-flow__handle.target { background: #8b93a6; }
+
+/* Primary audio input — the biggest, brightest port on every node. */
+.react-flow__handle[data-handleid="main-input"] {
+  width: 16px !important;
+  height: 16px !important;
+  background: #eef1f8;
+  border-width: 2px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 0 5px 1px rgba(238, 241, 248, 0.25);
+}
+
 .react-flow__handle:hover {
-  width: 14px !important;
-  height: 14px !important;
+  width: 17px !important;
+  height: 17px !important;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4),
               0 0 8px 2px color-mix(in srgb, var(--node-accent, #6ee7a8) 70%, transparent);
 }
+.react-flow__handle[data-handleid="main-input"]:hover {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+/* Connection-drag feedback (pairs with isValidConnection in Flow.tsx):
+   the port you start from glows accent; a hovered VALID target glows green;
+   a hovered INVALID target shows a muted red so it's clearly rejected. */
+.react-flow__handle.connectingfrom {
+  background: var(--node-accent, #6ee7a8) !important;
+  box-shadow: 0 0 9px 2px color-mix(in srgb, var(--node-accent, #6ee7a8) 70%, transparent);
+}
 .react-flow__handle.connExtraClass,
 .react-flow__handle-connecting { background: var(--node-accent, #6ee7a8); }
+.react-flow__handle.valid,
 .react-flow__handle-valid {
   background: #4ade80 !important;
-  box-shadow: 0 0 8px 2px rgba(74, 222, 128, 0.6);
+  box-shadow: 0 0 9px 2px rgba(74, 222, 128, 0.65);
+}
+.react-flow__handle.connectingto:not(.valid):not(.connectingfrom) {
+  background: #6b3a3a !important;
+  box-shadow: 0 0 7px 1px rgba(180, 70, 70, 0.5);
 }
 
 /* ── Legacy / specific class names (preserved) ───────────────────────────── */

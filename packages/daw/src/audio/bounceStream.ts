@@ -98,6 +98,7 @@ export async function bounceProjectStream(
     for (const track of project.tracks) {
       const t = mixer.track(track.id, track.volume);
       mixer.setTrackPan(track.id, track.pan ?? 0);
+      mixer.setTrackTrim(track.id, track.trim ?? 1, !!track.phase);
       await t.chain.setChain(resolveFx(track.fx));
       if (!trackAudible(track, project.tracks)) continue;   // mute/solo
       if (track.type === 'audio') {
@@ -143,6 +144,7 @@ export async function bounceProjectStream(
         if (track.type === 'audio' || !trackAudible(track, project.tracks)) continue;
         if (!trackActiveAt(track.clips, slot, slots)) continue;
         const step = s % Math.max(1, track.length);
+        for (const lane of track.automation ?? []) { const len = lane.values.length || 1; const v = lane.values[((step % len) + len) % len]; if (v != null) events.push({ time: base + swingSec, fn: () => mixer.applyAutomation(track.id, lane, v) }); }
         for (const use of track.uses) {
           if (use.muted) continue;
           if (track.type === 'synth' && use.notes) {

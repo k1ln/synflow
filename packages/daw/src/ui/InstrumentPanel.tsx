@@ -4,8 +4,9 @@ import type { Flow } from '../synflow/instruments';
 import type { FxInsert } from '../model/project';
 import type { LibraryEntry } from '../synflow/library';
 import { isBlackKey, midiName } from '../model/pitch';
-import { flowKnobs, knob01, knobValue, knobReadout } from '../synflow/knobs';
+import { flowKnobs, flowOptions, knob01, knobValue, knobReadout } from '../synflow/knobs';
 import { Knob } from './Knob';
+import { OptionButtons } from './OptionButtons';
 import { FxBar } from './FxBar';
 import { CustomInstrumentUI } from './CustomInstrumentUI';
 
@@ -23,7 +24,7 @@ export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onKnob
   flow: Flow;
   gain?: number;
   onGain?: (v: number) => void;
-  onKnob: (nodeId: string, param: string, value: number) => void;
+  onKnob: (nodeId: string, param: string, value: number | string) => void;
   onKnobRename?: (nodeId: string, param: string, label: string) => void;
   onEdit: () => void;
   onBack?: () => void;
@@ -39,9 +40,10 @@ export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onKnob
   onFxAdd?: (fxId: string) => void;
   onFxRemove?: (i: number) => void;
   onFxEdit?: (i: number) => void;
-  onFxKnob?: (i: number, nodeId: string, param: string, value: number) => void;
+  onFxKnob?: (i: number, nodeId: string, param: string, value: number | string) => void;
 }) {
   const knobs = flowKnobs(flow);
+  const options = flowOptions(flow);
   const valueOf = (nodeId: string, param: string): number | undefined => flow.nodes.find((n: any) => n.id === nodeId)?.data?.[param];
   const hasCustom = kind !== 'effect' && !!customUi;
   const [customMode, setCustomMode] = useState(hasCustom);
@@ -94,18 +96,28 @@ export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onKnob
           <CustomInstrumentUI className="lp-custom" html={customUi} knobs={knobs} valueOf={valueOf}
             onKnob={onKnob} onNoteOn={onNoteOn} onNoteOff={onNoteOff} onHit={onHit} />
         ) : (<>
-        {knobs.length === 0 && <div className="inst-noknobs">No knobs exported. Open <b>Edit flow</b> and expose params in Synflow’s Host Interface.</div>}
-        {knobs.length > 0 && (
+        {knobs.length === 0 && options.length === 0 && <div className="inst-noknobs">No params exported. Open <b>Edit flow</b> and expose knobs or option buttons in Synflow’s Host Interface.</div>}
+        {(knobs.length > 0 || options.length > 0) && (
           <div className="lp-group">
             <div className="lp-section-title">Parameters</div>
-            <div className="inst-knobs inst-knobs-matrix">
-              {knobs.map((k) => (
-                <Knob key={`${k.nodeId}.${k.param}`} value={knob01(k)} color={cat} size={50} label={k.label}
-                  format={(v01) => knobReadout(k, v01)}
-                  onChange={(v01) => onKnob(k.nodeId, k.param, knobValue(k, v01))}
-                  onLabelChange={onKnobRename ? (label) => onKnobRename(k.nodeId, k.param, label) : undefined} />
-              ))}
-            </div>
+            {options.length > 0 && (
+              <div className="inst-opts">
+                {options.map((o) => (
+                  <OptionButtons key={`${o.nodeId}.${o.param}`} opt={o} color={cat}
+                    onChange={(v) => onKnob(o.nodeId, o.param, v)} />
+                ))}
+              </div>
+            )}
+            {knobs.length > 0 && (
+              <div className="inst-knobs inst-knobs-matrix">
+                {knobs.map((k) => (
+                  <Knob key={`${k.nodeId}.${k.param}`} value={knob01(k)} color={cat} size={50} label={k.label}
+                    format={(v01) => knobReadout(k, v01)}
+                    onChange={(v01) => onKnob(k.nodeId, k.param, knobValue(k, v01))}
+                    onLabelChange={onKnobRename ? (label) => onKnobRename(k.nodeId, k.param, label) : undefined} />
+                ))}
+              </div>
+            )}
           </div>
         )}
 

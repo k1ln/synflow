@@ -3,6 +3,9 @@ import ReactDOM from "react-dom";
 import { Handle, Position } from "@xyflow/react";
 import EventBus from "../sys/EventBus";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
+import { OptionSelect } from "../components/OptionSelect";
+import { NumberField } from "../components/NumberField";
+import { WAVEFORM_OPTIONS_CUSTOM } from "../components/nodeSymbols";
 import "./AudioNode.css";
 type FrequencyType = "midi" | "hz" | "lfo";
 type CustomMode = "pulse" | "wavetable";
@@ -134,10 +137,10 @@ const WavetablePainter: React.FC<{
     <>
       <button
         ref={btnRef}
-        className="nodrag nopan"
+        className="node-btn nodrag nopan"
         onClick={openPopup}
-        style={{ fontSize: 8, padding: '1px 5px', background: '#222', color: '#c084fc', border: '1px solid #444', borderRadius: 3, cursor: 'pointer', marginTop: 2 }}
-      >edit wavetable</button>
+        style={{ width: '100%', marginTop: 4, color: '#c084fc', borderColor: '#7c3aed' }}
+      >✎ Edit wavetable</button>
       {popup}
     </>
   );
@@ -392,7 +395,7 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
 return (
     <div
       className="flow-node"
-      style={data.style}
+      style={{ ...data.style, width: 'auto' }}
     >
       <div className="node-title">OSC</div>
       {/* Main Output */}
@@ -408,9 +411,11 @@ return (
           position={Position.Left}
           id="gain"
           title="Gain (mod)"
-          style={{ top: 'auto', bottom: 8, width: 10, height: 10, background: '#fff' }}
+          style={{ top: 'auto', bottom: 10, width: 10, height: 10, background: '#fff' }}
         />
- 
+
+      {/* Two-column control grid keeps the node compact (Freq|Detune / Gain|Wave) */}
+      <div className="osc-grid">
         {/* Frequency Input with MIDI-learnable knob */}
         <div className="node-field">
           <span className="node-label">Freq.</span>
@@ -427,18 +432,18 @@ return (
             accentColor="#4ade80"
             persistKey={`osc:${data.flowId || 'default'}:${data.id}:freq`}
           />
-          <input
-            type="text"
+          <NumberField
             value={frequency}
-            onChange={(e) => { setFrequency(parseFloat(e.target.value)) }}
-            className="node-input"
-            style={{ width: 50 }}
+            onCommit={setFrequency}
+            min={knobMin}
+            max={knobMax}
+            width={50}
           />
           <Handle
             type="target"
             position={Position.Left}
             id="frequency"
-            style={{ top: 55 }}
+            style={{ top: '34%' }}
           />
         </div>
 
@@ -456,18 +461,18 @@ return (
             accentColor="#4ade80"
             persistKey={`osc:${data.flowId || 'default'}:${data.id}:detune`}
           />
-          <input
-            type="text"
+          <NumberField
             value={detune}
-            onChange={(e) => setDetune(parseFloat(e.target.value))}
-            className="node-input"
-            style={{ width: 50 }}
+            onCommit={setDetune}
+            min={-100}
+            max={100}
+            width={50}
           />
           <Handle
             type="target"
             position={Position.Left}
             id="detune"
-            style={{ top: 139 }}
+            style={{ top: '58%' }}
           />
         </div>
       {/* Gain knob — always visible */}
@@ -513,19 +518,16 @@ return (
 
       {/* Type Selector */}
       <div className="node-field">
-        <select
+        <span className="node-label">Wave</span>
+        <OptionSelect
           value={waveform}
-          onChange={(e) => setWaveform(e.target.value as OscillatorType)}
-          className="node-select"
-          style={{ width: 56 }}
-        >
-          {["sine", "square", "sawtooth", "triangle", "custom"].map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+          onChange={(v) => setWaveform(v as OscillatorType)}
+          options={WAVEFORM_OPTIONS_CUSTOM}
+          columns={2}
+          aria-label="Waveform"
+        />
       </div>
+      </div>{/* /osc-grid */}
 
       {/* Custom mode: pulse OR wavetable painter */}
       {waveform === "custom" && (
@@ -534,7 +536,7 @@ return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%', alignItems: 'stretch' }}>
             {(['pulse', 'wavetable'] as CustomMode[]).map(m => (
               <button key={m}
-                className={`node-btn${customMode === m ? ' active' : ''}`}
+                className={`node-btn nodrag nopan${customMode === m ? ' active' : ''}`}
                 onClick={() => setCustomMode(m)}
               >{m}</button>
             ))}
@@ -557,10 +559,10 @@ return (
               <span className="node-readout">{Math.round(pulseWidth * 100)}%</span>
               <div className="node-field" style={{ marginTop: 2, marginBottom: 0 }}>
                 <span className="node-label">Harmonics</span>
-                <input
-                  type="number" min={8} max={512} step={8}
+                <NumberField
                   value={periodicWaveHarmonics}
-                  onChange={(e) => setPeriodicWaveHarmonics(Math.max(8, Math.min(512, parseInt(e.target.value) || 128)))}
+                  onCommit={(v) => setPeriodicWaveHarmonics(Math.round(v))}
+                  min={8} max={512} step={8}
                   className="node-input sm"
                 />
               </div>
@@ -580,18 +582,16 @@ return (
       )}
       {/* Frequency Type Selector */}
       <div className="node-field">
-        <select
+        <OptionSelect
           value={oscFrequencyType}
-          onChange={(e) => beforeSetOscFrequencyType(e.target.value as FrequencyType)}
-          className="node-select"
-          style={{ width: 56 }}
-        >
-          {["midi", "hz", "lfo"].map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+          onChange={(v) => beforeSetOscFrequencyType(v as FrequencyType)}
+          options={[
+            { value: 'midi', label: 'MIDI' },
+            { value: 'hz', label: 'Hz' },
+            { value: 'lfo', label: 'LFO' },
+          ]}
+          aria-label="Frequency mode"
+        />
       </div>
       {oscFrequencyType === "midi" && (
         <div>

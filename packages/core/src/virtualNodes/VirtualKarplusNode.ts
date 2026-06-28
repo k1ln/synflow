@@ -60,6 +60,16 @@ export class VirtualKarplusNode extends VirtualNode<
       const velocity = typeof data?.velocity === "number" ? data.velocity : 1;
       this.pluck(velocity);
     });
+    // The `frequency` handle also accepts EVENT-rate pitch from a Frequency /
+    // MIDI / value source (audio-rate modulation is handled in connectToInput).
+    // Such sources emit { freq | value | frequency } — retune the string to it.
+    this.eventBus.subscribe(`${node.id}.frequency.receiveNodeOn`, (data: any) => {
+      const f = typeof data?.freq === "number" ? data.freq
+        : typeof data?.value === "number" ? data.value
+          : typeof data?.frequency === "number" ? data.frequency
+            : undefined;
+      if (typeof f === "number" && Number.isFinite(f) && f > 0) this.setFrequency(f);
+    });
     void this.initWorklet();
   }
 
@@ -109,6 +119,16 @@ export class VirtualKarplusNode extends VirtualNode<
   /** Trigger a pluck (called from the note-on subscription). */
   public pluck(velocity = 1) {
     if (this.worklet) this.worklet.port.postMessage({ pluck: true, velocity });
+  }
+
+  /** Retune the string. Cached in `initial` so it survives a late worklet init. */
+  public setFrequency(freq: number) {
+    this.initial.frequency = freq;
+    const param = (this.worklet?.parameters as Map<string, AudioParam> | undefined)?.get("frequency");
+    if (param && this.audioContext) {
+      try { param.setTargetAtTime(freq, this.audioContext.currentTime, 0.005); }
+      catch { param.value = freq; }
+    }
   }
 
   /** Named-input routing from AudioGraphManager. */

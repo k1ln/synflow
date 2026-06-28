@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useState } from "react";
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
+import { NumberField } from "../components/NumberField";
 import "./AudioNode.css";
 
 export type DelayFlowNodeProps = {
@@ -93,18 +94,13 @@ const DelayFlowNode: React.FC<DelayFlowNodeProps> = ({ data }) => {
           midiSensitivity={0.8}
           midiSmoothing={0.4}
         />
-        <input
-          type="text"
-          value={Number.isFinite(delayTime) ? delayTime.toFixed(1) : ''}
-          onChange={(e) => {
-            const v = parseFloat(e.target.value);
-            if (isNaN(v)) return;
-            const clamped = Math.min(MAX_MS, Math.max(MIN_MS, v));
-            setDelayTime(clamped);
-            setKnobValue(msToKnob(clamped));
-          }}
-          className="nodrag node-input"
-          style={{ width: 60 }}
+        <NumberField
+          value={Number.isFinite(delayTime) ? Math.round(delayTime * 10) / 10 : 0}
+          onCommit={(v) => { setDelayTime(v); setKnobValue(msToKnob(v)); }}
+          min={MIN_MS}
+          max={MAX_MS}
+          precision={1}
+          width={60}
         />
         <Handle
           type="target"

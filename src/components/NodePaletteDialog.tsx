@@ -1,5 +1,15 @@
-﻿import React, { useState, useMemo, useCallback } from 'react';
+﻿import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
+
+const RECENTS_KEY = 'synflow:nodePaletteRecents';
+const RECENTS_MAX = 6;
+
+function loadRecents(): string[] {
+  try {
+    const raw = localStorage.getItem(RECENTS_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch { return []; }
+}
 
 export interface NodePaletteDialogProps {
   open: boolean;
@@ -54,66 +64,73 @@ const pillStyle: React.CSSProperties = {
   transition: 'background .12s, border-color .12s',
 };
 
-function NodePill({ nodeKey, onSelect }: { nodeKey: string; onSelect: (k: string) => void }) {
+function NodePill({ nodeKey, onSelect, active }: { nodeKey: string; onSelect: (k: string) => void; active?: boolean }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  useEffect(() => { if (active) ref.current?.scrollIntoView({ block: 'nearest' }); }, [active]);
   return (
     <button
-      style={pillStyle}
+      ref={ref}
+      style={active ? { ...pillStyle, background: '#2f2f3d', borderColor: '#6366f1' } : pillStyle}
       onClick={() => onSelect(nodeKey)}
       onMouseEnter={e => { e.currentTarget.style.background = '#2a2a35'; e.currentTarget.style.borderColor = '#4a4a58'; }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#2e2e38'; }}
+      onMouseLeave={e => { e.currentTarget.style.background = active ? '#2f2f3d' : 'transparent'; e.currentTarget.style.borderColor = active ? '#6366f1' : '#2e2e38'; }}
     >
       {humanize(nodeKey)}
     </button>
   );
 }
 
-function SubSection({ title, color, keys, nodeTypes, onSelect, filter }: {
-  title: string; color: string; keys: string[];
-  nodeTypes: Record<string, React.FC<any>>; onSelect: (k: string) => void;
-  filter?: Set<string>;
-}) {
-  const present = keys.filter(k => k in nodeTypes && (!filter || filter.has(k)));
-  if (present.length === 0) return null;
-  return (
-    <div style={{ flex: '1 1 0', minWidth: 0 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color, marginBottom: 5, paddingBottom: 3, borderBottom: `1px solid ${color}44` }}>
-        {title}
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {present.map(k => <NodePill key={k} nodeKey={k} onSelect={onSelect} />)}
-      </div>
-    </div>
-  );
-}
+const byName = (a: string, b: string) => humanize(a).localeCompare(humanize(b));
 
-function CategoryBlock({ icon, title, color, keys, nodeTypes, onSelect, filter }: {
+function CategoryBlock({ icon, title, color, keys, nodeTypes, onSelect, filter, activeKey, sortAlpha = true }: {
   icon: string; title: string; color: string; keys: string[];
   nodeTypes: Record<string, React.FC<any>>; onSelect: (k: string) => void;
-  filter?: Set<string>;
+  filter?: Set<string>; activeKey?: string; sortAlpha?: boolean;
 }) {
   const present = keys.filter(k => k in nodeTypes && (!filter || filter.has(k)));
   if (present.length === 0) return null;
+  // Sort entries A→Z by display name within the group (Recent stays MRU order).
+  if (sortAlpha) present.sort(byName);
+  // breakInside:'avoid' keeps a category whole within its masonry column so the
+  // next category starts directly under the previous one with no row gaps.
   return (
-    <div style={{ background: '#141417', border: `1px solid ${color}33`, borderRadius: 8, padding: '10px 10px 10px' }}>
+    <div style={{ background: '#141417', border: `1px solid ${color}33`, borderRadius: 8, padding: '10px 10px 10px', marginBottom: 10, breakInside: 'avoid', WebkitColumnBreakInside: 'avoid' } as React.CSSProperties}>
       <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
         <span style={{ fontSize: 12 }}>{icon}</span>{title}
         <span style={{ marginLeft: 'auto', opacity: .4, fontWeight: 400, fontSize: 10 }}>{present.length}</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {present.map(k => <NodePill key={k} nodeKey={k} onSelect={onSelect} />)}
+        {present.map(k => <NodePill key={k} nodeKey={k} onSelect={onSelect} active={k === activeKey} />)}
       </div>
     </div>
   );
 }
 
+// Every category rendered as a uniform block, packed into the 4-column masonry.
+const CATEGORIES: { icon: string; title: string; color: string; keys: string[] }[] = [
+  { icon: '↑',  title: 'Sources',      color: '#4ade80', keys: AUDIO_SOURCES },
+  { icon: '↓',  title: 'Destinations', color: '#f87171', keys: AUDIO_DESTINATIONS },
+  { icon: '↔',  title: 'FX',           color: '#60a5fa', keys: AUDIO_TRANSFORMING },
+  { icon: '⚡', title: 'Event',        color: '#facc15', keys: EVENT_NODES },
+  { icon: '♩',  title: 'MIDI & Seq',   color: '#c084fc', keys: MIDI_SEQ },
+  { icon: '><', title: 'Logic',        color: '#94a3b8', keys: LOGIC },
+];
+
 // ── Dialog ─────────────────────────────────────────────────────────────────
 
 const NodePaletteDialog: React.FC<NodePaletteDialogProps> = ({ open, onOpenChange, nodeTypes, onSelect }) => {
   const [query, setQuery] = useState('');
+  const [recents, setRecents] = useState<string[]>(loadRecents);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const allKeys = useMemo(() => Object.keys(nodeTypes), [nodeTypes]);
 
   const handleSelect = useCallback((type: string) => {
+    setRecents(prev => {
+      const next = [type, ...prev.filter(k => k !== type)].slice(0, RECENTS_MAX);
+      try { localStorage.setItem(RECENTS_KEY, JSON.stringify(next)); } catch { /* noop */ }
+      return next;
+    });
     onSelect(type);
     onOpenChange(false);
   }, [onSelect, onOpenChange]);
@@ -131,6 +148,32 @@ const NodePaletteDialog: React.FC<NodePaletteDialogProps> = ({ open, onOpenChang
 
   const noResults = filterSet && filterSet.size === 0;
 
+  // Recents only shown when not searching; filtered to types that still exist.
+  const visibleRecents = useMemo(
+    () => (query.trim() ? [] : recents.filter(k => k in nodeTypes)),
+    [recents, nodeTypes, query]
+  );
+
+  // Flat keyboard-navigation order, matching on-screen render order.
+  const navKeys = useMemo(() => {
+    const inFilter = (k: string) => k in nodeTypes && (!filterSet || filterSet.has(k));
+    const out: string[] = [...visibleRecents];
+    for (const c of CATEGORIES) out.push(...c.keys.filter(inFilter).sort(byName));
+    for (const k of uncategorized) if (inFilter(k)) out.push(k);
+    return out;
+  }, [nodeTypes, filterSet, visibleRecents, uncategorized]);
+
+  // Reset highlight to the first match whenever the query changes or reopened.
+  useEffect(() => { setActiveIndex(0); }, [query, open]);
+
+  const activeKey = navKeys[Math.min(activeIndex, navKeys.length - 1)];
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIndex(i => Math.min(i + 1, navKeys.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIndex(i => Math.max(i - 1, 0)); }
+    else if (e.key === 'Enter') { if (activeKey) { e.preventDefault(); handleSelect(activeKey); } }
+  };
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -144,7 +187,9 @@ const NodePaletteDialog: React.FC<NodePaletteDialogProps> = ({ open, onOpenChang
           display:'flex', flexDirection:'column',
           padding:'18px 20px 20px',
           zIndex:1001,
-        }}>
+        }}
+        onKeyDown={onKeyDown}
+        >
           {/* Header */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
             <Dialog.Title style={{ fontSize:16, fontWeight:700, color:'#f1f5f9', letterSpacing:'0.04em' }}>ADD MODULE</Dialog.Title>
@@ -165,35 +210,28 @@ const NodePaletteDialog: React.FC<NodePaletteDialogProps> = ({ open, onOpenChang
             {noResults ? (
               <div style={{ padding:16, textAlign:'center', opacity:.5 }}>No matches</div>
             ) : (
-              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-
-                {/* ── Audio super-group ── */}
-                <div style={{ background:'#16161a', border:'1px solid #4ade8033', borderRadius:10, padding:'10px 12px 12px' }}>
-                  <div style={{ fontSize:13, fontWeight:800, letterSpacing:'0.08em', textTransform:'uppercase', color:'#4ade80', marginBottom:10 }}>~ Modules</div>
-                  <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-                    <SubSection title="↑ Sources"      color="#4ade80" keys={AUDIO_SOURCES}      nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
-                    <SubSection title="↓ Destinations" color="#f87171" keys={AUDIO_DESTINATIONS} nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
-                    <SubSection title="↔ FX" color="#60a5fa" keys={AUDIO_TRANSFORMING} nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
-                  </div>
-                </div>
-
-                {/* ── Bottom row: Event / MIDI / Logic ── */}
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:10 }}>
-                  <CategoryBlock icon="⚡" title="Event" color="#facc15" keys={EVENT_NODES} nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
-                  <CategoryBlock icon="♩"  title="MIDI & Seq"  color="#c084fc" keys={MIDI_SEQ}    nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
-                  <CategoryBlock icon="><" title="Logic"       color="#94a3b8" keys={LOGIC}        nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
-                </div>
-
-                {/* ── Other (fallback for future nodes) ── */}
-                {uncategorized.length > 0 && (
-                  <CategoryBlock icon="·" title="Other" color="#6b7280" keys={uncategorized} nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet} />
+              // 4-column masonry: categories flow into columns and pack tightly,
+              // each starting directly under the one above with no row-gap blanks.
+              <div style={{ columnCount: 4, columnGap: 10 }}>
+                {visibleRecents.length > 0 && (
+                  <CategoryBlock icon="★" title="Recent" color="#eab308" keys={visibleRecents} sortAlpha={false}
+                    nodeTypes={nodeTypes} onSelect={handleSelect}
+                    activeKey={activeIndex < visibleRecents.length ? activeKey : undefined} />
                 )}
-
+                {CATEGORIES.map(c => (
+                  <CategoryBlock key={c.title} icon={c.icon} title={c.title} color={c.color} keys={c.keys}
+                    nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet}
+                    activeKey={activeIndex < visibleRecents.length ? undefined : activeKey} />
+                ))}
+                {uncategorized.length > 0 && (
+                  <CategoryBlock icon="·" title="Other" color="#6b7280" keys={uncategorized} nodeTypes={nodeTypes} onSelect={handleSelect} filter={filterSet}
+                    activeKey={activeIndex < visibleRecents.length ? undefined : activeKey} />
+                )}
               </div>
             )}
           </div>
 
-          <div style={{ marginTop:10, fontSize:10, opacity:.4 }}>Click to add · Esc to close</div>
+          <div style={{ marginTop:10, fontSize:10, opacity:.4 }}>↑↓ to navigate · Enter to add · Esc to close</div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

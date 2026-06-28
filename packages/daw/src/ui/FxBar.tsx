@@ -2,9 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Plus, Pencil, X } from 'lucide-react';
 import { EQ_FX_ID, type FxInsert, type EqSettings } from '../model/project';
 import { findEntry, type LibraryEntry } from '../synflow/library';
-import { flowKnobs, knob01, knobReadout, knobValue } from '../synflow/knobs';
+import { flowKnobs, flowOptions, knob01, knobReadout, knobValue } from '../synflow/knobs';
 import { eqMagnitudeDb, logFreqs } from '../audio/eqResponse';
 import { Knob } from './Knob';
+import { OptionButtons } from './OptionButtons';
 
 /** Tiny EQ response thumbnail shown on the device card (in place of knobs). */
 function EqThumb({ settings, color }: { settings: EqSettings; color: string }) {
@@ -32,7 +33,7 @@ export function FxBar({ label, color, fx, effects, onAdd, onRemove, onEdit, onKn
   onAdd: (fxId: string) => void;
   onRemove: (index: number) => void;
   onEdit: (index: number) => void;
-  onKnob?: (index: number, nodeId: string, param: string, value: number) => void;
+  onKnob?: (index: number, nodeId: string, param: string, value: number | string) => void;
   compact?: boolean;
 }) {
   const [picking, setPicking] = useState(false);
@@ -44,7 +45,9 @@ export function FxBar({ label, color, fx, effects, onAdd, onRemove, onEdit, onKn
         {fx.length === 0 && <span className="fxbar-empty">no fx</span>}
         {fx.map((ins, i) => {
           const isEq = ins.fxId === EQ_FX_ID;
-          const knobs = isEq ? [] : flowKnobs(ins.flow ?? findEntry(ins.fxId)?.flow);
+          const flow = ins.flow ?? findEntry(ins.fxId)?.flow;
+          const knobs = isEq ? [] : flowKnobs(flow);
+          const options = isEq ? [] : flowOptions(flow);
           return (
             <div className="fxdev" key={ins.id} style={{ borderColor: `color-mix(in srgb, ${c} 45%, transparent)` }}>
               <div className="fxdev-head">
@@ -61,6 +64,14 @@ export function FxBar({ label, color, fx, effects, onAdd, onRemove, onEdit, onKn
                       format={(v01) => knobReadout(k, v01)}
                       onChange={onKnob ? (v) => onKnob(i, k.nodeId, k.param, knobValue(k, v)) : undefined}
                     />
+                  ))}
+                </div>
+              )}
+              {options.length > 0 && (
+                <div className="fxdev-opts">
+                  {options.map((o) => (
+                    <OptionButtons key={`${o.nodeId}.${o.param}`} opt={o} color={c} compact
+                      onChange={onKnob ? (v) => onKnob(i, o.nodeId, o.param, v) : undefined} />
                   ))}
                 </div>
               )}

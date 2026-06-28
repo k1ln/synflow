@@ -44,6 +44,7 @@ export async function bounceProjectToWav(project: Project, assets: AudioAssets, 
   for (const track of project.tracks) {
     const t = mixer.track(track.id, track.volume);
     mixer.setTrackPan(track.id, track.pan ?? 0);
+    mixer.setTrackTrim(track.id, track.trim ?? 1, !!track.phase);
     mixer.setTrackGate(track.id, trackAudible(track, project.tracks));   // mute/solo (silences the strip's output)
     await t.chain.setChain(resolveFx(track.fx));
     if (track.type === 'audio') {
@@ -85,6 +86,7 @@ export async function bounceProjectToWav(project: Project, assets: AudioAssets, 
       if (track.type === 'audio') continue;                              // scheduled as buffers above
       if (!trackActiveAt(track.clips, slot, songLengthSlots(project))) continue; // song arrangement gates playback
       const step = s % Math.max(1, track.length);
+      for (const lane of track.automation ?? []) { const len = lane.values.length || 1; const v = lane.values[((step % len) + len) % len]; if (v != null) events.push({ time: base + swingSec, fn: () => mixer.applyAutomation(track.id, lane, v) }); }
       for (const use of track.uses) {
         if (use.muted) continue;
         if (track.type === 'synth' && use.notes) {

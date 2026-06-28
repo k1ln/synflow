@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
+import { OptionSelect } from "../components/OptionSelect";
 import EventBus from "../sys/EventBus";
 import "./AudioNode.css";
 
@@ -60,10 +61,16 @@ const WavetableFlowNode: React.FC<WavetableFlowNodeProps> = ({ data }) => {
     <div className="flow-node" style={data.style}>
       <div className="node-row" style={{ justifyContent: "space-between", padding: "0 2px", marginBottom: 6, gap: 4 }}>
         <b className="node-title" style={{ margin: 0, padding: 0, border: 0, textShadow: "none" }}>WAVETABLE</b>
-        <select value={mode} onChange={(e) => setMode(parseInt(e.target.value, 10))} className="node-select" style={{ width: 86 }} title="Engine mode">
-          <option value={0}>Wavetable</option>
-          <option value={1}>Phase Dist</option>
-        </select>
+        <OptionSelect
+          value={mode}
+          onChange={(v) => setMode(Number(v))}
+          options={[
+            { value: 0, label: 'WT', title: 'Wavetable' },
+            { value: 1, label: 'PD', title: 'Phase Distortion' },
+          ]}
+          accentColor={ACCENT}
+          aria-label="Engine mode"
+        />
         <button onClick={note} title="Audition a note"
           style={{ fontSize: 11, padding: "2px 10px", borderRadius: 5, cursor: "pointer", color: "#04222e", fontWeight: 700, border: "none", background: ACCENT }}>Note</button>
       </div>
@@ -89,9 +96,13 @@ const WavetableFlowNode: React.FC<WavetableFlowNodeProps> = ({ data }) => {
       <div className="node-row" style={{ gap: 4 }}>
         <div className="node-field">
           <span className="node-label">Unison</span>
-          <select value={unison} onChange={(e) => setUnison(parseInt(e.target.value, 10))} className="node-select" style={{ width: 46 }} title="Unison voices">
-            {[1, 3, 5, 7].map((u) => <option key={u} value={u}>{u}</option>)}
-          </select>
+          <OptionSelect
+            value={unison}
+            onChange={(v) => setUnison(Number(v))}
+            options={[1, 3, 5, 7].map((u) => ({ value: u, label: String(u) }))}
+            accentColor={ACCENT}
+            aria-label="Unison voices"
+          />
         </div>
         <div className="node-field">
           <span className="node-label">Detune</span>

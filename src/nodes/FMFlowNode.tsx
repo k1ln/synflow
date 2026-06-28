@@ -1,11 +1,104 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
+import { OptionSelect } from "../components/OptionSelect";
+import { NumberField } from "../components/NumberField";
 import EventBus from "../sys/EventBus";
 import "./AudioNode.css";
 
 const ALGO_NAMES = ["Sine", "2-op", "3-stack", "4-stack", "E.Piano", "3x2", "1→3", "6-stack FB", "Organ"];
 const ACCENT = "#c084fc"; // FM purple
+
+// Routing per algorithm — mirrors ALGOS in src/wasm/fm_synth/src/lib.rs (who
+// modulates whom). pos: opIndex -> [column, level]; level 0 is the carrier rail
+// at the bottom, higher levels stack modulators above what they modulate.
+type AlgoGraph = { pos: Record<number, [number, number]>; edges: [number, number][]; carriers: number[] };
+const ALGO_GRAPH: AlgoGraph[] = [
+  { pos: { 0: [0, 0] }, edges: [], carriers: [0] },                                                                   // Sine
+  { pos: { 0: [0, 0], 1: [0, 1] }, edges: [[1, 0]], carriers: [0] },                                                  // 2-op
+  { pos: { 0: [0, 0], 1: [0, 1], 2: [0, 2] }, edges: [[1, 0], [2, 1]], carriers: [0] },                               // 3-stack
+  { pos: { 0: [0, 0], 1: [0, 1], 2: [0, 2], 3: [0, 3] }, edges: [[1, 0], [2, 1], [3, 2]], carriers: [0] },            // 4-stack
+  { pos: { 0: [0, 0], 1: [0, 1], 2: [1, 0], 3: [1, 1] }, edges: [[1, 0], [3, 2]], carriers: [0, 2] },                 // E.Piano
+  { pos: { 0: [0, 0], 1: [0, 1], 2: [1, 0], 3: [1, 1], 4: [2, 0], 5: [2, 1] }, edges: [[1, 0], [3, 2], [5, 4]], carriers: [0, 2, 4] }, // 3x2
+  { pos: { 0: [0, 0], 1: [1, 0], 2: [2, 0], 3: [1, 1] }, edges: [[3, 0], [3, 1], [3, 2]], carriers: [0, 1, 2] },      // 1->3
+  { pos: { 0: [0, 0], 1: [0, 1], 2: [0, 2], 3: [0, 3], 4: [0, 4], 5: [0, 5] }, edges: [[1, 0], [2, 1], [3, 2], [4, 3], [5, 4]], carriers: [0] }, // 6-stack FB
+  { pos: { 0: [0, 0], 1: [1, 0], 2: [2, 0], 3: [3, 0], 4: [4, 0], 5: [5, 0] }, edges: [], carriers: [0, 1, 2, 3, 4, 5] }, // Organ
+];
+const ALGO_USED: Set<number>[] = ALGO_GRAPH.map((g) => new Set(Object.keys(g.pos).map(Number)));
+
+// Live signal-flow diagram for the selected algorithm: carriers (filled, heard)
+// at the bottom feeding the output rail, modulators (outlined) stacked above
+// with arrows into what they shape, plus OP6's feedback loop where it applies.
+const AlgoDiagram: React.FC<{ algo: number; accent: string }> = ({ algo, accent }) => {
+  const g = ALGO_GRAPH[Math.max(0, Math.min(ALGO_GRAPH.length - 1, algo | 0))];
+  const BW = 30, BH = 19, COL = 42, ROW = 30, PAD = 9, RAIL = 12;
+  const ops = Object.keys(g.pos).map(Number);
+  const maxCol = Math.max(...ops.map((o) => g.pos[o][0]));
+  const maxLvl = Math.max(...ops.map((o) => g.pos[o][1]));
+  const carriers = new Set(g.carriers);
+  const used = new Set(ops);
+  const hasFb = used.has(5); // the FB knob always drives OP6 (see lib.rs fm_process)
+  const unused = [0, 1, 2, 3, 4, 5].filter((o) => !used.has(o));
+  const topPad = hasFb ? 22 : PAD;
+  const rPad = hasFb ? 22 : PAD;
+  const W = maxCol * COL + BW + PAD + rPad;
+  const H = maxLvl * ROW + BH + topPad + PAD + RAIL;
+  const railY = H - PAD;
+  const cx = (o: number) => PAD + g.pos[o][0] * COL + BW / 2;
+  const cy = (o: number) => topPad + (maxLvl - g.pos[o][1]) * ROW + BH / 2;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, width: "100%" }}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", maxWidth: W, maxHeight: 156, height: "auto" }}>
+        <defs>
+          <marker id="fm-arrow" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill={accent} />
+          </marker>
+        </defs>
+        {/* output rail + carrier feeds */}
+        <line x1={PAD} y1={railY} x2={W - PAD} y2={railY} stroke={accent} strokeWidth={1.1} opacity={0.35} />
+        {g.carriers.map((o) => (
+          <line key={`r${o}`} x1={cx(o)} y1={cy(o) + BH / 2} x2={cx(o)} y2={railY} stroke={accent} strokeWidth={1.3} opacity={0.45} />
+        ))}
+        {/* modulation edges (modulator -> what it shapes) */}
+        {g.edges.map(([from, to], i) => (
+          <line key={`e${i}`} x1={cx(from)} y1={cy(from) + BH / 2} x2={cx(to)} y2={cy(to) - BH / 2}
+            stroke={accent} strokeWidth={1.5} markerEnd="url(#fm-arrow)" opacity={0.85} />
+        ))}
+        {/* OP6 feedback self-loop */}
+        {hasFb && (
+          <path d={`M ${cx(5) + BW / 2} ${cy(5) - 4} C ${cx(5) + BW / 2 + 16} ${cy(5) - 9}, ${cx(5) + 3} ${cy(5) - BH / 2 - 16}, ${cx(5)} ${cy(5) - BH / 2}`}
+            fill="none" stroke={accent} strokeWidth={1.3} strokeDasharray="2 2" markerEnd="url(#fm-arrow)" opacity={0.7} />
+        )}
+        {/* operators */}
+        {ops.map((o) => {
+          const isC = carriers.has(o);
+          return (
+            <g key={o}>
+              <rect x={cx(o) - BW / 2} y={cy(o) - BH / 2} width={BW} height={BH} rx={4}
+                fill={isC ? accent : "#161b27"} stroke={accent} strokeWidth={1.3} />
+              <text x={cx(o)} y={cy(o) + 0.5} textAnchor="middle" dominantBaseline="middle"
+                fontSize={9} fontWeight={700} fill={isC ? "#1a0a26" : accent} style={{ userSelect: "none" }}>OP{o + 1}</text>
+            </g>
+          );
+        })}
+      </svg>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "2px 10px", fontSize: 8.5, color: "#9aa3b8", letterSpacing: "0.03em" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <span style={{ width: 9, height: 9, borderRadius: 2, background: accent }} /> carrier (heard)
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <span style={{ width: 9, height: 9, borderRadius: 2, border: `1.3px solid ${accent}`, background: "#161b27", boxSizing: "border-box" }} /> modulator
+        </span>
+      </div>
+      {unused.length > 0 && (
+        <div style={{ fontSize: 8.5, color: "#6b7488", letterSpacing: "0.03em" }}>
+          unused: {unused.map((o) => `OP${o + 1}`).join(", ")}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export type FMFlowNodeProps = {
   data: {
@@ -62,13 +155,19 @@ const FMFlowNode: React.FC<FMFlowNodeProps> = ({ data }) => {
 
   return (
     <div className="flow-node" style={data.style}>
-      <div className="node-row" style={{ justifyContent: "space-between", padding: "0 2px", marginBottom: 6, gap: 4 }}>
+      <div className="node-row" style={{ justifyContent: "space-between", padding: "0 2px 0 18px", marginBottom: 6, gap: 4 }}>
         <b className="node-title" style={{ margin: 0, padding: 0, border: 0, textShadow: "none" }}>FM 6-OP</b>
-        <select value={algorithm} onChange={(e) => setAlgorithm(parseInt(e.target.value, 10))} className="node-select" style={{ width: 92 }} title="Algorithm">
-          {ALGO_NAMES.map((nm, i) => <option key={nm} value={i}>{nm}</option>)}
-        </select>
         <button onClick={note} title="Audition a note"
           style={{ fontSize: 11, padding: "2px 10px", borderRadius: 5, cursor: "pointer", color: "#1a0a26", fontWeight: 700, border: "none", background: ACCENT }}>Note</button>
+      </div>
+      <div className="node-field" style={{ marginBottom: 6, paddingLeft: 10 }}>
+        <OptionSelect
+          value={algorithm}
+          onChange={(v) => setAlgorithm(Number(v))}
+          options={ALGO_NAMES.map((nm, i) => ({ value: i, label: nm }))}
+          accentColor={ACCENT}
+          aria-label="Algorithm"
+        />
       </div>
 
       {/* Trigger / pitch in, audio out */}
@@ -76,18 +175,29 @@ const FMFlowNode: React.FC<FMFlowNodeProps> = ({ data }) => {
       <Handle type="target" position={Position.Left} id="frequency" style={{ top: 44 }} />
       <Handle type="source" position={Position.Right} id="output" className="mainOutput" />
 
-      {/* Operator grid: ratio + level per operator */}
-      <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr", gap: "2px 6px", alignItems: "center", margin: "4px 2px 8px", fontSize: 10 }}>
-        <span />
-        <span className="node-label" style={{ textAlign: "center" }}>Ratio</span>
-        <span className="node-label" style={{ textAlign: "center" }}>Level</span>
-        {[0, 1, 2, 3, 4, 5].map((i) => (
-          <React.Fragment key={i}>
-            <span className="node-label">OP{i + 1}</span>
-            <input type="number" step={0.5} min={0} value={ratios[i]} onChange={(e) => setRatio(i, Math.max(0, parseFloat(e.target.value) || 0))} style={numCell} />
-            <input type="number" step={0.05} min={0} max={1} value={levels[i]} onChange={(e) => setLevel(i, Math.min(1, Math.max(0, parseFloat(e.target.value) || 0)))} style={numCell} />
-          </React.Fragment>
-        ))}
+      {/* Operator grid (left) + live routing diagram (right). Rows for operators
+          the current algorithm doesn't touch are dimmed so it's obvious they
+          have no effect. */}
+      <div style={{ display: "flex", gap: 12, alignItems: "center", margin: "4px 2px 8px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "auto auto auto", gap: "2px 6px", alignItems: "center", fontSize: 10 }}>
+          <span />
+          <span className="node-label" style={{ textAlign: "center" }}>Ratio</span>
+          <span className="node-label" style={{ textAlign: "center" }}>Level</span>
+          {[0, 1, 2, 3, 4, 5].map((i) => {
+            const active = ALGO_USED[algorithm]?.has(i) ?? true;
+            const dim = active ? 1 : 0.4;
+            return (
+              <React.Fragment key={i}>
+                <span className="node-label" style={{ opacity: dim }}>OP{i + 1}</span>
+                <NumberField value={ratios[i]} onCommit={(v) => setRatio(i, v)} step={0.5} min={0} max={64} precision={2} className="" style={{ ...numCell, opacity: dim }} />
+                <NumberField value={levels[i]} onCommit={(v) => setLevel(i, v)} step={0.05} min={0} max={1} precision={2} className="" style={{ ...numCell, opacity: dim }} />
+              </React.Fragment>
+            );
+          })}
+        </div>
+        <div style={{ flex: 1, minWidth: 130, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <AlgoDiagram algo={algorithm} accent={ACCENT} />
+        </div>
       </div>
 
       {/* Feedback + envelope */}

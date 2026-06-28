@@ -22,7 +22,7 @@ export class FxChain {
 
   get count(): number { return this.fx.length; }
   get names(): string[] { return this.fx.map((f) => f.name); }
-  setParam(i: number, nodeId: string, param: string, value: number): void { this.fx[i]?.engine?.setParam(nodeId, param, value); }
+  setParam(i: number, nodeId: string, param: string, value: number | string): void { this.fx[i]?.engine?.setParam(nodeId, param, value); }
 
   /** Rebuild the whole chain from resolved inserts. */
   async setChain(inserts: ResolvedFx[]): Promise<void> {
@@ -97,7 +97,7 @@ export class Mixer {
   private lufsL!: AnalyserNode;
   private lufsR!: AnalyserNode;
   private spectrum!: AnalyserNode;   // raw FFT tap for the master spectrum analyzer
-  private tracks = new Map<string, { sum: GainNode; chain: FxChain; duck: GainNode; vol: GainNode; pan: StereoPannerNode; gate: GainNode; meter: AnalyserNode; sends: Map<string, GainNode> }>();
+  private tracks = new Map<string, { sum: GainNode; trim: GainNode; chain: FxChain; duck: GainNode; vol: GainNode; pan: StereoPannerNode; gate: GainNode; meter: AnalyserNode; sends: Map<string, GainNode> }>();
   // Aux/return buses: a shared FX destination (e.g. one reverb for many tracks).
   private buses = new Map<string, { sum: GainNode; chain: FxChain; vol: GainNode; meter: AnalyserNode }>();
   // Sidechain duckers, keyed by TARGET track id.
@@ -141,20 +141,22 @@ export class Mixer {
     let t = this.tracks.get(trackId);
     if (!t) {
       const sum = this.ctx.createGain();
+      const trim = this.ctx.createGain();            // pre-FX input gain / polarity
       const chain = new FxChain(this.ctx);
       const duck = this.ctx.createGain();            // sidechain ducking (gain ≤ 1, baseline 1)
       const vol = this.ctx.createGain(); vol.gain.value = volume;
       const pan = this.ctx.createStereoPanner();
       const gate = this.ctx.createGain();           // mute/solo gate (0 or 1)
       const meter = this.ctx.createAnalyser(); meter.fftSize = 1024;
-      sum.connect(chain.input);
+      sum.connect(trim);
+      trim.connect(chain.input);
       chain.output.connect(duck);
       duck.connect(vol);
       vol.connect(pan);
       pan.connect(gate);
       gate.connect(this.masterSum);
       gate.connect(meter);                          // post-fader meter tap (dead-end)
-      t = { sum, chain, duck, vol, pan, gate, meter, sends: new Map() };
+      t = { sum, trim, chain, duck, vol, pan, gate, meter, sends: new Map() };
       this.tracks.set(trackId, t);
     }
     return t;
@@ -243,6 +245,15 @@ export class Mixer {
   /** Instrument-level gain: scales a use's signal at its chain input (pre-FX). */
   setUseGain(useId: string, v: number): void { const u = this.uses.get(useId); if (u) u.inst.input.gain.value = v; }
   setTrackVolume(trackId: string, v: number): void { const t = this.tracks.get(trackId); if (t) t.vol.gain.value = v; }
+  /** Apply one automation value to a track target: volume (sentinel nodeId
+   *  '__volume__') or a track-FX param (by fxIndex/nodeId/param). */
+  applyAutomation(trackId: string, lane: { nodeId: string; param: string; fxIndex?: number }, v: number): void {
+    if (!Number.isFinite(v)) return;
+    if (lane.nodeId === '__volume__') this.setTrackVolume(trackId, v);
+    else if (lane.fxIndex != null) this.trackChain(trackId)?.setParam(lane.fxIndex, lane.nodeId, lane.param, v);
+  }
+  /** Pre-FX input gain + polarity: gain = trim × (phase ? −1 : 1). */
+  setTrackTrim(trackId: string, trim: number, phase: boolean): void { const t = this.tracks.get(trackId); if (t) t.trim.gain.value = (trim ?? 1) * (phase ? -1 : 1); }
   /** Stereo pan, −1 (left) … +1 (right). */
   setTrackPan(trackId: string, v: number): void { const t = this.tracks.get(trackId); if (t) t.pan.pan.value = Math.max(-1, Math.min(1, v)); }
   /** Mute/solo gate: silences the strip instantly (incl. already-playing audio clips). */
@@ -256,6 +267,6 @@ export class Mixer {
     this.clearSidechain(trackId);                                            // this track was a duck target
     for (const [id, e] of this.sidechains) if (e.keyId === trackId) this.clearSidechain(id);  // …or a key source
     const t = this.tracks.get(trackId);
-    if (t) { t.chain.dispose(); for (const g of t.sends.values()) { try { g.disconnect(); } catch { /* noop */ } } try { t.sum.disconnect(); t.duck.disconnect(); t.vol.disconnect(); t.pan.disconnect(); t.gate.disconnect(); } catch { /* noop */ } this.tracks.delete(trackId); }
+    if (t) { t.chain.dispose(); for (const g of t.sends.values()) { try { g.disconnect(); } catch { /* noop */ } } try { t.sum.disconnect(); t.trim.disconnect(); t.duck.disconnect(); t.vol.disconnect(); t.pan.disconnect(); t.gate.disconnect(); } catch { /* noop */ } this.tracks.delete(trackId); }
   }
 }

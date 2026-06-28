@@ -6,18 +6,29 @@
 //   - Trigger  (note on/off)  → data.isTrigger
 //   - Pitch    (note → param) → data.isPitch + data.pitchParam
 //   - Knobs    (params)       → data.knobs: [{ param, label, min, max, default }]
+//   - Options  (enum params)  → data.options: [{ param, label, choices }]  (option buttons)
 // All of it lives in node.data, so it round-trips through the bridge unchanged
 // and the DAW reads it directly to build the plugin UI + routing.
 import React from 'react';
 
 export interface HostKnob { param: string; label: string; min: number; max: number; default?: number }
+export interface HostOption { param: string; label: string; choices: string[] }
 
-const HOST_KEYS = new Set(['isInput', 'isOutput', 'isTrigger', 'isPitch', 'pitchParam', 'triggerHandle', 'knobs', 'label', 'type']);
+const HOST_KEYS = new Set(['isInput', 'isOutput', 'isTrigger', 'isPitch', 'pitchParam', 'triggerHandle', 'knobs', 'options', 'label', 'type']);
+// String meta keys that are never user-facing option params.
+const OPTION_META = new Set(['pitchParam', 'triggerHandle', 'label', 'flowId', 'customUi']);
 
 /** Numeric, automatable params on a node (its knob candidates). */
 function numericParams(data: any): string[] {
   if (!data) return [];
   return Object.keys(data).filter((k) => typeof data[k] === 'number' && !HOST_KEYS.has(k));
+}
+
+/** Short string params on a node (its option-button candidates, e.g. an oscillator's
+ *  `type`). Long strings (e.g. a baked distortion curve) are not options. */
+function stringParams(data: any): string[] {
+  if (!data) return [];
+  return Object.keys(data).filter((k) => typeof data[k] === 'string' && data[k].length <= 40 && !OPTION_META.has(k));
 }
 
 function defaultMax(v: number): number {
@@ -74,7 +85,16 @@ export function HostInterfacePanel({ nodes, setNodes, active, onClose }: {
 
   const setPitch = (p: string) => update(d.isPitch && d.pitchParam === p ? { isPitch: false, pitchParam: undefined } : { isPitch: true, pitchParam: p });
 
+  const options: HostOption[] = Array.isArray(d.options) ? d.options : [];
+  const isOption = (p: string) => options.some((o) => o.param === p);
+  const toggleOption = (p: string) => {
+    update({ options: isOption(p) ? options.filter((o) => o.param !== p) : [...options, { param: p, label: p, choices: [String(d[p])] }] });
+  };
+  const setOption = (p: string, field: keyof HostOption, value: any) =>
+    update({ options: options.map((o) => (o.param === p ? { ...o, [field]: value } : o)) });
+
   const params = numericParams(d);
+  const optParams = stringParams(d);
   const title = d.label || sel.type || sel.id;
 
   const row: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 7, margin: '5px 0' };
@@ -113,6 +133,29 @@ export function HostInterfacePanel({ nodes, setNodes, active, onClose }: {
                   style={{ ...numInput, width: 92 }} />
                 <span style={{ color: C.dim }}>min</span><input type="number" value={k.min} onChange={(e) => setKnob(p, 'min', parseFloat(e.target.value))} style={numInput} />
                 <span style={{ color: C.dim }}>max</span><input type="number" value={k.max} onChange={(e) => setKnob(p, 'max', parseFloat(e.target.value))} style={numInput} />
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <div style={head}>Params → Option buttons</div>
+      {optParams.length === 0 && <div style={{ color: C.dim }}>This node has no enum (text) parameters.</div>}
+      {optParams.map((p) => {
+        const on = isOption(p);
+        const o = options.find((x) => x.param === p);
+        return (
+          <div key={p} style={{ borderTop: `1px solid ${C.border}`, paddingTop: 6, marginTop: 6 }}>
+            <label style={row}>
+              <input type="checkbox" style={chk(on)} checked={on} onChange={() => toggleOption(p)} />
+              <span style={{ flex: 1 }}>{p}</span>
+              <span style={{ color: C.dim, fontSize: 10 }}>{String(d[p])}</span>
+            </label>
+            {on && o && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, margin: '4px 0 2px 21px' }}>
+                <input value={o.label} onChange={(e) => setOption(p, 'label', e.target.value)} placeholder="label" style={{ ...numInput, width: 116 }} />
+                <input value={o.choices.join(', ')} onChange={(e) => setOption(p, 'choices', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))}
+                  placeholder="choices (comma-separated)" style={{ ...numInput, width: 196 }} />
               </div>
             )}
           </div>

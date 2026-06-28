@@ -1,0 +1,42 @@
+{
+  "name": "Conv Reverb",
+  "daw": {
+    "id": "conv-reverb",
+    "category": "Reverb"
+  },
+  "nodes": [
+    {
+      "id": "in.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": { "gain": 1, "isInput": true },
+      "position": { "x": 100, "y": 120 }
+    },
+    {
+      "id": "rev.ReverbFlowNode",
+      "type": "ReverbFlowNode",
+      "data": { "irUrl": "/ir-hall.wav", "seconds": 1.4, "decay": 2.5 },
+      "position": { "x": 340, "y": 40 }
+    },
+    {
+      "id": "wet.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": {
+        "gain": 0.35,
+        "knobs": [{ "param": "gain", "label": "Mix", "min": 0, "max": 1, "default": 0.35 }]
+      },
+      "position": { "x": 580, "y": 40 }
+    },
+    {
+      "id": "out.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": { "gain": 1, "isOutput": true },
+      "position": { "x": 820, "y": 120 }
+    }
+  ],
+  "edges": [
+    { "id": "cr-in-out", "source": "in.GainFlowNode", "target": "out.GainFlowNode", "sourceHandle": "output", "targetHandle": "main-input" },
+    { "id": "cr-in-rev", "source": "in.GainFlowNode", "target": "rev.ReverbFlowNode", "sourceHandle": "output", "targetHandle": "main-input" },
+    { "id": "cr-rev-wet", "source": "rev.ReverbFlowNode", "target": "wet.GainFlowNode", "sourceHandle": "output", "targetHandle": "main-input" },
+    { "id": "cr-wet-out", "source": "wet.GainFlowNode", "target": "out.GainFlowNode", "sourceHandle": "output", "targetHandle": "main-input" }
+  ]
+}

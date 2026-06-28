@@ -42,6 +42,15 @@
 
 .lui-knobs { display: flex; flex-wrap: wrap; gap: 16px 14px; }
 
+/* Option buttons (discrete enum params, e.g. oscillator waveform) */
+.lui-opts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.lui-opt { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.lui-opt-label { font-size: 11px; color: #7c8aa3; min-width: 56px; }
+.lui-opt-btns { display: inline-flex; background: #0a0d14; border: 1px solid #26324a; border-radius: 7px; padding: 2px; gap: 2px; flex-wrap: wrap; }
+.lui-opt-btn { background: transparent; border: none; color: #7c8aa3; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 5px; cursor: pointer; text-transform: capitalize; }
+.lui-opt-btn:hover { color: #cdd6e6; }
+.lui-opt-btn.on { background: var(--lui-accent, #6ee7a8); color: #06120c; }
+
 /* Rotary knob */
 .lui-knob-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 60px; }
 .lui-knob { position: relative; border-radius: 50%; border: 2px solid #6ee7a8; background: radial-gradient(circle at 50% 38%, #1a2230, #0a0e15); cursor: ns-resize; flex: none; }

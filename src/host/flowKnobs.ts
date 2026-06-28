@@ -19,6 +19,33 @@ export function flowKnobs(nodes?: any[]): ExposedKnob[] {
   );
 }
 
+/** One choice of a host-exposed option (a discrete "option button" param). */
+export interface OptionChoice { value: string; label: string }
+/** A host-exposed discrete param declared in the Host Interface panel (node.data.options).
+ *  These render as option buttons (e.g. an oscillator's waveform) instead of a knob. */
+export interface ExposedOption { nodeId: string; param: string; label: string; choices: OptionChoice[]; value: string }
+
+/** Normalize a raw choice (a bare string or { value, label }) to { value, label }. */
+const toChoice = (c: any): OptionChoice =>
+  typeof c === 'string' ? { value: c, label: c } : { value: String(c.value), label: c.label ?? String(c.value) };
+
+/** Collect every exposed option across a flow's nodes. The current value is the live
+ *  node.data[param] (so selections persist), falling back to the first choice. */
+export function flowOptions(nodes?: any[]): ExposedOption[] {
+  return (nodes ?? []).flatMap((n: any) =>
+    Array.isArray(n.data?.options)
+      ? n.data.options.map((o: any) => {
+          const choices = (Array.isArray(o.choices) ? o.choices : []).map(toChoice);
+          const raw = n.data[o.param];
+          return {
+            nodeId: n.id, param: o.param, label: o.label || o.param, choices,
+            value: String(raw ?? o.default ?? choices[0]?.value ?? ''),
+          };
+        })
+      : [],
+  );
+}
+
 /** A knob's default mapped to the 0..1 the <Knob> component uses. */
 export const knob01 = (k: ExposedKnob): number => {
   const v = k.default ?? k.min;
