@@ -1,27 +1,48 @@
 #include "PluginEditor.h"
 
+#include "BinaryData.h"
+
+#if JUCE_WEB_BROWSER
+using Options = juce::WebBrowserComponent::Options;
+
+SynflowAudioProcessorEditor::SynflowAudioProcessorEditor(SynflowAudioProcessor& p)
+    : juce::AudioProcessorEditor(&p),
+      proc_(p),
+      web_(Options{}
+               .withNativeIntegrationEnabled()
+               .withResourceProvider([this](const juce::String& path) { return provide(path); })
+               .withInitialisationData("flowName", proc_.currentFlowName())
+               .withInitialisationData("flowJson", proc_.currentFlowJson())) {
+    addAndMakeVisible(web_);
+    web_.goToURL(juce::WebBrowserComponent::getResourceProviderRoot());
+    setResizable(true, true);
+    setSize(900, 600);
+}
+
+void SynflowAudioProcessorEditor::resized() { web_.setBounds(getLocalBounds()); }
+
+std::optional<juce::WebBrowserComponent::Resource>
+SynflowAudioProcessorEditor::provide(const juce::String& path) {
+    const auto file = (path == "/") ? juce::String("index.html")
+                                    : path.fromFirstOccurrenceOf("/", false, false);
+    if (file == "index.html") {
+        const auto* d = reinterpret_cast<const std::byte*>(BinaryData::index_html);
+        return juce::WebBrowserComponent::Resource{
+            std::vector<std::byte>(d, d + BinaryData::index_htmlSize), "text/html"};
+    }
+    return std::nullopt;
+}
+
+#else // webview backend unavailable -> simple label
+
 SynflowAudioProcessorEditor::SynflowAudioProcessorEditor(SynflowAudioProcessor& p)
     : juce::AudioProcessorEditor(&p), proc_(p) {
-    title_.setText("Synflow", juce::dontSendNotification);
-    title_.setFont(juce::FontOptions(28.0f, juce::Font::bold));
-    title_.setJustificationType(juce::Justification::centred);
-    addAndMakeVisible(title_);
-
-    juce::String name = proc_.currentFlowName();
-    subtitle_.setText(name.isNotEmpty() ? name : juce::String("native engine"), juce::dontSendNotification);
-    subtitle_.setJustificationType(juce::Justification::centred);
-    subtitle_.setColour(juce::Label::textColourId, juce::Colours::grey);
-    addAndMakeVisible(subtitle_);
-
-    setSize(420, 240);
+    fallback_.setText("Synflow — " + proc_.currentFlowName(), juce::dontSendNotification);
+    fallback_.setJustificationType(juce::Justification::centred);
+    addAndMakeVisible(fallback_);
+    setSize(420, 200);
 }
 
-void SynflowAudioProcessorEditor::paint(juce::Graphics& g) {
-    g.fillAll(juce::Colour(0xff1b1b1f));
-}
+void SynflowAudioProcessorEditor::resized() { fallback_.setBounds(getLocalBounds()); }
 
-void SynflowAudioProcessorEditor::resized() {
-    auto r = getLocalBounds().reduced(20);
-    title_.setBounds(r.removeFromTop(120));
-    subtitle_.setBounds(r.removeFromTop(40));
-}
+#endif

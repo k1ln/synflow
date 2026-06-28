@@ -33,7 +33,8 @@ juce_add_binary_data(SynflowResources SOURCES
     resources/default_flow.json
     resources/karplus.wasm
     resources/ladder.wasm
-    resources/noise.wasm)
+    resources/noise.wasm
+    webui/index.html)
 
 # wasmtime C API (fetched via ../third_party/fetch-wasmtime.sh) — only the plugin
 # shell links it; the engine core stays wasm-free.
@@ -51,7 +52,7 @@ target_include_directories(Synflow PRIVATE
     ${WASMTIME_DIR}/include)
 
 target_compile_definitions(Synflow PUBLIC
-    JUCE_WEB_BROWSER=0   # webview GUI lands in a later M5 step
+    JUCE_WEB_BROWSER=1   # webview GUI (serves the embedded page; DAW UI next)
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0)
 
@@ -61,6 +62,7 @@ target_link_libraries(Synflow
         ${WASMTIME_DIR}/lib/libwasmtime.dylib
         juce::juce_audio_utils
         juce::juce_dsp
+        juce::juce_gui_extra
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)
@@ -80,13 +82,14 @@ target_include_directories(SynflowRenderTest PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${WASMTIME_DIR}/include)
 target_compile_definitions(SynflowRenderTest PUBLIC
-    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+    JUCE_WEB_BROWSER=1 JUCE_USE_CURL=0)
 target_link_libraries(SynflowRenderTest
     PRIVATE
         SynflowResources
         ${WASMTIME_DIR}/lib/libwasmtime.dylib
         juce::juce_audio_utils
         juce::juce_dsp
+        juce::juce_gui_extra
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)

@@ -41,6 +41,7 @@ public:
     // (Re)build the native graph from a flow JSON. Thread: message thread only.
     void loadFlow(const juce::String& json);
     juce::String currentFlowName() const { return flowName_; }
+    juce::String currentFlowJson() const { return flowJson_; }
 
 private:
     std::unique_ptr<synflow::AudioGraphManager> graph_;

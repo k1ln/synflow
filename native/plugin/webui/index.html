@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Synflow</title>
+  <style>
+    :root { color-scheme: dark; }
+    html, body { margin: 0; height: 100%; background: #1b1b1f; color: #e8e8ea;
+      font: 14px/1.5 -apple-system, system-ui, sans-serif; }
+    .wrap { padding: 22px 26px; }
+    h1 { margin: 0 0 2px; font-size: 26px; letter-spacing: .5px; }
+    .sub { color: #8a8a93; margin-bottom: 16px; }
+    .flow { font-size: 15px; color: #c7c7cf; margin-bottom: 14px; }
+    .flow b { color: #7db1ff; }
+    pre { background: #131316; border: 1px solid #2a2a30; border-radius: 8px;
+      padding: 12px; overflow: auto; max-height: 60vh; font-size: 12px; color: #b9b9c2; }
+    .ok { color: #5fd07f; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Synflow</h1>
+    <div class="sub">native engine · plugin webview <span id="status"></span></div>
+    <div class="flow" id="flow">loading…</div>
+    <pre id="json"></pre>
+  </div>
+  <script>
+    // The C++ editor injects the current flow via WebBrowserComponent
+    // initialisationData; JUCE may wrap scalars in single-element arrays.
+    function unwrap(v) { return Array.isArray(v) ? v[0] : v; }
+    function render() {
+      const data = (window.__JUCE__ && window.__JUCE__.initialisationData) || {};
+      const name = unwrap(data.flowName) || "(none)";
+      const json = unwrap(data.flowJson) || "";
+      document.getElementById("status").innerHTML = '<span class="ok">&#10003; connected</span>';
+      document.getElementById("flow").innerHTML = "Flow: <b>" + name + "</b>";
+      try {
+        const obj = typeof json === "string" ? JSON.parse(json) : json;
+        const nodes = (obj.nodes || []).map(n => n.type).join(", ");
+        document.getElementById("json").textContent =
+          (obj.nodes ? obj.nodes.length + " nodes: " + nodes + "\n\n" : "") +
+          (typeof json === "string" ? json : JSON.stringify(json, null, 2));
+      } catch (e) {
+        document.getElementById("json").textContent = String(json).slice(0, 4000);
+      }
+    }
+    window.addEventListener("DOMContentLoaded", render);
+    render();
+  </script>
+</body>
+</html>
