@@ -48,7 +48,8 @@ export function FxBar({ label, color, fx, effects, onAdd, onRemove, onEdit, onKn
           );
         })}
         <div className="fxbar-add">
-          <button className="fxbar-addbtn" onClick={() => setPicking((p) => !p)} title="Add effect"><Plus size={14} /></button>
+          <button className="fxbar-addbtn" onClick={() => setPicking((p) => !p)} title="Add effect"
+            style={{ color: c, background: `color-mix(in srgb, ${c} 12%, transparent)`, borderColor: `color-mix(in srgb, ${c} 45%, transparent)` }}><Plus size={14} /></button>
           {picking && (
             <div className="fxbar-menu" onMouseLeave={() => setPicking(false)}>
               {effects.length === 0 && <span className="fxbar-none">no effects loaded</span>}

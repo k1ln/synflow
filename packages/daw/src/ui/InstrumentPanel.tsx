@@ -117,7 +117,7 @@ export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onEdit
         {kind !== 'effect' && onFxAdd && (
           <div className="lp-group">
             <div className="lp-section-title">Instrument FX</div>
-            <FxBar label="" color="var(--cat-fx)" fx={fx ?? []} effects={effects ?? []}
+            <FxBar label="" color="var(--cat-mod)" fx={fx ?? []} effects={effects ?? []}
               onAdd={onFxAdd} onRemove={(i) => onFxRemove?.(i)} onEdit={(i) => onFxEdit?.(i)} onKnob={onFxKnob} />
           </div>
         )}
