@@ -12,6 +12,19 @@ FetchContent_Declare(JUCE
     GIT_SHALLOW TRUE)
 FetchContent_MakeAvailable(JUCE)
 
+# CLAP support: JUCE has no native CLAP target, so layer it on via the free-audio
+# clap-juce-extensions (it fetches the CLAP SDK itself). Opt-in: -DSYNFLOW_CLAP=ON
+# so the default build stays lean and offline-buildable. Adds a .clap from the same
+# AudioProcessor as the VST3/AU.
+option(SYNFLOW_CLAP "Build the CLAP format via clap-juce-extensions" OFF)
+if(SYNFLOW_CLAP)
+    FetchContent_Declare(clap-juce-extensions
+        GIT_REPOSITORY https://github.com/free-audio/clap-juce-extensions.git
+        GIT_TAG main
+        GIT_SHALLOW TRUE)
+    FetchContent_MakeAvailable(clap-juce-extensions)
+endif()
+
 # Universal player plugin: a synth that renders a Synflow flow JSON natively.
 juce_add_plugin(Synflow
     PRODUCT_NAME "Synflow"
@@ -26,6 +39,14 @@ juce_add_plugin(Synflow
     PLUGIN_MANUFACTURER_CODE Synf
     PLUGIN_CODE Sflw
     FORMATS AU VST3 Standalone)
+
+# Emit a .clap from the same AudioProcessor (universal player -> instrument + effect).
+if(SYNFLOW_CLAP)
+    clap_juce_extensions_plugin(TARGET Synflow
+        CLAP_ID "com.synflow.player"
+        CLAP_FEATURES instrument audio-effect synthesizer)
+    message(STATUS "Synflow: CLAP format enabled")
+endif()
 
 # Embed the default flow + the wasm DSP modules (the SAME public/*.wasm the
 # browser runs) -> BinaryData::default_flow_json / karplus_wasm / ladder_wasm /

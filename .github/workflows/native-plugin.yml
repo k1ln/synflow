@@ -1,0 +1,142 @@
+name: native-plugin
+
+# Build the native C++/JUCE engine + plugin (all formats incl. CLAP) and run the
+# framework-light engine test suites. Web app + @synflow/core are untouched by this.
+on:
+  push:
+    branches: [main, feat/native-cpp-engine]
+    paths: ['native/**', '.github/workflows/native-plugin.yml']
+  pull_request:
+    paths: ['native/**']
+  workflow_dispatch:
+
+jobs:
+  # ---- engine unit tests (framework-light core; fast, no JUCE) -----------------
+  engine-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch wasmtime C API
+        run: bash native/third_party/fetch-wasmtime.sh
+      - name: Configure + build engine
+        run: |
+          cmake -S native/engine -B native/engine/build -DCMAKE_BUILD_TYPE=Release
+          cmake --build native/engine/build -j
+      - name: Run self-contained DSP suites
+        run: |
+          ./native/engine/build/osc_test
+          ./native/engine/build/vocoder_test
+      - name: Build + run the event/flow suite (links wasmtime)
+        run: |
+          WT=native/third_party/wasmtime
+          clang++ -std=c++17 -O2 -Inative/engine/include -I"$WT/include" \
+            native/engine/src/event_test.cpp native/engine/src/AudioGraphManager.cpp \
+            native/engine/src/FlowLoader.cpp \
+            -L"$WT/lib" -lwasmtime -Wl,-rpath,"$(cd "$WT/lib" && pwd)" -o /tmp/event_test
+          (cd native/engine && /tmp/event_test)
+
+  # ---- wasm bit-exactness (wasmtime C++ vs V8) --------------------------------
+  wasm-parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Fetch wasmtime C API
+        run: bash native/third_party/fetch-wasmtime.sh
+      - name: Run wasm null-test (bit-exact vs V8)
+        run: bash native/wasmparity/run.sh
+
+  # ---- full plugin: all formats incl. CLAP, with the edit-mode editor bundle ---
+  plugin:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    # Job-level so the signing step's `if` can read it (secrets aren't usable in `if`).
+    env:
+      MACOS_SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Linux JUCE deps (incl. webkit2gtk for the editor webview)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libjack-jackd2-dev libx11-dev \
+            libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
+            libxrandr-dev libxrender-dev libfreetype6-dev libfontconfig1-dev \
+            libgl1-mesa-dev libcurl4-openssl-dev libwebkit2gtk-4.1-dev ninja-build
+      - name: Fetch wasmtime C API
+        run: bash native/third_party/fetch-wasmtime.sh
+      - name: Build edit-mode editor bundle (incl. in-plugin AssemblyScript compiler)
+        run: |
+          npm ci
+          npm run build:plugin-ui
+      - name: Configure plugin (CLAP on)
+        run: cmake -S native/plugin -B native/plugin/build -DCMAKE_BUILD_TYPE=Release -DSYNFLOW_CLAP=ON
+      - name: Build all formats
+        run: cmake --build native/plugin/build -j --target Synflow_VST3 Synflow_Standalone Synflow_CLAP
+      - name: Build AU (macOS only)
+        if: runner.os == 'macOS'
+        run: cmake --build native/plugin/build -j --target Synflow_AU
+      - name: Render test (headless engine smoke)
+        run: |
+          cmake --build native/plugin/build -j --target SynflowRenderTest
+          ./native/plugin/build/SynflowRenderTest_artefacts/Release/SynflowRenderTest \
+            || ./native/plugin/build/SynflowRenderTest_artefacts/SynflowRenderTest
+
+      # ---- codesign + notarize (macOS) --------------------------------------
+      # Scaffold: runs only when the signing secrets are present, so the normal CI
+      # stays green without an Apple Developer cert. Add these repo secrets to enable:
+      #   MACOS_CERT_P12        Developer ID Application cert, base64 of the .p12
+      #   MACOS_CERT_PASSWORD   password for that .p12
+      #   MACOS_SIGN_IDENTITY   e.g. "Developer ID Application: Name (TEAMID)"
+      #   MACOS_NOTARY_APPLE_ID / MACOS_NOTARY_PASSWORD (app-specific) / MACOS_NOTARY_TEAM_ID
+      - name: Codesign + notarize (macOS, gated on secrets)
+        if: runner.os == 'macOS' && env.MACOS_SIGN_IDENTITY != ''
+        env:
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          MACOS_SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+          MACOS_NOTARY_APPLE_ID: ${{ secrets.MACOS_NOTARY_APPLE_ID }}
+          MACOS_NOTARY_PASSWORD: ${{ secrets.MACOS_NOTARY_PASSWORD }}
+          MACOS_NOTARY_TEAM_ID: ${{ secrets.MACOS_NOTARY_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          # import the Developer ID cert into a temporary keychain
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          security create-keychain -p actions "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p actions "$KEYCHAIN"
+          echo "$MACOS_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -P "$MACOS_CERT_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security list-keychain -d user -s "$KEYCHAIN" login.keychain-db
+          security set-key-partition-list -S apple-tool:,apple: -s -k actions "$KEYCHAIN"
+          ART=native/plugin/build/Synflow_artefacts/Release
+          # sign every emitted bundle (hardened runtime, for notarization)
+          for b in "$ART/VST3/Synflow.vst3" "$ART/AU/Synflow.component" \
+                   "$ART/CLAP/Synflow.clap" "$ART/Standalone/Synflow.app"; do
+            [ -e "$b" ] || continue
+            codesign --force --deep --options runtime --timestamp \
+              --sign "$MACOS_SIGN_IDENTITY" "$b"
+          done
+          # notarize the VST3 (repeat per artifact / zip as needed)
+          if [ -e "$ART/VST3/Synflow.vst3" ]; then
+            ditto -c -k --keepParent "$ART/VST3/Synflow.vst3" "$RUNNER_TEMP/Synflow.vst3.zip"
+            xcrun notarytool submit "$RUNNER_TEMP/Synflow.vst3.zip" \
+              --apple-id "$MACOS_NOTARY_APPLE_ID" --password "$MACOS_NOTARY_PASSWORD" \
+              --team-id "$MACOS_NOTARY_TEAM_ID" --wait
+            xcrun stapler staple "$ART/VST3/Synflow.vst3"
+          fi
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: synflow-plugin-${{ matrix.os }}
+          path: native/plugin/build/Synflow_artefacts/Release/**/Synflow.*
+          if-no-files-found: ignore
