@@ -580,10 +580,13 @@ export async function addVirtualNode(manager: any, node: CustomNode, parentNode:
             break;
         }
         case "FlowNode": {
-            const customNode = await manager.loadFlowByName(
-                (node as any).data.selectedNode,
-                (node as any).data.selectedNodeFolderPath || ''
-            );
+            // Portable flows embed their sub-flow inline (data.embeddedFlow) so no
+            // FlowLoader is needed; otherwise resolve the sub-flow by name.
+            const customNode = (node as any).data?.embeddedFlow
+                ?? await manager.loadFlowByName(
+                    (node as any).data.selectedNode,
+                    (node as any).data.selectedNodeFolderPath || ''
+                );
             if (!customNode) {
                 console.warn('FlowNode: sub-flow not found:', (node as any).data.selectedNode);
                 break;
