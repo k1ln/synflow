@@ -91,6 +91,10 @@ set(WASMTIME_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/wasmtime)
 if(APPLE)
     set(WASMTIME_LIBS ${WASMTIME_DIR}/lib/libwasmtime.a
         "-framework CoreFoundation" "-framework Security" "-framework SystemConfiguration")
+elseif(WIN32)
+    # static wasmtime on MSVC + the Windows system libs it depends on
+    set(WASMTIME_LIBS ${WASMTIME_DIR}/lib/wasmtime.lib
+        ws2_32 advapi32 userenv ntdll shell32 ole32 bcrypt)
 else()
     set(WASMTIME_LIBS ${WASMTIME_DIR}/lib/libwasmtime.a pthread dl m)
 endif()
