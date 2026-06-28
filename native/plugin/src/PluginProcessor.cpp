@@ -49,11 +49,12 @@ void SynflowAudioProcessor::loadFlow(const juce::String& json) {
     nodeIndexById_ = res.nodeIndexById;
     midiMaps_ = res.midiMaps;
 
-    // Bind the flow's exposed knobs to the generic host-param pool + build the
-    // control metadata the webview renders.
-    const HostControls hc = extractHostControls(JsonParser::parse(js));
+    // Build the control surface the webview renders: exposed knobs (bound to the
+    // host-param pool) + the flow's Button nodes (momentary triggers).
+    const JsonValue root = JsonParser::parse(js);
+    const HostControls hc = extractHostControls(root);
     knobBindings_.clear();
-    juce::String controls = "[";
+    juce::String knobs = "[";
     int slot = 0;
     for (const ExposedKnob& k : hc.knobs) {
         if (slot >= kMaxKnobs) break;
@@ -61,15 +62,33 @@ void SynflowAudioProcessor::loadFlow(const juce::String& json) {
         if (it == res.nodeIndexById.end()) continue;
         knobBindings_.push_back({slot, it->second, k.param, static_cast<float>(k.min), static_cast<float>(k.max), -1.0f});
         knobParams_[static_cast<size_t>(slot)]->setValueNotifyingHost(static_cast<float>(k.norm()));
-        if (slot) controls += ",";
-        controls += "{\"slot\":" + juce::String(slot)
-                  + ",\"label\":" + juce::JSON::toString(juce::var(juce::String(k.label)))
-                  + ",\"min\":" + juce::String(k.min) + ",\"max\":" + juce::String(k.max)
-                  + ",\"value\":" + juce::String(k.defValue) + "}";
+        if (slot) knobs += ",";
+        knobs += "{\"slot\":" + juce::String(slot)
+               + ",\"label\":" + juce::JSON::toString(juce::var(juce::String(k.label)))
+               + ",\"min\":" + juce::String(k.min) + ",\"max\":" + juce::String(k.max)
+               + ",\"value\":" + juce::String(k.defValue) + "}";
         ++slot;
     }
-    controls += "]";
-    controlsJson_ = controls;
+    knobs += "]";
+
+    juce::String buttons = "[";
+    int nbtn = 0;
+    if (const JsonValue* nodes = root.find("nodes"); nodes && nodes->isArray()) {
+        for (const JsonValue& n : nodes->arr) {
+            const std::string t = n.find("type") ? n.find("type")->asString() : "";
+            if (t != "ButtonFlowNode" && t != "OnOffButtonFlowNode" && t != "MouseTriggerButtonFlowNode") continue;
+            const std::string id = n.find("id") ? n.find("id")->asString() : "";
+            const JsonValue* data = n.find("data");
+            const std::string label = (data && data->find("label")) ? data->find("label")->asString() : "Trigger";
+            if (id.empty()) continue;
+            if (nbtn) buttons += ",";
+            buttons += "{\"id\":" + juce::JSON::toString(juce::var(juce::String(id)))
+                     + ",\"label\":" + juce::JSON::toString(juce::var(juce::String(label))) + "}";
+            ++nbtn;
+        }
+    }
+    buttons += "]";
+    controlsJson_ = "{\"knobs\":" + knobs + ",\"buttons\":" + buttons + "}";
 
     graph_ = std::move(g);
 }

@@ -41,17 +41,29 @@
       const span = Math.abs(max - min), dp = span >= 100 ? 0 : span >= 10 ? 1 : span >= 1 ? 2 : 3;
       return Number(v).toFixed(dp).replace(/\.?0+$/, "") || "0";
     }
+    function emit(ev, payload) { try { window.__JUCE__ && window.__JUCE__.backend && window.__JUCE__.backend.emitEvent(ev, payload); } catch (e) {} }
     function render() {
       const data = (window.__JUCE__ && window.__JUCE__.initialisationData) || {};
       const name = unwrap(data.flowName) || "(none)";
-      const controls = parse(unwrap(data.controls)) || [];
+      const ctl = parse(unwrap(data.controls)) || {};
+      const knobs = ctl.knobs || [];
+      const buttons = ctl.buttons || [];
       document.getElementById("status").innerHTML = '<span class="ok">&#10003; connected</span>';
       document.getElementById("flow").innerHTML = "Flow: <b>" + name + "</b> · native engine";
 
       const host = document.getElementById("knobs");
       host.innerHTML = "";
-      if (!controls.length) { host.innerHTML = '<div class="empty">This flow exposes no knobs.</div>'; return; }
-      for (const c of controls) {
+      for (const b of buttons) {
+        const el = document.createElement("button");
+        el.textContent = b.label;
+        el.style.cssText = "background:#7db1ff22;color:#cfe0ff;border:1px solid #3a4a66;border-radius:10px;padding:14px;font:13px system-ui;cursor:pointer";
+        el.addEventListener("mousedown", () => emit("noteOn", { nodeId: b.id, payload: { velocity: 1 } }));
+        el.addEventListener("mouseup", () => emit("noteOff", { nodeId: b.id }));
+        el.addEventListener("mouseleave", () => emit("noteOff", { nodeId: b.id }));
+        host.appendChild(el);
+      }
+      if (!knobs.length && !buttons.length) { host.innerHTML = '<div class="empty">This flow exposes no controls.</div>'; return; }
+      for (const c of knobs) {
         const el = document.createElement("div");
         el.className = "knob";
         const v01 = (c.max - c.min) ? (c.value - c.min) / (c.max - c.min) : 0;

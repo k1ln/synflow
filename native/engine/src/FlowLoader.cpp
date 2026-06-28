@@ -8,6 +8,7 @@
 #include "synflow/nodes/BiquadFilterNode.h"
 #include "synflow/nodes/ChorusNode.h"
 #include "synflow/nodes/ClockNode.h"
+#include "synflow/nodes/ButtonNode.h"
 #include "synflow/nodes/ConstantNode.h"
 #include "synflow/nodes/MidiButtonNode.h"
 #include "synflow/nodes/MidiKnobNode.h"
@@ -43,6 +44,8 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
     if (type == "SpeedDividerFlowNode") return std::make_unique<SpeedDividerNode>();
     if (type == "MidiKnobFlowNode") return std::make_unique<MidiKnobNode>();
     if (type == "MidiButtonFlowNode") return std::make_unique<MidiButtonNode>();
+    if (type == "ButtonFlowNode" || type == "OnOffButtonFlowNode" || type == "MouseTriggerButtonFlowNode")
+        return std::make_unique<ButtonNode>();
     return nullptr;
 }
 
@@ -53,7 +56,9 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
 bool isEventEmitterType(const std::string& type) {
     return type == "ClockFlowNode" || type == "SequencerFlowNode"
         || type == "ConstantFlowNode" || type == "SpeedDividerFlowNode"
-        || type == "MidiKnobFlowNode" || type == "MidiButtonFlowNode";
+        || type == "MidiKnobFlowNode" || type == "MidiButtonFlowNode"
+        || type == "ButtonFlowNode" || type == "OnOffButtonFlowNode"
+        || type == "MouseTriggerButtonFlowNode";
 }
 
 } // namespace
