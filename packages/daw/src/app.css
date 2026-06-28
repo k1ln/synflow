@@ -103,3 +103,23 @@ body { margin: 0; background: var(--bg); color: var(--text);
 .mx-fx { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .fx-chip { background: #2a2a31; color: #cdebd8; border: 1px solid #3a3a44; border-radius: 12px; padding: 2px 8px; font-size: 11px; cursor: pointer; }
 .fx-add { background: #111; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; font-size: 11px; }
+
+/* Tracks */
+.tracks { display: flex; flex-direction: column; gap: 12px; }
+.track { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.track-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #1b1b20; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.track-name { font-weight: 700; min-width: 70px; }
+.track-vol { width: 110px; }
+.track-fx { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.track-add { display: flex; gap: 6px; margin-left: auto; }
+.track-add button { background: #23232a; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 11px; }
+.track-body { display: flex; flex-direction: column; gap: 6px; padding: 8px 12px; }
+.add-track { align-self: flex-start; background: #23232a; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+
+/* Automation lane */
+.autolane { display: flex; align-items: stretch; gap: 8px; margin-top: 4px; }
+.al-label { width: 110px; flex: 0 0 110px; font-size: 10px; opacity: 0.7; align-self: center; }
+.al-bars { display: grid; gap: 2px; flex: 1; height: 44px; background: #121216; border: 1px solid var(--line); border-radius: 4px; padding: 2px; }
+.al-cell { position: relative; display: flex; align-items: flex-end; background: #16161b; border-radius: 2px; cursor: crosshair; }
+.al-cell.playhead { outline: 1px solid #fff5; outline-offset: -1px; }
+.al-bar { width: 100%; background: linear-gradient(#7bdcff, #2f6fb0); border-radius: 2px 2px 0 0; }
