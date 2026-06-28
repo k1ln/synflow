@@ -68,6 +68,10 @@ public:
     // Apply a string-valued param from node.data (e.g. "filterType":"lowpass").
     virtual void setNamedParamStr(const std::string& /*name*/, const std::string& /*value*/) {}
 
+    // Apply a numeric-array param from node.data (e.g. FM "ratios"/"levels",
+    // sequencer patterns). Default ignores unknown names.
+    virtual void setArrayParam(const std::string& /*name*/, const std::vector<double>& /*values*/) {}
+
     // Resolve a flow-JSON handle name ("output", "main-input", "frequency",
     // "gain", …) to a port index. Defaults to port 0; nodes override for named
     // modulation/param ports.

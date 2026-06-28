@@ -11,6 +11,7 @@
 
 #include "synflow/AudioGraphManager.h"
 #include "synflow/nodes/WasmEnvGenNode.h"
+#include "synflow/nodes/WasmFMNode.h"
 #include "synflow/nodes/WasmFreqShifterNode.h"
 #include "synflow/nodes/WasmKarplusNode.h"
 #include "synflow/nodes/WasmLadderNode.h"
@@ -69,6 +70,7 @@ int main() {
         }
         // noise uses its default fixed seed / white / gain 1
         if (dynamic_cast<WasmEnvGenNode*>(raw)) g.queueInputEvent(idx, 0, EventType::NoteOn, 1.0, 0); // gate on
+        if (dynamic_cast<WasmFMNode*>(raw)) g.queueInputEvent(idx, 0, EventType::NoteOn, 1.0, 0);
 
         std::vector<float> out(static_cast<size_t>(N), 0.0f);
         for (int i = 0; i < N; i += BLOCK)
@@ -82,6 +84,7 @@ int main() {
     run("noise", std::make_unique<WasmNoiseNode>(readBin(pub + "noise-generator.wasm")), false);
     run("svf", std::make_unique<WasmSvfDriveNode>(readBin(pub + "svf-drive.wasm")), true);
     run("envgen", std::make_unique<WasmEnvGenNode>(readBin(pub + "envgen.wasm")), false);
+    run("fm", std::make_unique<WasmFMNode>(readBin(pub + "fm.wasm")), false);
     {
         auto fs = std::make_unique<WasmFreqShifterNode>(readBin(pub + "freq-shifter.wasm"));
         fs->setNamedParam("shift", 7.0);

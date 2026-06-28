@@ -105,6 +105,26 @@ function refEnvGen() {
   return out;
 }
 
+// --- fm: 6-operator FM voice, gated source (FMProcessor.js) ---
+function refFM() {
+  const e = load('fm.wasm');
+  const state = e.fm_new();
+  const pRatios = e.alloc_f32(6), pLevels = e.alloc_f32(6), pFreq = e.alloc_f32(BLOCK), pOut = e.alloc_f32(BLOCK);
+  const m0 = new Float32Array(e.memory.buffer);
+  m0.set([1, 1, 1, 1, 1, 1], pRatios >> 2);
+  m0.set([1, 0, 0, 0, 0, 0], pLevels >> 2);
+  e.fm_set_config(state, pRatios, pLevels, 0, 1, 0.005, 0.3, 0.7, 0.3); // feedback, algorithm, a,d,s,r
+  e.fm_gate_on(state, 1);
+  const out = new Float32Array(N);
+  for (let i = 0; i < N; i += BLOCK) {
+    const m = new Float32Array(e.memory.buffer);
+    m[pFreq >> 2] = 220.0;
+    e.fm_process(state, pFreq, 1, BLOCK, SR, pOut);
+    out.set(m.subarray(pOut >> 2, (pOut >> 2) + BLOCK), i);
+  }
+  return out;
+}
+
 // --- noise: source (NoiseGeneratorProcessor.js), fixed seed, white, gain 1 ---
 function refNoise() {
   const e = load('noise-generator.wasm');
@@ -119,7 +139,7 @@ function refNoise() {
   return out;
 }
 
-for (const [name, fn] of [['karplus', refKarplus], ['ladder', refLadder], ['noise', refNoise], ['svf', refSvf], ['envgen', refEnvGen], ['freqshifter', refFreqShifter]]) {
+for (const [name, fn] of [['karplus', refKarplus], ['ladder', refLadder], ['noise', refNoise], ['svf', refSvf], ['envgen', refEnvGen], ['freqshifter', refFreqShifter], ['fm', refFM]]) {
   write(`ref_${name}.f32`, fn());
   console.log(`ref ${name}: ${N} samples`);
 }

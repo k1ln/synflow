@@ -94,6 +94,12 @@ FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string&
                 for (const auto& [key, val] : data->obj) {
                     if (val.isNumber()) node->setNamedParam(key, val.num);
                     else if (val.type == JsonValue::Type::String) node->setNamedParamStr(key, val.str);
+                    else if (val.isArray() && !val.arr.empty() && val.arr.front().isNumber()) {
+                        std::vector<double> nums;
+                        nums.reserve(val.arr.size());
+                        for (const auto& e : val.arr) nums.push_back(e.asNumber(0));
+                        node->setArrayParam(key, nums);
+                    }
                     if (key == "isOutput" && val.asBool()) isOutputFlag = true;
                     if (key == "isInput" && val.asBool()) isInputFlag = true;
                     if (key == "isTrigger" && val.asBool()) isTriggerFlag = true;
