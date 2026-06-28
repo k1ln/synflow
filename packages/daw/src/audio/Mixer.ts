@@ -66,7 +66,9 @@ export class Mixer {
   readonly masterChain: FxChain;
   private masterVol: GainNode;
   private tracks = new Map<string, { sum: GainNode; chain: FxChain; vol: GainNode }>();
-  private uses = new Map<string, FxChain>();
+  // Per use: instrument → inst FX (the pool instrument's general FX) → insert FX
+  // (this instrument-in-track's FX) → track sum.
+  private uses = new Map<string, { inst: FxChain; insert: FxChain }>();
 
   constructor(private ctx: AudioContext) {
     this.masterSum = ctx.createGain();
@@ -93,25 +95,29 @@ export class Mixer {
     return t;
   }
 
-  /** The node an instrument-use connects its output into (use FX chain → track sum). */
+  /** The node an instrument-use connects its output into (inst FX → insert FX → track sum). */
   use(useId: string, trackId: string): AudioNode {
-    let chain = this.uses.get(useId);
-    if (!chain) {
-      chain = new FxChain(this.ctx);
-      chain.output.connect(this.track(trackId).sum);
-      this.uses.set(useId, chain);
+    let u = this.uses.get(useId);
+    if (!u) {
+      const inst = new FxChain(this.ctx);
+      const insert = new FxChain(this.ctx);
+      inst.output.connect(insert.input);
+      insert.output.connect(this.track(trackId).sum);
+      u = { inst, insert };
+      this.uses.set(useId, u);
     }
-    return chain.input;
+    return u.inst.input;
   }
 
   trackChain(trackId: string): FxChain | undefined { return this.tracks.get(trackId)?.chain; }
-  useChain(useId: string): FxChain | undefined { return this.uses.get(useId); }
+  useChain(useId: string): FxChain | undefined { return this.uses.get(useId)?.insert; }      // instrument-in-track FX
+  usePoolChain(useId: string): FxChain | undefined { return this.uses.get(useId)?.inst; }     // instrument-general FX
   /** Instrument-level gain: scales a use's signal at its chain input (pre-FX). */
-  setUseGain(useId: string, v: number): void { const c = this.uses.get(useId); if (c) c.input.gain.value = v; }
+  setUseGain(useId: string, v: number): void { const u = this.uses.get(useId); if (u) u.inst.input.gain.value = v; }
   setTrackVolume(trackId: string, v: number): void { const t = this.tracks.get(trackId); if (t) t.vol.gain.value = v; }
   setMaster(v: number): void { this.masterVol.gain.value = v; }
 
-  removeUse(useId: string): void { const c = this.uses.get(useId); if (c) { c.dispose(); this.uses.delete(useId); } }
+  removeUse(useId: string): void { const u = this.uses.get(useId); if (u) { u.inst.dispose(); u.insert.dispose(); this.uses.delete(useId); } }
   removeTrack(trackId: string): void {
     const t = this.tracks.get(trackId);
     if (t) { t.chain.dispose(); try { t.sum.disconnect(); t.vol.disconnect(); } catch { /* noop */ } this.tracks.delete(trackId); }

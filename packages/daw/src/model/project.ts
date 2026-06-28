@@ -26,6 +26,7 @@ export interface PoolItem {
   flow: Flow;
   kind: 'synth' | 'drum';
   gain?: number;           // instrument-level gain (default 1)
+  fx?: FxInsert[];         // the instrument's general FX (heard live + in every track)
 }
 
 /**
