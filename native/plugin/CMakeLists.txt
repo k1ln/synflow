@@ -25,19 +25,36 @@ if(SYNFLOW_CLAP)
     FetchContent_MakeAvailable(clap-juce-extensions)
 endif()
 
-# Universal player plugin: a synth that renders a Synflow flow JSON natively.
+# DAWs split instruments (FL channel rack) from effects (mixer) by the plugin's
+# declared category, so the universal player ships in two flavours from the same
+# code: an INSTRUMENT (IS_SYNTH, MIDI->audio, no audio input) and an EFFECT
+# (audio->audio). -DSYNFLOW_INSTRUMENT=ON builds the instrument; default is the effect.
+# Distinct name/code/bundle so both can be installed side by side.
+option(SYNFLOW_INSTRUMENT "Build the instrument flavour (FL channel rack) instead of the effect" OFF)
+if(SYNFLOW_INSTRUMENT)
+    set(SYNFLOW_IS_SYNTH TRUE)
+    set(SYNFLOW_NAME "Synflow")
+    set(SYNFLOW_CODE "Sfin")
+    set(SYNFLOW_BUNDLE com.synflow.instrument)
+    message(STATUS "Synflow: building INSTRUMENT flavour (channel rack)")
+else()
+    set(SYNFLOW_IS_SYNTH FALSE)
+    set(SYNFLOW_NAME "Synflow FX")
+    set(SYNFLOW_CODE "Sflw")
+    set(SYNFLOW_BUNDLE com.synflow.player)
+endif()
+
 juce_add_plugin(Synflow
-    PRODUCT_NAME "Synflow"
+    PRODUCT_NAME "${SYNFLOW_NAME}"
     COMPANY_NAME "Synflow"
-    BUNDLE_ID com.synflow.player
-    IS_SYNTH FALSE              # universal player: audio in + out + MIDI, so both
-    NEEDS_MIDI_INPUT TRUE       # instrument flows (MIDI->audio) and effect flows
-                               # (audio->audio) load in one plugin
+    BUNDLE_ID ${SYNFLOW_BUNDLE}
+    IS_SYNTH ${SYNFLOW_IS_SYNTH}
+    NEEDS_MIDI_INPUT TRUE       # both flavours accept MIDI (notes drive instrument flows)
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
     COPY_PLUGIN_AFTER_BUILD FALSE
     PLUGIN_MANUFACTURER_CODE Synf
-    PLUGIN_CODE Sflw
+    PLUGIN_CODE ${SYNFLOW_CODE}
     FORMATS AU VST3 Standalone)
 
 # Emit a .clap from the same AudioProcessor (universal player -> instrument + effect).

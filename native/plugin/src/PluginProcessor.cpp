@@ -11,10 +11,18 @@
 
 using namespace synflow;
 
+// Instrument build (IS_SYNTH) is a generator (FL channel rack): no main audio input,
+// just MIDI -> audio. Effect build keeps the audio input (mixer / effect flows).
+#if JucePlugin_IsSynth
+SynflowAudioProcessor::SynflowAudioProcessor()
+    : juce::AudioProcessor(BusesProperties()
+                               .withOutput("Output", juce::AudioChannelSet::stereo(), true)) {
+#else
 SynflowAudioProcessor::SynflowAudioProcessor()
     : juce::AudioProcessor(BusesProperties()
                                .withInput("Input", juce::AudioChannelSet::stereo(), true)
                                .withOutput("Output", juce::AudioChannelSet::stereo(), true)) {
+#endif
     // A fixed pool of generic 0..1 host parameters; each loaded flow binds its
     // exposed knobs to the first N slots (VST/AU need a stable param layout).
     for (int i = 0; i < kMaxKnobs; ++i) {
