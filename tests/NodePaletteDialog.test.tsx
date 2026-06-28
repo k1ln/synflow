@@ -14,7 +14,7 @@ describe('NodePaletteDialog', () => {
   it('filters and selects a node type', async () => {
     const onSelect = vi.fn();
     render(<NodePaletteDialog open={true} onOpenChange={()=>{}} nodeTypes={nodeTypes} onSelect={onSelect} />);
-    const input = screen.getByPlaceholderText('Search nodes...') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Search modules…') as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'gain' } });
   const gainTile = await screen.findByRole('button', { name: /Gain/i });
   expect(gainTile).toBeTruthy();
