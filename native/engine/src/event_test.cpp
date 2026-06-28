@@ -18,6 +18,7 @@
 #include "synflow/nodes/BlockingSwitchNode.h"
 #include "synflow/nodes/ClockNode.h"
 #include "synflow/nodes/MidiFileNode.h"
+#include "synflow/nodes/ScriptSequencerNode.h"
 #include "synflow/Json.h"
 #include "synflow/nodes/ConstantNode.h"
 #include "synflow/nodes/GainNode.h"
@@ -574,6 +575,56 @@ int main() {
             && std::fabs(pr->values[0] - 440.0) < 0.5
             && std::fabs(pr->values[1] - 523.25) < 0.5; // C5
         check(freqOk, "MidiFile emits the note frequencies (A4=440, C5=523.25)");
+    }
+
+    // --- Test 18: ScriptSequencer steps a script, evaluates exprs + vars ---
+    {
+        // line 0: send out-0 220        -> Value 220 on port 0
+        // line 1: send out-0 @A4        -> Value 440 (note A4) on port 0
+        // line 2: set $i 3 ; send out-1 $i*100  -> Value 300 on port 1
+        // line 3: on out-0 1 ; loop     -> NoteOn on port 0, jump to line 0
+        const char* script = "send out-0 220\nsend out-0 @A4\nset $i 3 ; send out-1 $i*100\non out-0 1 ; loop";
+        AudioGraphManager g(RuntimeMode::Plugin);
+        auto clk = std::make_unique<ClockNode>(); clk->setNamedParam("bpm", 120.0);
+        const int ci = g.addNode(std::move(clk));
+        auto ss = std::make_unique<ScriptSequencerNode>();
+        ss->setNamedParamStr("script", script);
+        const int si = g.addNode(std::move(ss));
+        auto p0 = std::make_unique<ProbeNode>(); ProbeNode* pr0 = p0.get(); const int i0 = g.addNode(std::move(p0));
+        auto p1 = std::make_unique<ProbeNode>(); ProbeNode* pr1 = p1.get(); const int i1 = g.addNode(std::move(p1));
+        g.connectEvent(ci, 0, si, 0);              // clock -> script clock
+        g.connectEvent(si, 0, i0, 0, "frequency");  // out-0 -> probe0
+        g.connectEvent(si, 1, i1, 0, "frequency");  // out-1 -> probe1
+        g.prepare(SR, BLOCK);
+        // 4 clock ticks (0,24000,48000,72000) -> run lines 0..3
+        std::vector<float> out(BLOCK, 0.0f);
+        for (int i = 0; i < 96000; i += BLOCK) g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        bool v0 = pr0->values.size() >= 2 && std::fabs(pr0->values[0] - 220.0) < 0.5 && std::fabs(pr0->values[1] - 440.0) < 0.5;
+        check(v0, "ScriptSequencer: 'send' literal + '@A4' note expression (220, 440)");
+        bool v1 = !pr1->values.empty() && std::fabs(pr1->values[0] - 300.0) < 0.5;
+        check(v1, "ScriptSequencer: 'set $i 3' + '$i*100' arithmetic on a var (300)");
+        check(!pr0->onSamples.empty() && pr0->onSamples[0] == 72000,
+              "ScriptSequencer: 'on' gate fires on the right step (line 3 @ tick 72000)");
+    }
+
+    // --- Test 19: ScriptSequencer 'array' spreads values across the beat ---
+    {
+        const char* script = "array out-0 [100,200,300,400]";
+        AudioGraphManager g(RuntimeMode::Plugin);
+        auto clk = std::make_unique<ClockNode>(); clk->setNamedParam("bpm", 120.0);
+        const int ci = g.addNode(std::move(clk));
+        auto ss = std::make_unique<ScriptSequencerNode>(); ss->setNamedParamStr("script", script);
+        const int si = g.addNode(std::move(ss));
+        auto probe = std::make_unique<ProbeNode>(); ProbeNode* pr = probe.get();
+        const int pi = g.addNode(std::move(probe));
+        g.connectEvent(ci, 0, si, 0);
+        g.connectEvent(si, 0, pi, 0, "frequency");
+        g.prepare(SR, BLOCK);
+        std::vector<float> out(BLOCK, 0.0f);
+        for (int i = 0; i < 23040; i += BLOCK) g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        // first tick @0: 4 values across the beat (24000) -> at 0,6000,12000,18000
+        bool ok = pr->values == std::vector<double>{100, 200, 300, 400};
+        check(ok, "ScriptSequencer: 'array' emits all values spread across the beat");
     }
 
     std::printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "ALL PASS", failures, failures == 1 ? "" : "s");

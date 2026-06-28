@@ -20,6 +20,7 @@
 #include "synflow/nodes/OnOffButtonNode.h"
 #include "synflow/nodes/RingModNode.h"
 #include "synflow/nodes/IIRFilterNode.h"
+#include "synflow/nodes/ScriptSequencerNode.h"
 #include "synflow/nodes/SequencerFrequencyNode.h"
 #include "synflow/nodes/SpeedDividerNode.h"
 #include "synflow/nodes/SwitchNode.h"
@@ -67,6 +68,7 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
     if (type == "BlockingSwitchFlowNode") return std::make_unique<BlockingSwitchNode>();
     if (type == "MidiFileFlowNode") return std::make_unique<MidiFileNode>();
     if (type == "VocoderFlowNode") return std::make_unique<VocoderNode>();
+    if (type == "ScriptSequencerFlowNode") return std::make_unique<ScriptSequencerNode>();
     if (type == "MicFlowNode") return std::make_unique<MicNode>();
     if (type == "LogFlowNode" || type == "EventFlowNode" || type == "CommandInFlowNode" || type == "CommandOutFlowNode")
         return std::make_unique<EventForwardNode>();
@@ -86,6 +88,7 @@ bool isEventEmitterType(const std::string& type) {
         || type == "MouseTriggerButtonFlowNode"
         || type == "SwitchFlowNode" || type == "SequencerFrequencyFlowNode"
         || type == "BlockingSwitchFlowNode" || type == "MidiFileFlowNode"
+        || type == "ScriptSequencerFlowNode"
         || type == "ArpeggiatorFlowNode"
         || type == "EventFlowNode" || type == "LogFlowNode"
         || type == "CommandInFlowNode" || type == "CommandOutFlowNode"
