@@ -142,6 +142,21 @@ function refWavetable() {
   return out;
 }
 
+// --- granular: effect, audio in -> grains (GranularProcessor.js), mono = L ---
+function refGranular() {
+  const e = load('granular.wasm');
+  const state = e.granular_new(SR);
+  const pIn = e.alloc_f32(BLOCK), pL = e.alloc_f32(BLOCK), pR = e.alloc_f32(BLOCK);
+  const out = new Float32Array(N);
+  for (let i = 0; i < N; i += BLOCK) {
+    const m = new Float32Array(e.memory.buffer);
+    m.set(input.subarray(i, i + BLOCK), pIn >> 2);
+    e.granular_process(state, pIn, 1, pL, pR, BLOCK, 20, 0.1, 0.5, 0.1, 1, 1, SR); // density,size,position,spray,pitch,mix
+    out.set(m.subarray(pL >> 2, (pL >> 2) + BLOCK), i);
+  }
+  return out;
+}
+
 // --- noise: source (NoiseGeneratorProcessor.js), fixed seed, white, gain 1 ---
 function refNoise() {
   const e = load('noise-generator.wasm');
@@ -156,7 +171,7 @@ function refNoise() {
   return out;
 }
 
-for (const [name, fn] of [['karplus', refKarplus], ['ladder', refLadder], ['noise', refNoise], ['svf', refSvf], ['envgen', refEnvGen], ['freqshifter', refFreqShifter], ['fm', refFM], ['wavetable', refWavetable]]) {
+for (const [name, fn] of [['karplus', refKarplus], ['ladder', refLadder], ['noise', refNoise], ['svf', refSvf], ['envgen', refEnvGen], ['freqshifter', refFreqShifter], ['fm', refFM], ['wavetable', refWavetable], ['granular', refGranular]]) {
   write(`ref_${name}.f32`, fn());
   console.log(`ref ${name}: ${N} samples`);
 }

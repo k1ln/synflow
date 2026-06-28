@@ -12,6 +12,7 @@
 #include "synflow/AudioGraphManager.h"
 #include "synflow/nodes/WasmEnvGenNode.h"
 #include "synflow/nodes/WasmFMNode.h"
+#include "synflow/nodes/WasmGranularNode.h"
 #include "synflow/nodes/WasmFreqShifterNode.h"
 #include "synflow/nodes/WasmKarplusNode.h"
 #include "synflow/nodes/WasmLadderNode.h"
@@ -88,6 +89,7 @@ int main() {
     run("envgen", std::make_unique<WasmEnvGenNode>(readBin(pub + "envgen.wasm")), false);
     run("fm", std::make_unique<WasmFMNode>(readBin(pub + "fm.wasm")), false);
     run("wavetable", std::make_unique<WasmWavetableNode>(readBin(pub + "wavetable.wasm")), false);
+    run("granular", std::make_unique<WasmGranularNode>(readBin(pub + "granular.wasm")), true);
     {
         auto fs = std::make_unique<WasmFreqShifterNode>(readBin(pub + "freq-shifter.wasm"));
         fs->setNamedParam("shift", 7.0);
