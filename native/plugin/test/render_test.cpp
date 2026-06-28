@@ -108,7 +108,40 @@ int main() {
         }
     }
 
-    const bool ok = sawOk && wasmOk && reverbOk;
+    // Phase 4: an exposed knob is a real host-automatable parameter that drives
+    // the engine. square-lead exposes Sustain (slot 2): sustain 0 -> the held
+    // note decays to silence; sustain 1 -> it stays loud.
+    bool knobOk = true;
+    {
+        std::string sl = readFileStr("../../packages/daw/flows/instruments/square-lead.json");
+        if (sl.empty()) sl = readFileStr("packages/daw/flows/instruments/square-lead.json");
+        if (sl.empty()) sl = readFileStr("../../../packages/daw/flows/instruments/square-lead.json");
+        if (sl.empty()) { std::printf("[knob] square-lead.json not found -> SKIP\n"); }
+        else {
+            proc.loadFlow(juce::String::fromUTF8(sl.data(), static_cast<int>(sl.size())));
+            const bool hasControls = proc.exposedControlsJson().contains("Sustain");
+            const auto& params = proc.getParameters();
+            auto sustainPeak = [&](float sv) -> double {
+                if (params.size() > 2) params[2]->setValueNotifyingHost(sv); // Attack,Decay,Sustain,Release
+                double peak = 0;
+                for (int blk = 0; blk < 100; ++blk) {
+                    juce::MidiBuffer midi;
+                    if (blk == 0) midi.addEvent(juce::MidiMessage::noteOn(1, 60, static_cast<juce::uint8>(100)), 0);
+                    buf.clear();
+                    proc.processBlock(buf, midi);
+                    if (blk >= 70 && blk < 95) peak = std::max(peak, static_cast<double>(buf.getMagnitude(0, 0, BLK)));
+                }
+                return peak;
+            };
+            const double low = sustainPeak(0.0f);
+            const double high = sustainPeak(1.0f);
+            knobOk = hasControls && high > 0.1 && high > low * 4 + 0.01;
+            std::printf("[knob] Sustain low(0)=%.4f high(1)=%.4f controls=%s -> %s\n",
+                        low, high, hasControls ? "yes" : "NO", knobOk ? "PASS" : "FAIL");
+        }
+    }
+
+    const bool ok = sawOk && wasmOk && reverbOk && knobOk;
     std::printf("%s\n", ok ? "ALL PASS" : "FAILED");
     return ok ? 0 : 1;
 }

@@ -74,15 +74,21 @@ FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string&
             if (!supported) { node = std::make_unique<PassthroughNode>(); result.unsupportedCount++; }
             node->id = id;
 
-            // apply scalar + string params, detect input/output, from node.data
+            // apply scalar + string params, detect input/output + host flags, from node.data
             bool isOutputFlag = false;
             bool isInputFlag = false;
+            bool isTriggerFlag = false;
+            bool isPitchFlag = false;
+            std::string pitchParam;
             if (const JsonValue* data = n.find("data"); data && data->isObject()) {
                 for (const auto& [key, val] : data->obj) {
                     if (val.isNumber()) node->setNamedParam(key, val.num);
                     else if (val.type == JsonValue::Type::String) node->setNamedParamStr(key, val.str);
                     if (key == "isOutput" && val.asBool()) isOutputFlag = true;
                     if (key == "isInput" && val.asBool()) isInputFlag = true;
+                    if (key == "isTrigger" && val.asBool()) isTriggerFlag = true;
+                    if (key == "isPitch" && val.asBool()) isPitchFlag = true;
+                    if (key == "pitchParam" && val.type == JsonValue::Type::String) pitchParam = val.str;
                 }
             }
 
@@ -91,8 +97,14 @@ FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string&
             idToIndex[id] = index;
             indexToNode[index] = raw;
             idIsEmitter[id] = isEventEmitterType(type);
+            result.nodeIndexById[id] = index;
             if (type == "MasterOutFlowNode" || isOutputFlag) masterIndex = index;
             if (isInputFlag) inputIndex = index;
+            if (isTriggerFlag && result.triggerNodeIndex < 0) result.triggerNodeIndex = index;
+            if (isPitchFlag && result.pitchNodeIndex < 0) {
+                result.pitchNodeIndex = index;
+                if (!pitchParam.empty()) result.pitchParam = pitchParam;
+            }
             result.nodeCount++;
         }
     }
@@ -121,6 +133,13 @@ FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string&
 
     if (masterIndex >= 0) graph.setMasterOutput(masterIndex, 0);
     if (inputIndex >= 0) { graph.setInputNode(inputIndex, 0); result.hasInput = true; }
+
+    // flowKind: no trigger -> effect; trigger + pitch -> synth; trigger only -> drum.
+    const bool hasTrigger = result.triggerNodeIndex >= 0;
+    const bool hasPitch = result.pitchNodeIndex >= 0;
+    result.kind = !hasTrigger ? FlowLoadResult::Effect
+                              : (hasPitch ? FlowLoadResult::Synth : FlowLoadResult::Drum);
+
     graph.prepare(sampleRate, maxBlock);
     return result;
 }

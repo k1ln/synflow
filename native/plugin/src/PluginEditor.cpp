@@ -12,7 +12,15 @@ SynflowAudioProcessorEditor::SynflowAudioProcessorEditor(SynflowAudioProcessor& 
                .withNativeIntegrationEnabled()
                .withResourceProvider([this](const juce::String& path) { return provide(path); })
                .withInitialisationData("flowName", proc_.currentFlowName())
-               .withInitialisationData("flowJson", proc_.currentFlowJson())) {
+               .withInitialisationData("flowJson", proc_.currentFlowJson())
+               .withInitialisationData("controls", proc_.exposedControlsJson())
+               .withEventListener("setParam", [this](juce::var payload) {
+                   const int slot = static_cast<int>(payload.getProperty("slot", -1));
+                   const double v = static_cast<double>(payload.getProperty("value", 0.0));
+                   const auto& params = proc_.getParameters();
+                   if (slot >= 0 && slot < params.size())
+                       params[slot]->setValueNotifyingHost(static_cast<float>(juce::jlimit(0.0, 1.0, v)));
+               })) {
     addAndMakeVisible(web_);
     web_.goToURL(juce::WebBrowserComponent::getResourceProviderRoot());
     setResizable(true, true);

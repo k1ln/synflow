@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <string>
 
@@ -25,6 +26,15 @@ struct FlowLoadResult {
     int unsupportedCount = 0; // node types that fell back to a stub
     bool hasInput = false;    // an isInput node was found (effect / host input)
     std::string name;
+
+    // Host-interface metadata (mirrors src/host/flowKnobs.ts HOST_KEYS), so the
+    // plugin can wire MIDI + expose params without guessing node types.
+    std::map<std::string, int> nodeIndexById; // flow node id -> graph index
+    int triggerNodeIndex = -1;                 // node.data.isTrigger (note gate target)
+    int pitchNodeIndex = -1;                   // node.data.isPitch (follows MIDI pitch)
+    std::string pitchParam = "frequency";      // node.data.pitchParam
+    enum Kind { Effect = 0, Drum = 1, Synth = 2 };
+    Kind kind = Effect;                        // flowKind: trigger? pitch?
 };
 
 class FlowLoader {

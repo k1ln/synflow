@@ -6,14 +6,22 @@
 #include "PluginEditor.h"
 #include "WasmNodeFactory.h"
 #include "synflow/FlowLoader.h"
+#include "synflow/HostControls.h"
 #include "synflow/Json.h"
-#include "synflow/nodes/ADSRNode.h"
-#include "synflow/nodes/OscillatorNode.h"
 
 using namespace synflow;
 
 SynflowAudioProcessor::SynflowAudioProcessor()
     : juce::AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)) {
+    // A fixed pool of generic 0..1 host parameters; each loaded flow binds its
+    // exposed knobs to the first N slots (VST/AU need a stable param layout).
+    for (int i = 0; i < kMaxKnobs; ++i) {
+        auto* p = new juce::AudioParameterFloat(
+            juce::ParameterID("k" + juce::String(i), 1),
+            "Param " + juce::String(i + 1), juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f);
+        knobParams_[static_cast<size_t>(i)] = p;
+        addParameter(p);
+    }
     flowJson_ = juce::String::fromUTF8(BinaryData::default_flow_json, BinaryData::default_flow_jsonSize);
 }
 
@@ -25,17 +33,37 @@ bool SynflowAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) c
 
 void SynflowAudioProcessor::loadFlow(const juce::String& json) {
     flowJson_ = json;
+    const std::string js = json.toStdString();
     auto g = std::make_unique<AudioGraphManager>(RuntimeMode::Plugin);
-    FlowLoadResult res = FlowLoader::loadInto(*g, json.toStdString(), static_cast<float>(sampleRate_),
+    FlowLoadResult res = FlowLoader::loadInto(*g, js, static_cast<float>(sampleRate_),
                                               blockSize_, synflowplugin::makeShellFactory());
     flowName_ = juce::String(res.name);
+    triggerNode_ = res.triggerNodeIndex; // node.data.isTrigger (flow-declared)
+    pitchNode_ = res.pitchNodeIndex;     // node.data.isPitch
+    pitchParam_ = res.pitchParam;
 
-    // Find the host-note targets: the ADSR gate trigger and a pitch oscillator.
-    triggerNode_ = pitchNode_ = -1;
-    for (int i = 0; i < g->size(); ++i) {
-        if (triggerNode_ < 0 && dynamic_cast<ADSRNode*>(g->node(i))) triggerNode_ = i;
-        if (pitchNode_ < 0 && dynamic_cast<OscillatorNode*>(g->node(i))) pitchNode_ = i;
+    // Bind the flow's exposed knobs to the generic host-param pool + build the
+    // control metadata the webview renders.
+    const HostControls hc = extractHostControls(JsonParser::parse(js));
+    knobBindings_.clear();
+    juce::String controls = "[";
+    int slot = 0;
+    for (const ExposedKnob& k : hc.knobs) {
+        if (slot >= kMaxKnobs) break;
+        auto it = res.nodeIndexById.find(k.nodeId);
+        if (it == res.nodeIndexById.end()) continue;
+        knobBindings_.push_back({slot, it->second, k.param, static_cast<float>(k.min), static_cast<float>(k.max), -1.0f});
+        knobParams_[static_cast<size_t>(slot)]->setValueNotifyingHost(static_cast<float>(k.norm()));
+        if (slot) controls += ",";
+        controls += "{\"slot\":" + juce::String(slot)
+                  + ",\"label\":" + juce::JSON::toString(juce::var(juce::String(k.label)))
+                  + ",\"min\":" + juce::String(k.min) + ",\"max\":" + juce::String(k.max)
+                  + ",\"value\":" + juce::String(k.defValue) + "}";
+        ++slot;
     }
+    controls += "]";
+    controlsJson_ = controls;
+
     graph_ = std::move(g);
 }
 
@@ -70,10 +98,19 @@ void SynflowAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce:
         const auto msg = meta.getMessage();
         const int off = meta.samplePosition;
         if (msg.isNoteOn()) {
-            if (pitchNode_ >= 0) graph_->node(pitchNode_)->setNamedParam("frequency", midiToHz(msg.getNoteNumber()));
+            if (pitchNode_ >= 0) graph_->node(pitchNode_)->setNamedParam(pitchParam_, midiToHz(msg.getNoteNumber()));
             if (triggerNode_ >= 0) graph_->queueInputEvent(triggerNode_, 0, EventType::NoteOn, msg.getFloatVelocity(), off);
         } else if (msg.isNoteOff()) {
             if (triggerNode_ >= 0) graph_->queueInputEvent(triggerNode_, 0, EventType::NoteOff, 0.0, off);
+        }
+    }
+
+    // Apply any changed exposed-knob host params to the engine.
+    for (auto& b : knobBindings_) {
+        const float v01 = knobParams_[static_cast<size_t>(b.slot)]->get();
+        if (v01 != b.lastApplied) {
+            b.lastApplied = v01;
+            graph_->node(b.nodeIndex)->setNamedParam(b.param, b.min + v01 * (b.max - b.min));
         }
     }
 

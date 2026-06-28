@@ -1,7 +1,10 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+
+#include <array>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "synflow/AudioGraphManager.h"
@@ -43,11 +46,29 @@ public:
     juce::String currentFlowName() const { return flowName_; }
     juce::String currentFlowJson() const { return flowJson_; }
 
+    // The flow's exposed controls, as JSON, for the webview to render (label/
+    // range/value/slot per knob). Slot == the host parameter it's bound to.
+    juce::String exposedControlsJson() const { return controlsJson_; }
+
 private:
+    // A generic host parameter (0..1) the loaded flow binds an exposed knob to.
+    struct KnobBinding {
+        int slot = -1;          // index into knobParams_
+        int nodeIndex = -1;     // engine node the param drives
+        std::string param;      // node param name
+        float min = 0, max = 1;
+        float lastApplied = -1; // avoid re-applying unchanged values
+    };
+
+    static constexpr int kMaxKnobs = 24;
+
     std::unique_ptr<synflow::AudioGraphManager> graph_;
-    juce::String flowJson_, flowName_;
-    int triggerNode_ = -1;          // node fed by host MIDI note gates (the ADSR)
-    int pitchNode_ = -1;            // oscillator whose frequency follows MIDI pitch
+    juce::String flowJson_, flowName_, controlsJson_;
+    std::array<juce::AudioParameterFloat*, kMaxKnobs> knobParams_{};
+    std::vector<KnobBinding> knobBindings_;
+    int triggerNode_ = -1;          // node.data.isTrigger (host MIDI note gate)
+    int pitchNode_ = -1;            // node.data.isPitch (follows MIDI pitch)
+    std::string pitchParam_ = "frequency";
     double sampleRate_ = 48000.0;
     int blockSize_ = 512;
     std::vector<float> scratch_;     // mono render buffer

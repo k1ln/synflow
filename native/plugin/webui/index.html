@@ -11,38 +11,60 @@
     .wrap { padding: 22px 26px; }
     h1 { margin: 0 0 2px; font-size: 26px; letter-spacing: .5px; }
     .sub { color: #8a8a93; margin-bottom: 16px; }
-    .flow { font-size: 15px; color: #c7c7cf; margin-bottom: 14px; }
+    .flow { font-size: 14px; color: #8a8a93; margin-bottom: 18px; }
     .flow b { color: #7db1ff; }
-    pre { background: #131316; border: 1px solid #2a2a30; border-radius: 8px;
-      padding: 12px; overflow: auto; max-height: 60vh; font-size: 12px; color: #b9b9c2; }
+    .knobs { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 16px; }
+    .knob { background: #131316; border: 1px solid #2a2a30; border-radius: 10px; padding: 14px; }
+    .knob .label { font-size: 12px; color: #c7c7cf; margin-bottom: 8px; }
+    .knob input[type=range] { width: 100%; accent-color: #7db1ff; }
+    .knob .val { font-size: 12px; color: #8a8a93; margin-top: 6px; font-variant-numeric: tabular-nums; }
+    .empty { color: #8a8a93; }
     .ok { color: #5fd07f; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Synflow</h1>
-    <div class="sub">native engine · plugin webview <span id="status"></span></div>
-    <div class="flow" id="flow">loading…</div>
-    <pre id="json"></pre>
+    <div class="flow" id="flow">loading… <span id="status"></span></div>
+    <div class="knobs" id="knobs"></div>
   </div>
   <script>
-    // The C++ editor injects the current flow via WebBrowserComponent
+    // The C++ editor injects the flow + its exposed controls via
     // initialisationData; JUCE may wrap scalars in single-element arrays.
     function unwrap(v) { return Array.isArray(v) ? v[0] : v; }
+    function parse(v) { try { return typeof v === "string" ? JSON.parse(v) : v; } catch (e) { return null; } }
+    function fmt(v, min, max) {
+      const span = Math.abs(max - min), dp = span >= 100 ? 0 : span >= 10 ? 1 : span >= 1 ? 2 : 3;
+      return Number(v).toFixed(dp).replace(/\.?0+$/, "") || "0";
+    }
     function render() {
       const data = (window.__JUCE__ && window.__JUCE__.initialisationData) || {};
       const name = unwrap(data.flowName) || "(none)";
-      const json = unwrap(data.flowJson) || "";
+      const controls = parse(unwrap(data.controls)) || [];
       document.getElementById("status").innerHTML = '<span class="ok">&#10003; connected</span>';
-      document.getElementById("flow").innerHTML = "Flow: <b>" + name + "</b>";
-      try {
-        const obj = typeof json === "string" ? JSON.parse(json) : json;
-        const nodes = (obj.nodes || []).map(n => n.type).join(", ");
-        document.getElementById("json").textContent =
-          (obj.nodes ? obj.nodes.length + " nodes: " + nodes + "\n\n" : "") +
-          (typeof json === "string" ? json : JSON.stringify(json, null, 2));
-      } catch (e) {
-        document.getElementById("json").textContent = String(json).slice(0, 4000);
+      document.getElementById("flow").innerHTML = "Flow: <b>" + name + "</b> · native engine";
+
+      const host = document.getElementById("knobs");
+      host.innerHTML = "";
+      if (!controls.length) { host.innerHTML = '<div class="empty">This flow exposes no knobs.</div>'; return; }
+      for (const c of controls) {
+        const el = document.createElement("div");
+        el.className = "knob";
+        const v01 = (c.max - c.min) ? (c.value - c.min) / (c.max - c.min) : 0;
+        el.innerHTML =
+          '<div class="label">' + c.label + '</div>' +
+          '<input type="range" min="0" max="1" step="0.001" value="' + v01 + '">' +
+          '<div class="val">' + fmt(c.value, c.min, c.max) + '</div>';
+        const range = el.querySelector("input"), out = el.querySelector(".val");
+        range.addEventListener("input", () => {
+          const real = c.min + parseFloat(range.value) * (c.max - c.min);
+          out.textContent = fmt(real, c.min, c.max);
+          // setParam bridge is wired in the next step (host automation already works)
+          if (window.__JUCE__ && window.__JUCE__.backend) {
+            try { window.__JUCE__.backend.emitEvent("setParam", { slot: c.slot, value: parseFloat(range.value) }); } catch (e) {}
+          }
+        });
+        host.appendChild(el);
       }
     }
     window.addEventListener("DOMContentLoaded", render);
