@@ -2,17 +2,11 @@
 import { SynNode as Node, SynEdge as Edge } from "./types";
 import EventBus from "./EventBus";
 import type { EngineOptions } from "./env";
-import { SimpleIndexedDB } from "../../../src/util/SimpleIndexedDB";
-import EventManager from "../../../src/sys/EventManager";
+import { getInput, getFlowLoader } from "./hostBindings";
 import { VirtualAudioWorkletNode } from "./virtualNodes/VirtualAudioWorkletNode";
 import VirtualOscilloscopeNode from "./virtualNodes/VirtualOscilloscopeNode";
 import VirtualAudioWorkletOscillatorNode from "./virtualNodes/VirtualAudioWorkletOscillatorNode";
 import VirtualClockNode from "./virtualNodes/VirtualClockNode";
-import {
-    loadRootHandle,
-    loadFlowFromDisk,
-    makeFlowDbKey,
-} from "../../../src/util/FileSystemAudioStore";
 
 import {
     DataBaseNode,
@@ -49,7 +43,7 @@ export class AudioGraphManager {
     private audioContext: AudioContext;
     public virtualEdges: Map<string, Edge[]>;
     private eventBus: EventBus;
-    private eventManager: EventManager;
+    private eventManager?: any;
     private nodesRef: React.RefObject<Node[]>;
     private edgesRef: React.RefObject<Edge[]>;
     public sourceNodeMapConnectionTree: Map<string, Set<string>> = new Map();
@@ -84,8 +78,8 @@ export class AudioGraphManager {
         this.eventBus = options.bus ?? EventBus.getInstance();
         // Master output target: injected (e.g. a DAW mixer channel) or ctx.destination.
         this.outputNode = options.destination ?? audioContext.destination;
-        this.eventManager = EventManager.getInstance();
-        this.db = new SimpleIndexedDB("FlowSynthDB", "flows");
+        this.eventManager = options.input ?? getInput();
+        /* flow loading injected via options.flowLoader / hostBindings */
         this.nodesRef = nodesRef;
         this.edgesRef = edgesRef;
         this.virtualEdges = new Map<string, Edge[]>();
@@ -107,31 +101,16 @@ export class AudioGraphManager {
         flowName: string,
         folderPath: string = ''
     ): Promise<DataBaseNode | null> {
+        // Sub-flow resolution is host-provided (editor: disk+IndexedDB; DAW/game:
+        // their own assets). Portable flows embed sub-flows and need no loader.
+        const loader = this.options.flowLoader ?? getFlowLoader();
+        if (!loader) return null;
         try {
-            const fsHandle = await loadRootHandle();
-            if (fsHandle) {
-                const diskFlow = await loadFlowFromDisk(fsHandle, flowName, folderPath);
-                if (diskFlow) {
-                    return { nodes: diskFlow.nodes || [], edges: diskFlow.edges || [] };
-                }
-            }
+            const flow = await loader(flowName, folderPath);
+            if (flow) return { nodes: flow.nodes || [], edges: flow.edges || [] };
         } catch (e) {
-            console.warn('[AudioGraphManager] Disk load failed for', flowName, e);
+            console.warn('[AudioGraphManager] flowLoader failed for', flowName, e);
         }
-
-        try {
-            const dbKey = makeFlowDbKey(flowName, folderPath);
-            const result = await this.db.get(dbKey);
-            if (result && result[0]) {
-                return {
-                    nodes: result[0].nodes || result[0].value?.nodes || [],
-                    edges: result[0].edges || result[0].value?.edges || [],
-                };
-            }
-        } catch (e) {
-            console.warn('[AudioGraphManager] DB load failed for', flowName, e);
-        }
-
         return null;
     }
 
@@ -144,7 +123,7 @@ export class AudioGraphManager {
     }
 
     public dispose() {
-        try { this.eventManager.clearButtonCallbacks(); } catch { /* noop */ }
+        try { this.eventManager?.clearButtonCallbacks?.(); } catch { /* noop */ }
 
         for (const [nodeId, node] of this.virtualNodes) {
             if (!node) continue;

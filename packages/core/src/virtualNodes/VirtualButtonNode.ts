@@ -1,24 +1,24 @@
 import VirtualNode from "./VirtualNode";
 import { CustomNode } from "../AudioGraphManager";
 import EventBus from "../EventBus";
-import EventManager from "../../../../src/sys/EventManager";
+import type { ButtonInput } from "../env";
 import { ButtonNodeProps } from "../nodeData";
 import { MidiButtonMapping } from "../nodeData";
-import MidiManager from "../../../../src/components/MidiManager";
+import { getMidiOrNoop } from "../hostBindings";
 
 /**
  * VirtualButtonNode is a virtual node for button logic in the audio graph.
  * It does not wrap an AudioNode, but provides event-based triggering.
  */
 export class VirtualButtonNode extends VirtualNode<CustomNode & ButtonNodeProps, undefined> {
-    eventManager: EventManager;
+    eventManager: ButtonInput | undefined;
     oldButton: string | null;
     private midiMapping: MidiButtonMapping | null = null;
     private isLearning: boolean = false;
     private unsubscribeMidi: (() => void) | null = null;
 
     constructor(
-        eventManager: EventManager,
+        eventManager: ButtonInput | undefined,
         eventBus: EventBus,
         node: CustomNode & ButtonNodeProps
     ) {
@@ -31,22 +31,22 @@ export class VirtualButtonNode extends VirtualNode<CustomNode & ButtonNodeProps,
     }
 
     render(assignedKey: string | null = null) {
-        this.eventManager.removeButtonDownCallback(
+        this.eventManager?.removeButtonDownCallback(
             this.oldButton!,
             this.node.id
         );
-        this.eventManager.removeButtonUpCallback(
+        this.eventManager?.removeButtonUpCallback(
             this.oldButton!,
             this.node.id
         );
-        this.eventManager.addButtonDownCallback(
+        this.eventManager?.addButtonDownCallback(
             this.node.data.assignedKey!,
             this.node.id,
             (data) => {
                 this.eventBus.emit(this.node.id + ".main-input.sendNodeOn", { nodeid: this.node.id });
             }
         );
-        this.eventManager.addButtonUpCallback(
+        this.eventManager?.addButtonUpCallback(
             this.node.data.assignedKey!,
             this.node.id,
             (data) => {
@@ -134,7 +134,7 @@ export class VirtualButtonNode extends VirtualNode<CustomNode & ButtonNodeProps,
 
     private async setupMidi() {
         try {
-            const midi = MidiManager.getInstance();
+            const midi = getMidiOrNoop();
             await midi.ensureAccess();
             if (this.unsubscribeMidi) this.unsubscribeMidi();
             this.unsubscribeMidi = midi.onMessage(({ status, channel, data1, data2 }) => {

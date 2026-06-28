@@ -1,7 +1,7 @@
 import VirtualNode from './VirtualNode';
 import EventBus from '../EventBus';
 import { CustomNode } from '../AudioGraphManager';
-import MidiManager from '../../../../src/components/MidiManager';
+import { getMidiOrNoop } from '../hostBindings';
 
 export type CurveType = 'linear' | 'logarithmic' | 'exponential';
 export type MidiKnobMapping = { type: 'cc'; channel: number; number: number } | null;
@@ -95,7 +95,7 @@ export default class VirtualMidiKnobNode extends VirtualNode<CustomNode & MidiKn
   }
 
   private async setupMidi(){
-    const midi = MidiManager.getInstance();
+    const midi = getMidiOrNoop();
     try { await midi.ensureAccess(); } catch(e){ console.warn('[VirtualMidiKnob] MIDI not available', e); return; }
     if (this.unsubscribeMidi) { this.unsubscribeMidi(); this.unsubscribeMidi = null; }
     this.unsubscribeMidi = midi.onMessage(({ status, channel, data1, data2 })=>{
@@ -113,7 +113,7 @@ export default class VirtualMidiKnobNode extends VirtualNode<CustomNode & MidiKn
   }
 
   private startMidiLearn(){
-    const midi = MidiManager.getInstance();
+    const midi = getMidiOrNoop();
     let unsub: (()=>void) | null = null;
     unsub = midi.onMessage(({ status, channel, data1 })=>{
       const statusHi = status & 0xF0;

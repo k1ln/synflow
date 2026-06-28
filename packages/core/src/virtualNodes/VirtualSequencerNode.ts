@@ -1,7 +1,7 @@
 import VirtualNode from './VirtualNode';
 import EventBus from '../EventBus';
 import { CustomNode } from '../AudioGraphManager';
-import { loadRootHandle, writeAudioBlob } from '../../../../src/util/FileSystemAudioStore';
+import { getAssetStore } from '../hostBindings';
 
 export interface SequencerVirtualData {
   squares?: number;
@@ -406,8 +406,8 @@ export class VirtualSequencerNode extends VirtualNode<
     if (now - this._lastPersist < 2000) return;
     this._lastPersist = now;
     try {
-      const root = await loadRootHandle();
-      if (!root) return;
+      const store = getAssetStore();
+      if (!store) return;
       const payload = {
         id: this.node.id,
         updatedAt: new Date().toISOString(),
@@ -423,7 +423,7 @@ export class VirtualSequencerNode extends VirtualNode<
         { type: 'application/json' }
       );
       const fname = `sequencer-${this.node.id}-pattern.json`;
-      await writeAudioBlob(root, 'sampling', blob, fname);
+      await store.saveAudio('sampling', blob, fname);
     } catch (e) {
       console.warn('[VirtualSequencerNode] pattern persist failed', e);
     }

@@ -7,6 +7,9 @@ export type DataBaseNode = {
     edges: Edge[];
 };
 
+/** A constructed virtual node instance (varies per node type). */
+export type VirtualNodeType = any;
+
 export type AudioNodeData = {
     frequency?: number;
     type?: OscillatorType;
