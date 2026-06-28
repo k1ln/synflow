@@ -17,6 +17,7 @@
 #include "synflow/nodes/AutomationNode.h"
 #include "synflow/nodes/BlockingSwitchNode.h"
 #include "synflow/nodes/ClockNode.h"
+#include "synflow/nodes/FunctionNode.h"
 #include "synflow/nodes/MidiFileNode.h"
 #include "synflow/nodes/ScriptSequencerNode.h"
 #include "synflow/Json.h"
@@ -625,6 +626,68 @@ int main() {
         // first tick @0: 4 values across the beat (24000) -> at 0,6000,12000,18000
         bool ok = pr->values == std::vector<double>{100, 200, 300, 400};
         check(ok, "ScriptSequencer: 'array' emits all values spread across the beat");
+    }
+
+    // --- Test 20: Function evaluates a return-expression of its inputs ---
+    {
+        AudioGraphManager g(RuntimeMode::Plugin);
+        auto fn = std::make_unique<FunctionNode>();
+        fn->setNamedParam("numInputs", 1);
+        fn->setNamedParamStr("functionCode", "function process(main, input1){ return main * 2 + input1 }");
+        const int fi = g.addNode(std::move(fn));
+        auto probe = std::make_unique<ProbeNode>(); ProbeNode* pr = probe.get();
+        const int pi = g.addNode(std::move(probe));
+        g.connectEvent(fi, 0, pi, 0, "frequency");
+        g.prepare(SR, BLOCK);
+        std::vector<float> out(BLOCK, 0.0f);
+        g.queueInputEvent(fi, 1, EventType::Value, 5.0, 0);   // input1 = 5
+        g.queueInputEvent(fi, 0, EventType::Value, 100.0, 1); // main = 100 -> 100*2+5 = 205
+        g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        check(!pr->values.empty() && std::fabs(pr->values.back() - 205.0) < 1e-6,
+              "Function: process() returns main*2 + input1 (205)");
+    }
+    // --- Test 21: Function supports Math + ternary; bad code falls back to identity ---
+    {
+        AudioGraphManager g(RuntimeMode::Plugin);
+        auto fn = std::make_unique<FunctionNode>();
+        fn->setNamedParamStr("functionCode", "return main > 0 ? Math.sqrt(main) : 0");
+        const int fi = g.addNode(std::move(fn));
+        auto probe = std::make_unique<ProbeNode>(); ProbeNode* pr = probe.get();
+        const int pi = g.addNode(std::move(probe));
+        g.connectEvent(fi, 0, pi, 0, "frequency");
+        g.prepare(SR, BLOCK);
+        std::vector<float> out(BLOCK, 0.0f);
+        g.queueInputEvent(fi, 0, EventType::Value, 16.0, 0); // 16>0 -> sqrt(16)=4
+        g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        check(!pr->values.empty() && std::fabs(pr->values.back() - 4.0) < 1e-6,
+              "Function: ternary + Math.sqrt (sqrt(16)=4)");
+
+        AudioGraphManager g2(RuntimeMode::Plugin);
+        auto fn2 = std::make_unique<FunctionNode>();
+        fn2->setNamedParamStr("functionCode", "for(let i=0;i<3;i++){} return main"); // statements -> identity
+        const int fi2 = g2.addNode(std::move(fn2));
+        auto p2 = std::make_unique<ProbeNode>(); ProbeNode* pr2 = p2.get();
+        const int pi2 = g2.addNode(std::move(p2));
+        g2.connectEvent(fi2, 0, pi2, 0, "frequency");
+        g2.prepare(SR, BLOCK);
+        g2.queueInputEvent(fi2, 0, EventType::Value, 42.0, 0);
+        g2.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        check(!pr2->values.empty() && std::fabs(pr2->values.back() - 42.0) < 1e-6,
+              "Function: unparseable JS body falls back to identity passthrough (42)");
+
+        // comparison operators (== contains '=') must still parse as an expression
+        AudioGraphManager g3(RuntimeMode::Plugin);
+        auto fn3 = std::make_unique<FunctionNode>();
+        fn3->setNamedParamStr("functionCode", "return main == 7 ? 1 : 0");
+        const int fi3 = g3.addNode(std::move(fn3));
+        auto p3 = std::make_unique<ProbeNode>(); ProbeNode* pr3 = p3.get();
+        const int pi3 = g3.addNode(std::move(p3));
+        g3.connectEvent(fi3, 0, pi3, 0, "frequency");
+        g3.prepare(SR, BLOCK);
+        g3.queueInputEvent(fi3, 0, EventType::Value, 7.0, 0);
+        g3.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        check(!pr3->values.empty() && std::fabs(pr3->values.back() - 1.0) < 1e-6,
+              "Function: comparison operators (main == 7) evaluate, not rejected");
     }
 
     std::printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "ALL PASS", failures, failures == 1 ? "" : "s");
