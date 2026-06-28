@@ -12,6 +12,7 @@
 #include "synflow/nodes/WasmFreqShifterNode.h"
 #include "synflow/nodes/WasmNoiseNode.h"
 #include "synflow/nodes/WasmSvfDriveNode.h"
+#include "synflow/nodes/WasmWavetableNode.h"
 
 namespace synflowplugin {
 using namespace synflow;
@@ -37,6 +38,8 @@ NodeFactoryFn makeShellFactory() {
             return std::make_unique<WasmFreqShifterNode>(bytes(BinaryData::freqshifter_wasm, BinaryData::freqshifter_wasmSize));
         if (type == "FMFlowNode")
             return std::make_unique<WasmFMNode>(bytes(BinaryData::fm_wasm, BinaryData::fm_wasmSize));
+        if (type == "WavetableFlowNode")
+            return std::make_unique<WasmWavetableNode>(bytes(BinaryData::wavetable_wasm, BinaryData::wavetable_wasmSize));
         if (type == "ReverbFlowNode")
             return std::make_unique<ReverbNode>();
         return nullptr;

@@ -125,6 +125,23 @@ function refFM() {
   return out;
 }
 
+// --- wavetable: wavetable oscillator voice, gated source (WavetableProcessor.js) ---
+function refWavetable() {
+  const e = load('wavetable.wasm');
+  const state = e.wavetable_new();
+  const pFreq = e.alloc_f32(BLOCK), pOut = e.alloc_f32(BLOCK);
+  e.wavetable_set_config(state, 0, 1, 12, 0.01, 0.3, 0.8, 0.3); // mode,unison,detune,a,d,s,r
+  e.wavetable_gate_on(state, 1);
+  const out = new Float32Array(N);
+  for (let i = 0; i < N; i += BLOCK) {
+    const m = new Float32Array(e.memory.buffer);
+    m[pFreq >> 2] = 220.0;
+    e.wavetable_process(state, pFreq, 1, 0, 0, BLOCK, SR, pOut); // position 0, warp 0
+    out.set(m.subarray(pOut >> 2, (pOut >> 2) + BLOCK), i);
+  }
+  return out;
+}
+
 // --- noise: source (NoiseGeneratorProcessor.js), fixed seed, white, gain 1 ---
 function refNoise() {
   const e = load('noise-generator.wasm');
@@ -139,7 +156,7 @@ function refNoise() {
   return out;
 }
 
-for (const [name, fn] of [['karplus', refKarplus], ['ladder', refLadder], ['noise', refNoise], ['svf', refSvf], ['envgen', refEnvGen], ['freqshifter', refFreqShifter], ['fm', refFM]]) {
+for (const [name, fn] of [['karplus', refKarplus], ['ladder', refLadder], ['noise', refNoise], ['svf', refSvf], ['envgen', refEnvGen], ['freqshifter', refFreqShifter], ['fm', refFM], ['wavetable', refWavetable]]) {
   write(`ref_${name}.f32`, fn());
   console.log(`ref ${name}: ${N} samples`);
 }

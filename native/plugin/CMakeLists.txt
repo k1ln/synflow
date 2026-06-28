@@ -39,6 +39,7 @@ juce_add_binary_data(SynflowResources SOURCES
     resources/envgen.wasm
     resources/freqshifter.wasm
     resources/fm.wasm
+    resources/wavetable.wasm
     webui/index.html)
 
 # Edit-mode editor bundle (the Synflow editor, built via `npm run build:plugin-ui`)
