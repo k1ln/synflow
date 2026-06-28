@@ -11,8 +11,11 @@
 #include <thread>
 #include <vector>
 
+#include <juce_audio_formats/juce_audio_formats.h>
+
 #include "PluginProcessor.h"
 #include "WasmNodeFactory.h"
+#include "nodes/SampleNode.h"
 #include "synflow/AudioGraphManager.h"
 #include "synflow/FlowLoader.h"
 
@@ -168,7 +171,41 @@ int main() {
         }
     }
 
-    const bool ok = sawOk && wasmOk && reverbOk && knobOk && effectOk;
+    // Phase 6: the sampler decodes embedded base64 audio + plays it on trigger.
+    bool sampleOk = true;
+    {
+        const int sampLen = 256;
+        juce::AudioBuffer<float> wav(1, sampLen);
+        for (int i = 0; i < sampLen; ++i) wav.setSample(0, i, std::sin(i * 0.1f) * 0.5f);
+        juce::MemoryBlock wavBytes;
+        {
+            juce::WavAudioFormat fmt;
+            std::unique_ptr<juce::AudioFormatWriter> w(
+                fmt.createWriterFor(new juce::MemoryOutputStream(wavBytes, false), 48000.0, 1, 16, {}, 0));
+            if (w) w->writeFromAudioSampleBuffer(wav, 0, sampLen);
+        }
+        const juce::String b64 = juce::Base64::toBase64(wavBytes.getData(), wavBytes.getSize());
+
+        synflow::AudioGraphManager g(synflow::RuntimeMode::Plugin);
+        auto sn = std::make_unique<synflowplugin::SampleNode>();
+        sn->setNamedParamStr("arrayBuffer", b64.toStdString());
+        const int si = g.addNode(std::move(sn));
+        g.setMasterOutput(si, 0);
+        g.prepare(SR, BLK);
+
+        std::vector<float> out(static_cast<size_t>(sampLen * 2), 0.0f);
+        g.queueInputEvent(si, 0, synflow::EventType::NoteOn, 1.0, 0);
+        for (int i = 0; i < sampLen * 2; i += BLK)
+            g.renderBlock(out.data() + i, std::min(BLK, sampLen * 2 - i), nullptr, 120.0, 0.0, true);
+
+        double maxErr = 0;
+        for (int i = 0; i < sampLen; ++i)
+            maxErr = std::max(maxErr, std::abs(static_cast<double>(out[static_cast<size_t>(i)]) - wav.getSample(0, i)));
+        sampleOk = maxErr < 0.001; // 16-bit WAV quantization tolerance
+        std::printf("[sampler] decode+play maxErr=%.6f -> %s\n", maxErr, sampleOk ? "PASS" : "FAIL");
+    }
+
+    const bool ok = sawOk && wasmOk && reverbOk && knobOk && effectOk && sampleOk;
     std::printf("%s\n", ok ? "ALL PASS" : "FAILED");
     return ok ? 0 : 1;
 }

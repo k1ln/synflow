@@ -5,6 +5,7 @@
 
 #include "BinaryData.h"
 #include "nodes/ReverbNode.h"
+#include "nodes/SampleNode.h"
 #include "synflow/nodes/WasmKarplusNode.h"
 #include "synflow/nodes/WasmLadderNode.h"
 #include "synflow/nodes/WasmEnvGenNode.h"
@@ -42,6 +43,8 @@ NodeFactoryFn makeShellFactory() {
             return std::make_unique<WasmWavetableNode>(bytes(BinaryData::wavetable_wasm, BinaryData::wavetable_wasmSize));
         if (type == "ReverbFlowNode")
             return std::make_unique<ReverbNode>();
+        if (type == "SampleFlowNode" || type == "AudioBufferSourceFlowNode")
+            return std::make_unique<SampleNode>();
         return nullptr;
     };
 }
