@@ -29,7 +29,37 @@
         "maxTime": 10,
         "minPercent": 0,
         "maxPercent": 100,
-        "isTrigger": true
+        "isTrigger": true,
+        "knobs": [
+          {
+            "param": "attackTime",
+            "label": "Amp Attack",
+            "min": 0,
+            "max": 2,
+            "default": 0.001
+          },
+          {
+            "param": "decayTime",
+            "label": "Amp Decay",
+            "min": 0,
+            "max": 2,
+            "default": 0.3
+          },
+          {
+            "param": "sustainLevel",
+            "label": "Amp Sustain",
+            "min": 0,
+            "max": 1,
+            "default": 0
+          },
+          {
+            "param": "releaseTime",
+            "label": "Amp Release",
+            "min": 0,
+            "max": 2,
+            "default": 0.02
+          }
+        ]
       },
       "position": {
         "x": 320,
@@ -47,7 +77,37 @@
         "maxTime": 10,
         "minPercent": 30,
         "maxPercent": 100,
-        "isTrigger": true
+        "isTrigger": true,
+        "knobs": [
+          {
+            "param": "attackTime",
+            "label": "Pitch Attack",
+            "min": 0,
+            "max": 2,
+            "default": 0.001
+          },
+          {
+            "param": "decayTime",
+            "label": "Pitch Decay",
+            "min": 0,
+            "max": 2,
+            "default": 0.08
+          },
+          {
+            "param": "sustainLevel",
+            "label": "Pitch Sustain",
+            "min": 0,
+            "max": 1,
+            "default": 0.32
+          },
+          {
+            "param": "releaseTime",
+            "label": "Pitch Release",
+            "min": 0,
+            "max": 2,
+            "default": 0.02
+          }
+        ]
       },
       "position": {
         "x": 560,

@@ -266,20 +266,11 @@ export function App() {
   const selectedTrack = project.tracks.find((t) => t.id === selTrack) ?? project.tracks[0];
   const openInst = openPlugin ? project.tracks.flatMap((t) => t.instruments).find((i) => i.id === openPlugin) : null;
 
-  // Plugin knobs → the instrument's real @synflow/core params (live).
-  const pluginParam = (inst: Instrument) => (role: string, value: number) => {
-    const setP = (nodeId?: string, param?: string, v?: number) => {
-      if (!nodeId || !param || v == null) return;
-      hostsRef.current.get(inst.id)?.setParam(nodeId, param, v);
-      poolsRef.current.get(inst.id)?.setParam(nodeId, param, v);
-    };
-    const osc = inst.flow.nodes.find((n) => n.type === 'OscillatorFlowNode')?.id;
-    const adsr = inst.flow.nodes.find((n) => n.type === 'ADSRFlowNode')?.id;
-    if (role === 'tune') setP(osc, 'detune', (value - 0.5) * 4800);
-    else if (role === 'ampA') setP(adsr, 'attackTime', value);
-    else if (role === 'ampD') setP(adsr, 'decayTime', value);
-    else if (role === 'ampS') setP(adsr, 'sustainLevel', value);
-    else if (role === 'ampR') setP(adsr, 'releaseTime', value);
+  // Plugin knob → the instrument's real @synflow/core param (live), by node+param
+  // (the flow declares which params are exposed; see Synflow Host Interface).
+  const setInstrumentParam = (instId: string) => (nodeId: string, param: string, value: number) => {
+    hostsRef.current.get(instId)?.setParam(nodeId, param, value);
+    poolsRef.current.get(instId)?.setParam(nodeId, param, value);
   };
   // FX-chain knobs → the FX flow's real params (live).
   const fxParam = (track: Track) => (fxIndex: number, knobIndex: number, value: number) => {
@@ -337,7 +328,7 @@ export function App() {
             />
           )}
         </div>
-        {openInst && <PluginPanel instrument={openInst} onClose={() => setOpenPlugin(null)} onParam={pluginParam(openInst)} onEdit={() => editInstrument(openInst)} />}
+        {openInst && <PluginPanel instrument={openInst} onClose={() => setOpenPlugin(null)} onSetParam={setInstrumentParam(openInst.id)} onEdit={() => editInstrument(openInst)} />}
       </div>
       {samplerTrack && <SamplerEditor onCreate={addSampleInstrument} onClose={() => setSamplerTrack(null)} />}
       {editor && (
