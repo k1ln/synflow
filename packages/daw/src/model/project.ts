@@ -362,17 +362,25 @@ export function normalizeProject(p: Project): Project {
   };
 }
 
-/** Is a track's pattern playing at song-slot `slot`? A loop clip fills until the
- *  next clip starts (or the song end); a fixed clip covers [start, start+length). */
-export function trackActiveAt(clips: Clip[], slot: number, songSlots: number): boolean {
+/** The clip active at song-slot `slot` (whose span contains it), or null. A loop
+ *  clip fills until the next clip starts (or the song end); a fixed clip covers
+ *  [start, start+length). Used both to gate playback and to anchor the pattern's
+ *  phase: the pattern restarts at this clip's `start` (clip-anchored, not song-
+ *  anchored), so a multi-bar pattern always plays from its beginning at the clip. */
+export function activeClipAt(clips: Clip[], slot: number, songSlots: number): Clip | null {
   const sorted = [...clips].sort((a, b) => a.start - b.start);
   for (let i = 0; i < sorted.length; i++) {
     const c = sorted[i];
     if (slot < c.start) continue;
     const end = c.loop ? (sorted[i + 1]?.start ?? songSlots) : c.start + c.length;
-    if (slot < end) return true;
+    if (slot < end) return c;
   }
-  return false;
+  return null;
+}
+
+/** Is a track's pattern playing at song-slot `slot`? (see {@link activeClipAt}). */
+export function trackActiveAt(clips: Clip[], slot: number, songSlots: number): boolean {
+  return activeClipAt(clips, slot, songSlots) != null;
 }
 
 /** Does a track play at song-slot `slot`? A looping track always plays (live);

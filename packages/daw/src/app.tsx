@@ -12,13 +12,14 @@ import { AudioClipPlayer } from './audio/AudioClipPlayer';
 import { pickAudioFile } from './audio/decodeAudioFile';
 import { pickVideoFile, probeVideo, extractAudioFromVideo } from './audio/video';
 import { encodeWav } from './audio/wav';
+import { splitClipAt } from './audio/clipSplit';
 import { Recorder } from './audio/Recorder';
 import { useMidiInput, type MidiNoteEvent } from './audio/useMidiInput';
 import { bounceProjectToWav } from './audio/bounce';
 import { bounceProjectStream } from './audio/bounceStream';
 import { exportVideo, type ExportOpts, type VideoBlobResolver } from './audio/videoExport';
 import {
-  defaultProject, newNoteId, uid, fxInsert, newBus, blankSteps, trackActiveAt, patternLoopLength, songLengthSteps, songLengthSlots, normalizeProject, trackAudible, swingDelaySteps, quantizeNotes,
+  defaultProject, newNoteId, uid, fxInsert, newBus, blankSteps, activeClipAt, patternLoopLength, songLengthSteps, songLengthSlots, normalizeProject, trackAudible, swingDelaySteps, quantizeNotes,
   EQ_FX_ID, defaultEq,
   type Project, type Track, type PoolItem, type FxInsert, type Bus, type LoopRegion, type MusicalKey, type AudioAsset, type AudioClip, type VideoAsset, type VideoClip, type SourceLayout, type EqSettings,
 } from './model/project';
@@ -128,8 +129,10 @@ export function App() {
   const videoUrlsRef = useRef<Map<string, string>>(new Map());          // videoAssetId → object URL (program-monitor preview)
   const projectRef = useRef(project); projectRef.current = project;
   const currentStepRef = useRef(currentStep); currentStepRef.current = currentStep;
+  const isPlayingRef = useRef(isPlaying); isPlayingRef.current = isPlaying;
   const viewRef = useRef(view); viewRef.current = view;
   const selTrackRef = useRef(selTrack); selTrackRef.current = selTrack;
+  const splitAtPlayheadRef = useRef<() => void>(() => {}); // set once the split handlers exist; driven by the `S` shortcut
   const armedPoolRef = useRef(armedPool); armedPoolRef.current = armedPool;
   const seekRef = useRef(0);                                            // step playback starts from / playhead rests at
   const recorderRef = useRef<Recorder | null>(null);
@@ -317,16 +320,20 @@ export function App() {
     return () => clearTimeout(id);
   }, [project]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Cmd/Ctrl+Z = undo · Cmd/Ctrl+Shift+Z or Cmd/Ctrl+Y = redo (ignored inside text fields).
+  // Cmd/Ctrl+Z = undo · Cmd/Ctrl+Shift+Z or Cmd/Ctrl+Y = redo · S = split the
+  // selected track's clip at the playhead (all ignored inside text fields).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey)) return;
-      const k = e.key.toLowerCase();
-      if (k !== 'z' && k !== 'y') return;
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
-      e.preventDefault();
-      if (k === 'y' || e.shiftKey) histRef.current.redo(); else histRef.current.undo();
+      const k = e.key.toLowerCase();
+      if (e.metaKey || e.ctrlKey) {
+        if (k !== 'z' && k !== 'y') return;
+        e.preventDefault();
+        if (k === 'y' || e.shiftKey) histRef.current.redo(); else histRef.current.undo();
+        return;
+      }
+      if (k === 's' && !e.altKey) { e.preventDefault(); splitAtPlayheadRef.current(); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -369,10 +376,15 @@ export function App() {
           }
           continue;
         }
-        // Pattern/live: only ACTIVE (looped) tracks play (click loop to bring in/out).
-        // Song: the track's CLIPS decide (loop is the live toggle, not the arrangement).
-        if (song ? !trackActiveAt(track.clips, slot, songLengthSlots(proj)) : !track.loop) continue;
-        const step = s % Math.max(1, track.length);    // each track loops at its own length
+        // LOOP (the track's loop toggle) = play the pattern continuously: through the
+        // whole song in Song mode, or as the live gate in Pattern mode. When loop is OFF
+        // in Song mode, the track's clips decide and each clip restarts the pattern at
+        // its start (clip-anchored phase). Multi-bar patterns play from step 0 either way.
+        const activeClip = song && !track.loop ? activeClipAt(track.clips, slot, songLengthSlots(proj)) : null;
+        if (song ? (!track.loop && !activeClip) : !track.loop) continue;
+        const len = Math.max(1, track.length);
+        const originSteps = activeClip ? activeClip.start * proj.totalSteps : 0;
+        const step = (((s - originSteps) % len) + len) % len;    // each track loops at its own length
         for (const lane of track.automation ?? []) {   // drive automated params (volume / track-FX) per step
           const len = lane.values.length || 1; const v = lane.values[((step % len) + len) % len];
           if (v != null) window.setTimeout(() => mixerRef.current?.applyAutomation(track.id, lane, v), lead);
@@ -516,12 +528,17 @@ export function App() {
   };
 
   const stop = useCallback(() => {
+    const wasPlaying = isPlayingRef.current;
     schedulerRef.current?.stop(); transportRef.current?.stop();
     for (const vp of poolsRef.current.values()) vp.allOff();
     for (const p of audioPlayersRef.current.values()) p.stopAll();
     stopAudition();
     for (const t of projectRef.current.tracks) mixerRef.current?.setTrackVolume(t.id, t.volume); // restore static volume after volume automation
-    setIsPlaying(false); setCurrentStep(seekRef.current);   // return playhead to the seek point
+    setIsPlaying(false);
+    // First stop (while playing) returns the playhead to where playback started;
+    // pressing stop again (already stopped) rewinds to the very beginning.
+    if (wasPlaying) setCurrentStep(seekRef.current);
+    else { seekRef.current = 0; setCurrentStep(0); }
   }, [stopAudition]);
 
   const setBpm = (bpm: number) => { setProject((p) => ({ ...p, bpm })); if (transportRef.current) transportRef.current.bpm = bpm; };
@@ -738,11 +755,12 @@ export function App() {
   }, [loadProjectState]);
 
   // ─── audition (click feedback) + live performance ──────────────────────────
+  const auditionIdRef = useRef(0); // unique, decreasing ids — chord notes audition in the same ms, so performance.now() would collide and leak voices
   const audition = useCallback(async (useId: string, payload?: { frequency: number }) => {
     await ensureAudio(); await ctxRef.current?.resume();
     if (!hostsRef.current.has(useId) && !poolsRef.current.has(useId)) await buildAudio();
     const vp = poolsRef.current.get(useId);
-    if (vp) { const id = -Math.floor(performance.now()); vp.noteOn(id, payload?.frequency ?? 440); window.setTimeout(() => vp.noteOff(id), 350); return; }
+    if (vp) { const id = --auditionIdRef.current; vp.noteOn(id, payload?.frequency ?? 440); window.setTimeout(() => vp.noteOff(id), 350); return; }
     const host = hostsRef.current.get(useId);
     if (host) { host.trigger(); window.setTimeout(() => host.release(), 220); }
   }, [ensureAudio, buildAudio]);
@@ -981,6 +999,31 @@ export function App() {
     setProject((p) => ({ ...p, tracks: p.tracks.map((t) => (t.id === trackId ? fn(t) : t)) }));
   const mapUse = (useId: string, fn: (u: Track['uses'][number]) => Track['uses'][number]) =>
     setProject((p) => ({ ...p, tracks: p.tracks.map((t) => ({ ...t, uses: t.uses.map((u) => (u.id === useId ? fn(u) : u)) })) }));
+  // Grow a track's pattern length (in whole bars) so it contains its longest note —
+  // never shrinks (respects the bars control). Lets the piano roll extend rightward
+  // as you write past the last bar, and keeps those notes audible.
+  // Set a track's pattern length AND stretch its full-pattern arrangement clips to the
+  // new bar count (clamped to the next clip so they never overlap), so the song shows/
+  // plays the whole pattern. Shared by the bars control and the piano-roll auto-grow.
+  const withTrackLen = (t: Track, newLen: number, barSteps: number): Track => {
+    if (newLen === t.length) return t;
+    const oldBars = Math.max(1, Math.round(t.length / barSteps));
+    const newBars = Math.max(1, Math.round(newLen / barSteps));
+    const sorted = [...t.clips].sort((a, b) => a.start - b.start);
+    const gapAfter = (c: { start: number }) => { const nx = sorted.find((o) => o.start > c.start); return nx ? nx.start - c.start : Infinity; };
+    const clips = newBars === oldBars ? t.clips
+      : t.clips.map((c) => (!c.loop && c.length === oldBars ? { ...c, length: Math.max(1, Math.min(newBars, gapAfter(c))) } : c));
+    return { ...t, length: newLen, clips };
+  };
+  const fitTrackLen = (t: Track, barSteps: number): Track => {
+    let end = 0;
+    for (const u of t.uses) for (const n of u.notes ?? []) end = Math.max(end, n.start + n.length);
+    const fit = Math.ceil(end / barSteps) * barSteps;
+    return fit > t.length ? withTrackLen(t, fit, barSteps) : t;
+  };
+  // mapUse + grow the owning track to fit its notes (for note add/move/resize edits).
+  const mapUseFit = (useId: string, fn: (u: Track['uses'][number]) => Track['uses'][number]) =>
+    setProject((p) => ({ ...p, tracks: p.tracks.map((t) => (t.uses.some((u) => u.id === useId) ? fitTrackLen({ ...t, uses: t.uses.map((u) => (u.id === useId ? fn(u) : u)) }, p.totalSteps) : t)) }));
   const trackOfUse = (useId: string) => projectRef.current.tracks.find((t) => t.uses.some((u) => u.id === useId));
   const useById = (useId: string) => projectRef.current.tracks.flatMap((t) => t.uses).find((u) => u.id === useId);
 
@@ -1009,14 +1052,15 @@ export function App() {
       return { ...u, steps: (u.steps ?? blankSteps(projectRef.current.totalSteps)).map((s, i) => (i === step ? !s : s)) };
     }),
     onMuteUse: (useId) => mapUse(useId, (u) => ({ ...u, muted: !u.muted })),
-    onAddNote: (useId, midi, start) => { void audition(useId, { frequency: midiToFreq(midi) }); mapUse(useId, (u) => ({ ...u, notes: [...(u.notes ?? []), { id: newNoteId(), midi, start, length: 2, velocity: 0.8 }] })); },
-    onAddChord: (useId, midis, start) => { for (const m of midis) void audition(useId, { frequency: midiToFreq(m) }); mapUse(useId, (u) => ({ ...u, notes: [...(u.notes ?? []), ...midis.map((m) => ({ id: newNoteId(), midi: m, start, length: 2, velocity: 0.8 }))] })); },
+    onAddNote: (useId, midi, start, length = 2) => { void audition(useId, { frequency: midiToFreq(midi) }); mapUseFit(useId, (u) => ({ ...u, notes: [...(u.notes ?? []), { id: newNoteId(), midi, start, length, velocity: 0.8 }] })); },
+    onAddChord: (useId, midis, start, length = 2) => { for (const m of midis) void audition(useId, { frequency: midiToFreq(m) }); mapUseFit(useId, (u) => ({ ...u, notes: [...(u.notes ?? []), ...midis.map((m) => ({ id: newNoteId(), midi: m, start, length, velocity: 0.8 }))] })); },
     onAddAutomation: (trackId, target: AutoTarget) => mapTrack(trackId, (t) => ({ ...t, automation: [...t.automation, { id: uid('aut'), scope: 'track' as const, fxIndex: target.fxIndex, nodeId: target.nodeId, param: target.param, min: target.min, max: target.max, values: Array.from({ length: Math.max(1, t.length) }, () => (target.nodeId === '__volume__' ? t.volume : (target.min + target.max) / 2)) }] })),
     onPaintAutomation: (trackId, laneId, step, value) => mapTrack(trackId, (t) => ({ ...t, automation: t.automation.map((l) => (l.id === laneId ? { ...l, values: l.values.map((v, i) => (i === step ? value : v)) } : l)) })),
     onRemoveAutomation: (trackId, laneId) => mapTrack(trackId, (t) => ({ ...t, automation: t.automation.filter((l) => l.id !== laneId) })),
     onRemoveNote: (useId, noteId) => mapUse(useId, (u) => ({ ...u, notes: (u.notes ?? []).filter((n) => n.id !== noteId) })),
     onMoveNote: (useId, noteId, midi, start) => mapUse(useId, (u) => ({ ...u, notes: (u.notes ?? []).map((n) => (n.id === noteId ? { ...n, midi, start } : n)) })),
     onResizeNote: (useId, noteId, length) => mapUse(useId, (u) => ({ ...u, notes: (u.notes ?? []).map((n) => (n.id === noteId ? { ...n, length } : n)) })),
+    onUpdateNotes: (useId, updater) => mapUseFit(useId, (u) => ({ ...u, notes: updater(u.notes ?? []) })),    // batch edits: group move/resize/delete/duplicate (grows the pattern to fit)
     onSetVelocity: (useId, noteId, velocity) => mapUse(useId, (u) => ({ ...u, notes: (u.notes ?? []).map((n) => (n.id === noteId ? { ...n, velocity } : n)) })),
     onQuantize: (useId, gridSteps) => mapUse(useId, (u) => ({ ...u, notes: quantizeNotes(u.notes ?? [], gridSteps) })),
     onTranspose: (useId, semitones) => mapUse(useId, (u) => {
@@ -1172,10 +1216,14 @@ export function App() {
   const toggleTrackSolo = (trackId: string) => setProject((p) => { const tracks = p.tracks.map((t) => (t.id === trackId ? { ...t, soloed: !t.soloed } : t)); applyGates(tracks); return { ...p, tracks }; });
   const setTrackLength = (trackId: string, length: number) => {
     const len = Math.max(1, Math.min(256, length));
-    mapTrack(trackId, (t) => ({
-      ...t, length: len,
-      uses: t.uses.map((u) => (u.steps ? { ...u, steps: Array.from({ length: len }, (_, i) => u.steps![i] ?? false) } : u)),
-    }));
+    const per = projectRef.current.totalSteps;
+    mapTrack(trackId, (t) => {
+      const t2 = withTrackLen(t, len, per);   // length + full-pattern clip resize (grow or shrink)
+      return {
+        ...t2,
+        uses: t2.uses.map((u) => (u.steps ? { ...u, steps: Array.from({ length: len }, (_, i) => u.steps![i] ?? false) } : u)),
+      };
+    });
     if (schedulerRef.current && !songModeRef.current) schedulerRef.current.totalSteps = patternLoopLength(projectRef.current.tracks.map((t) => (t.id === trackId ? { ...t, length: len } : t)));
   };
   const setUseVoices = (useId: string, voices: number) => {
@@ -1194,7 +1242,11 @@ export function App() {
     return next;
   });
   const setSongSlots = (n: number) => setProject((p) => ({ ...p, songSlots: n }));
-  const addClip = (trackId: string, slot: number) => mapTrack(trackId, (t) => (t.clips.some((c) => c.start === slot) ? t : { ...t, clips: [...t.clips, { id: uid('clip'), start: Math.max(0, slot), length: 1, loop: false }] }));
+  const addClip = (trackId: string, slot: number) => mapTrack(trackId, (t) => {
+    if (t.clips.some((c) => c.start === slot)) return t;
+    const bars = Math.max(1, Math.round(t.length / projectRef.current.totalSteps)); // span the whole pattern (multi-bar)
+    return { ...t, clips: [...t.clips, { id: uid('clip'), start: Math.max(0, slot), length: bars, loop: false }] };
+  });
   const removeClip = (trackId: string, clipId: string) => mapTrack(trackId, (t) => ({ ...t, clips: t.clips.filter((c) => c.id !== clipId) }));
   const toggleClipLoop = (trackId: string, clipId: string) => mapTrack(trackId, (t) => ({ ...t, clips: t.clips.map((c) => (c.id === clipId ? { ...c, loop: !c.loop } : c)) }));
   const setClipLen = (trackId: string, clipId: string, length: number) => mapTrack(trackId, (t) => ({ ...t, clips: t.clips.map((c) => (c.id === clipId ? { ...c, length } : c)) }));
@@ -1264,15 +1316,19 @@ export function App() {
   const trimAudioClip = (trackId: string, clipId: string, offset: number, duration: number) => updateAudioClips(trackId, (cs) => cs.map((c) => (c.id === clipId ? { ...c, offset: Math.max(0, offset), duration: Math.max(0.02, duration) } : c)));
   const splitAudioClip = (trackId: string, clipId: string, atSteps: number) => {
     const secPerStep = 60 / projectRef.current.bpm / projectRef.current.stepsPerBeat;
-    updateAudioClips(trackId, (cs) => cs.flatMap((c) => {
-      if (c.id !== clipId) return [c];
-      const into = (atSteps - c.start) * secPerStep;                 // seconds into the clip
-      if (into <= 0.02 || into >= c.duration - 0.02) return [c];
-      return [
-        { ...c, duration: into },
-        { ...c, id: uid('aclip'), start: atSteps, offset: c.offset + into, duration: c.duration - into },
-      ];
-    }));
+    updateAudioClips(trackId, (cs) => cs.flatMap((c) => (c.id === clipId ? splitClipAt(c, atSteps, secPerStep, () => uid('aclip')) ?? [c] : [c])));
+  };
+
+  // Split whatever clip sits under the playhead on the selected track (the `S` key).
+  splitAtPlayheadRef.current = () => {
+    const proj = projectRef.current;
+    const t = proj.tracks.find((x) => x.id === selTrackRef.current);
+    if (!t) return;
+    const at = currentStepRef.current;
+    const secPerStep = 60 / proj.bpm / proj.stepsPerBeat;
+    const inside = (c: { start: number; duration: number }) => at > c.start + 0.05 && at < c.start + c.duration / secPerStep - 0.05;
+    if (t.type === 'audio') { const c = (t.audioClips ?? []).find(inside); if (c) splitAudioClip(t.id, c.id, at); }
+    else if (t.type === 'video') { const c = (t.videoClips ?? []).find(inside); if (c) splitVideoClip(t.id, c.id, at); }
   };
 
   // Decode bytes → asset, drop a clip at the playhead on `trackId`, rebuild audio.
@@ -1732,7 +1788,7 @@ export function App() {
                   <div key={t.id} className={`trk ${t.id === selTrack ? 'sel' : ''}`} data-type={t.type} onClick={() => setSelTrack(t.id)}>
                     <span className="trk-ico">{t.type === 'drums' ? <Drum size={13} /> : t.type === 'audio' ? <AudioWaveform size={13} /> : t.type === 'video' ? <Film size={13} /> : <Music2 size={13} />}</span>
                     <span className="trk-name">{t.name}</span>
-                    <button className={`trk-loop ${t.loop ? 'on' : ''}`} title={t.loop ? 'Looping' : 'Loop off'} onClick={(e) => { e.stopPropagation(); toggleTrackLoop(t.id); }}><Repeat size={12} /></button>
+                    <button className={`trk-loop ${t.loop ? 'on' : ''}`} title={t.loop ? 'Live loop on (click to stop)' : 'Live loop — play this track continuously'} onClick={(e) => { e.stopPropagation(); toggleTrackLoop(t.id); }}><Repeat size={15} /></button>
                     <button className="trk-del" title="Delete track" onClick={(e) => { e.stopPropagation(); removeTrack(t.id); }}><Trash2 size={12} /></button>
                   </div>
                 ))}
@@ -1760,7 +1816,7 @@ export function App() {
               )}
               <Arrange
                 project={project} currentStep={currentStep} songMode={songMode} selTrack={selTrack}
-                onToggleSongMode={toggleSongMode} onSetSongSlots={setSongSlots} onSelectTrack={setSelTrack} onToggleMute={toggleTrackMute} onToggleSolo={toggleTrackSolo} onTrackVolume={setTrackVolume} onSeek={seekTo}
+                onToggleSongMode={toggleSongMode} onSetSongSlots={setSongSlots} onSelectTrack={setSelTrack} onToggleMute={toggleTrackMute} onToggleSolo={toggleTrackSolo} onToggleTrackLoop={toggleTrackLoop} onTrackVolume={setTrackVolume} onSeek={seekTo}
                 markers={project.markers ?? []} onAddMarker={addMarker} onRenameMarker={renameMarker} onRemoveMarker={removeMarker}
                 loop={project.loop} onSetLoop={setLoop}
                 onAddClip={addClip} onRemoveClip={removeClip} onToggleLoop={toggleClipLoop} onClipLen={setClipLen}

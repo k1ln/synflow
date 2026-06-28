@@ -46,7 +46,12 @@ export function Pool({ pool, effects, instrumentLib, armed, recordings, previewK
   const synthCand = instrumentLib.filter((e) => !isDrum(e) && !inPool(e.id));
   const drumCand = instrumentLib.filter((e) => isDrum(e) && !inPool(e.id));
 
-  const Section = ({ name, count, onNew, newTitle, menu, children }: { name: keyof typeof SECTION; count: number; onNew?: () => void; newTitle?: string; menu?: React.ReactNode; children: React.ReactNode }) => {
+  // NOTE: section/item are plain render functions (called as `section({...})`), NOT
+  // <Section/> components. Defining components inside Pool gives them a new identity
+  // each render, so React would REMOUNT the whole list every render — and since the
+  // app re-renders on every playback step, the pool list would tear down ~10×/s and
+  // flicker on hover. Called as functions, their output reconciles in place.
+  const section = ({ name, count, onNew, newTitle, menu, children }: { name: keyof typeof SECTION; count: number; onNew?: () => void; newTitle?: string; menu?: React.ReactNode; children: React.ReactNode }) => {
     const { color } = SECTION[name];
     const isOpen = open[name] ?? true;
     return (
@@ -74,8 +79,8 @@ export function Pool({ pool, effects, instrumentLib, armed, recordings, previewK
     </div>
   );
 
-  const Item = ({ name, color, live, onClick, onRemove, tag, title }: { name: string; color: string; live?: boolean; onClick?: () => void; onRemove?: () => void; tag?: string; title?: string }) => (
-    <div className={`browser-item ${live ? 'live' : ''}`} onClick={onClick} title={title}>
+  const item = ({ id, name, color, live, onClick, onRemove, tag, title }: { id: string; name: string; color: string; live?: boolean; onClick?: () => void; onRemove?: () => void; tag?: string; title?: string }) => (
+    <div key={id} className={`browser-item ${live ? 'live' : ''}`} onClick={onClick} title={title}>
       <span className="bi-dot" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
       <span className="bi-name">{name}</span>
       {live && <Radio size={11} className="bi-live" />}
@@ -91,19 +96,26 @@ export function Pool({ pool, effects, instrumentLib, armed, recordings, previewK
         <button className="browser-addfolder" onClick={onAddFromFolder} title="Add flows from a folder"><FolderPlus size={14} /></button>
       </div>
       <div className="browser-list">
-        <Section name="Instruments" count={synths.length} onNew={() => setAdding((a) => (a === 'synth' ? null : 'synth'))} newTitle="Add an instrument to the project" menu={addMenu('synth', synthCand)}>
-          {synths.map((p) => <Item key={p.id} name={p.name} color={SECTION.Instruments.color} live={armed === p.id} onClick={() => onOpenInstrument(p.id)} onRemove={() => onRemoveInstrument(p.id)} title="Open instrument (live + knobs)" />)}
-          {synths.length === 0 && <div className="browser-empty">none — add with + (or a whole folder above)</div>}
-        </Section>
-        <Section name="Drums" count={drums.length} onNew={() => setAdding((a) => (a === 'drum' ? null : 'drum'))} newTitle="Add a drum to the project" menu={addMenu('drum', drumCand)}>
-          {drums.map((p) => <Item key={p.id} name={p.name} color={SECTION.Drums.color} live={armed === p.id} onClick={() => onOpenInstrument(p.id)} onRemove={() => onRemoveInstrument(p.id)} title="Open instrument (live + knobs)" />)}
-          {drums.length === 0 && <div className="browser-empty">none — add with + (or a whole folder above)</div>}
-        </Section>
-        <Section name="Effects" count={effects.length} onNew={onNewEffect} newTitle="Create a new effect in Synflow">
-          {effects.map((e) => <Item key={e.id} name={e.name} color={SECTION.Effects.color} tag="edit" onClick={() => onEditEffect(e.id)} onRemove={() => onRemoveEffect(e.id)} title="Edit effect in Synflow" />)}
-          {effects.length === 0 && <div className="browser-empty">none — add from folder or +</div>}
-        </Section>
-        <Section name="Recordings" count={recordings.length}>
+        {section({ name: 'Instruments', count: synths.length, onNew: () => setAdding((a) => (a === 'synth' ? null : 'synth')), newTitle: 'Add an instrument to the project', menu: addMenu('synth', synthCand), children: (
+          <>
+            {synths.map((p) => item({ id: p.id, name: p.name, color: SECTION.Instruments.color, live: armed === p.id, onClick: () => onOpenInstrument(p.id), onRemove: () => onRemoveInstrument(p.id), title: 'Open instrument (live + knobs)' }))}
+            {synths.length === 0 && <div className="browser-empty">none — add with + (or a whole folder above)</div>}
+          </>
+        ) })}
+        {section({ name: 'Drums', count: drums.length, onNew: () => setAdding((a) => (a === 'drum' ? null : 'drum')), newTitle: 'Add a drum to the project', menu: addMenu('drum', drumCand), children: (
+          <>
+            {drums.map((p) => item({ id: p.id, name: p.name, color: SECTION.Drums.color, live: armed === p.id, onClick: () => onOpenInstrument(p.id), onRemove: () => onRemoveInstrument(p.id), title: 'Open instrument (live + knobs)' }))}
+            {drums.length === 0 && <div className="browser-empty">none — add with + (or a whole folder above)</div>}
+          </>
+        ) })}
+        {section({ name: 'Effects', count: effects.length, onNew: onNewEffect, newTitle: 'Create a new effect in Synflow', children: (
+          <>
+            {effects.map((e) => item({ id: e.id, name: e.name, color: SECTION.Effects.color, tag: 'edit', onClick: () => onEditEffect(e.id), onRemove: () => onRemoveEffect(e.id), title: 'Edit effect in Synflow' }))}
+            {effects.length === 0 && <div className="browser-empty">none — add from folder or +</div>}
+          </>
+        ) })}
+        {section({ name: 'Recordings', count: recordings.length, children: (
+          <>
           {recordings.map((a) => {
             const playing = previewKey === 'asset:' + a.id;
             return (
@@ -119,7 +131,8 @@ export function Pool({ pool, effects, instrumentLib, armed, recordings, previewK
             );
           })}
           {recordings.length === 0 && <div className="browser-empty">none — record or import on an audio track</div>}
-        </Section>
+          </>
+        ) })}
       </div>
       <div className="browser-foot"><Music2 size={14} /><span>{source ?? 'built-in'}</span></div>
     </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Sparkles, Trash2, Repeat, Upload, Mic, Square, FolderOpen, Volume2 } from 'lucide-react';
-import type { Project, Track, AudioClip, AudioAsset } from '../model/project';
+import type { Project, Track, AudioClip, AudioAsset, PianoNote } from '../model/project';
 import { StepGrid } from './StepGrid';
 import { PianoRoll } from './PianoRoll';
 import { AudioTrackLane } from './AudioTrackLane';
@@ -23,16 +23,17 @@ const fmtDur = (s: number) => {
 export interface TrackEditorHandlers {
   onToggleStep: (useId: string, step: number) => void;
   onMuteUse: (useId: string) => void;
-  onAddNote: (useId: string, midi: number, start: number) => void;
+  onAddNote: (useId: string, midi: number, start: number, length?: number) => void;
   onRemoveNote: (useId: string, noteId: number) => void;
   onMoveNote: (useId: string, noteId: number, midi: number, start: number) => void;
   onResizeNote: (useId: string, noteId: number, length: number) => void;
+  onUpdateNotes: (useId: string, updater: (notes: PianoNote[]) => PianoNote[]) => void;
   onSetVelocity: (useId: string, noteId: number, velocity: number) => void;
   onQuantize: (useId: string, gridSteps: number) => void;
   onTranspose: (useId: string, semitones: number) => void;
   onHumanize: (useId: string) => void;
   onSetKey: (key: import('../model/project').MusicalKey | null) => void;
-  onAddChord: (useId: string, midis: number[], start: number) => void;
+  onAddChord: (useId: string, midis: number[], start: number, length?: number) => void;
   onAddAutomation: (trackId: string, target: AutoTarget) => void;
   onPaintAutomation: (trackId: string, laneId: string, step: number, value: number) => void;
   onRemoveAutomation: (trackId: string, laneId: string) => void;
@@ -126,7 +127,11 @@ export function TrackEditor({ project, track, effects, currentStep, recTrack, pr
         ) : (
           <>
             <button className={`te-loop ${track.loop ? 'on' : ''}`} onClick={h.onToggleLoop} title={track.loop ? 'Looping (click to stop)' : 'Loop this track'}><Repeat size={13} /> loop</button>
-            <label className="te-length" title="Pattern length (steps)">len
+            <label className="te-length" title="Pattern length in bars (a multi-bar pattern fills that many fields in the song arrangement)">bars
+              <input type="number" min={1} max={64} value={Math.max(1, Math.round(track.length / project.totalSteps))}
+                onChange={(e) => h.onSetLength(Math.max(1, parseInt(e.target.value, 10) || 1) * project.totalSteps)} />
+            </label>
+            <label className="te-length" title="Exact pattern length in steps (for polymeter — not a whole number of bars)">steps
               <input type="number" min={1} max={256} value={track.length} onChange={(e) => h.onSetLength(parseInt(e.target.value, 10) || 1)} />
             </label>
             <button className="te-addbtn" onClick={() => h.onCreateUse()} title={`Create a brand-new ${track.type === 'drums' ? 'drum' : 'synth'} in Synflow and add it here`}><Sparkles size={13} /> new {track.type === 'drums' ? 'drum' : 'synth'}</button>
@@ -164,7 +169,7 @@ export function TrackEditor({ project, track, effects, currentStep, recTrack, pr
               {track.type === 'drums' ? (
                 <StepGrid
                   id={use.id} name={poolName(use.poolId)} steps={use.steps ?? []} muted={use.muted}
-                  totalSteps={T} stepsPerBeat={S} currentStep={cs}
+                  totalSteps={T} stepsPerBeat={S} barSteps={project.totalSteps} currentStep={cs}
                   onToggle={h.onToggleStep} onMute={h.onMuteUse}
                 />
               ) : (
@@ -178,8 +183,8 @@ export function TrackEditor({ project, track, effects, currentStep, recTrack, pr
                   </div>
                   <PianoRoll
                     id={use.id} name={poolName(use.poolId)} notes={use.notes ?? []} voices={use.voices}
-                    totalSteps={T} stepsPerBeat={S} currentStep={cs}
-                    onAddNote={h.onAddNote} onRemoveNote={h.onRemoveNote}
+                    totalSteps={T} stepsPerBeat={S} barSteps={project.totalSteps} currentStep={cs}
+                    onAddNote={h.onAddNote} onRemoveNote={h.onRemoveNote} onUpdateNotes={h.onUpdateNotes}
                     onMoveNote={h.onMoveNote} onResizeNote={h.onResizeNote} onSetVelocity={h.onSetVelocity} onPlayNote={h.onPlayNote} onQuantize={h.onQuantize}
                     onTranspose={h.onTranspose} onHumanize={h.onHumanize}
                     musicalKey={project.key} onSetKey={h.onSetKey} onAddChord={h.onAddChord}

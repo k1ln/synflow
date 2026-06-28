@@ -64,11 +64,10 @@ export function AudioTrackLane({
     window.addEventListener('pointermove', onDragMove); window.addEventListener('pointerup', onDragEnd);
   };
 
-  const splitAt = (c: AudioClip) => {
-    const widthSteps = stepsOfSec(c.duration);
-    const inside = currentStep > c.start && currentStep < c.start + widthSteps;
-    onSplit(c.id, inside ? currentStep : c.start + widthSteps / 2);
-  };
+  // Split at the playhead — only when it's actually over the clip (no blind
+  // midpoint cut; matches the song arrangement view).
+  const playheadInside = (c: AudioClip) => currentStep > c.start + 0.05 && currentStep < c.start + stepsOfSec(c.duration) - 0.05;
+  const splitAt = (c: AudioClip) => { if (playheadInside(c)) onSplit(c.id, currentStep); };
 
   return (
     <div className="atl">
@@ -85,7 +84,7 @@ export function AudioTrackLane({
               <span className="atl-clip-name">{asset?.name ?? 'missing audio'}</span>
               <div className="atl-clip-tools" onPointerDown={(e) => e.stopPropagation()}>
                 <button title={previewKey === c.id ? 'Stop' : 'Play'} onClick={() => onPlay(c)}>{previewKey === c.id ? <Square size={11} /> : <Play size={11} />}</button>
-                <button title="Split" onClick={() => splitAt(c)}><Scissors size={11} /></button>
+                <button title={playheadInside(c) ? 'Split at playhead' : 'Move the playhead over this clip to split'} disabled={!playheadInside(c)} onClick={() => splitAt(c)}><Scissors size={11} /></button>
                 <button title="Normalize to peak" onClick={() => onNormalize(c.id)}><Maximize2 size={11} /></button>
                 <button title="Remove" onClick={() => onRemove(c.id)}><Trash2 size={11} /></button>
                 <input className="atl-gain" type="range" min={0} max={1.5} step={0.01} value={c.gain} title="Clip gain" onChange={(e) => onGain(c.id, parseFloat(e.target.value))} />

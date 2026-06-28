@@ -9,7 +9,7 @@ import { encodeWav } from './wav';
 import { scheduleFade } from './clipFade';
 import type { AudioAssets } from './AudioAssets';
 import { findEntry, cloneFlow } from '../synflow/library';
-import { trackActiveAt, trackAudible, songLengthSteps, songLengthSlots, swingDelaySteps, type Project } from '../model/project';
+import { activeClipAt, trackAudible, songLengthSteps, songLengthSlots, swingDelaySteps, type Project } from '../model/project';
 import { midiToFreq } from '../model/pitch';
 
 export interface BounceOpts { sampleRate?: number; tailSeconds?: number }
@@ -84,8 +84,11 @@ export async function bounceProjectToWav(project: Project, assets: AudioAssets, 
     const swingSec = swingDelaySteps(s, project.swing ?? 0) * spp;       // off-beat groove (mirrors live)
     for (const track of project.tracks) {
       if (track.type === 'audio') continue;                              // scheduled as buffers above
-      if (!trackActiveAt(track.clips, slot, songLengthSlots(project))) continue; // song arrangement gates playback
-      const step = s % Math.max(1, track.length);
+      const activeClip = track.loop ? null : activeClipAt(track.clips, slot, songLengthSlots(project)); // loop = whole song; else clips gate
+      if (!track.loop && !activeClip) continue;
+      const len = Math.max(1, track.length);
+      const originSteps = activeClip ? activeClip.start * project.totalSteps : 0;
+      const step = (((s - originSteps) % len) + len) % len; // pattern restarts at the clip / song start (mirrors live)
       for (const lane of track.automation ?? []) { const len = lane.values.length || 1; const v = lane.values[((step % len) + len) % len]; if (v != null) events.push({ time: base + swingSec, fn: () => mixer.applyAutomation(track.id, lane, v) }); }
       for (const use of track.uses) {
         if (use.muted) continue;

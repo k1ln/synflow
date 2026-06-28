@@ -33,7 +33,7 @@ pub struct Karplus {
 
 #[no_mangle]
 pub extern "C" fn karplus_new(sample_rate: f32) -> *mut Karplus {
-    let max_len = (sample_rate / 20.0).ceil() as u32 + 4; // lowest pitch ≈ 20 Hz
+    let max_len = (sample_rate / 10.0).ceil() as u32 + 4; // lowest pitch ≈ 10 Hz
     let buf_layout = Layout::array::<f32>(max_len as usize).unwrap();
     let buf = unsafe {
         let p = alloc(buf_layout) as *mut f32;
@@ -78,12 +78,12 @@ pub extern "C" fn karplus_process(
     let in_s = if has_in != 0 { Some(unsafe { std::slice::from_raw_parts(in_ptr, n) }) } else { None };
 
     let fb_gain = 0.90 + 0.0995 * decay;
-    let bright = 0.05 + 0.93 * tone;
+    let bright = 0.02 + 0.97 * tone; // wider brightness range (darker..brighter)
     let mut rng = Lcg(st.seed);
 
     for i in 0..n {
         let fraw = if a_rate { freq[i] } else { freq[0] };
-        let f = if fraw < 20.0 { 20.0 } else if fraw > 8000.0 { 8000.0 } else { fraw };
+        let f = if fraw < 10.0 { 10.0 } else if fraw > 12000.0 { 12000.0 } else { fraw };
         let mut l = sample_rate / f;
         if l > (max_len - 2) as f32 { l = (max_len - 2) as f32; }
         if l < 2.0 { l = 2.0; }

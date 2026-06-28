@@ -23,8 +23,8 @@ export type KarplusFlowNodeProps = {
 const ACCENT = "#5fd08a"; // string green (source family)
 
 const KarplusFlowNode: React.FC<KarplusFlowNodeProps> = ({ data }) => {
-  const FREQ_MIN = 20;
-  const FREQ_MAX = 8000;
+  const FREQ_MIN = 10;
+  const FREQ_MAX = 12000;
   const normFromFreq = (f: number) => {
     const clamped = Math.min(FREQ_MAX, Math.max(FREQ_MIN, f));
     return Math.log(clamped / FREQ_MIN) / Math.log(FREQ_MAX / FREQ_MIN);

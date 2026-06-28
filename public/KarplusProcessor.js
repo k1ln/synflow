@@ -6,7 +6,7 @@
 class KarplusProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() {
     return [
-      { name: 'frequency', defaultValue: 220, minValue: 20, maxValue: 8000, automationRate: 'a-rate' },
+      { name: 'frequency', defaultValue: 220, minValue: 10, maxValue: 12000, automationRate: 'a-rate' },
       { name: 'decay',     defaultValue: 0.6, minValue: 0,  maxValue: 1,    automationRate: 'k-rate' },
       { name: 'tone',      defaultValue: 0.6, minValue: 0,  maxValue: 1,    automationRate: 'k-rate' },
     ];

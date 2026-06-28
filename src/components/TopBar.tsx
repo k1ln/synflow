@@ -429,15 +429,15 @@ export const TopBar: React.FC<TopBarProps> = ({
               onClick={onToggleExpose}
               className="topbar-btn"
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 10px',
+                display: 'inline-flex', alignItems: 'center', gap: 4, height: 26, padding: '0 7px',
                 borderRadius: 6, cursor: 'pointer',
                 background: exposeActive ? 'rgba(110,231,168,.16)' : 'transparent',
                 color: exposeActive ? '#6ee7a8' : '#eee',
                 border: `1px solid ${exposeActive ? '#2f6b4a' : '#333'}`,
               }}
             >
-              <SlidersHorizontal size={16} />
-              <span style={{ fontSize: 11 }}>Expose to DAW</span>
+              <SlidersHorizontal size={14} />
+              <span style={{ fontSize: 11 }}>DAW</span>
             </button>
           )}
 
@@ -447,15 +447,15 @@ export const TopBar: React.FC<TopBarProps> = ({
               onClick={onToggleLiveUi}
               className="topbar-btn"
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 10px',
+                display: 'inline-flex', alignItems: 'center', gap: 4, height: 26, padding: '0 7px',
                 borderRadius: 6, cursor: 'pointer',
                 background: liveUiActive ? 'rgba(110,231,168,.16)' : 'transparent',
                 color: liveUiActive ? '#6ee7a8' : '#eee',
                 border: `1px solid ${liveUiActive ? '#2f6b4a' : '#333'}`,
               }}
             >
-              <LayoutDashboard size={16} />
-              <span style={{ fontSize: 11 }}>Instrument UI</span>
+              <LayoutDashboard size={14} />
+              <span style={{ fontSize: 11 }}>UI</span>
             </button>
           )}
 
