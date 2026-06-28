@@ -11,6 +11,7 @@
 #include "synflow/nodes/WasmEnvGenNode.h"
 #include "synflow/nodes/WasmFMNode.h"
 #include "synflow/nodes/WasmGranularNode.h"
+#include "synflow/nodes/WasmHardSyncNode.h"
 #include "synflow/nodes/WasmFreqShifterNode.h"
 #include "synflow/nodes/WasmNoiseNode.h"
 #include "synflow/nodes/WasmSvfDriveNode.h"
@@ -44,6 +45,8 @@ NodeFactoryFn makeShellFactory() {
             return std::make_unique<WasmWavetableNode>(bytes(BinaryData::wavetable_wasm, BinaryData::wavetable_wasmSize));
         if (type == "GranularFlowNode")
             return std::make_unique<WasmGranularNode>(bytes(BinaryData::granular_wasm, BinaryData::granular_wasmSize));
+        if (type == "AudioWorkletOscillatorFlowNode")
+            return std::make_unique<WasmHardSyncNode>(bytes(BinaryData::hardsync_wasm, BinaryData::hardsync_wasmSize));
         if (type == "ReverbFlowNode")
             return std::make_unique<ReverbNode>();
         if (type == "SampleFlowNode" || type == "AudioBufferSourceFlowNode")

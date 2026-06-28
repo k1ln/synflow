@@ -157,6 +157,25 @@ function refGranular() {
   return out;
 }
 
+// --- hardsync: hard-sync oscillator source (HardSyncOscillatorProcessor.js) ---
+function refHardSync() {
+  const e = load('hard-sync-oscillator.wasm');
+  const pFreq = e.alloc_f32(BLOCK), pDetune = e.alloc_f32(BLOCK), pSync = e.alloc_f32(BLOCK),
+        pFm = e.alloc_f32(BLOCK), pCustom = e.alloc_f32(1024), pOut = e.alloc_f32(BLOCK), pState = e.alloc_f32(2);
+  let phase = 0, lastSync = 0;
+  const out = new Float32Array(N);
+  for (let i = 0; i < N; i += BLOCK) {
+    const m = new Float32Array(e.memory.buffer);
+    m[pFreq >> 2] = 220.0;
+    m[pDetune >> 2] = 0.0;
+    e.process_block(phase, lastSync, SR, pFreq, 1, pDetune, 1, pSync, 0, pFm, 0, BLOCK, 2, pCustom, pOut, pState); // type 2 = saw
+    phase = m[pState >> 2];
+    lastSync = m[(pState >> 2) + 1];
+    out.set(m.subarray(pOut >> 2, (pOut >> 2) + BLOCK), i);
+  }
+  return out;
+}
+
 // --- noise: source (NoiseGeneratorProcessor.js), fixed seed, white, gain 1 ---
 function refNoise() {
   const e = load('noise-generator.wasm');
@@ -171,7 +190,7 @@ function refNoise() {
   return out;
 }
 
-for (const [name, fn] of [['karplus', refKarplus], ['ladder', refLadder], ['noise', refNoise], ['svf', refSvf], ['envgen', refEnvGen], ['freqshifter', refFreqShifter], ['fm', refFM], ['wavetable', refWavetable], ['granular', refGranular]]) {
+for (const [name, fn] of [['karplus', refKarplus], ['ladder', refLadder], ['noise', refNoise], ['svf', refSvf], ['envgen', refEnvGen], ['freqshifter', refFreqShifter], ['fm', refFM], ['wavetable', refWavetable], ['granular', refGranular], ['hardsync', refHardSync]]) {
   write(`ref_${name}.f32`, fn());
   console.log(`ref ${name}: ${N} samples`);
 }

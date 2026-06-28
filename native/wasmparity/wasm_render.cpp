@@ -13,6 +13,7 @@
 #include "synflow/nodes/WasmEnvGenNode.h"
 #include "synflow/nodes/WasmFMNode.h"
 #include "synflow/nodes/WasmGranularNode.h"
+#include "synflow/nodes/WasmHardSyncNode.h"
 #include "synflow/nodes/WasmFreqShifterNode.h"
 #include "synflow/nodes/WasmKarplusNode.h"
 #include "synflow/nodes/WasmLadderNode.h"
@@ -90,6 +91,11 @@ int main() {
     run("fm", std::make_unique<WasmFMNode>(readBin(pub + "fm.wasm")), false);
     run("wavetable", std::make_unique<WasmWavetableNode>(readBin(pub + "wavetable.wasm")), false);
     run("granular", std::make_unique<WasmGranularNode>(readBin(pub + "granular.wasm")), true);
+    {
+        auto hs = std::make_unique<WasmHardSyncNode>(readBin(pub + "hard-sync-oscillator.wasm"));
+        hs->setNamedParam("frequency", 220.0); hs->setNamedParam("type", 2.0);
+        run("hardsync", std::move(hs), false);
+    }
     {
         auto fs = std::make_unique<WasmFreqShifterNode>(readBin(pub + "freq-shifter.wasm"));
         fs->setNamedParam("shift", 7.0);
