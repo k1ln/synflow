@@ -10,6 +10,7 @@
 #include "synflow/nodes/ClockNode.h"
 #include "synflow/nodes/ButtonNode.h"
 #include "synflow/nodes/ConstantNode.h"
+#include "synflow/nodes/MicNode.h"
 #include "synflow/nodes/MidiButtonNode.h"
 #include "synflow/nodes/MidiKnobNode.h"
 #include "synflow/nodes/OnOffButtonNode.h"
@@ -56,6 +57,9 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
     if (type == "SequencerFrequencyFlowNode") return std::make_unique<SequencerFrequencyNode>();
     if (type == "RingModFlowNode") return std::make_unique<RingModNode>();
     if (type == "IIRFilterFlowNode") return std::make_unique<IIRFilterNode>();
+    if (type == "MicFlowNode") return std::make_unique<MicNode>();
+    if (type == "LogFlowNode" || type == "EventFlowNode" || type == "CommandInFlowNode" || type == "CommandOutFlowNode")
+        return std::make_unique<EventForwardNode>();
     return nullptr;
 }
 
@@ -71,7 +75,9 @@ bool isEventEmitterType(const std::string& type) {
         || type == "ButtonFlowNode" || type == "OnOffButtonFlowNode"
         || type == "MouseTriggerButtonFlowNode"
         || type == "SwitchFlowNode" || type == "SequencerFrequencyFlowNode"
-        || type == "ArpeggiatorFlowNode";
+        || type == "ArpeggiatorFlowNode"
+        || type == "EventFlowNode" || type == "LogFlowNode"
+        || type == "CommandInFlowNode" || type == "CommandOutFlowNode";
 }
 
 } // namespace
@@ -133,7 +139,7 @@ FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string&
             idIsEmitter[id] = isEventEmitterType(type);
             result.nodeIndexById[id] = index;
             if (type == "MasterOutFlowNode" || isOutputFlag) masterIndex = index;
-            if (isInputFlag) inputIndex = index;
+            if (isInputFlag || type == "MicFlowNode") inputIndex = index;
             if (isTriggerFlag && result.triggerNodeIndex < 0) result.triggerNodeIndex = index;
             if (isPitchFlag && result.pitchNodeIndex < 0) {
                 result.pitchNodeIndex = index;
