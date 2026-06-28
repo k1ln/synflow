@@ -82,6 +82,9 @@ async function render(test) {
         for (const k of ['threshold', 'knee', 'ratio', 'attack', 'release'])
           if (test[k] !== undefined) node[k].value = test[k];
         break;
+      case 'iir':
+        node = ctx.createIIRFilter(Float64Array.from(test.feedforward), Float64Array.from(test.feedback));
+        break;
       default:
         throw new Error('unknown node ' + test.node);
     }

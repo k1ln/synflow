@@ -16,6 +16,7 @@
 #include "synflow/nodes/DistortionNode.h"
 #include "synflow/nodes/DynamicCompressorNode.h"
 #include "synflow/nodes/GainNode.h"
+#include "synflow/nodes/IIRFilterNode.h"
 
 using namespace synflow;
 
@@ -69,6 +70,13 @@ static std::unique_ptr<INode> buildNode(const JsonValue& t, const std::string& b
         auto n = std::make_unique<DistortionNode>();
         n->setCurve(readF32(base + "/build/curve_" + t.find("name")->asString() + ".f32"));
         if (const JsonValue* os = t.find("oversample")) n->setNamedParamStr("oversample", os->asString());
+        return n;
+    }
+    if (node == "iir") {
+        auto n = std::make_unique<IIRFilterNode>();
+        auto arr = [&](const char* k) { std::vector<double> v; if (const JsonValue* a = t.find(k)) for (const auto& e : a->arr) v.push_back(e.asNumber(0)); return v; };
+        n->setArrayParam("feedforward", arr("feedforward"));
+        n->setArrayParam("feedback", arr("feedback"));
         return n;
     }
     return nullptr;
