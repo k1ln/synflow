@@ -35,6 +35,12 @@ struct FlowLoadResult {
     std::string pitchParam = "frequency";      // node.data.pitchParam
     enum Kind { Effect = 0, Drum = 1, Synth = 2 };
     Kind kind = Effect;                        // flowKind: trigger? pitch?
+
+    // Host-MIDI-mapped nodes (MidiKnob CC -> param, MidiButton note -> trigger),
+    // from node.data.midiMapping {type, channel, number}. The plugin routes live
+    // host MIDI to these so external input steers the flow.
+    struct MidiMap { int nodeIndex; bool isNote; int channel; int number; };
+    std::vector<MidiMap> midiMaps;
 };
 
 class FlowLoader {

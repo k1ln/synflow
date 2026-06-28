@@ -16,6 +16,8 @@
 #include "synflow/nodes/ClockNode.h"
 #include "synflow/nodes/ConstantNode.h"
 #include "synflow/nodes/GainNode.h"
+#include "synflow/nodes/MidiButtonNode.h"
+#include "synflow/nodes/MidiKnobNode.h"
 #include "synflow/nodes/OscillatorNode.h"
 #include "synflow/nodes/SequencerNode.h"
 #include "synflow/nodes/SpeedDividerNode.h"
@@ -340,6 +342,46 @@ int main() {
         for (int i = 0; i < N; i += BLOCK) g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
         const std::vector<long> expect = {24000, 72000};
         check(pr->onSamples == expect, "SpeedDivider(2) passes every 2nd clock tick {24000,72000}");
+    }
+
+    // --- Test 9: a host MIDI CC (via MidiKnob) STEERS the oscillator frequency ---
+    {
+        AudioGraphManager g(RuntimeMode::Plugin);
+        auto knob = std::make_unique<MidiKnobNode>();
+        knob->setNamedParam("min", 100.0);
+        knob->setNamedParam("max", 1000.0);
+        const int ki = g.addNode(std::move(knob));
+        auto osc = std::make_unique<OscillatorNode>();
+        osc->setNamedParam("frequency", 220.0);
+        const int oi = g.addNode(std::move(osc));
+        g.connectEvent(ki, 0, oi, 0, "frequency"); // MidiKnob -> osc.frequency
+        g.setMasterOutput(oi, 0);
+        g.prepare(SR, BLOCK);
+
+        const int N = 48000;
+        std::vector<float> out(static_cast<size_t>(N), 0.0f);
+        g.queueInputEvent(ki, 0, EventType::Value, 127.0, 0); // CC=127 -> max -> 1000 Hz
+        for (int i = 0; i < N; i += BLOCK) g.renderBlock(out.data() + i, BLOCK, nullptr, 120.0, 0.0, true);
+
+        int crossings = 0;
+        for (int i = 1; i < N; ++i) if (out[static_cast<size_t>(i - 1)] <= 0 && out[static_cast<size_t>(i)] > 0) ++crossings;
+        check(crossings > 980 && crossings < 1020, "MIDI CC (MidiKnob) steers osc to 1000 Hz (CC 127 -> max)");
+    }
+
+    // --- Test 10: a MidiButton forwards a mapped host note as a trigger ---
+    {
+        AudioGraphManager g(RuntimeMode::Plugin);
+        auto btn = std::make_unique<MidiButtonNode>();
+        const int bi = g.addNode(std::move(btn));
+        auto probe = std::make_unique<ProbeNode>();
+        ProbeNode* pr = probe.get();
+        const int pi = g.addNode(std::move(probe));
+        g.connectEvent(bi, 0, pi, 0);
+        g.prepare(SR, BLOCK);
+        std::vector<float> out(BLOCK, 0.0f);
+        g.queueInputEvent(bi, 0, EventType::NoteOn, 1.0, 10); // mapped host note
+        g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        check(pr->onSamples.size() == 1 && pr->onSamples[0] == 10, "MidiButton forwards a host note as a trigger");
     }
 
     std::printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "ALL PASS", failures, failures == 1 ? "" : "s");

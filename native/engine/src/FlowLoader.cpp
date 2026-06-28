@@ -9,6 +9,8 @@
 #include "synflow/nodes/ChorusNode.h"
 #include "synflow/nodes/ClockNode.h"
 #include "synflow/nodes/ConstantNode.h"
+#include "synflow/nodes/MidiButtonNode.h"
+#include "synflow/nodes/MidiKnobNode.h"
 #include "synflow/nodes/SpeedDividerNode.h"
 #include "synflow/nodes/DelayNode.h"
 #include "synflow/nodes/DistortionNode.h"
@@ -39,6 +41,8 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
     if (type == "SequencerFlowNode") return std::make_unique<SequencerNode>();
     if (type == "ConstantFlowNode") return std::make_unique<ConstantNode>();
     if (type == "SpeedDividerFlowNode") return std::make_unique<SpeedDividerNode>();
+    if (type == "MidiKnobFlowNode") return std::make_unique<MidiKnobNode>();
+    if (type == "MidiButtonFlowNode") return std::make_unique<MidiButtonNode>();
     return nullptr;
 }
 
@@ -48,7 +52,8 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
 // continuous a-rate signal, so their output edges are audio. (See plan Bucket C.)
 bool isEventEmitterType(const std::string& type) {
     return type == "ClockFlowNode" || type == "SequencerFlowNode"
-        || type == "ConstantFlowNode" || type == "SpeedDividerFlowNode";
+        || type == "ConstantFlowNode" || type == "SpeedDividerFlowNode"
+        || type == "MidiKnobFlowNode" || type == "MidiButtonFlowNode";
 }
 
 } // namespace
@@ -109,6 +114,18 @@ FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string&
             if (isPitchFlag && result.pitchNodeIndex < 0) {
                 result.pitchNodeIndex = index;
                 if (!pitchParam.empty()) result.pitchParam = pitchParam;
+            }
+            // node.data.midiMapping {type:'cc'|'note', channel, number} -> route host MIDI
+            if (const JsonValue* data = n.find("data"); data && data->isObject()) {
+                if (const JsonValue* mm = data->find("midiMapping"); mm && mm->isObject()) {
+                    const JsonValue* t = mm->find("type");
+                    const bool isNote = t && t->asString() == "note";
+                    const JsonValue* ch = mm->find("channel");
+                    const JsonValue* num = mm->find("number");
+                    if (num)
+                        result.midiMaps.push_back({index, isNote, ch ? static_cast<int>(ch->asNumber(0)) : 0,
+                                                   static_cast<int>(num->asNumber(0))});
+                }
             }
             result.nodeCount++;
         }

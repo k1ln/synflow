@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "synflow/AudioGraphManager.h"
+#include "synflow/FlowLoader.h"
 
 // M5 — JUCE plugin shell. Wraps the native AudioGraphManager (RuntimeMode::Plugin)
 // in an AudioProcessor: the host hands us processBlock + playhead, we render the
@@ -77,6 +78,7 @@ private:
     int triggerNode_ = -1;          // node.data.isTrigger (host MIDI note gate)
     int pitchNode_ = -1;            // node.data.isPitch (follows MIDI pitch)
     std::string pitchParam_ = "frequency";
+    std::vector<synflow::FlowLoadResult::MidiMap> midiMaps_; // MidiKnob/MidiButton routing
     double sampleRate_ = 48000.0;
     int blockSize_ = 512;
     std::vector<float> scratch_;     // mono render buffer

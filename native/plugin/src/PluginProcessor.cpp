@@ -47,6 +47,7 @@ void SynflowAudioProcessor::loadFlow(const juce::String& json) {
     pitchNode_ = res.pitchNodeIndex;     // node.data.isPitch
     pitchParam_ = res.pitchParam;
     nodeIndexById_ = res.nodeIndexById;
+    midiMaps_ = res.midiMaps;
 
     // Bind the flow's exposed knobs to the generic host-param pool + build the
     // control metadata the webview renders.
@@ -121,6 +122,16 @@ void SynflowAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce:
             if (triggerNode_ >= 0) graph_->queueInputEvent(triggerNode_, 0, EventType::NoteOn, msg.getFloatVelocity(), off);
         } else if (msg.isNoteOff()) {
             if (triggerNode_ >= 0) graph_->queueInputEvent(triggerNode_, 0, EventType::NoteOff, 0.0, off);
+        }
+
+        // Route to the flow's own MIDI nodes (live "input steers it"):
+        //   MidiButton (mapped note) -> NoteOn/Off trigger; MidiKnob (mapped CC)
+        //   -> raw CC value the node maps + steers a param with.
+        for (const auto& mm : midiMaps_) {
+            if (mm.isNote && (msg.isNoteOn() || msg.isNoteOff()) && msg.getNoteNumber() == mm.number)
+                graph_->queueInputEvent(mm.nodeIndex, 0, msg.isNoteOn() ? EventType::NoteOn : EventType::NoteOff, msg.getFloatVelocity(), off);
+            else if (!mm.isNote && msg.isController() && msg.getControllerNumber() == mm.number)
+                graph_->queueInputEvent(mm.nodeIndex, 0, EventType::Value, msg.getControllerValue(), off);
         }
     }
 
