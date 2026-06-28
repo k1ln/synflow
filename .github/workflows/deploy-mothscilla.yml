@@ -26,10 +26,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build Synflow editor (served same-origin at /synflow/)
+        run: npm run build -- --base=/synflow/
+        env:
+          NODE_ENV: production
+
       - name: Build Mothscilla DAW
         run: npm run build -w @mothscilla/app
         env:
           NODE_ENV: production
+          # Same-origin "Edit in Synflow" iframe → the editor deployed under /synflow/
+          # (no cross-origin framing/CSP needed). Trailing slash so the bucket serves
+          # /synflow/index.html.
+          VITE_SYNFLOW_URL: /synflow/
 
       - name: Deploy to Scaleway Object Storage
         env:
@@ -42,16 +51,34 @@ jobs:
           # Set Scaleway S3 endpoint
           export AWS_ENDPOINT_URL=https://s3.$SCW_REGION.scw.cloud
 
-          # Sync build files to bucket
+          # ── Mothscilla DAW → bucket root ──
+          # Sync hashed assets (immutable). Exclude the /synflow/ subtree from
+          # --delete so the editor deploy below isn't wiped by the root sync.
           aws s3 sync packages/daw/dist/ s3://$BUCKET_NAME/ \
+            --endpoint-url=$AWS_ENDPOINT_URL \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "index.html" \
+            --exclude "*.html" \
+            --exclude "synflow/*"
+
+          # HTML with no-cache for SPA routing
+          aws s3 sync packages/daw/dist/ s3://$BUCKET_NAME/ \
+            --endpoint-url=$AWS_ENDPOINT_URL \
+            --exclude "*" \
+            --include "*.html" \
+            --cache-control "public, max-age=0, must-revalidate"
+
+          # ── Synflow editor → bucket /synflow/ ──
+          # --delete is scoped to the synflow/ prefix, so it only prunes old editor files.
+          aws s3 sync dist/ s3://$BUCKET_NAME/synflow/ \
             --endpoint-url=$AWS_ENDPOINT_URL \
             --delete \
             --cache-control "public, max-age=31536000, immutable" \
             --exclude "index.html" \
             --exclude "*.html"
 
-          # Upload HTML files with no-cache for SPA routing
-          aws s3 sync packages/daw/dist/ s3://$BUCKET_NAME/ \
+          aws s3 sync dist/ s3://$BUCKET_NAME/synflow/ \
             --endpoint-url=$AWS_ENDPOINT_URL \
             --exclude "*" \
             --include "*.html" \
