@@ -9,3 +9,6 @@ build/
 
 # Vendored wasmtime C API (fetched via third_party/fetch-wasmtime.sh)
 third_party/wasmtime/
+
+# Built editor bundle (regenerated via `npm run build:plugin-ui`)
+plugin/webui/editor/
