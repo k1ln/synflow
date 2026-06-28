@@ -25,6 +25,16 @@ function genInput() {
   return v;
 }
 
+// Transfer curve generator (shared with the C++ side via build/curve_<name>.f32).
+function genCurve(type, len) {
+  const c = new Float32Array(len);
+  for (let i = 0; i < len; i++) {
+    const x = (2 * i) / (len - 1) - 1; // -1..1
+    c[i] = type === 'tanh3' ? Math.tanh(3 * x) : x;
+  }
+  return c;
+}
+
 const tests = JSON.parse(fs.readFileSync(new URL('./tests.json', import.meta.url)));
 const input = genInput();
 fs.writeFileSync(p('input.f32'), Buffer.from(input.buffer));
@@ -62,6 +72,11 @@ async function render(test) {
         node = ctx.createDelay(2);
         node.delayTime.value = test.delayTime / 1000; // ms -> s
         break;
+      case 'waveshaper':
+        node = ctx.createWaveShaper();
+        node.curve = Float32Array.from(test.curve);
+        node.oversample = test.oversample;
+        break;
       case 'compressor':
         node = ctx.createDynamicsCompressor();
         for (const k of ['threshold', 'knee', 'ratio', 'attack', 'release'])
@@ -78,6 +93,11 @@ async function render(test) {
 }
 
 for (const test of tests) {
+  if (test.node === 'waveshaper') {
+    const curve = genCurve(test.curveType, test.curveLen);
+    fs.writeFileSync(p(`curve_${test.name}.f32`), Buffer.from(curve.buffer)); // shared with C++
+    test.curve = Array.from(curve);
+  }
   const out = await render(test);
   fs.writeFileSync(p(`ref_${test.name}.f32`), Buffer.from(Float32Array.from(out).buffer));
   console.log(`ref ${test.name}: ${out.length} samples`);

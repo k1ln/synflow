@@ -5,5 +5,7 @@
   { "name": "biquad_highpass_800_q1", "node": "biquad", "filterType": "highpass", "frequency": 800, "Q": 1 },
   { "name": "biquad_bandpass_1000_q4", "node": "biquad", "filterType": "bandpass", "frequency": 1000, "Q": 4 },
   { "name": "delay_5ms", "node": "delay", "delayTime": 5 },
-  { "name": "compressor", "node": "compressor", "threshold": -24, "knee": 24, "ratio": 4, "attack": 0.003, "release": 0.25 }
+  { "name": "compressor", "node": "compressor", "threshold": -24, "knee": 24, "ratio": 4, "attack": 0.003, "release": 0.25 },
+  { "name": "waveshaper_none", "node": "waveshaper", "curveType": "tanh3", "curveLen": 2049, "oversample": "none" },
+  { "name": "waveshaper_2x", "node": "waveshaper", "curveType": "tanh3", "curveLen": 2049, "oversample": "2x" }
 ]

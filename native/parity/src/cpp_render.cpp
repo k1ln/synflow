@@ -13,6 +13,7 @@
 #include "synflow/Json.h"
 #include "synflow/nodes/BiquadFilterNode.h"
 #include "synflow/nodes/DelayNode.h"
+#include "synflow/nodes/DistortionNode.h"
 #include "synflow/nodes/DynamicCompressorNode.h"
 #include "synflow/nodes/GainNode.h"
 
@@ -36,7 +37,7 @@ static void writeF32(const std::string& path, const std::vector<float>& v) {
     f.write(reinterpret_cast<const char*>(v.data()), static_cast<std::streamsize>(v.size() * sizeof(float)));
 }
 
-static std::unique_ptr<INode> buildNode(const JsonValue& t) {
+static std::unique_ptr<INode> buildNode(const JsonValue& t, const std::string& base) {
     const std::string node = t.find("node")->asString();
     auto num = [&](const char* k, double d) { const JsonValue* v = t.find(k); return v ? v->asNumber(d) : d; };
 
@@ -64,6 +65,12 @@ static std::unique_ptr<INode> buildNode(const JsonValue& t) {
             if (t.find(k)) n->setNamedParam(k, num(k, 0.0));
         return n;
     }
+    if (node == "waveshaper") {
+        auto n = std::make_unique<DistortionNode>();
+        n->setCurve(readF32(base + "/build/curve_" + t.find("name")->asString() + ".f32"));
+        if (const JsonValue* os = t.find("oversample")) n->setNamedParamStr("oversample", os->asString());
+        return n;
+    }
     return nullptr;
 }
 
@@ -76,7 +83,7 @@ int main() {
     for (const JsonValue& t : tests.arr) {
         const std::string name = t.find("name")->asString();
         AudioGraphManager g(RuntimeMode::Plugin);
-        auto node = buildNode(t);
+        auto node = buildNode(t, base);
         if (!node) { std::printf("skip %s (unknown node)\n", name.c_str()); continue; }
         const int idx = g.addNode(std::move(node));
         g.setInputNode(idx, 0);
