@@ -13,6 +13,8 @@ import { TopBar, type ViewId } from './ui/TopBar';
 import { Browser } from './ui/Browser';
 import { Arrange } from './ui/Arrange';
 import { Mixer as MixerView } from './ui/Mixer';
+import { FXChain } from './ui/FXChain';
+import { PluginPanel } from './ui/PluginPanel';
 import { TrackList, type TrackHandlers } from './ui/TrackList';
 import { SamplerEditor } from './ui/SamplerEditor';
 
@@ -26,6 +28,7 @@ export function App() {
   const [browserOpen, setBrowserOpen] = useState(true);
   const [armed, setArmed] = useState(false);
   const [selTrack, setSelTrack] = useState<string>(() => defaultProject().tracks[0]?.id ?? '');
+  const [openPlugin, setOpenPlugin] = useState<string | null>(null);
 
   const ctxRef = useRef<AudioContext | null>(null);
   const transportRef = useRef<Transport | null>(null);
@@ -191,6 +194,8 @@ export function App() {
 
   const sib = currentStep < 0 ? 0 : currentStep % project.totalSteps;
   const pos = `001.${Math.floor(sib / project.stepsPerBeat) + 1}.${String((sib % project.stepsPerBeat) * 25).padStart(2, '0')}`;
+  const selectedTrack = project.tracks.find((t) => t.id === selTrack) ?? project.tracks[0];
+  const openInst = openPlugin ? project.tracks.flatMap((t) => t.instruments).find((i) => i.id === openPlugin) : null;
 
   return (
     <div className="app-shell">
@@ -220,7 +225,11 @@ export function App() {
           {view === 'mix' && (
             <MixerView project={project} selId={selTrack} onSelect={setSelTrack} onVolume={h.onVolume} />
           )}
+          {view !== 'mix' && selectedTrack && (
+            <FXChain track={selectedTrack} onOpenInstrument={setOpenPlugin} />
+          )}
         </div>
+        {openInst && <PluginPanel instrument={openInst} onClose={() => setOpenPlugin(null)} />}
       </div>
       {samplerTrack && <SamplerEditor onCreate={addSampleInstrument} onClose={() => setSamplerTrack(null)} />}
     </div>
