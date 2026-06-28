@@ -93,10 +93,24 @@ export function App() {
     if (h) await adoptFolder(h, true);
   }, [adoptFolder]);
 
-  const persistFx = useCallback((insert: FxInsert, flow: Flow) => {
+  // Return a copy of a flow with node.data[param] set (knob value lives in the flow).
+  const setFlowParam = (flow: Flow, nodeId: string, param: string, value: number): Flow =>
+    ({ ...flow, nodes: flow.nodes.map((n: any) => (n.id === nodeId ? { ...n, data: { ...n.data, [param]: value } } : n)) });
+
+  // Debounced disk write (knob drags fire continuously). Keyed by group:id.
+  const persistTimers = useRef<Map<string, number>>(new Map());
+  const persistDebounced = (key: string, meta: { group: 'instrument' | 'effect'; id: string; name: string; category: string; kind?: string; flow: Flow }) => {
     const root = folderRef.current; if (!root) return;
+    const prev = persistTimers.current.get(key); if (prev) window.clearTimeout(prev);
+    persistTimers.current.set(key, window.setTimeout(() => {
+      writeFlow(root, meta).catch((e) => console.warn('[Mothscilla] save to disk failed', e));
+    }, 500));
+  };
+
+  const persistFx = useCallback((insert: FxInsert, flow: Flow) => {
+    const root = folderRef.current; if (!root) { console.info('[Mothscilla] no folder set — edit kept in project only'); return; }
     const def = findEntry(insert.fxId);
-    void writeFlow(root, { group: 'effect', id: insert.fxId, name: insert.name, category: def?.category ?? 'Effects', flow }).catch(() => {});
+    writeFlow(root, { group: 'effect', id: insert.fxId, name: insert.name, category: def?.category ?? 'Effects', flow }).catch((e) => console.warn('[Mothscilla] save effect failed', e));
   }, []);
   // ─── audio build (3-level FX) ──────────────────────────────────────────────
   const resolveFx = (inserts: FxInsert[]): ResolvedFx[] =>
@@ -245,7 +259,10 @@ export function App() {
     liveSynthsRef.current.get(poolId)?.setParam(nodeId, param, value);
     liveDrumsRef.current.get(poolId)?.setParam(nodeId, param, value);
     for (const u of usesOfPool(poolId)) { hostsRef.current.get(u.id)?.setParam(nodeId, param, value); poolsRef.current.get(u.id)?.setParam(nodeId, param, value); }
-    mapPool(poolId, (pi) => ({ ...pi, flow: { ...pi.flow, nodes: pi.flow.nodes.map((n: any) => (n.id === nodeId ? { ...n, data: { ...n.data, [param]: value } } : n)) } }));
+    const pool = projectRef.current.pool.find((p) => p.id === poolId); if (!pool) return;
+    const flow = setFlowParam(pool.flow, nodeId, param, value);
+    mapPool(poolId, (pi) => ({ ...pi, flow }));            // value sticks on reopen
+    persistDebounced(`instrument:${pool.libId ?? pool.id}`, { group: 'instrument', id: pool.libId ?? pool.id, name: pool.name, category: pool.kind === 'synth' ? 'Synths' : 'Drums', kind: pool.kind === 'synth' ? 'piano' : 'step', flow });
   };
 
   const onInstrumentGain = (poolId: string, v: number) => {
@@ -268,7 +285,8 @@ export function App() {
       liveSynthsRef.current.get(poolId)?.dispose(); liveSynthsRef.current.delete(poolId);
       liveDrumsRef.current.get(poolId)?.dispose(); liveDrumsRef.current.delete(poolId);
       const root = folderRef.current;
-      if (root) void writeFlow(root, { group: 'instrument', id: pool.libId ?? pool.id, name: pool.name, category: pool.kind === 'synth' ? 'Synths' : 'Drums', kind: pool.kind === 'synth' ? 'piano' : 'step', flow: f }).catch(() => {});
+      if (root) writeFlow(root, { group: 'instrument', id: pool.libId ?? pool.id, name: pool.name, category: pool.kind === 'synth' ? 'Synths' : 'Drums', kind: pool.kind === 'synth' ? 'piano' : 'step', flow: f }).then(() => console.info('[Mothscilla] saved instrument to disk')).catch((e) => console.warn('[Mothscilla] save instrument failed', e));
+      else console.info('[Mothscilla] no folder set — instrument edit kept in project only');
     } });
   };
 
@@ -278,7 +296,8 @@ export function App() {
     setEditor({ flow: e.flow, title: e.name, onSaved: (f) => {
       setLibrary((lib) => lib.map((x) => (x.id === effectId && x.group === 'effect' ? { ...x, flow: f } : x)));
       const root = folderRef.current;
-      if (root) void writeFlow(root, { group: 'effect', id: effectId, name: e.name, category: e.category, flow: f }).catch(() => {});
+      if (root) writeFlow(root, { group: 'effect', id: effectId, name: e.name, category: e.category, flow: f }).then(() => console.info('[Mothscilla] saved effect to disk')).catch((er) => console.warn('[Mothscilla] save effect failed', er));
+      else console.info('[Mothscilla] no folder set — effect edit kept in project only');
     } });
   };
 
@@ -336,8 +355,19 @@ export function App() {
       const t = selectedTrack; const insert = t?.fx[i]; if (!t || !insert) return;
       editFxFlow(insert, (f) => { const next = t.fx.map((x, j) => (j === i ? { ...x, flow: f } : x)); mapTrack(t.id, (x) => ({ ...x, fx: next })); rebuildTrackChain(t.id, next); });
     },
-    onUseFxKnob: (useId, i, nodeId, param, value) => mixerRef.current?.useChain(useId)?.setParam(i, nodeId, param, value),
-    onTrackFxKnob: (i, nodeId, param, value) => { if (selectedTrack) mixerRef.current?.trackChain(selectedTrack.id)?.setParam(i, nodeId, param, value); },
+    onUseFxKnob: (useId, i, nodeId, param, value) => {
+      mixerRef.current?.useChain(useId)?.setParam(i, nodeId, param, value);
+      const insert = useById(useId)?.fx[i]; const base = insert?.flow ?? (insert && findEntry(insert.fxId)?.flow); if (!insert || !base) return;
+      const flow = setFlowParam(base, nodeId, param, value);
+      mapUse(useId, (u) => ({ ...u, fx: u.fx.map((x, j) => (j === i ? { ...x, flow } : x)) }));
+    },
+    onTrackFxKnob: (i, nodeId, param, value) => {
+      const t = selectedTrack; if (!t) return;
+      mixerRef.current?.trackChain(t.id)?.setParam(i, nodeId, param, value);
+      const insert = t.fx[i]; const base = insert?.flow ?? (insert && findEntry(insert.fxId)?.flow); if (!insert || !base) return;
+      const flow = setFlowParam(base, nodeId, param, value);
+      mapTrack(t.id, (x) => ({ ...x, fx: x.fx.map((y, j) => (j === i ? { ...y, flow } : y)) }));
+    },
   };
 
   const addTrack = (type: 'drums' | 'synth') => {
@@ -431,7 +461,12 @@ export function App() {
             <div className="mixer-view">
               <div className="mx-master">
                 <FxBar label="Master FX" color="var(--cat-master, var(--accent))" fx={project.masterFx} effects={effects} onAdd={onMasterFxAdd} onRemove={onMasterFxRemove} onEdit={onMasterFxEdit}
-                  onKnob={(i, nodeId, param, v) => mixerRef.current?.masterChain.setParam(i, nodeId, param, v)} />
+                  onKnob={(i, nodeId, param, v) => {
+                    mixerRef.current?.masterChain.setParam(i, nodeId, param, v);
+                    const insert = projectRef.current.masterFx[i]; const base = insert?.flow ?? (insert && findEntry(insert.fxId)?.flow); if (!insert || !base) return;
+                    const flow = setFlowParam(base, nodeId, param, v);
+                    setProject((p) => ({ ...p, masterFx: p.masterFx.map((x, j) => (j === i ? { ...x, flow } : x)) }));
+                  }} />
               </div>
               <div className="mx-tracks">
                 {project.tracks.map((t) => (
@@ -442,7 +477,12 @@ export function App() {
                       onAdd={(fx) => { const ins = fxInsert(fx); mapTrack(t.id, (x) => ({ ...x, fx: [...x.fx, ins] })); rebuildTrackChain(t.id, [...t.fx, ins]); }}
                       onRemove={(i) => { const next = t.fx.filter((_, j) => j !== i); mapTrack(t.id, (x) => ({ ...x, fx: next })); rebuildTrackChain(t.id, next); }}
                       onEdit={(i) => { const insert = t.fx[i]; if (insert) editFxFlow(insert, (f) => { const next = t.fx.map((x, j) => (j === i ? { ...x, flow: f } : x)); mapTrack(t.id, (x) => ({ ...x, fx: next })); rebuildTrackChain(t.id, next); }); }}
-                      onKnob={(i, nodeId, param, v) => mixerRef.current?.trackChain(t.id)?.setParam(i, nodeId, param, v)}
+                      onKnob={(i, nodeId, param, v) => {
+                        mixerRef.current?.trackChain(t.id)?.setParam(i, nodeId, param, v);
+                        const insert = t.fx[i]; const base = insert?.flow ?? (insert && findEntry(insert.fxId)?.flow); if (!insert || !base) return;
+                        const flow = setFlowParam(base, nodeId, param, v);
+                        mapTrack(t.id, (x) => ({ ...x, fx: x.fx.map((y, j) => (j === i ? { ...y, flow } : y)) }));
+                      }}
                     />
                   </div>
                 ))}

@@ -3,11 +3,16 @@ import type { Flow } from './instruments';
 /** A host-exposed knob declared in Synflow (node.data.knobs). */
 export interface ExposedKnob { nodeId: string; param: string; label: string; min: number; max: number; default?: number }
 
-/** Collect every exposed knob across a flow's nodes. */
+/** Collect every exposed knob across a flow's nodes. The knob's value is the live
+ *  node.data[param] (so DAW tweaks persist when reopened), falling back to the
+ *  declared default. */
 export function flowKnobs(flow?: Pick<Flow, 'nodes'>): ExposedKnob[] {
   return (flow?.nodes ?? []).flatMap((n: any) =>
     Array.isArray(n.data?.knobs)
-      ? n.data.knobs.map((k: any) => ({ nodeId: n.id, param: k.param, label: k.label || k.param, min: k.min ?? 0, max: k.max ?? 1, default: k.default }))
+      ? n.data.knobs.map((k: any) => ({
+          nodeId: n.id, param: k.param, label: k.label || k.param, min: k.min ?? 0, max: k.max ?? 1,
+          default: typeof n.data[k.param] === 'number' ? n.data[k.param] : k.default,
+        }))
       : [],
   );
 }
