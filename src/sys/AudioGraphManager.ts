@@ -60,6 +60,7 @@ import VirtualMidiNode from "../virtualNodes/VirtualMidiNode";
 import VirtualOnOffButtonNode from "../virtualNodes/VirtualOnOffButtonNode";
 import VirtualSampleFlowNode from "../virtualNodes/VirtualSampleFlowNode";
 import VirtualSequencerNode from "../virtualNodes/VirtualSequencerNode";
+import VirtualScriptSequencerNode from "../virtualNodes/VirtualScriptSequencerNode";
 import VirtualSequencerFrequencyNode from "../virtualNodes/VirtualSequencerFrequencyNode";
 import VirtualAutomationNode from "../virtualNodes/VirtualAutomationNode";
 import VirtualArpeggiatorNode from "../virtualNodes/VirtualArpeggiatorNode";
@@ -1065,6 +1066,16 @@ export class AudioGraphManager {
                     virtualSequencerNode.setSendNodeOn((data) => this.emitEventsForConnectedEdges(node, data, 'receiveNodeOn'));
                     virtualSequencerNode.setSendNodeOff((data) => this.emitEventsForConnectedEdges(node, data, 'receiveNodeOff'));
                     this.virtualNodes.set(node.id, virtualSequencerNode);
+                    break;
+                case "ScriptSequencerFlowNode":
+                    const virtualScriptSequencerNode = new VirtualScriptSequencerNode(
+                        this.audioContext,
+                        this.eventBus,
+                        node as CustomNode & FlowNodeProps
+                    );
+                    virtualScriptSequencerNode.setSendNodeOn((data) => this.emitEventsForConnectedEdges(node, data, 'receiveNodeOn'));
+                    virtualScriptSequencerNode.setSendNodeOff((data) => this.emitEventsForConnectedEdges(node, data, 'receiveNodeOff'));
+                    this.virtualNodes.set(node.id, virtualScriptSequencerNode as any);
                     break;
                 case "SequencerFrequencyFlowNode":
                     const virtualSequencerFrequencyNode = new VirtualSequencerFrequencyNode(

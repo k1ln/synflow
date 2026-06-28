@@ -1,0 +1,507 @@
+/* ScriptSequencerFlowNode — active-line animation + per-row layout */
+
+.ssq-wrap {
+  position: relative;
+}
+
+.ssq-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 6px 6px 6px;
+}
+.ssq-header > span:first-child {
+  margin-right: auto;
+}
+
+.ssq-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(10, 10, 10, 0.55);
+  border: 1px solid #2f2f2f;
+  border-radius: 6px;
+  padding: 4px;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+}
+
+.ssq-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  position: relative;
+  transition: background 120ms ease;
+}
+
+.ssq-row .ssq-num {
+  display: inline-block;
+  width: 22px;
+  text-align: right;
+  color: #888;
+  font-size: 10px;
+  user-select: none;
+}
+
+.ssq-row .ssq-input {
+  flex: 1;
+  background: #1a1a1a;
+  color: #eee;
+  border: 1px solid #333;
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+}
+
+.ssq-row .ssq-input:focus {
+  border-color: #4a8;
+  box-shadow: 0 0 0 1px rgba(80, 200, 140, 0.25);
+}
+
+.ssq-row .ssq-btn,
+.ssq-btn {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid #333;
+  background: #232323;
+  color: #ccc;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.ssq-row .ssq-btn:hover,
+.ssq-btn:hover {
+  background: #2e2e2e;
+  color: #fff;
+  border-color: #555;
+}
+
+.ssq-row .ssq-btn.ssq-del:hover,
+.ssq-btn.ssq-del:hover {
+  background: #4a1f1f;
+  border-color: #7a3a3a;
+  color: #fbb;
+}
+
+/* Active line: pulsing transparent light-green wash */
+.ssq-row.ssq-active {
+  animation: ssq-active-pulse 600ms ease-out;
+  background: rgba(120, 230, 140, 0.12);
+}
+
+.ssq-row.ssq-active::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(120, 230, 140, 0.0) 0%,
+    rgba(120, 230, 140, 0.28) 30%,
+    rgba(120, 230, 140, 0.18) 60%,
+    rgba(120, 230, 140, 0.0) 100%
+  );
+  pointer-events: none;
+  animation: ssq-sweep 600ms ease-out;
+}
+
+@keyframes ssq-active-pulse {
+  0% {
+    background: rgba(120, 230, 140, 0.45);
+    box-shadow: 0 0 0 0 rgba(120, 230, 140, 0.55);
+  }
+  100% {
+    background: rgba(120, 230, 140, 0.12);
+    box-shadow: 0 0 0 0 rgba(120, 230, 140, 0);
+  }
+}
+
+@keyframes ssq-sweep {
+  0% {
+    opacity: 0;
+    transform: translateX(-30%);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(15%);
+  }
+}
+
+.ssq-help {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #aaa;
+}
+.ssq-help summary {
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 4px;
+}
+.ssq-help summary:hover {
+  color: #fff;
+}
+
+/* CodeMirror editor wrapper */
+.ssq-editor-cm {
+  border: 1px solid #2f2f2f;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #1e1e1e;
+  /* enable resizing the editor box vertically by dragging the bottom edge */
+  resize: vertical;
+  min-height: 120px;
+  height: 240px;
+}
+.ssq-editor-cm .cm-editor {
+  font-size: 12px;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  height: 100%;
+  text-align: left;
+}
+.ssq-editor-cm .cm-scroller {
+  font-family: inherit;
+  overflow: auto;
+  text-align: left;
+}
+.ssq-editor-cm .cm-content {
+  text-align: left;
+  caret-color: #cfc;
+}
+.ssq-editor-cm .cm-line {
+  text-align: left;
+}
+.ssq-editor-cm .cm-gutters {
+  background: #181818;
+  border-right: 1px solid #2a2a2a;
+  color: #666;
+}
+
+/* Custom token colors for the SSQ DSL (layered on the vscodeDark theme) */
+.ssq-editor-cm .cm-content .ͼ1 .tok-labelName,
+.ssq-editor-cm [class*="tok-labelName"] {
+  color: #ffd479;
+  font-weight: 600;
+}
+.ssq-editor-cm [class*="tok-modifier"] {
+  color: #c586c0;
+  font-style: italic;
+}
+.ssq-editor-cm [class*="tok-unit"] {
+  color: #b5cea8;
+}
+.ssq-editor-cm [class*="tok-variableName"] {
+  color: #9cdcfe;
+}
+
+/* Error rendering */
+.ssq-editor-cm .ssq-cm-error {
+  background: rgba(255, 80, 80, 0.10) !important;
+  box-shadow: inset 2px 0 0 rgba(255, 90, 90, 0.85) !important;
+}
+
+.ssq-errors {
+  margin: 6px 0;
+  padding: 6px 8px;
+  border: 1px solid #6b2a2a;
+  border-radius: 6px;
+  background: rgba(120, 30, 30, 0.20);
+  color: #ffb3b3;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.ssq-errors.ssq-errors-ok {
+  border-color: #2f5a2f;
+  background: rgba(40, 90, 40, 0.18);
+  color: #b6e3b6;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ssq-errors-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #ff9c9c;
+  margin-bottom: 4px;
+}
+.ssq-errors-icon {
+  display: inline-block;
+  width: 14px;
+  text-align: center;
+}
+.ssq-errors-list {
+  margin: 0;
+  padding-left: 20px;
+  list-style: disc;
+}
+.ssq-errors-list li {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+.ssq-errors-line {
+  color: #ff7878;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  min-width: 28px;
+}
+.ssq-errors-msg {
+  color: #ffd1d1;
+}
+.ssq-errors-more {
+  color: #c98c8c;
+  font-style: italic;
+  list-style: none;
+  margin-left: -20px;
+}
+
+/* Outputs panel */
+.ssq-outputs {
+  margin-bottom: 6px;
+  border: 1px solid #2f2f2f;
+  border-radius: 6px;
+  background: rgba(10, 10, 10, 0.45);
+}
+.ssq-outputs-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  font-size: 11px;
+  color: #ccc;
+  cursor: pointer;
+  user-select: none;
+}
+.ssq-outputs-head:hover {
+  color: #fff;
+}
+.ssq-outputs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px 6px 6px 6px;
+}
+.ssq-out-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ssq-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid #111;
+  flex-shrink: 0;
+}
+.ssq-out-index {
+  flex: 1;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: #cde;
+  padding: 2px 6px;
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 3px;
+  user-select: none;
+}
+.ssq-out-kind {
+  background: #1a1a1a;
+  color: #eee;
+  border: 1px solid #333;
+  border-radius: 3px;
+  font-size: 11px;
+  padding: 2px 4px;
+  outline: none;
+}
+.ssq-out-kind:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ssq-out-auto-tag {
+  font-size: 10px;
+  color: #fb8;
+  font-style: italic;
+  padding: 0 4px;
+  border: 1px solid #4a3a1a;
+  border-radius: 3px;
+  background: rgba(255, 180, 80, 0.08);
+}
+.ssq-out-auto {
+  font-size: 10px;
+  color: #888;
+  font-style: italic;
+  padding: 2px 0 0 16px;
+}
+
+/* Help button in header */
+.ssq-help-btn {
+  margin-left: 8px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid #4a8;
+  background: rgba(80, 200, 140, 0.15);
+  color: #cfc;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  line-height: 1;
+}
+.ssq-help-btn:hover {
+  background: rgba(80, 200, 140, 0.35);
+  color: #fff;
+  border-color: #7d7;
+}
+
+/* Cursor controls in header (reset / jump-to-line) */
+.ssq-cursor-btn {
+  margin-left: 4px;
+  width: 22px;
+  height: 22px;
+  font-size: 13px;
+  line-height: 1;
+}
+
+/* Modal documentation popup */
+.ssq-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  cursor: default;
+}
+.ssq-modal {
+  width: min(1280px, 96vw);
+  height: min(960px, 94vh);
+  max-width: 96vw;
+  max-height: 94vh;
+  background: linear-gradient(140deg, #1c1c1c, #232323 55%, #2a2a2a);
+  color: #eee;
+  border: 1px solid #3a3a3a;
+  border-radius: 10px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.65);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-size: 13px;
+}
+.ssq-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid #333;
+  background: rgba(0, 0, 0, 0.25);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  flex: 0 0 auto;
+}
+.ssq-modal-body {
+  padding: 18px 24px;
+  overflow-y: auto;
+  line-height: 1.55;
+  flex: 1 1 auto;
+}
+.ssq-modal-body h3 {
+  margin: 14px 0 6px 0;
+  font-size: 13px;
+  color: #9eda9e;
+  border-bottom: 1px solid #2a2a2a;
+  padding-bottom: 3px;
+  letter-spacing: 0.4px;
+}
+.ssq-modal-body h3:first-child {
+  margin-top: 0;
+}
+.ssq-modal-body p {
+  margin: 6px 0;
+  color: #ddd;
+}
+.ssq-modal-body ul {
+  margin: 4px 0 8px 18px;
+  padding: 0;
+}
+.ssq-modal-body li {
+  margin: 3px 0;
+}
+.ssq-modal-body code {
+  background: #111;
+  border: 1px solid #2a2a2a;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  font-size: 12px;
+  color: #cde;
+}
+.ssq-modal-body kbd {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-bottom-color: #222;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-family: inherit;
+  font-size: 11px;
+  color: #fff;
+  box-shadow: inset 0 -1px 0 #111;
+}
+.ssq-doc-pre {
+  background: #111;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin: 6px 0;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  font-size: 12px;
+  color: #d8d8d8;
+  white-space: pre;
+  overflow-x: auto;
+}
+.ssq-doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 6px 0;
+  font-size: 12px;
+}
+.ssq-doc-table th,
+.ssq-doc-table td {
+  border: 1px solid #2a2a2a;
+  padding: 6px 8px;
+  vertical-align: top;
+  text-align: left;
+}
+.ssq-doc-table th {
+  background: rgba(80, 200, 140, 0.1);
+  color: #cfc;
+  font-weight: 600;
+}
+.ssq-doc-table td:first-child {
+  white-space: nowrap;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  color: #cde;
+}
+.ssq-modal-body .ssq-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid #111;
+  margin-right: 4px;
+  vertical-align: middle;
+}

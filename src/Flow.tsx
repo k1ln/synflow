@@ -55,6 +55,7 @@ import SignalRouterFlowNode from './nodes/SignalRouterFlowNode';
 import EventManager from './sys/EventManager';
 import SequencerFlowNode from './nodes/SequencerFlowNode';
 import SequencerFrequencyFlowNode from './nodes/SequencerFrequencyFlowNode';
+import ScriptSequencerFlowNode from './nodes/ScriptSequencerFlowNode';
 // File System Audio storage utilities
 import {
   loadRootHandle as loadAudioRootHandle,
@@ -224,6 +225,7 @@ const nodeTypes = {
   MidiFlowNote: MidiFlowNote,
   SequencerFlowNode: SequencerFlowNode,
   SequencerFrequencyFlowNode: SequencerFrequencyFlowNode,
+  ScriptSequencerFlowNode: ScriptSequencerFlowNode,
   AutomationFlowNode: AutomationFlowNode,
   ArpeggiatorFlowNode: ArpeggiatorFlowNode,
   AnalyzerNodeGPT: AnalyzerNodeGPT,
@@ -1680,6 +1682,15 @@ function Flow() {
         functionCode: "function process(value) {\n  // Modify the value here\n  return value;\n}",
         value: ""
       }
+    } else if (type === "ScriptSequencerFlowNode") {
+      data = {
+        ...data,
+        label: "ScriptSequencer",
+        script: "// proprietary script — runs one line per clock tick\n// connect a clock to \"clock\" (left), \"reset\" to reset the cursor.\non #0\nramp #1 0..1 1t\narray #2 [0.1, 0.3, 0.5, 0.7] 1t swing pink 0.2\noff #0\nloop",
+        activeLine: 0,
+        outputCount: 3,
+        style: nodeStyleObj
+      };
     } else if (type === "InputNode") {
       data = {
         ...data,
@@ -1941,6 +1952,12 @@ function Flow() {
 
   const onCopyCapture = useCallback(
     (event: ClipboardEvent) => {
+      // Don't intercept when focus is inside a text input or contenteditable.
+      const t = event.target as Element | null;
+      if (t && (
+        ['INPUT', 'SELECT', 'TEXTAREA'].includes(t.nodeName) ||
+        t.closest('[contenteditable="true"]') !== null
+      )) return;
       event.preventDefault();
       const selectedNodes = reactFlow?.getNodes().filter((n) => n.selected) ?? [];
       const selectedIds = new Set(selectedNodes.map((n) => n.id));
@@ -1956,6 +1973,12 @@ function Flow() {
 
   const onPasteCapture = useCallback(
     (event: ClipboardEvent) => {
+      // Don't intercept when focus is inside a text input or contenteditable.
+      const t = event.target as Element | null;
+      if (t && (
+        ['INPUT', 'SELECT', 'TEXTAREA'].includes(t.nodeName) ||
+        t.closest('[contenteditable="true"]') !== null
+      )) return;
       event.preventDefault();
       const payload = JSON.parse(
         event.clipboardData?.getData("flowchart:nodes") || "{}"
