@@ -80,6 +80,7 @@ private:
     double sampleRate_ = 48000.0;
     int blockSize_ = 512;
     std::vector<float> scratch_;     // mono render buffer
+    std::vector<float> monoIn_;      // mono host input (effect flows)
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SynflowAudioProcessor)
 };

@@ -17,8 +17,9 @@ juce_add_plugin(Synflow
     PRODUCT_NAME "Synflow"
     COMPANY_NAME "Synflow"
     BUNDLE_ID com.synflow.player
-    IS_SYNTH TRUE
-    NEEDS_MIDI_INPUT TRUE
+    IS_SYNTH FALSE              # universal player: audio in + out + MIDI, so both
+    NEEDS_MIDI_INPUT TRUE       # instrument flows (MIDI->audio) and effect flows
+                               # (audio->audio) load in one plugin
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
     COPY_PLUGIN_AFTER_BUILD FALSE

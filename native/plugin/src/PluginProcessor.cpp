@@ -12,7 +12,9 @@
 using namespace synflow;
 
 SynflowAudioProcessor::SynflowAudioProcessor()
-    : juce::AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)) {
+    : juce::AudioProcessor(BusesProperties()
+                               .withInput("Input", juce::AudioChannelSet::stereo(), true)
+                               .withOutput("Output", juce::AudioChannelSet::stereo(), true)) {
     // A fixed pool of generic 0..1 host parameters; each loaded flow binds its
     // exposed knobs to the first N slots (VST/AU need a stable param layout).
     for (int i = 0; i < kMaxKnobs; ++i) {
@@ -28,7 +30,10 @@ SynflowAudioProcessor::SynflowAudioProcessor()
 bool SynflowAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const {
     const auto& out = layouts.getMainOutputChannelSet();
     if (out != juce::AudioChannelSet::mono() && out != juce::AudioChannelSet::stereo()) return false;
-    return layouts.getMainInputChannelSet().isDisabled(); // synth: no audio input
+    // Universal player: an audio input is optional (effect flows use it,
+    // instruments ignore it); when present it must match the output width.
+    const auto& in = layouts.getMainInputChannelSet();
+    return in.isDisabled() || in == out;
 }
 
 void SynflowAudioProcessor::loadFlow(const juce::String& json) {
@@ -80,8 +85,21 @@ static inline double midiToHz(int note) { return 440.0 * std::pow(2.0, (note - 6
 void SynflowAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi) {
     juce::ScopedNoDenormals noDenormals;
     const int numSamples = buffer.getNumSamples();
-    buffer.clear();
-    if (!graph_) return;
+    if (!graph_) { buffer.clear(); return; }
+
+    // Capture host audio input (effect flows) as mono BEFORE we overwrite the
+    // buffer. Instrument flows have no inputNode, so renderBlock ignores it.
+    const int numIn = getTotalNumInputChannels();
+    const float* inPtr = nullptr;
+    if (numIn > 0) {
+        if (static_cast<int>(monoIn_.size()) < numSamples) monoIn_.assign(static_cast<size_t>(numSamples), 0.0f);
+        for (int i = 0; i < numSamples; ++i) {
+            float s = 0.0f;
+            for (int ch = 0; ch < numIn; ++ch) s += buffer.getSample(ch, i);
+            monoIn_[static_cast<size_t>(i)] = s / static_cast<float>(numIn);
+        }
+        inPtr = monoIn_.data();
+    }
 
     // Transport from the host playhead (Plugin mode: we never invent it).
     double bpm = 120.0, ppq = 0.0;
@@ -116,8 +134,9 @@ void SynflowAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce:
     }
 
     if (static_cast<int>(scratch_.size()) < numSamples) scratch_.assign(static_cast<size_t>(numSamples), 0.0f);
-    graph_->renderBlock(scratch_.data(), numSamples, nullptr, bpm, ppq, playing);
+    graph_->renderBlock(scratch_.data(), numSamples, inPtr, bpm, ppq, playing);
 
+    buffer.clear();
     for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
         buffer.copyFrom(ch, 0, scratch_.data(), numSamples);
 }

@@ -141,7 +141,34 @@ int main() {
         }
     }
 
-    const bool ok = sawOk && wasmOk && reverbOk && knobOk;
+    // Phase 5: universal player — an EFFECT flow processes host audio input
+    // THROUGH the AudioProcessor (audio in -> engine inputNode -> out).
+    bool effectOk = true;
+    {
+        std::string rj = readFileStr("../../packages/daw/flows/effects/reverb.json");
+        if (rj.empty()) rj = readFileStr("packages/daw/flows/effects/reverb.json");
+        if (rj.empty()) { std::printf("[effect-thru-plugin] reverb.json not found -> SKIP\n"); }
+        else {
+            proc.loadFlow(juce::String::fromUTF8(rj.data(), static_cast<int>(rj.size())));
+            std::mt19937 rng(11);
+            std::uniform_real_distribution<float> dist(-0.3f, 0.3f);
+            double outPeak = 0;
+            bool finite2 = true;
+            for (int blk = 0; blk < 20; ++blk) {
+                for (int ch = 0; ch < buf.getNumChannels(); ++ch)
+                    for (int i = 0; i < BLK; ++i) buf.setSample(ch, i, dist(rng)); // host audio in
+                juce::MidiBuffer midi;
+                proc.processBlock(buf, midi);
+                const float pk = buf.getMagnitude(0, 0, BLK); // output (dry+wet) overwrites buffer
+                if (!std::isfinite(pk)) finite2 = false;
+                outPeak = std::max(outPeak, static_cast<double>(pk));
+            }
+            effectOk = finite2 && outPeak > 0.01;
+            std::printf("[effect-thru-plugin] reverb output peak=%.4f -> %s\n", outPeak, effectOk ? "PASS" : "FAIL");
+        }
+    }
+
+    const bool ok = sawOk && wasmOk && reverbOk && knobOk && effectOk;
     std::printf("%s\n", ok ? "ALL PASS" : "FAILED");
     return ok ? 0 : 1;
 }
