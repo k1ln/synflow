@@ -27,7 +27,7 @@ void SynflowAudioProcessor::loadFlow(const juce::String& json) {
     flowJson_ = json;
     auto g = std::make_unique<AudioGraphManager>(RuntimeMode::Plugin);
     FlowLoadResult res = FlowLoader::loadInto(*g, json.toStdString(), static_cast<float>(sampleRate_),
-                                              blockSize_, synflowplugin::makeWasmFactory());
+                                              blockSize_, synflowplugin::makeShellFactory());
     flowName_ = juce::String(res.name);
 
     // Find the host-note targets: the ADSR gate trigger and a pitch oscillator.
