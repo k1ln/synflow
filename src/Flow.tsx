@@ -1703,7 +1703,7 @@ function Flow() {
       //   };
     } else if (type === "SampleFlowNode") {
       // Use a broader width for SampleFlowNode
-      const wideNodeStyleObj = { ...nodeStyleObj, width: "320px" };
+      const wideNodeStyleObj = { ...nodeStyleObj, width: "400px" };
       data = {
         ...data,
         label: "string",
