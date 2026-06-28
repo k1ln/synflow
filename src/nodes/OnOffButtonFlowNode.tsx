@@ -23,7 +23,7 @@ const OnOffButtonFlowNode: React.FC<OnOffButtonFlowNodeProps> = ({ data }) => {
     setIsOn(data.isOn);
   }, [data.isOn]);
   const [label, setLabel] = useState<string>(data.label || 'Gate');
-  const [style, setStyle] = useState<React.CSSProperties>(data.style || { padding: '10px', border: '1px solid #555', borderRadius: 5, width:110, maxHeight: 70, background: '#121212', color: '#eee' });
+  const [style, setStyle] = useState<React.CSSProperties>(data.style || { padding: '10px', border: '1px solid #555', borderRadius: 5, width:110, maxHeight: 70, background: 'transparent', color: '#eee' });
 
   const nodeStyle = {
     ...style,
@@ -46,7 +46,7 @@ const OnOffButtonFlowNode: React.FC<OnOffButtonFlowNodeProps> = ({ data }) => {
   return (
     <div style={nodeStyle}>
       <button
-        className="nodrag nowheel nopan"
+        className={`nodrag nowheel nopan ${isOn ? 'node-state-btn-on' : 'node-state-btn-off'}`}
         draggable={false}
         onMouseDown={(e) => { e.stopPropagation(); }}
         onPointerDown={(e) => { e.stopPropagation(); }}
@@ -56,9 +56,6 @@ const OnOffButtonFlowNode: React.FC<OnOffButtonFlowNodeProps> = ({ data }) => {
         style={{
           padding: '2px 6px',
           width: 68,
-          background: isOn ? '#0a0' : '#4a0F0F',
-          color: '#fff',
-          border: '1px solid #222',
           fontSize: 18,
           cursor: 'pointer',
           borderRadius: 4,

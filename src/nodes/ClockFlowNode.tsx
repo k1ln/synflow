@@ -95,6 +95,7 @@ const ClockFlowNode: React.FC<ClockNodeProps> = ({ id, data }) => {
       style={wrapperStyle}
     >
       <button
+        className={isEmitting ? 'node-state-btn-on' : 'node-state-btn-off'}
         style={{
           position:'absolute',
           top:3,
@@ -103,9 +104,6 @@ const ClockFlowNode: React.FC<ClockNodeProps> = ({ id, data }) => {
           height:19,
           padding:0,
           fontSize:12,
-          background:isEmitting?'#0b0':'#900',
-          color:'#fff',
-          border:'1px solid #222',
           borderRadius:11,
           cursor:'pointer'
         }}

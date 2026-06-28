@@ -125,15 +125,16 @@ const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
       eventBus.emit(id + '.updateParams.midiLearn', { midiLearn: true });
     };
 
+  const baseStyle = (data as any).style || {};
   return (
-    <div className="midi-knob-node" style={{ padding: 4, border: '1px solid #555', borderRadius: 6, background: '#333', color: '#eee', width: 70 }} onContextMenu={onContextMenu}>
+    <div className="midi-knob-node" style={{ padding: 4, borderRadius: 6, color: '#eee', width: 70, ...baseStyle }} onContextMenu={onContextMenu}>
         <div style={{ marginBottom: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <input
             type="text"
             placeholder="name"
             value={label}
             onChange={(e)=> setLabel(e.target.value)}
-            style={{ width: 50, background: '#222', color: '#eee', border: '1px solid #444', borderRadius: 4, padding: '1px 3px', fontSize: 10 }}
+            style={{ width: 50, background: 'transparent', color: '#eee', border: '1px solid #555', borderRadius: 4, padding: '1px 3px', fontSize: 10 }}
             title="Module name (right-click to MIDI learn)"
           />
         </div>
@@ -149,7 +150,7 @@ const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
           <button
             onClick={() => setControlsOpen(o => !o)}
             style={{
-              background: '#222',
+              background: 'transparent',
               color: '#ccc',
               cursor: 'pointer',
               fontSize: 9,
@@ -204,7 +205,7 @@ const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
                     setMinText(String(min));
                   }
                 }}
-                style={{ width:52, background:'#222', color:'#eee', border:'1px solid #444', borderRadius: 4, padding:'1px 2px', fontSize: 9 }}
+                style={{ width:52, background:'transparent', color:'#eee', border:'1px solid #555', borderRadius: 4, padding:'1px 2px', fontSize: 9 }}
               />
             </div>
             <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
@@ -240,12 +241,12 @@ const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
                     setMaxText(String(max));
                   }
                 }}
-                style={{ width:52, background:'#222', color:'#eee', border:'1px solid #444', borderRadius: 4, padding:'1px 2px', fontSize: 9 }}
+                style={{ width:52, background:'transparent', color:'#eee', border:'1px solid #555', borderRadius: 4, padding:'1px 2px', fontSize: 9 }}
               />
             </div>
             <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
               <label style={{ fontSize: 10 }}>Curve</label>
-              <select value={curve} onChange={(e)=> setCurve(e.target.value as CurveType)} style={{ width:62, background:'#222', color:'#eee', border:'1px solid #444', borderRadius:4, padding:'1px 2px', fontSize: 9 }}>
+              <select value={curve} onChange={(e)=> setCurve(e.target.value as CurveType)} style={{ width:62, background:'transparent', color:'#eee', border:'1px solid #555', borderRadius:4, padding:'1px 2px', fontSize: 9 }}>
                 <option value="linear">linear</option>
                 <option value="logarithmic">logarithmic</option>
                 <option value="exponential">exponential</option>

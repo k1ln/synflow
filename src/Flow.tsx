@@ -556,6 +556,8 @@ function Flow() {
       addOnchangeToNodes(themedNodes);
       setNodes(themedNodes);
       setEdges(recEdges);
+      setFlowNameInput(flowName);
+      setCurrentFlowFolder(recFolder);
       localStorage.setItem('currentFlow', flowName);
       localStorage.setItem('currentFlowFolder', recFolder);
       // Record last opened flow; freshness check runs in effect once auth state & ensureFlowFresh are ready
@@ -568,7 +570,7 @@ function Flow() {
         });
       });
     }
-  }, [setNodes, setEdges, db, showToast, setIsFlowLoading]);
+  }, [setNodes, setEdges, setFlowNameInput, setCurrentFlowFolder, db, showToast, setIsFlowLoading]);
 
   // Legacy wrapper for backwards compatibility
   const openFlowFromIndexedDB = useCallback(async (

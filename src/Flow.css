@@ -74,17 +74,17 @@ body {
 }
 .topbar-btn:hover:not(:disabled) {
     background: transparent !important;
-    box-shadow: none;
+    box-shadow: 0 0 9px 3px rgba(0,255,120,0.28);
 }
 .topbar-btn:active:not(:disabled) {
     transform: translateY(1px) scale(.97);
     background: transparent !important;
-    box-shadow: none;
+    box-shadow: 0 0 7px 2px rgba(0,255,120,0.45);
 }
 .topbar-btn.playing {
     background: transparent !important;
-    box-shadow: none;
-    color: #8dffbf !important;
+    box-shadow: 0 0 16px 5px rgba(0,255,110,0.60);
+    color: #00ffaa !important;
 }
 .topbar-btn.playing:hover:not(:disabled) {
     background: transparent !important;

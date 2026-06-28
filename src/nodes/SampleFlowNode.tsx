@@ -1271,11 +1271,10 @@ const WaveformSelector: React.FC<WaveformSelectorProps> = ({
             Play:
           </span>
           <button
+            className={isPlaying ? 'node-state-btn-stop' : 'node-state-btn-play'}
             onClick={isPlaying ? stopPlayback : startPlayback}
             disabled={!audioBuffer}
             style={{
-              background: isPlaying ? '#733' : '#373',
-              color: '#eee',
               border: '1px solid #555',
               padding: '8px 16px',
               borderRadius: 4,

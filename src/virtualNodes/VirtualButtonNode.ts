@@ -126,7 +126,7 @@ export class VirtualButtonNode extends VirtualNode<CustomNode & ButtonNodeProps,
         this.eventBus.subscribe(
             this.node.id + ".main-input.sendNodeOff",
             (data) => {
-                this.eventBus.emit(this.node.id + ".style.background", { color: "#333" });
+                this.eventBus.emit(this.node.id + ".style.background", { color: "transparent" });
                 offHandler(data);
             }
         );
@@ -184,7 +184,7 @@ export class VirtualButtonNode extends VirtualNode<CustomNode & ButtonNodeProps,
         if (this.isLearning) return;
         this.isLearning = true;
         this.eventBus.emit(this.node.id + '.style.background', { color: '#7a5b00' });
-        setTimeout(() => { if (this.isLearning) { this.isLearning = false; this.eventBus.emit(this.node.id + '.style.background', { color: '#333' }); } }, 10000);
+        setTimeout(() => { if (this.isLearning) { this.isLearning = false; this.eventBus.emit(this.node.id + '.style.background', { color: 'transparent' }); } }, 10000);
     }
 }
 

@@ -327,8 +327,8 @@ export const TopBar: React.FC<TopBarProps> = ({
               style={{
                 display:'flex', alignItems:'center', justifyContent:'center', gap:6,
                 height: 32, padding:'0 12px', cursor:'pointer', userSelect:'none',
-                background:'transparent', border:'none', borderRadius:6,
-                boxShadow:'none',
+                background:'#2a1414', border:'1px solid #7a2020', borderRadius:6,
+                boxShadow:'0 1px 4px rgba(0,0,0,0.55), 0 0 14px 4px rgba(255,30,30,0.30)',
                 fontSize:12, fontWeight:500, color:'#ffb38a'
               }}
             >

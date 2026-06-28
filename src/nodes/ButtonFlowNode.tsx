@@ -53,7 +53,7 @@ const ButtonFlowNode: React.FC<ButtonNodeProps> = ({ data }) => {
       borderRadius: "5px",
       width: "120px",
       textAlign: "center",
-      background: "#333",
+      background: "transparent",
       color: "#eee",
     };
   }
@@ -77,7 +77,7 @@ const ButtonFlowNode: React.FC<ButtonNodeProps> = ({ data }) => {
           style={{
             padding: "10px",
             margin: "10px 0",
-            background: "#444",
+            background: "transparent",
             color: "#fff",
             border: "1px solid #ddd",
             borderRadius: "5px",
