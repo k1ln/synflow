@@ -9,7 +9,7 @@ import { encodeWav } from './wav';
 import { scheduleFade } from './clipFade';
 import type { AudioAssets } from './AudioAssets';
 import { findEntry, cloneFlow } from '../synflow/library';
-import { trackActiveAt, trackAudible, songLengthSteps, songLengthSlots, type Project } from '../model/project';
+import { trackActiveAt, trackAudible, songLengthSteps, songLengthSlots, swingDelaySteps, type Project } from '../model/project';
 import { midiToFreq } from '../model/pitch';
 
 export interface BounceOpts { sampleRate?: number; tailSeconds?: number }
@@ -34,6 +34,7 @@ export async function bounceProjectToWav(project: Project, assets: AudioAssets, 
   const ctx = new OfflineAudioContext(2, Math.ceil(lengthSec * sr), sr);
   const mixer = new Mixer(ctx as unknown as AudioContext);
   await mixer.masterChain.setChain(resolveFx(project.masterFx));
+  for (const bus of project.buses ?? []) { const b = mixer.bus(bus.id, bus.volume); await b.chain.setChain(resolveFx(bus.fx)); }
 
   const hosts = new Map<string, InstrumentHost>();  // drum use → host
   const pools = new Map<string, VoicePool>();        // synth use → voice pool
@@ -70,6 +71,8 @@ export async function bounceProjectToWav(project: Project, assets: AudioAssets, 
       else { const host = new InstrumentHost(ctx, pool.flow, dest); await host.load(); hosts.set(use.id, host); }
     }
   }
+  for (const track of project.tracks) for (const s of track.sends ?? []) mixer.setSend(track.id, s.busId, s.level);
+  for (const track of project.tracks) if (track.sidechain && project.tracks.some((k) => k.id === track.sidechain!.keyTrackId)) mixer.setSidechain(track.id, track.sidechain.keyTrackId, track.sidechain.amount, track.sidechain.release);
 
   // ── collect every trigger as a timed event (mirrors the live scheduler) ────
   const events: Array<{ time: number; fn: () => void }> = [];
@@ -77,6 +80,7 @@ export async function bounceProjectToWav(project: Project, assets: AudioAssets, 
   for (let s = 0; s < songSteps; s++) {
     const slot = Math.floor(s / project.totalSteps);
     const base = s * spp;
+    const swingSec = swingDelaySteps(s, project.swing ?? 0) * spp;       // off-beat groove (mirrors live)
     for (const track of project.tracks) {
       if (track.type === 'audio') continue;                              // scheduled as buffers above
       if (!trackActiveAt(track.clips, slot, songLengthSlots(project))) continue; // song arrangement gates playback
@@ -87,15 +91,15 @@ export async function bounceProjectToWav(project: Project, assets: AudioAssets, 
           const vp = pools.get(use.id); if (!vp) continue;
           for (const n of use.notes) {
             if (Math.floor(n.start) !== step) continue;
-            const on = base + (n.start - step) * spp;
+            const on = base + (n.start - step) * spp + swingSec;
             const id = nid++; const f = midiToFreq(n.midi);
             events.push({ time: on, fn: () => vp.noteOn(id, f) });
             events.push({ time: on + n.length * spp, fn: () => vp.noteOff(id) });
           }
         } else if (track.type === 'drums' && use.steps?.[step]) {
           const host = hosts.get(use.id); if (!host) continue;
-          events.push({ time: base, fn: () => host.trigger() });
-          events.push({ time: base + Math.min(spp * 0.9, 0.5), fn: () => host.release() });
+          events.push({ time: base + swingSec, fn: () => host.trigger() });
+          events.push({ time: base + swingSec + Math.min(spp * 0.9, 0.5), fn: () => host.release() });
         }
       }
     }

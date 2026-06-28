@@ -1,0 +1,93 @@
+{
+  "name": "Reverb",
+  "daw": {
+    "id": "reverb",
+    "category": "Reverb"
+  },
+  "nodes": [
+    {
+      "id": "in.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": {
+        "gain": 1,
+        "isInput": true
+      },
+      "position": {
+        "x": 100,
+        "y": 120
+      }
+    },
+    {
+      "id": "rev.ReverbFlowNode",
+      "type": "ReverbFlowNode",
+      "data": {
+        "seconds": 2.5,
+        "decay": 2.5,
+        "knobs": [
+          { "param": "seconds", "label": "Size", "min": 0.2, "max": 8, "default": 2.5 },
+          { "param": "decay", "label": "Decay", "min": 0.5, "max": 10, "default": 2.5 }
+        ]
+      },
+      "position": {
+        "x": 340,
+        "y": 40
+      }
+    },
+    {
+      "id": "wet.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": {
+        "gain": 0.3,
+        "knobs": [
+          { "param": "gain", "label": "Mix", "min": 0, "max": 1, "default": 0.3 }
+        ]
+      },
+      "position": {
+        "x": 580,
+        "y": 40
+      }
+    },
+    {
+      "id": "out.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": {
+        "gain": 1,
+        "isOutput": true
+      },
+      "position": {
+        "x": 820,
+        "y": 120
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "rx-in-out",
+      "source": "in.GainFlowNode",
+      "target": "out.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "rx-in-rev",
+      "source": "in.GainFlowNode",
+      "target": "rev.ReverbFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "rx-rev-wet",
+      "source": "rev.ReverbFlowNode",
+      "target": "wet.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "rx-wet-out",
+      "source": "wet.GainFlowNode",
+      "target": "out.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    }
+  ]
+}

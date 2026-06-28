@@ -23,6 +23,10 @@ export interface TrackEditorHandlers {
   onMoveNote: (useId: string, noteId: number, midi: number, start: number) => void;
   onResizeNote: (useId: string, noteId: number, length: number) => void;
   onSetVelocity: (useId: string, noteId: number, velocity: number) => void;
+  onQuantize: (useId: string, gridSteps: number) => void;
+  onTranspose: (useId: string, semitones: number) => void;
+  onHumanize: (useId: string) => void;
+  onSetKey: (key: import('../model/project').MusicalKey | null) => void;
   onPlayNote: (useId: string, midi: number) => void;
   onKeyDown: (useId: string, midi: number) => void;
   onKeyUp: (useId: string, midi: number) => void;
@@ -52,6 +56,8 @@ export interface TrackEditorHandlers {
   onSplitAudioClip: (trackId: string, clipId: string, atSteps: number) => void;
   onRemoveAudioClip: (trackId: string, clipId: string) => void;
   onAudioClipGain: (trackId: string, clipId: string, gain: number) => void;
+  onNormalizeAudioClip: (trackId: string, clipId: string) => void;
+  onFadeAudioClip: (trackId: string, clipId: string, fadeIn: number, fadeOut: number) => void;
   onPlayAudioClip: (clip: AudioClip) => void;
 }
 
@@ -131,6 +137,8 @@ export function TrackEditor({ project, track, effects, currentStep, recTrack, pr
           onSplit={(clipId, atSteps) => h.onSplitAudioClip(track.id, clipId, atSteps)}
           onRemove={(clipId) => h.onRemoveAudioClip(track.id, clipId)}
           onGain={(clipId, gain) => h.onAudioClipGain(track.id, clipId, gain)}
+          onNormalize={(clipId) => h.onNormalizeAudioClip(track.id, clipId)}
+          onFade={(clipId, fadeIn, fadeOut) => h.onFadeAudioClip(track.id, clipId, fadeIn, fadeOut)}
         />
       ) : (
       <div className="te-uses">
@@ -157,7 +165,9 @@ export function TrackEditor({ project, track, effects, currentStep, recTrack, pr
                     id={use.id} name={poolName(use.poolId)} notes={use.notes ?? []} voices={use.voices}
                     totalSteps={T} stepsPerBeat={S} currentStep={cs}
                     onAddNote={h.onAddNote} onRemoveNote={h.onRemoveNote}
-                    onMoveNote={h.onMoveNote} onResizeNote={h.onResizeNote} onSetVelocity={h.onSetVelocity} onPlayNote={h.onPlayNote}
+                    onMoveNote={h.onMoveNote} onResizeNote={h.onResizeNote} onSetVelocity={h.onSetVelocity} onPlayNote={h.onPlayNote} onQuantize={h.onQuantize}
+                    onTranspose={h.onTranspose} onHumanize={h.onHumanize}
+                    musicalKey={project.key} onSetKey={h.onSetKey}
                     onKeyDown={h.onKeyDown} onKeyUp={h.onKeyUp}
                   />
                 </div>

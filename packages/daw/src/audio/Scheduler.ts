@@ -11,6 +11,10 @@ export class Scheduler {
   lookahead = 0.12;     // seconds scheduled ahead of the clock
   intervalMs = 25;      // how often the lookahead runs
   totalSteps = 16;      // pattern length (steps); wraps (loops)
+  // Optional loop window (steps). Active when loopEnd > loopStart: the cursor wraps
+  // back to loopStart the moment it would reach loopEnd. 0/0 = disabled (full song).
+  loopStart = 0;
+  loopEnd = 0;
 
   private timer: ReturnType<typeof setInterval> | null = null;
   private nextStepTime = 0;
@@ -45,7 +49,11 @@ export class Scheduler {
     while (this.nextStepTime < this.clock.currentTime + this.lookahead) {
       this.onStep(this.step, this.nextStepTime);
       this.nextStepTime += stepDur;
-      this.step = (this.step + 1) % this.totalSteps;
+      let next = this.step + 1;
+      // Loop the region only when crossing loopEnd exactly, so seeking outside the
+      // window (e.g. a marker jump) isn't yanked back — it just plays on.
+      if (this.loopEnd > this.loopStart && next === this.loopEnd) next = this.loopStart;
+      this.step = next % Math.max(1, this.totalSteps);
     }
   }
 }

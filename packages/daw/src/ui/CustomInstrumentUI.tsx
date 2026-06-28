@@ -28,8 +28,11 @@ export function CustomInstrumentUI({ html, knobs, valueOf, onKnob, onNoteOn, onN
   cbs.current = { onKnob, onNoteOn, onNoteOff, onHit, valueOf };
   const knobMap = useRef(new Map<string, ExposedKnob>());
   knobMap.current = new Map(knobs.map((k) => [`${k.nodeId}.${k.param}`, k]));
+  const octaveShift = useRef(0);
 
   const splitKey = (key: string): [string, string] => { const i = key.lastIndexOf('.'); return [key.slice(0, i), key.slice(i + 1)]; };
+  const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const midiName = (m: number) => `${NOTE_NAMES[((m % 12) + 12) % 12]}${Math.floor(m / 12) - 1}`;
 
   const sync = () => {
     const root = shadowRef.current; if (!root) return;
@@ -59,7 +62,7 @@ export function CustomInstrumentUI({ html, knobs, valueOf, onKnob, onNoteOn, onN
     const host = hostRef.current; if (!host) return;
     if (!shadowRef.current) shadowRef.current = host.attachShadow({ mode: 'open' });
     const root = shadowRef.current;
-    root.innerHTML = '<style>:host{display:block}*{box-sizing:border-box}[data-note],[data-hit]{user-select:none;touch-action:none;cursor:pointer}[data-knob]{user-select:none;touch-action:none;cursor:ns-resize}</style>' + html;
+    root.innerHTML = '<style>:host{display:block}*{box-sizing:border-box}[data-note],[data-hit],[data-octave]{user-select:none;touch-action:none;cursor:pointer}[data-knob]{user-select:none;touch-action:none;cursor:ns-resize}</style>' + html;
     const cleanups: Array<() => void> = [];
 
     root.querySelectorAll<HTMLInputElement>('input[data-param]').forEach((el) => {
@@ -100,11 +103,28 @@ export function CustomInstrumentUI({ html, knobs, valueOf, onKnob, onNoteOn, onN
       cleanups.push(() => el.removeEventListener('pointerdown', down));
     });
 
-    root.querySelectorAll<HTMLElement>('[data-note]').forEach((el) => {
-      const midi = Number(el.getAttribute('data-note'));
+    // Octave transpose: [data-octave="-1"|"+1"] buttons; [data-octave-label] shows
+    // the keyboard's lowest note. Keys play their note + the current shift.
+    const noteEls = Array.from(root.querySelectorAll<HTMLElement>('[data-note]'));
+    const lowNote = noteEls.reduce((m, el) => Math.min(m, Number(el.getAttribute('data-note'))), Infinity);
+    const refreshOctaveLabel = () => {
+      const lo = Number.isFinite(lowNote) ? lowNote + octaveShift.current : 60 + octaveShift.current;
+      root.querySelectorAll<HTMLElement>('[data-octave-label]').forEach((el) => { el.textContent = midiName(lo); });
+    };
+    root.querySelectorAll<HTMLElement>('[data-octave]').forEach((el) => {
+      const dir = parseInt(el.getAttribute('data-octave') || '0', 10) || 0;
+      const h = (e: Event) => { e.preventDefault(); octaveShift.current = Math.max(-48, Math.min(48, octaveShift.current + dir * 12)); refreshOctaveLabel(); };
+      el.addEventListener('pointerdown', h);
+      cleanups.push(() => el.removeEventListener('pointerdown', h));
+    });
+    refreshOctaveLabel();
+
+    noteEls.forEach((el) => {
+      const baseMidi = Number(el.getAttribute('data-note'));
       const vel = el.hasAttribute('data-vel') ? Number(el.getAttribute('data-vel')) : 1;
-      const down = (e: PointerEvent) => { e.preventDefault(); el.classList.add('on'); el.setPointerCapture?.(e.pointerId); cbs.current.onNoteOn?.(midi, vel); };
-      const up = () => { el.classList.remove('on'); cbs.current.onNoteOff?.(midi); };
+      let held: number | null = null;
+      const down = (e: PointerEvent) => { e.preventDefault(); el.classList.add('on'); el.setPointerCapture?.(e.pointerId); held = baseMidi + octaveShift.current; cbs.current.onNoteOn?.(held, vel); };
+      const up = () => { el.classList.remove('on'); if (held != null) cbs.current.onNoteOff?.(held); held = null; };
       const leave = (e: PointerEvent) => { if (e.buttons) up(); };
       el.addEventListener('pointerdown', down); el.addEventListener('pointerup', up);
       el.addEventListener('pointerleave', leave); el.addEventListener('pointercancel', up);

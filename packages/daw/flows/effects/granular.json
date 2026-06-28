@@ -1,0 +1,73 @@
+{
+  "name": "Granular",
+  "daw": {
+    "id": "granular",
+    "category": "Texture"
+  },
+  "nodes": [
+    {
+      "id": "in.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": {
+        "gain": 1,
+        "isInput": true
+      },
+      "position": {
+        "x": 100,
+        "y": 80
+      }
+    },
+    {
+      "id": "gran.GranularFlowNode",
+      "type": "GranularFlowNode",
+      "data": {
+        "density": 40,
+        "size": 120,
+        "position": 0.1,
+        "spray": 0.2,
+        "pitch": 1,
+        "mix": 0.6,
+        "knobs": [
+          { "param": "density", "label": "Density", "min": 1, "max": 200, "default": 40 },
+          { "param": "size", "label": "Size", "min": 5, "max": 500, "default": 120 },
+          { "param": "position", "label": "Pos", "min": 0, "max": 1, "default": 0.1 },
+          { "param": "spray", "label": "Spray", "min": 0, "max": 1, "default": 0.2 },
+          { "param": "pitch", "label": "Pitch", "min": 0.25, "max": 4, "default": 1 },
+          { "param": "mix", "label": "Mix", "min": 0, "max": 1, "default": 0.6 }
+        ]
+      },
+      "position": {
+        "x": 340,
+        "y": 80
+      }
+    },
+    {
+      "id": "out.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": {
+        "gain": 1,
+        "isOutput": true
+      },
+      "position": {
+        "x": 670,
+        "y": 80
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "gx-in-gran",
+      "source": "in.GainFlowNode",
+      "target": "gran.GranularFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "gx-gran-out",
+      "source": "gran.GranularFlowNode",
+      "target": "out.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    }
+  ]
+}

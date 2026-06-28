@@ -1,0 +1,71 @@
+{
+  "name": "Limiter",
+  "daw": {
+    "id": "limiter",
+    "category": "Dynamics"
+  },
+  "nodes": [
+    {
+      "id": "in.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": {
+        "gain": 1,
+        "isInput": true
+      },
+      "position": {
+        "x": 100,
+        "y": 80
+      }
+    },
+    {
+      "id": "lim.DynamicCompressorFlowNode",
+      "type": "DynamicCompressorFlowNode",
+      "data": {
+        "threshold": -3,
+        "knee": 0,
+        "ratio": 20,
+        "attack": 0.001,
+        "release": 0.05,
+        "knobs": [
+          { "param": "threshold", "label": "Ceiling", "min": -30, "max": 0, "default": -3 },
+          { "param": "release", "label": "Release", "min": 0.01, "max": 0.3, "default": 0.05 }
+        ]
+      },
+      "position": {
+        "x": 340,
+        "y": 80
+      }
+    },
+    {
+      "id": "out.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": {
+        "gain": 1,
+        "isOutput": true,
+        "knobs": [
+          { "param": "gain", "label": "Out", "min": 0, "max": 4, "default": 1 }
+        ]
+      },
+      "position": {
+        "x": 670,
+        "y": 80
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "lx-in-lim",
+      "source": "in.GainFlowNode",
+      "target": "lim.DynamicCompressorFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "lx-lim-out",
+      "source": "lim.DynamicCompressorFlowNode",
+      "target": "out.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    }
+  ]
+}

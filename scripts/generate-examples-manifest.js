@@ -6,6 +6,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -44,14 +45,26 @@ try {
     process.exit(1);
   }
   
-  const flowExamples = getAllJsonFiles(EXAMPLES_DIR);
-  
+  const flowExamples = getAllJsonFiles(EXAMPLES_DIR).sort();
+
+  // Content version: an md5 of every example file's bytes. Changes only when an
+  // example's content actually changes, so the app can detect "the bundled
+  // version is newer than the copy on disk" and re-seed just then.
+  const h = crypto.createHash('md5');
+  for (const name of flowExamples) {
+    h.update(name);
+    h.update(fs.readFileSync(path.join(EXAMPLES_DIR, `${name}.json`)));
+  }
+  const version = h.digest('hex').slice(0, 16);
+
   const manifest = {
     generated: new Date().toISOString(),
-    examples: flowExamples.sort()
+    version,
+    examples: flowExamples
   };
-  
+
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(manifest, null, 2));
+  console.log(`  version: ${version}`);
   
   console.log(`✓ Generated manifest with ${flowExamples.length} examples:`);
   flowExamples.forEach(example => console.log(`  - ${example}`));

@@ -1,4 +1,5 @@
 import type { Flow } from '../synflow/instruments';
+import type { ScaleType } from './pitch';
 import { makeKick, makeBlip, makeBasicSynth, makeSynthVoice } from '../synflow/instruments';
 import { findEntry, cloneFlow } from '../synflow/library';
 
@@ -145,6 +146,33 @@ export const defaultEq = (): EqSettings => ({ on: true, outDb: 0, bands: [] });
  *  Synflow override, or `eq` holds settings for the built-in graphical EQ. */
 export interface FxInsert { id: string; fxId: string; name: string; flow?: Flow; eq?: EqSettings }
 
+/** A post-fader send from a track to an aux/return bus. `level` is 0..1. */
+export interface Send { busId: string; level: number }
+
+/** Sidechain ducking: this track's level dips when `keyTrackId` plays (kick-ducks-
+ *  bass). `amount` 0..1 is the max gain reduction; `release` ms shapes the recovery. */
+export interface Sidechain { keyTrackId: string; amount: number; release: number }
+
+/** An aux/return bus: a shared FX destination (e.g. one reverb for many tracks).
+ *  Tracks send a portion of their post-fader signal here; the bus sums them, runs
+ *  its own FX chain, and returns to the master. Lives in the song JSON. */
+export interface Bus { id: string; name: string; volume: number; fx: FxInsert[] }
+
+/** A named cue point on the song timeline (`step` = absolute timeline step).
+ *  Click to jump the playhead; use for sections (Intro/Verse/Chorus…). */
+export interface Marker { id: string; name: string; step: number }
+
+/** Playback loop region (song mode): when `on`, the transport loops bars
+ *  [startBar, endBar) (0-indexed, endBar exclusive). Live-only (not exported). */
+export interface LoopRegion { on: boolean; startBar: number; endBar: number }
+
+/** The song's musical key for the piano-roll scale highlight + optional snap.
+ *  `root` is a pitch-class (0=C…11=B); `snap` snaps entered notes into the scale. */
+export interface MusicalKey { root: number; scale: ScaleType; snap: boolean }
+
+/** A fresh, empty aux bus. */
+export function newBus(name = 'Bus'): Bus { return { id: uid('bus'), name, volume: 1, fx: [] }; }
+
 /**
  * A pool item: an instrument or drum loaded for the PROJECT (shown on the left).
  * Tracks reference these; the same pool item can be used in several tracks.
@@ -205,17 +233,24 @@ export interface Track {
   audioClips?: AudioClip[];// audio tracks: clips placed on the song timeline
   videoClips?: VideoClip[];// video tracks: clips placed on the song timeline
   fx: FxInsert[];          // track-level FX (level 2)
+  sends?: Send[];          // post-fader sends into aux/return buses
+  sidechain?: Sidechain;   // duck this track from another track's signal
   automation: AutomationLane[];
 }
 
 export interface Project {
   name: string;
   bpm: number;
+  swing?: number;          // global groove 0..1: delays off-beat 16ths (0 = straight)
   stepsPerBeat: number;
   totalSteps: number;      // steps per pattern (one slot/bar)
   songSlots: number;       // length of the song timeline, in pattern slots
   pool: PoolItem[];        // left panel: instruments + drums loaded for the project
   tracks: Track[];
+  buses?: Bus[];           // aux/return buses (shared FX destinations)
+  markers?: Marker[];      // named cue points on the song timeline
+  loop?: LoopRegion;       // playback loop region (song mode, live-only)
+  key?: MusicalKey;        // piano-roll scale highlight + snap (off when unset)
   assets: AudioAsset[];    // audio recordings/imports referenced by audio clips
   videoAssets?: VideoAsset[]; // video imports referenced by video clips
   masterFx: FxInsert[];    // master FX (level 3)
@@ -266,6 +301,7 @@ export function defaultProject(): Project {
     songSlots: 8,
     pool,
     assets: [],
+    buses: [{ id: 'reverb-bus', name: 'Reverb', volume: 1, fx: [fxInsert('reverb')] }],
     masterFx: [],
     tracks: [
       {
@@ -295,12 +331,28 @@ export function defaultProject(): Project {
 
 export const blankSteps = (n: number) => stepArr(n);
 
+/** Swing delay (in fractional steps) for an event firing on step `s`. Off-beat
+ *  16ths (odd steps) are pushed later by up to half a step; `swing` 0..1 maps to
+ *  straight → heavily dotted (~0.66 ≈ triplet feel). On-beats are unchanged. */
+export function swingDelaySteps(s: number, swing = 0): number {
+  return swing > 0 && Math.abs(s % 2) === 1 ? swing * 0.5 : 0;
+}
+
+/** Snap every note's start to the nearest multiple of `gridSteps` (quantize).
+ *  Returns a new array; lengths are preserved. */
+export function quantizeNotes(notes: PianoNote[], gridSteps: number): PianoNote[] {
+  if (!(gridSteps > 0)) return notes;
+  return notes.map((n) => ({ ...n, start: Math.max(0, Math.round(n.start / gridSteps) * gridSteps) }));
+}
+
 /** Backfill fields missing from older saved songs (assets registry, audio/video clips). */
 export function normalizeProject(p: Project): Project {
   return {
     ...p,
     assets: p.assets ?? [],
     videoAssets: p.videoAssets ?? [],
+    buses: p.buses ?? [],
+    markers: p.markers ?? [],
     tracks: (p.tracks ?? []).map((t) =>
       t.type === 'audio' ? { ...t, audioClips: t.audioClips ?? [] }
         : t.type === 'video' ? { ...t, videoClips: t.videoClips ?? [] }

@@ -11,7 +11,7 @@ const TABS: [ViewId, string, React.ComponentType<any>][] = [
 ];
 
 export function TopBar({
-  view, setView, isPlaying, onPlay, onStop, armed, onArm, metronome, onToggleMetronome, bpm, onBpm, position, browserOpen, setBrowserOpen,
+  view, setView, isPlaying, onPlay, onStop, armed, onArm, metronome, onToggleMetronome, bpm, onBpm, swing, onSwing, position, browserOpen, setBrowserOpen,
   projectName, onProjectName, onNewSong, onSave, saved, onOpenSong, onExport, exporting, exportProgress, onBounce, bouncing, bounceProgress,
   canUndo, canRedo, onUndo, onRedo,
   cameraOn, onToggleCamera, screenOn, onToggleScreen, micOn, onToggleMic, recording, onToggleRecord,
@@ -28,6 +28,8 @@ export function TopBar({
   onToggleMetronome: () => void;
   bpm: number;
   onBpm: (v: number) => void;
+  swing: number;
+  onSwing: (v: number) => void;
   position: string;
   browserOpen: boolean;
   setBrowserOpen: (v: boolean) => void;
@@ -104,6 +106,10 @@ export function TopBar({
           <label className="t-tempo">
             <input type="number" min={40} max={300} value={bpm} onChange={(e) => onBpm(Math.max(40, Math.min(300, parseInt(e.target.value, 10) || bpm)))} />
             <span>Tempo</span>
+          </label>
+          <label className="t-tempo t-swing" title="Swing: delays off-beat 16ths for groove (0 = straight)">
+            <input type="number" min={0} max={100} step={1} value={Math.round((swing ?? 0) * 100)} onChange={(e) => onSwing(Math.max(0, Math.min(100, parseInt(e.target.value, 10) || 0)) / 100)} />
+            <span>Swing %</span>
           </label>
         </div>
       </div>

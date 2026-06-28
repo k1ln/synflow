@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Scissors, Trash2, Play, Square } from 'lucide-react';
+import { Scissors, Trash2, Play, Square, Maximize2 } from 'lucide-react';
 import { songLengthSteps, type Project, type Track, type AudioClip } from '../model/project';
 import { Waveform } from './Waveform';
 import { slicePeaks } from '../audio/waveform';
@@ -10,7 +10,7 @@ const LANE_H = 88;
  *  move, edge-drag to trim, split at the playhead, and delete. */
 export function AudioTrackLane({
   track, project, currentStep, recording, previewKey, onPlay,
-  onMove, onTrim, onSplit, onRemove, onGain,
+  onMove, onTrim, onSplit, onRemove, onGain, onNormalize, onFade,
 }: {
   track: Track;
   project: Project;
@@ -23,6 +23,8 @@ export function AudioTrackLane({
   onSplit: (clipId: string, atSteps: number) => void;
   onRemove: (clipId: string) => void;
   onGain: (clipId: string, gain: number) => void;
+  onNormalize: (clipId: string) => void;
+  onFade: (clipId: string, fadeIn: number, fadeOut: number) => void;
 }) {
   const laneRef = useRef<HTMLDivElement>(null);
   const [laneW, setLaneW] = useState(800);
@@ -78,12 +80,17 @@ export function AudioTrackLane({
           return (
             <div key={c.id} className="atl-clip" style={{ left: leftPx, width: widthPx, height: LANE_H - 8 }} onPointerDown={(e) => begin(e, 'move', c)}>
               <Waveform peaks={asset?.peaks ? slicePeaks(asset.peaks, asset.duration, c.offset, c.duration) : null} width={Math.round(widthPx)} height={LANE_H - 8} color="#7cc4ff" background="transparent" />
+              {!!c.fadeIn && <div className="atl-fade in" style={{ width: Math.min(widthPx, (c.fadeIn / c.duration) * widthPx) }} />}
+              {!!c.fadeOut && <div className="atl-fade out" style={{ width: Math.min(widthPx, (c.fadeOut / c.duration) * widthPx) }} />}
               <span className="atl-clip-name">{asset?.name ?? 'missing audio'}</span>
               <div className="atl-clip-tools" onPointerDown={(e) => e.stopPropagation()}>
                 <button title={previewKey === c.id ? 'Stop' : 'Play'} onClick={() => onPlay(c)}>{previewKey === c.id ? <Square size={11} /> : <Play size={11} />}</button>
                 <button title="Split" onClick={() => splitAt(c)}><Scissors size={11} /></button>
+                <button title="Normalize to peak" onClick={() => onNormalize(c.id)}><Maximize2 size={11} /></button>
                 <button title="Remove" onClick={() => onRemove(c.id)}><Trash2 size={11} /></button>
                 <input className="atl-gain" type="range" min={0} max={1.5} step={0.01} value={c.gain} title="Clip gain" onChange={(e) => onGain(c.id, parseFloat(e.target.value))} />
+                <label className="atl-fadein" title="Fade in (seconds)">⟋<input type="number" min={0} max={c.duration} step={0.05} value={+(c.fadeIn ?? 0).toFixed(2)} onChange={(e) => onFade(c.id, Math.max(0, parseFloat(e.target.value) || 0), c.fadeOut ?? 0)} /></label>
+                <label className="atl-fadeout" title="Fade out (seconds)">⟍<input type="number" min={0} max={c.duration} step={0.05} value={+(c.fadeOut ?? 0).toFixed(2)} onChange={(e) => onFade(c.id, c.fadeIn ?? 0, Math.max(0, parseFloat(e.target.value) || 0))} /></label>
               </div>
               <span className="atl-handle left" onPointerDown={(e) => begin(e, 'left', c)} />
               <span className="atl-handle right" onPointerDown={(e) => begin(e, 'right', c)} />

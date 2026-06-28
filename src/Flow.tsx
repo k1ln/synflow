@@ -31,6 +31,7 @@ import EventManager from './sys/EventManager';
 import {
   loadRootHandle as loadAudioRootHandle,
   selectAndPrepareRoot,
+  ensureBundledExamples,
   listAudioInSubdirectory,
   saveFlowToDisk,
   deleteFlowFromDisk,
@@ -425,6 +426,40 @@ function Flow() {
           showToast?.('Failed to open flow', 'error');
           return;
         }
+      }
+
+      // Bundled examples are read-only content shipped with the app. When the
+      // seeded disk/DB copy is stale (missing the custom UI / updated graph),
+      // overlay the latest bundled version. The display name often differs from
+      // the file name (parody renames: "Juna-106" ↔ juno-106.json; an OLD cached
+      // entry may still be "Juno-106"). So resolve via the manifest, matching the
+      // file basename, the flow's `name`, or a slug of either.
+      if (!recCustomUi && recFolder && recFolder.startsWith('examples')) {
+        try {
+          // Compact normalization (alphanumerics only) so any of the name forms
+          // match: file basename "tr808-kick", old name "TR-808 Kick", new name
+          // "RX-808 Kick" → tr808kick / tr808kick / rx808kick (name-field match).
+          const norm = (s: any) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          const sub = recFolder.replace(/^examples\/?/, '');
+          const want = norm(flowName);
+          const manifest = await (await fetch('/flow-examples/manifest.json', { cache: 'no-store' })).json();
+          const cands: string[] = (manifest.examples || []).filter((p: string) => {
+            const parts = p.split('/'); parts.pop(); return parts.join('/') === sub;
+          });
+          // Prefer a cheap filename match so we usually fetch just one file.
+          cands.sort((a) => (norm(a.split('/').pop()) === want ? -1 : 0));
+          for (const p of cands) {
+            const r = await fetch(`/flow-examples/${p}.json`, { cache: 'no-store' });
+            if (!r.ok) continue;
+            const b = await r.json();
+            if (norm(p.split('/').pop()) === want || norm(b.name) === want) {
+              if (Array.isArray(b.nodes) && b.nodes.length) recNodes = b.nodes;
+              if (Array.isArray(b.edges)) recEdges = b.edges;
+              if (typeof b.customUi === 'string') recCustomUi = b.customUi;
+              break;
+            }
+          }
+        } catch { /* offline / not bundled — keep the disk/DB version */ }
       }
 
       // Sanitize any persisted selection/glow artifacts before applying theme
@@ -876,6 +911,9 @@ function Flow() {
       // Sync flows from disk to DB (disk is leader)
       void (async () => {
         try {
+          // Refresh bundled examples first (re-copies when the in-code version
+          // is newer than what's on disk: new presets, updated custom UIs/knobs).
+          await ensureBundledExamples(fsRootHandle);
           const diskSyncResult = await syncDiskToDb(fsRootHandle, db);
           if (diskSyncResult.synced > 0) {
             console.info(

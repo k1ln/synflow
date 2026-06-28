@@ -1,0 +1,73 @@
+{
+  "name": "Compressor",
+  "daw": {
+    "id": "compressor",
+    "category": "Dynamics"
+  },
+  "nodes": [
+    {
+      "id": "in.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": {
+        "gain": 1,
+        "isInput": true
+      },
+      "position": {
+        "x": 100,
+        "y": 80
+      }
+    },
+    {
+      "id": "comp.DynamicCompressorFlowNode",
+      "type": "DynamicCompressorFlowNode",
+      "data": {
+        "threshold": -18,
+        "knee": 24,
+        "ratio": 4,
+        "attack": 0.003,
+        "release": 0.25,
+        "knobs": [
+          { "param": "threshold", "label": "Thresh", "min": -60, "max": 0, "default": -18 },
+          { "param": "ratio", "label": "Ratio", "min": 1, "max": 20, "default": 4 },
+          { "param": "attack", "label": "Attack", "min": 0, "max": 0.2, "default": 0.003 },
+          { "param": "release", "label": "Release", "min": 0.01, "max": 1, "default": 0.25 }
+        ]
+      },
+      "position": {
+        "x": 340,
+        "y": 80
+      }
+    },
+    {
+      "id": "out.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": {
+        "gain": 1,
+        "isOutput": true,
+        "knobs": [
+          { "param": "gain", "label": "Makeup", "min": 0, "max": 4, "default": 1 }
+        ]
+      },
+      "position": {
+        "x": 670,
+        "y": 80
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "cx-in-comp",
+      "source": "in.GainFlowNode",
+      "target": "comp.DynamicCompressorFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "cx-comp-out",
+      "source": "comp.DynamicCompressorFlowNode",
+      "target": "out.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    }
+  ]
+}

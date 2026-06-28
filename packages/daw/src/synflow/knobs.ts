@@ -32,5 +32,8 @@ export const knobReadout = (k: ExposedKnob, v01: number): string => {
   const v = knobValue(k, v01);
   const span = Math.abs(k.max - k.min);
   const dp = span >= 100 ? 0 : span >= 10 ? 1 : span >= 1 ? 2 : 3;
-  return v.toFixed(dp).replace(/\.?0+$/, '') || '0';
+  const s = v.toFixed(dp);
+  // Trim trailing zeros only after a decimal point ("1.50"→"1.5"), never from
+  // whole numbers ("40" must not become "4", "1200" not "12").
+  return (s.includes('.') ? s.replace(/\.?0+$/, '') : s) || '0';
 };

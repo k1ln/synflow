@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Repeat, X, Drum, Music2, AudioWaveform, Film, Volume2, VolumeX, Play, Square, Scissors } from 'lucide-react';
-import { songLengthSlots, TIMELINE_HEADROOM_BARS, type Project, type Clip, type AudioClip, type VideoClip } from '../model/project';
+import { songLengthSlots, TIMELINE_HEADROOM_BARS, type Project, type Clip, type AudioClip, type VideoClip, type Marker, type LoopRegion } from '../model/project';
 import { Waveform } from './Waveform';
 import { slicePeaks } from '../audio/waveform';
 
@@ -44,6 +44,7 @@ const pickStep = (ladder: number[], minValue: number) => ladder.find((s) => s >=
 export function Arrange({
   project, currentStep, songMode, selTrack,
   onToggleSongMode, onSetSongSlots, onSelectTrack, onToggleMute, onToggleSolo, onTrackVolume, onSeek, onAddClip, onRemoveClip, onToggleLoop, onClipLen, onMoveClip, onMoveAudioClip, onRemoveAudioClip, onMoveVideoClip, onRemoveVideoClip, onSetAudioClip, onSetVideoClip, onSplitAudioClip, onSplitVideoClip, onPlayClip, previewKey,
+  markers, onAddMarker, onRenameMarker, onRemoveMarker, loop, onSetLoop,
 }: {
   project: Project;
   currentStep: number;
@@ -56,6 +57,12 @@ export function Arrange({
   onToggleSolo: (trackId: string) => void;
   onTrackVolume: (trackId: string, v: number) => void;
   onSeek: (step: number) => void;
+  markers: Marker[];
+  onAddMarker: (step: number) => void;
+  onRenameMarker: (id: string, name: string) => void;
+  onRemoveMarker: (id: string) => void;
+  loop?: LoopRegion;
+  onSetLoop: (patch: Partial<LoopRegion>) => void;
   onAddClip: (trackId: string, slot: number) => void;
   onRemoveClip: (trackId: string, clipId: string) => void;
   onToggleLoop: (trackId: string, clipId: string) => void;
@@ -238,6 +245,15 @@ export function Arrange({
           <span>{pxPerBar >= 10 ? Math.round(pxPerBar) : pxPerBar.toFixed(pxPerBar >= 1 ? 1 : 2)}px/bar</span>
           <button onClick={() => zoom(1.5)} aria-label="Zoom in">+</button>
         </div>
+        <button className="arr2-addmarker" title="Add a marker at the playhead" onClick={() => onAddMarker(Math.max(0, currentStep))}>＋ Marker</button>
+        <button className={`arr2-loopbtn ${loop?.on ? 'on' : ''}`} title="Loop a region of the timeline (song mode)" onClick={() => onSetLoop({ on: !loop?.on })}><Repeat size={12} /> Loop</button>
+        {loop?.on && (
+          <span className="arr2-loop-range" title="Loop region (bars)">
+            <input type="number" min={1} value={loop.startBar + 1} onChange={(e) => onSetLoop({ startBar: Math.max(0, (parseInt(e.target.value, 10) || 1) - 1) })} />
+            <span>–</span>
+            <input type="number" min={1} value={loop.endBar} onChange={(e) => onSetLoop({ endBar: Math.max(1, parseInt(e.target.value, 10) || 1) })} />
+          </span>
+        )}
         <label className="arr2-len" title={contentSlots > project.songSlots ? `grown to ${contentSlots} bars to fit the content` : 'minimum length in bars (grows to fit the last element)'}>bars
           <input type="number" min={1} max={9999} value={project.songSlots} onChange={(e) => onSetSongSlots(Math.max(1, Math.min(9999, parseInt(e.target.value, 10) || project.songSlots)))} />
           {contentSlots > project.songSlots && <span className="arr2-len-grown">→ {contentSlots}</span>}
@@ -249,6 +265,9 @@ export function Arrange({
           <div className="arr2-ruler">
             <div className="arr2-headcell" />
             <div className="arr2-ticks" ref={rulerRef} onPointerDown={onRulerDown}>
+              {loop?.on && loop.endBar > loop.startBar && (
+                <div className="arr2-loopregion" style={{ left: `${(loop.startBar / Math.max(1, N)) * 100}%`, width: `${((loop.endBar - loop.startBar) / Math.max(1, N)) * 100}%` }} />
+              )}
               {/* bar numbers, thinned to the adaptive interval so they never crowd */}
               {barMarks.map((b) => (
                 <div key={`b${b}`} className="arr2-barmark" style={{ left: `${(b / N) * 100}%` }}>
@@ -262,6 +281,16 @@ export function Arrange({
                 </div>
               ))}
               {playheadPct >= 0 && <div className="arr2-ph ruler" style={{ left: `${playheadPct}%` }} />}
+              {markers.map((m) => (
+                <div key={m.id} className="arr2-marker" style={{ left: `${(m.step / Math.max(1, totalTimelineSteps)) * 100}%` }}
+                  title={`${m.name} — click to jump, double-click to rename`}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); onSeek(m.step); }}
+                  onDoubleClick={(e) => { e.stopPropagation(); const n = window.prompt('Marker name', m.name); if (n != null) onRenameMarker(m.id, n.trim() || m.name); }}>
+                  <span className="arr2-marker-flag">{m.name}</span>
+                  <button className="arr2-marker-x" title="Delete marker" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onRemoveMarker(m.id); }}>×</button>
+                </div>
+              ))}
             </div>
           </div>
 

@@ -108,10 +108,10 @@ export async function selectAndPrepareRoot(): Promise<FileSystemDirectoryHandle 
     // Ensure subdirectories
     await root.getDirectoryHandle('recording', { create: true });
     await root.getDirectoryHandle('sampling', { create: true });
-    const flowsDir = await root.getDirectoryHandle('flows', { create: true });
+    await root.getDirectoryHandle('flows', { create: true });
     await root.getDirectoryHandle('scripts', { create: true });
     // Create examples folder inside flows and populate with example flows
-    await copyExampleFlowsToDisk(flowsDir);
+    await ensureBundledExamples(root);
     await saveRootHandle(root);
     return root;
   } catch (e) {
@@ -120,71 +120,86 @@ export async function selectAndPrepareRoot(): Promise<FileSystemDirectoryHandle 
   }
 }
 
-// Copy bundled example flows to the flows/examples folder on disk
-async function copyExampleFlowsToDisk(flowsDir: FileSystemDirectoryHandle): Promise<void> {
+/**
+ * Seed (and refresh) the bundled example flows into flows/examples/ on disk.
+ *
+ * Version-aware: the manifest carries a content `version` (md5 of all example
+ * files). We record the seeded version in flows/examples/.version. When the
+ * bundled version differs (i.e. an example changed or was added in the app
+ * code), we re-copy ALL examples so the on-disk copies — which the editor loads
+ * as the source of truth — stay current (new presets appear, custom UIs/knobs
+ * update). When the version matches, this is a cheap no-op.
+ *
+ * Only the bundled `examples/` subfolder is touched; the user's own saved flows
+ * are never modified. Returns the number of files (re)written.
+ */
+export async function ensureBundledExamples(root: FileSystemDirectoryHandle): Promise<number> {
   try {
+    const flowsDir = await root.getDirectoryHandle('flows', { create: true });
     const examplesDir = await flowsDir.getDirectoryHandle('examples', { create: true });
-    
-    // Fetch the manifest to discover all available flow examples
-    let flowExamples: string[] = [];
+
+    let manifest: { version?: string; examples?: string[] } = {};
     try {
-      const manifestResponse = await fetch('/flow-examples/manifest.json');
-      if (manifestResponse.ok) {
-        const manifest = await manifestResponse.json();
-        flowExamples = manifest.examples || [];
-      }
+      const resp = await fetch('/flow-examples/manifest.json', { cache: 'no-store' });
+      if (resp.ok) manifest = await resp.json();
     } catch (e) {
-      console.warn('[FS Examples] Failed to load manifest, using empty list:', e);
+      console.warn('[FS Examples] Failed to load manifest:', e);
+      return 0;
     }
-    
-    for (const flowName of flowExamples) {
+    const bundledVersion = manifest.version || '';
+    const examples = manifest.examples || [];
+
+    // Read the version we last seeded to disk.
+    let diskVersion = '';
+    try {
+      const vf = await examplesDir.getFileHandle('.version');
+      diskVersion = (await (await vf.getFile()).text()).trim();
+    } catch { /* no marker yet */ }
+
+    // Up to date — nothing to do.
+    if (bundledVersion && diskVersion === bundledVersion) return 0;
+
+    let written = 0;
+    for (const flowName of examples) {
       try {
-        // Parse path to handle subdirectories
         const pathParts = flowName.split('/');
         const fileName = pathParts[pathParts.length - 1];
         const subDirs = pathParts.slice(0, -1);
-        
-        // Navigate/create subdirectories
+
         let targetDir = examplesDir;
-        for (const subDir of subDirs) {
-          targetDir = await targetDir.getDirectoryHandle(subDir, { create: true });
-        }
-        
-        // Check if file already exists to avoid overwriting user modifications
-        try {
-          await targetDir.getFileHandle(`${fileName}.json`);
-          // File exists, skip
-          continue;
-        } catch {
-          // File doesn't exist, proceed to create
-        }
-        
-        // Fetch from public folder
-        const response = await fetch(`/flow-examples/${flowName}.json`);
-        if (!response.ok) {
-          console.warn(`[FS Examples] Failed to fetch ${flowName}:`, response.status);
-          continue;
-        }
-        
+        for (const subDir of subDirs) targetDir = await targetDir.getDirectoryHandle(subDir, { create: true });
+
+        const response = await fetch(`/flow-examples/${flowName}.json`, { cache: 'no-store' });
+        if (!response.ok) { console.warn(`[FS Examples] fetch ${flowName} → ${response.status}`); continue; }
+
         const flowData = await response.json();
-        // Ensure the flow has a name and folder_path
         flowData.name = flowData.name || fileName;
         flowData.folder_path = subDirs.length > 0 ? `examples/${subDirs.join('/')}` : 'examples';
-        flowData.updated_at = flowData.updated_at || new Date().toISOString();
-        
-        // Write to disk
+        flowData.updated_at = new Date().toISOString();
+
         const fileHandle = await targetDir.getFileHandle(`${fileName}.json`, { create: true });
         const writable = await fileHandle.createWritable();
         await writable.write(JSON.stringify(flowData, null, 2));
         await writable.close();
-        
-        console.info(`[FS Examples] Copied ${flowName} to examples folder`);
+        written++;
       } catch (e) {
         console.warn(`[FS Examples] Failed to copy ${flowName}:`, e);
       }
     }
+
+    // Record the seeded version.
+    try {
+      const vf = await examplesDir.getFileHandle('.version', { create: true });
+      const vw = await vf.createWritable();
+      await vw.write(bundledVersion);
+      await vw.close();
+    } catch { /* noop */ }
+
+    if (written) console.info(`[FS Examples] (re)seeded ${written} example(s) → version ${bundledVersion}`);
+    return written;
   } catch (e) {
-    console.warn('[FS Examples] Failed to create examples folder:', e);
+    console.warn('[FS Examples] ensureBundledExamples failed:', e);
+    return 0;
   }
 }
 
@@ -620,6 +635,7 @@ export async function syncDiskToDb(
           edges: flow.edges || [],
           folder_path: folderPath,
           updated_at: flow.updated_at || new Date().toISOString(),
+          ...((flow as any).customUi ? { customUi: (flow as any).customUi } : {}),
         };
         await db.put(uniqueKey, payload);
         synced++;

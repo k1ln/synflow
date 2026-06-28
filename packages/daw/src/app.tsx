@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Plus, Trash2, Drum, Music2, Repeat, AudioWaveform, Film, Volume2, VolumeX } from 'lucide-react';
+import { Plus, Trash2, Drum, Music2, Repeat, AudioWaveform, Film, Volume2, VolumeX, Waves } from 'lucide-react';
 import { RealtimeClock } from './audio/ClockSource';
 import { Transport } from './audio/Transport';
 import { Scheduler } from './audio/Scheduler';
@@ -18,9 +18,9 @@ import { bounceProjectToWav } from './audio/bounce';
 import { bounceProjectStream } from './audio/bounceStream';
 import { exportVideo, type ExportOpts, type VideoBlobResolver } from './audio/videoExport';
 import {
-  defaultProject, newNoteId, uid, fxInsert, blankSteps, trackActiveAt, patternLoopLength, songLengthSteps, songLengthSlots, normalizeProject, trackAudible,
+  defaultProject, newNoteId, uid, fxInsert, newBus, blankSteps, trackActiveAt, patternLoopLength, songLengthSteps, songLengthSlots, normalizeProject, trackAudible, swingDelaySteps, quantizeNotes,
   EQ_FX_ID, defaultEq,
-  type Project, type Track, type PoolItem, type FxInsert, type AudioAsset, type AudioClip, type VideoAsset, type VideoClip, type SourceLayout, type EqSettings,
+  type Project, type Track, type PoolItem, type FxInsert, type Bus, type LoopRegion, type MusicalKey, type AudioAsset, type AudioClip, type VideoAsset, type VideoClip, type SourceLayout, type EqSettings,
 } from './model/project';
 import { midiToFreq } from './model/pitch';
 import { type Flow, makeSynthVoice, makeKick } from './synflow/instruments';
@@ -42,6 +42,9 @@ import { SynflowEditor } from './ui/SynflowEditor';
 import { EqEditor } from './ui/EqEditor';
 import { StorageSetup } from './ui/StorageSetup';
 import { Meter } from './ui/Meter';
+import { LoudnessMeter } from './ui/LoudnessMeter';
+import { SpectrumAnalyzer } from './ui/SpectrumAnalyzer';
+import { slicePeaks } from './audio/waveform';
 
 type ImportInfo = { name: string; phase: 'reading' | 'decoding'; read: number; total: number; startedAt: number };
 
@@ -240,6 +243,7 @@ export function App() {
     const mixer = mixerRef.current; if (!mixer || !ctxRef.current) return;
     const proj = projectRef.current;
     await mixer.masterChain.setChain(resolveFx(proj.masterFx));
+    for (const bus of proj.buses ?? []) { const b = mixer.bus(bus.id, bus.volume); await b.chain.setChain(resolveFx(bus.fx)); }
     for (const track of proj.tracks) {
       const t = mixer.track(track.id, track.volume);
       mixer.setTrackPan(track.id, track.pan ?? 0);
@@ -258,6 +262,11 @@ export function App() {
         await mixer.useChain(use.id)!.setChain(resolveFx(use.fx));             // instrument-in-track FX
         if (pool) await buildUse(use.id, pool, dest, use.voices);
       }
+    }
+    for (const track of proj.tracks) for (const s of track.sends ?? []) mixer.setSend(track.id, s.busId, s.level);
+    for (const track of proj.tracks) {
+      if (track.sidechain && proj.tracks.some((k) => k.id === track.sidechain!.keyTrackId)) mixer.setSidechain(track.id, track.sidechain.keyTrackId, track.sidechain.amount, track.sidechain.release);
+      else mixer.clearSidechain(track.id);
     }
   }, [buildUse, ensureAssets]);
 
@@ -339,6 +348,7 @@ export function App() {
       const lead = Math.max(0, (time - clock.currentTime) * 1000);
       const stepMs = transport.secondsPerStep * 1000;
       const gateMs = Math.min(transport.secondsPerStep * 0.9, 0.5) * 1000;
+      const swingMs = swingDelaySteps(s, proj.swing ?? 0) * stepMs;   // off-beat groove (drums + synth)
       // Metronome: click on each beat, accenting the bar downbeat.
       const metro = metronomeRef.current;
       if (metro?.enabled && s % proj.stepsPerBeat === 0) metro.click(time, s % proj.totalSteps === 0);
@@ -369,15 +379,15 @@ export function App() {
               // free placement: trigger the note in the step it starts in, with a
               // sub-step delay for the fractional part.
               if (Math.floor(n.start) !== step) continue;
-              const sub = (n.start - step) * stepMs;        // ms into this step
+              const sub = (n.start - step) * stepMs + swingMs;        // ms into this step (+ swing)
               const f = midiToFreq(n.midi);
               window.setTimeout(() => vp.noteOn(n.id, f, n.velocity ?? 1), lead + sub);
               window.setTimeout(() => vp.noteOff(n.id), lead + sub + n.length * stepMs);
             }
           } else if (track.type === 'drums' && use.steps?.[step]) {
             const host = hostsRef.current.get(use.id); if (!host) continue;
-            window.setTimeout(() => host.trigger(), lead);
-            window.setTimeout(() => host.release(), lead + gateMs);
+            window.setTimeout(() => host.trigger(), lead + swingMs);
+            window.setTimeout(() => host.release(), lead + swingMs + gateMs);
           }
         }
       }
@@ -441,12 +451,24 @@ export function App() {
     }
   };
 
+  // Apply the project's loop region to the scheduler (song mode only). Reads refs
+  // so it's safe from play() and effects alike.
+  const syncSchedulerLoop = () => {
+    const s = schedulerRef.current; if (!s) return;
+    const proj = projectRef.current; const lp = proj.loop;
+    if (songModeRef.current && lp?.on && lp.endBar > lp.startBar) {
+      s.loopStart = Math.max(0, Math.floor(lp.startBar)) * proj.totalSteps;
+      s.loopEnd = Math.floor(lp.endBar) * proj.totalSteps;
+    } else { s.loopEnd = 0; }
+  };
+
   const play = useCallback(async () => {
     await ensureAudio();
     await ctxRef.current!.resume();
     transportRef.current!.bpm = projectRef.current.bpm;
     const proj = projectRef.current;
     schedulerRef.current!.totalSteps = songModeRef.current ? songLengthSteps(proj) : patternLoopLength(proj.tracks);
+    syncSchedulerLoop();
     transportRef.current!.start(seekRef.current); schedulerRef.current!.start(seekRef.current);
     primeAudioClips(seekRef.current);
     setIsPlaying(true);
@@ -457,7 +479,18 @@ export function App() {
   useEffect(() => {
     const s = schedulerRef.current; if (!s) return;
     s.totalSteps = songMode ? songLengthSteps(project) : patternLoopLength(project.tracks);
+    const lp = project.loop;
+    if (songMode && lp?.on && lp.endBar > lp.startBar) { s.loopStart = Math.max(0, Math.floor(lp.startBar)) * project.totalSteps; s.loopEnd = Math.floor(lp.endBar) * project.totalSteps; }
+    else { s.loopEnd = 0; }
   }, [project, songMode]);
+
+  const setLoop = (patch: Partial<LoopRegion>) => setProject((p) => {
+    const def: LoopRegion = p.loop ?? { on: false, startBar: 0, endBar: Math.max(1, Math.min(4, p.songSlots)) };
+    const next: LoopRegion = { ...def, ...patch };
+    next.startBar = Math.max(0, Math.floor(next.startBar));
+    next.endBar = Math.max(next.startBar + 1, Math.floor(next.endBar));
+    return { ...p, loop: next };
+  });
 
   // Opening the Song view plays the arrangement: audio tracks only sound in Song
   // mode, and Pattern mode loops a single bar. (You can still flip to Pattern here.)
@@ -485,6 +518,12 @@ export function App() {
   }, [stopAudition]);
 
   const setBpm = (bpm: number) => { setProject((p) => ({ ...p, bpm })); if (transportRef.current) transportRef.current.bpm = bpm; };
+  const setSwing = (swing: number) => setProject((p) => ({ ...p, swing }));  // scheduler reads projectRef live
+
+  // ── Timeline markers ────────────────────────────────────────────────────────
+  const addMarker = (step: number) => setProject((p) => ({ ...p, markers: [...(p.markers ?? []), { id: uid('mk'), name: `Marker ${(p.markers?.length ?? 0) + 1}`, step: Math.max(0, Math.round(step)) }] }));
+  const renameMarker = (id: string, name: string) => setProject((p) => ({ ...p, markers: (p.markers ?? []).map((m) => (m.id === id ? { ...m, name } : m)) }));
+  const removeMarker = (id: string) => setProject((p) => ({ ...p, markers: (p.markers ?? []).filter((m) => m.id !== id) }));
   const toggleMetronome = () => setMetronome((on) => { const next = !on; if (metronomeRef.current) metronomeRef.current.enabled = next; return next; });
 
   // ─── song save / load (the whole project) ──────────────────────────────────
@@ -949,6 +988,17 @@ export function App() {
     onMoveNote: (useId, noteId, midi, start) => mapUse(useId, (u) => ({ ...u, notes: (u.notes ?? []).map((n) => (n.id === noteId ? { ...n, midi, start } : n)) })),
     onResizeNote: (useId, noteId, length) => mapUse(useId, (u) => ({ ...u, notes: (u.notes ?? []).map((n) => (n.id === noteId ? { ...n, length } : n)) })),
     onSetVelocity: (useId, noteId, velocity) => mapUse(useId, (u) => ({ ...u, notes: (u.notes ?? []).map((n) => (n.id === noteId ? { ...n, velocity } : n)) })),
+    onQuantize: (useId, gridSteps) => mapUse(useId, (u) => ({ ...u, notes: quantizeNotes(u.notes ?? [], gridSteps) })),
+    onTranspose: (useId, semitones) => mapUse(useId, (u) => {
+      const notes = u.notes ?? [];
+      if (!notes.length) return u;
+      const LO = 48, HI = 72; // keep all notes inside the piano-roll's visible range (PianoRoll LOW..HIGH)
+      const minM = Math.min(...notes.map((n) => n.midi)), maxM = Math.max(...notes.map((n) => n.midi));
+      const d = Math.max(LO - minM, Math.min(HI - maxM, semitones)); // uniform shift → preserves intervals
+      return d === 0 ? u : { ...u, notes: notes.map((n) => ({ ...n, midi: n.midi + d })) };
+    }),
+    onHumanize: (useId) => mapUse(useId, (u) => ({ ...u, notes: (u.notes ?? []).map((n) => ({ ...n, velocity: Math.max(0.2, Math.min(1, (n.velocity ?? 1) + (Math.random() * 2 - 1) * 0.22)) })) })),
+    onSetKey: (key: MusicalKey | null) => setProject((p) => ({ ...p, key: key ?? undefined })),
     onPlayNote: (useId, midi) => void audition(useId, { frequency: midiToFreq(midi) }),
     onKeyDown: (useId, midi) => void useNoteOn(useId, midi),
     onKeyUp: (useId, midi) => useNoteOff(useId, midi),
@@ -1039,6 +1089,8 @@ export function App() {
     onSplitAudioClip: (trackId, clipId, atSteps) => splitAudioClip(trackId, clipId, atSteps),
     onRemoveAudioClip: (trackId, clipId) => removeAudioClip(trackId, clipId),
     onAudioClipGain: (trackId, clipId, gain) => setAudioClipGain(trackId, clipId, gain),
+    onNormalizeAudioClip: (trackId, clipId) => normalizeAudioClip(trackId, clipId),
+    onFadeAudioClip: (trackId, clipId, fadeIn, fadeOut) => setAudioClipFades(trackId, clipId, fadeIn, fadeOut),
     onPlayAudioClip: (clip) => auditionClip(clip),
   };
 
@@ -1164,6 +1216,19 @@ export function App() {
     }));
   };
   const setAudioClipGain = (trackId: string, clipId: string, gain: number) => updateAudioClips(trackId, (cs) => cs.map((c) => (c.id === clipId ? { ...c, gain } : c)));
+  const setAudioClipFades = (trackId: string, clipId: string, fadeIn: number, fadeOut: number) =>
+    updateAudioClips(trackId, (cs) => cs.map((c) => (c.id === clipId ? { ...c, fadeIn: Math.max(0, Math.min(c.duration, fadeIn)), fadeOut: Math.max(0, Math.min(c.duration, fadeOut)) } : c)));
+  // Normalize: scale the clip's gain so its loudest point in the trimmed region hits
+  // ~−0.3 dBFS, read from the asset's cached waveform peaks (no decode needed).
+  const normalizeAudioClip = (trackId: string, clipId: string) => {
+    const c = projectRef.current.tracks.find((t) => t.id === trackId)?.audioClips?.find((x) => x.id === clipId);
+    const asset = c && projectRef.current.assets.find((a) => a.id === c.assetId);
+    if (!c || !asset?.peaks) return;
+    const sl = slicePeaks(asset.peaks, asset.duration, c.offset, c.duration); if (!sl) return;
+    let peak = 0;
+    for (let i = 0; i < sl.min.length; i++) peak = Math.max(peak, Math.abs(sl.min[i]), Math.abs(sl.max[i]));
+    if (peak > 0) setAudioClipGain(trackId, clipId, Math.max(0, Math.min(1.5, 0.97 / peak)));
+  };
   const trimAudioClip = (trackId: string, clipId: string, offset: number, duration: number) => updateAudioClips(trackId, (cs) => cs.map((c) => (c.id === clipId ? { ...c, offset: Math.max(0, offset), duration: Math.max(0.02, duration) } : c)));
   const splitAudioClip = (trackId: string, clipId: string, atSteps: number) => {
     const secPerStep = 60 / projectRef.current.bpm / projectRef.current.stepsPerBeat;
@@ -1507,6 +1572,64 @@ export function App() {
     editFxFlow(insert, (f) => { const next = projectRef.current.masterFx.map((x, j) => (j === i ? { ...x, flow: f } : x)); setProject((p) => ({ ...p, masterFx: next })); rebuildMaster(next); });
   };
 
+  // ── Aux/return buses + sends ────────────────────────────────────────────────
+  const busById = (id: string): Bus | undefined => projectRef.current.buses?.find((b) => b.id === id);
+  const busFx = (busId: string): FxInsert[] => busById(busId)?.fx ?? [];
+  const mapBus = (busId: string, fn: (b: Bus) => Bus) => setProject((p) => ({ ...p, buses: (p.buses ?? []).map((b) => (b.id === busId ? fn(b) : b)) }));
+  const rebuildBus = (busId: string, fx: FxInsert[]) => void mixerRef.current?.busChain(busId)?.setChain(resolveFx(fx));
+
+  const onAddBus = () => {
+    const b = newBus(`Bus ${(projectRef.current.buses?.length ?? 0) + 1}`);
+    setProject((p) => ({ ...p, buses: [...(p.buses ?? []), b] }));
+    mixerRef.current?.bus(b.id, b.volume);
+  };
+  const onRemoveBus = (busId: string) => {
+    setProject((p) => ({ ...p, buses: (p.buses ?? []).filter((b) => b.id !== busId), tracks: p.tracks.map((t) => ({ ...t, sends: (t.sends ?? []).filter((s) => s.busId !== busId) })) }));
+    mixerRef.current?.removeBus(busId);
+  };
+  const onBusName = (busId: string, name: string) => mapBus(busId, (b) => ({ ...b, name }));
+  const onBusVolume = (busId: string, v: number) => { mixerRef.current?.setBusVolume(busId, v); mapBus(busId, (b) => ({ ...b, volume: v })); };
+  const onBusFxAdd = (busId: string, fxId: string) => { const ins = fxInsert(fxId); const next = [...busFx(busId), ins]; mapBus(busId, (b) => ({ ...b, fx: next })); rebuildBus(busId, next); };
+  const onBusFxRemove = (busId: string, i: number) => { const next = busFx(busId).filter((_, j) => j !== i); mapBus(busId, (b) => ({ ...b, fx: next })); rebuildBus(busId, next); };
+  const onBusFxEdit = (busId: string, i: number) => {
+    const insert = busFx(busId)[i]; if (!insert) return;
+    if (insert.fxId === EQ_FX_ID) {
+      const chain = () => mixerRef.current?.busChain(busId);
+      openEqEditor(busById(busId)?.name ?? 'Bus', insert, () => chain()?.getEqAnalyser(i) ?? null, (eq) => chain()?.updateEq(i, eq),
+        (eq) => mapBus(busId, (b) => ({ ...b, fx: b.fx.map((x, j) => (j === i ? { ...x, eq } : x)) })));
+      return;
+    }
+    editFxFlow(insert, (f) => { const next = busFx(busId).map((x, j) => (j === i ? { ...x, flow: f } : x)); mapBus(busId, (b) => ({ ...b, fx: next })); rebuildBus(busId, next); });
+  };
+  const onBusFxKnob = (busId: string, i: number, nodeId: string, param: string, v: number) => {
+    mixerRef.current?.busChain(busId)?.setParam(i, nodeId, param, v);
+    const insert = busFx(busId)[i]; const base = insert?.flow ?? (insert && findEntry(insert.fxId)?.flow); if (!insert || !base) return;
+    const flow = setFlowParam(base, nodeId, param, v);
+    mapBus(busId, (b) => ({ ...b, fx: b.fx.map((y, j) => (j === i ? { ...y, flow } : y)) }));
+  };
+  const onSetSend = (trackId: string, busId: string, level: number) => {
+    mixerRef.current?.setSend(trackId, busId, level);
+    mapTrack(trackId, (t) => {
+      const sends = [...(t.sends ?? [])];
+      const idx = sends.findIndex((s) => s.busId === busId);
+      if (idx >= 0) sends[idx] = { busId, level }; else sends.push({ busId, level });
+      return { ...t, sends };
+    });
+  };
+
+  // Set/clear a track's sidechain. keyTrackId null turns ducking off.
+  const onSetSidechain = (targetId: string, keyTrackId: string | null, patch?: { amount?: number; release?: number }) => {
+    if (!keyTrackId) {
+      mixerRef.current?.clearSidechain(targetId);
+      mapTrack(targetId, (t) => { const { sidechain: _omit, ...rest } = t; return rest as Track; });
+      return;
+    }
+    const cur = projectRef.current.tracks.find((t) => t.id === targetId)?.sidechain;
+    const sc = { keyTrackId, amount: patch?.amount ?? cur?.amount ?? 0.6, release: patch?.release ?? cur?.release ?? 200 };
+    mixerRef.current?.setSidechain(targetId, sc.keyTrackId, sc.amount, sc.release);
+    mapTrack(targetId, (t) => ({ ...t, sidechain: sc }));
+  };
+
   // ─── position readout ──────────────────────────────────────────────────────
   const sib = currentStep < 0 ? 0 : currentStep % project.totalSteps;
   const pos = `001.${Math.floor(sib / project.stepsPerBeat) + 1}.${String((sib % project.stepsPerBeat) * 25).padStart(2, '0')}`;
@@ -1516,7 +1639,7 @@ export function App() {
     <div className="app-shell">
       <TopBar
         view={view} setView={setView} isPlaying={isPlaying} onPlay={isPlaying ? stop : play} onStop={stop}
-        armed={armed} onArm={() => setArmed((a) => !a)} metronome={metronome} onToggleMetronome={toggleMetronome} bpm={project.bpm} onBpm={setBpm} position={pos}
+        armed={armed} onArm={() => setArmed((a) => !a)} metronome={metronome} onToggleMetronome={toggleMetronome} bpm={project.bpm} onBpm={setBpm} swing={project.swing ?? 0} onSwing={setSwing} position={pos}
         browserOpen={browserOpen} setBrowserOpen={setBrowserOpen}
         canUndo={histUI.canUndo} canRedo={histUI.canRedo} onUndo={undo} onRedo={redo}
         projectName={project.name} onProjectName={(name) => setProject((p) => ({ ...p, name }))}
@@ -1563,6 +1686,8 @@ export function App() {
               <Arrange
                 project={project} currentStep={currentStep} songMode={songMode} selTrack={selTrack}
                 onToggleSongMode={toggleSongMode} onSetSongSlots={setSongSlots} onSelectTrack={setSelTrack} onToggleMute={toggleTrackMute} onToggleSolo={toggleTrackSolo} onTrackVolume={setTrackVolume} onSeek={seekTo}
+                markers={project.markers ?? []} onAddMarker={addMarker} onRenameMarker={renameMarker} onRemoveMarker={removeMarker}
+                loop={project.loop} onSetLoop={setLoop}
                 onAddClip={addClip} onRemoveClip={removeClip} onToggleLoop={toggleClipLoop} onClipLen={setClipLen}
                 onMoveClip={moveClip} onMoveAudioClip={moveAudioClip} onRemoveAudioClip={removeAudioClip}
                 onMoveVideoClip={moveVideoClip} onRemoveVideoClip={removeVideoClip} onSetAudioClip={setAudioClip} onSetVideoClip={setVideoClip}
@@ -1619,6 +1744,8 @@ export function App() {
                     setProject((p) => ({ ...p, masterFx: p.masterFx.map((x, j) => (j === i ? { ...x, flow } : x)) }));
                   }} />
                 <div className="mx-master-meter"><span className="mx-pan-label">MASTER</span><Meter analyser={() => mixerRef.current?.masterMeter ?? null} height={10} /></div>
+                <LoudnessMeter analysers={() => mixerRef.current?.loudnessAnalysers() ?? null} peak={() => mixerRef.current?.masterMeter ?? null} playing={isPlaying} />
+                <SpectrumAnalyzer analyser={() => mixerRef.current?.spectrumAnalyser() ?? null} />
               </div>
               <div className="mx-tracks">
                 {project.tracks.map((t) => (
@@ -1654,8 +1781,69 @@ export function App() {
                         mapTrack(t.id, (x) => ({ ...x, fx: x.fx.map((y, j) => (j === i ? { ...y, flow } : y)) }));
                       }}
                     />
+                    {(project.buses ?? []).length > 0 && (
+                      <div className="mx-sends">
+                        {(project.buses ?? []).map((b) => {
+                          const lvl = t.sends?.find((s) => s.busId === b.id)?.level ?? 0;
+                          return (
+                            <div className="mx-sendrow" key={b.id} title={`Send to ${b.name} (double-click to zero)`}>
+                              <span className="mx-send-lbl">{b.name}</span>
+                              <input className="mx-send" type="range" min={0} max={1} step={0.01} value={lvl}
+                                onDoubleClick={() => onSetSend(t.id, b.id, 0)}
+                                onChange={(e) => onSetSend(t.id, b.id, parseFloat(e.target.value))} />
+                              <span className="mx-pct">{Math.round(lvl * 100)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {t.type !== 'video' && project.tracks.some((k) => k.id !== t.id && k.type !== 'video') && (() => {
+                      const sc = t.sidechain;
+                      return (
+                        <div className={`mx-duck ${sc ? 'on' : ''}`}>
+                          <div className="mx-duck-head">
+                            <span className="mx-duck-lbl" title="Sidechain ducking: dip this track's level when the key track plays (kick-ducks-bass)">DUCK</span>
+                            <select className="mx-duck-key" value={sc?.keyTrackId ?? ''} title="Key track that triggers the ducking"
+                              onChange={(e) => onSetSidechain(t.id, e.target.value || null)}>
+                              <option value="">Off</option>
+                              {project.tracks.filter((k) => k.id !== t.id && k.type !== 'video').map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}
+                            </select>
+                          </div>
+                          {sc && (
+                            <div className="mx-duck-ctl">
+                              <span className="mx-send-lbl" title="Ducking depth">Amt</span>
+                              <input className="mx-send" type="range" min={0} max={1} step={0.01} value={sc.amount} onChange={(e) => onSetSidechain(t.id, sc.keyTrackId, { amount: parseFloat(e.target.value) })} />
+                              <span className="mx-pct">{Math.round(sc.amount * 100)}</span>
+                              <span className="mx-send-lbl" title="Release / recovery time (ms)">Rel</span>
+                              <input className="mx-send" type="range" min={20} max={600} step={5} value={sc.release} onChange={(e) => onSetSidechain(t.id, sc.keyTrackId, { release: parseFloat(e.target.value) })} />
+                              <span className="mx-pct">{Math.round(sc.release)}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 ))}
+                {(project.buses ?? []).map((b) => (
+                  <div className="mx-strip mx-bus" data-type="bus" key={b.id}>
+                    <div className="mx-strip-head">
+                      <span className="trk-ico"><Waves size={13} /></span>
+                      <input className="mx-bus-name" value={b.name} spellCheck={false} title="Bus name" onChange={(e) => onBusName(b.id, e.target.value)} />
+                      <button className="mx-mute" title="Remove bus" onClick={() => onRemoveBus(b.id)}><Trash2 size={13} /></button>
+                    </div>
+                    <div className="mx-meterrow"><Meter analyser={() => mixerRef.current?.busMeter(b.id) ?? null} /></div>
+                    <div className="mx-volrow">
+                      <input className="mx-vol" type="range" min={0} max={1} step={0.01} value={b.volume} onChange={(e) => onBusVolume(b.id, parseFloat(e.target.value))} />
+                      <span className="mx-pct">{Math.round(b.volume * 100)}</span>
+                    </div>
+                    <FxBar label="Bus FX" fx={b.fx} effects={effects} compact
+                      onAdd={(fx) => onBusFxAdd(b.id, fx)} onRemove={(i) => onBusFxRemove(b.id, i)} onEdit={(i) => onBusFxEdit(b.id, i)}
+                      onKnob={(i, nodeId, param, v) => onBusFxKnob(b.id, i, nodeId, param, v)} />
+                  </div>
+                ))}
+                <button className="mx-addbus" title="Add an aux/return bus (a shared FX destination like one reverb for many tracks)" onClick={onAddBus}>
+                  <Plus size={14} /> Bus
+                </button>
               </div>
             </div>
           )}

@@ -61,6 +61,42 @@
       "name": "Delay",
       "category": "Filter",
       "file": "effects/delay.json"
+    },
+    {
+      "id": "compressor",
+      "name": "Compressor",
+      "category": "Dynamics",
+      "file": "effects/compressor.json"
+    },
+    {
+      "id": "limiter",
+      "name": "Limiter",
+      "category": "Dynamics",
+      "file": "effects/limiter.json"
+    },
+    {
+      "id": "reverb",
+      "name": "Reverb",
+      "category": "Reverb",
+      "file": "effects/reverb.json"
+    },
+    {
+      "id": "chorus",
+      "name": "Chorus",
+      "category": "Modulation",
+      "file": "effects/chorus.json"
+    },
+    {
+      "id": "distortion",
+      "name": "Distortion",
+      "category": "Distortion",
+      "file": "effects/distortion.json"
+    },
+    {
+      "id": "granular",
+      "name": "Granular",
+      "category": "Texture",
+      "file": "effects/granular.json"
     }
   ]
 }

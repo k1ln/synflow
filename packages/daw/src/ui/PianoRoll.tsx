@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import type { PianoNote } from '../model/project';
-import { midiName, isBlackKey } from '../model/pitch';
+import type { PianoNote, MusicalKey } from '../model/project';
+import { midiName, isBlackKey, inScale, snapToScale, ROOT_NAMES, SCALE_LABELS, type ScaleType } from '../model/pitch';
 
 const LOW = 48;    // C3
 const HIGH = 72;   // C5
@@ -16,7 +16,7 @@ const snapTo = (v: number, unit: number) => (unit > 0 ? Math.round(v / unit) * u
  *  click empty space to add, drag the body to move (pitch+time), drag the right
  *  edge to resize, right-click / Delete to remove. Snap is optional. */
 export function PianoRoll({
-  id, notes, totalSteps, stepsPerBeat, currentStep, onAddNote, onRemoveNote, onMoveNote, onResizeNote, onSetVelocity, onPlayNote,
+  id, notes, totalSteps, stepsPerBeat, currentStep, onAddNote, onRemoveNote, onMoveNote, onResizeNote, onSetVelocity, onPlayNote, onQuantize, onTranspose, onHumanize, musicalKey, onSetKey,
   onKeyDown: onGutterDown, onKeyUp: onGutterUp,
 }: {
   id: string;
@@ -32,6 +32,11 @@ export function PianoRoll({
   onResizeNote: (useId: string, noteId: number, length: number) => void;
   onSetVelocity: (useId: string, noteId: number, velocity: number) => void;
   onPlayNote: (useId: string, midi: number) => void;
+  onQuantize: (useId: string, gridSteps: number) => void;
+  onTranspose: (useId: string, semitones: number) => void;
+  onHumanize: (useId: string) => void;
+  musicalKey?: MusicalKey;
+  onSetKey: (key: MusicalKey | null) => void;
   onKeyDown: (useId: string, midi: number) => void;
   onKeyUp: (useId: string, midi: number) => void;
 }) {
@@ -39,6 +44,10 @@ export function PianoRoll({
   for (let m = HIGH; m >= LOW; m--) rows.push(m);
   const laneRef = useRef<HTMLDivElement>(null);
   const [snap, setSnap] = useState<SnapMode>('quarter');
+  const [qGrid, setQGrid] = useState(stepsPerBeat / 4);   // quantize grid in steps (default 1/16)
+  const QGRID: [string, number][] = [['¼', stepsPerBeat], ['⅛', stepsPerBeat / 2], ['1/16', stepsPerBeat / 4], ['1/32', stepsPerBeat / 8]];
+  // Snap an entered pitch into the key when snap is on (no-op otherwise).
+  const keyed = (m: number) => (musicalKey?.snap ? snapToScale(m, musicalKey.root, musicalKey.scale) : m);
   const [sel, setSel] = useState<number | null>(null);
   const drag = useRef<null | {
     mode: 'move' | 'resize'; noteId: number; startX: number; startY: number;
@@ -80,7 +89,7 @@ export function PianoRoll({
     const start = Math.max(0, Math.min(totalSteps - 0.25, snapTo(rawStart, unit || 0.25)));
     const row = Math.floor((e.clientY - rect.top) / ROW_H);
     const midi = Math.max(LOW, Math.min(HIGH, HIGH - row));
-    onAddNote(id, midi, start);
+    onAddNote(id, keyed(midi), start);
   };
 
   const beginDrag = (e: React.PointerEvent, note: PianoNote, mode: 'move' | 'resize') => {
@@ -102,7 +111,7 @@ export function PianoRoll({
       const len = d.origLen;
       const start = Math.max(0, Math.min(totalSteps - len, snapTo(d.origStart + dSteps, unit)));
       const midi = Math.max(LOW, Math.min(HIGH, d.origMidi - Math.round((e.clientY - d.startY) / ROW_H)));
-      onMoveNote(id, d.noteId, midi, start);
+      onMoveNote(id, d.noteId, keyed(midi), start);
     } else {
       const min = unit || 0.25;
       const len = Math.max(min, Math.min(totalSteps - d.origStart, snapTo(d.origLen + dSteps, unit)));
@@ -127,6 +136,28 @@ export function PianoRoll({
         {(['off', 'quarter', 'step'] as SnapMode[]).map((m) => (
           <button key={m} className={`pr-snap ${snap === m ? 'on' : ''}`} onClick={() => setSnap(m)}>{SNAP_LABEL[m]}</button>
         ))}
+        <span className="pr-snap-label">grid</span>
+        <select className="pr-qgrid" value={qGrid} onChange={(e) => setQGrid(parseFloat(e.target.value))} title="Quantize grid">
+          {QGRID.map(([lbl, v]) => <option key={lbl} value={v}>{lbl}</option>)}
+        </select>
+        <button className="pr-quant" title="Snap every note's start to the grid" onClick={() => onQuantize(id, qGrid)}>Quantize</button>
+        <span className="pr-snap-label">edit</span>
+        <button className="pr-tool-btn" title="Transpose down an octave" onClick={() => onTranspose(id, -12)}>8va−</button>
+        <button className="pr-tool-btn" title="Transpose down a semitone" onClick={() => onTranspose(id, -1)}>♭</button>
+        <button className="pr-tool-btn" title="Transpose up a semitone" onClick={() => onTranspose(id, 1)}>♯</button>
+        <button className="pr-tool-btn" title="Transpose up an octave" onClick={() => onTranspose(id, 12)}>8va+</button>
+        <button className="pr-tool-btn" title="Humanize note velocities" onClick={() => onHumanize(id)}>Humanize</button>
+        <span className="pr-snap-label">key</span>
+        <select className="pr-qgrid pr-key-root" value={musicalKey?.root ?? 0} disabled={!musicalKey} title="Key root"
+          onChange={(e) => musicalKey && onSetKey({ ...musicalKey, root: parseInt(e.target.value, 10) })}>
+          {ROOT_NAMES.map((nm, i) => <option key={nm} value={i}>{nm}</option>)}
+        </select>
+        <select className="pr-qgrid pr-key-scale" value={musicalKey?.scale ?? ''} title="Scale — highlights in-key rows"
+          onChange={(e) => { const v = e.target.value; if (!v) onSetKey(null); else onSetKey({ root: musicalKey?.root ?? 0, scale: v as ScaleType, snap: musicalKey?.snap ?? false }); }}>
+          <option value="">Off</option>
+          {(Object.keys(SCALE_LABELS) as ScaleType[]).map((s) => <option key={s} value={s}>{SCALE_LABELS[s]}</option>)}
+        </select>
+        <button className={`pr-snap ${musicalKey?.snap ? 'on' : ''}`} disabled={!musicalKey} title="Snap entered notes into the scale" onClick={() => musicalKey && onSetKey({ ...musicalKey, snap: !musicalKey.snap })}>snap</button>
         <span className="pr-hint">click to add · drag to move · drag edge to resize · right-click / Delete to remove</span>
       </div>
       <div className="pr-body">
@@ -150,9 +181,11 @@ export function PianoRoll({
           }}
           onPointerDown={onLanePointerDown}
         >
-          {rows.map((midi) => (
-            <div key={`bg${midi}`} className={`pr-rowbg ${isBlackKey(midi) ? 'black' : 'white'}`} style={{ top: (HIGH - midi) * ROW_H, height: ROW_H }} />
-          ))}
+          {rows.map((midi) => {
+            const off = musicalKey ? !inScale(midi, musicalKey.root, musicalKey.scale) : false;
+            const isRoot = musicalKey ? (((midi - musicalKey.root) % 12) + 12) % 12 === 0 : false;
+            return <div key={`bg${midi}`} className={`pr-rowbg ${isBlackKey(midi) ? 'black' : 'white'} ${off ? 'off-key' : ''} ${isRoot ? 'root-key' : ''}`} style={{ top: (HIGH - midi) * ROW_H, height: ROW_H }} />;
+          })}
           {notes.map((n) => {
             const top = (HIGH - n.midi) * ROW_H;
             const left = (n.start / totalSteps) * 100;
