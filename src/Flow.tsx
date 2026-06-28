@@ -101,6 +101,8 @@ import FlowEventFreqShifterFlowNode from './nodes/FlowEventFreqShifterFlowNode';
 import EqualizerFlowNode from './nodes/EqualizerFlowNode';
 import VocoderFlowNode from './nodes/VocoderFlowNode';
 import MidiFileFlowNode from './nodes/MidiFileFlowNode';
+import OrchestratorFlowNode from './nodes/OrchestratorFlowNode';
+import OrchestratorDialog from './nodes/OrchestratorDialog';
 import DocsPlayground from './components/DocsPlayground';
 
 function makeDistortionCurve(amount: number) {
@@ -239,6 +241,7 @@ const nodeTypes = {
   EqualizerFlowNode: EqualizerFlowNode,
   VocoderFlowNode: VocoderFlowNode,
   MidiFileFlowNode: MidiFileFlowNode,
+  OrchestratorFlowNode: OrchestratorFlowNode,
 };
 const orderedNodeTypes = Object.fromEntries(
   Object.entries(nodeTypes).sort(([a], [b]) => a.localeCompare(b))
@@ -365,6 +368,18 @@ function Flow() {
       eventBus.unsubscribe("params.updateParams", handler);
     };
   }, [setNodes, eventBus]);
+
+  // Listen for orchestrator editor open events
+  useEffect(() => {
+    const handler = (data: any) => {
+      setOrchestratorEditorData(data);
+      setOrchestratorEditorOpen(true);
+    };
+    eventBus.subscribe("orchestrator.openEditor", handler);
+    return () => {
+      eventBus.unsubscribe("orchestrator.openEditor", handler);
+    };
+  }, [eventBus]);
 
   // Lightweight toast state for inline notifications
   type Toast = { id: number; message: string; kind?: 'info' | 'error' };
@@ -615,6 +630,11 @@ function Flow() {
   const [miniPlayerOpen, setMiniPlayerOpen] = useState(false);
   const [miniPlayerSrc, setMiniPlayerSrc] = useState('');
   const [miniPlayerTitle, setMiniPlayerTitle] = useState('');
+  
+  // Orchestrator editor state
+  const [orchestratorEditorOpen, setOrchestratorEditorOpen] = useState(false);
+  const [orchestratorEditorData, setOrchestratorEditorData] = useState<any>(null);
+  
   const nextNodeZRef = useRef<number>(0);
 
   // IndexedDB setup
@@ -687,7 +707,7 @@ function Flow() {
         const flowName = flowData.name || file.name.replace(/\.json$/i, '');
         setFlowNameInput(flowName);
         sessionStorage.setItem('currentFlow', flowName);
-        showToast?.(`Imported flow: ${flowName}`, 'success');
+        showToast?.(`Imported flow: ${flowName}`, 'info');
       } catch (err) {
         console.error('Failed to import flow:', err);
         showToast?.('Failed to import flow: invalid JSON', 'error');
@@ -2156,7 +2176,9 @@ function Flow() {
   ]);
 
   return (
-    <div style={{ height: "100vh", width: "100%", paddingTop: 44 }} onContextMenu={(e) => { e.preventDefault(); setNodePaletteOpen(prev => !prev); }}>
+    <div style={{ display: 'flex', height: "100vh", width: "100%", paddingTop: 44 }} onContextMenu={(e) => { e.preventDefault(); setNodePaletteOpen(prev => !prev); }}>
+      {/* Flow container */}
+      <div style={{ flex: 1, display: orchestratorEditorOpen ? 'none' : 'flex', flexDirection: 'column', minWidth: 0 }}>
       {/* Inline controls: color pickers for selected node and edge */}
       {/* Color pickers moved into TopBar */}
       {/* Icon Top Bar: left shows open/tools, right shows save/publish/auth/sync */}
@@ -2586,7 +2608,19 @@ function Flow() {
           onClose={() => setMiniPlayerOpen(false)}
         />
       )}
+      </div>
 
+      {/* Orchestrator Editor Panel */}
+      {orchestratorEditorOpen && orchestratorEditorData && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%', height: '100%' }}>
+          <OrchestratorDialog
+            orchestratorData={orchestratorEditorData.orchestratorData}
+            nodeId={orchestratorEditorData.nodeId}
+            onClose={() => setOrchestratorEditorOpen(false)}
+            onChange={orchestratorEditorData.onChange}
+          />
+        </div>
+      )}
     </div>
 
   );
