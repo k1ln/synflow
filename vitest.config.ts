@@ -10,7 +10,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     setupFiles: ['./tests/setup.ts'],
-  include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx', 'packages/core/tests/**/*.test.ts'],
+  include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx', 'packages/core/tests/**/*.test.ts', 'packages/daw/tests/**/*.test.ts'],
   exclude: ['node_modules/**','backend/**']
   }
 });

@@ -1,0 +1,17 @@
+{
+  "name": "@mothscilla/app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Mothscilla — a classical DAW built on @synflow/core.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@synflow/core": "*",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.1"
+  }
+}
