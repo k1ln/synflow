@@ -13,6 +13,7 @@
 #include "synflow/nodes/WasmKarplusNode.h"
 #include "synflow/nodes/WasmLadderNode.h"
 #include "synflow/nodes/WasmNoiseNode.h"
+#include "synflow/nodes/WasmSvfDriveNode.h"
 
 using namespace synflow;
 
@@ -58,6 +59,11 @@ int main() {
             ld->setNamedParam("resonance", 0.3);
             ld->setNamedParam("drive", 1.0);
             ld->setNamedParam("poles", 4);
+        } else if (auto* sv = dynamic_cast<WasmSvfDriveNode*>(raw)) {
+            sv->setNamedParam("cutoff", 1000.0);
+            sv->setNamedParam("resonance", 0.2);
+            sv->setNamedParam("drive", 1.0);
+            sv->setNamedParam("mix", 1.0);
         }
         // noise uses its default fixed seed / white / gain 1
 
@@ -71,5 +77,6 @@ int main() {
     run("karplus", std::make_unique<WasmKarplusNode>(readBin(pub + "karplus.wasm")), false);
     run("ladder", std::make_unique<WasmLadderNode>(readBin(pub + "ladder.wasm")), true);
     run("noise", std::make_unique<WasmNoiseNode>(readBin(pub + "noise-generator.wasm")), false);
+    run("svf", std::make_unique<WasmSvfDriveNode>(readBin(pub + "svf-drive.wasm")), true);
     return 0;
 }

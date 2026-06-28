@@ -56,6 +56,24 @@ function refLadder() {
   return out;
 }
 
+// --- svf: effect, audio in -> out (SvfDriveProcessor.js) ---
+function refSvf() {
+  const e = load('svf-drive.wasm');
+  const state = e.svf_new();
+  e.svf_set_mode(state, 0);
+  e.svf_set_slope(state, 1);
+  const pIn = e.alloc_f32(BLOCK), pCut = e.alloc_f32(BLOCK), pOut = e.alloc_f32(BLOCK);
+  const out = new Float32Array(N);
+  for (let i = 0; i < N; i += BLOCK) {
+    const m = new Float32Array(e.memory.buffer);
+    m.set(input.subarray(i, i + BLOCK), pIn >> 2);
+    m[pCut >> 2] = 1000.0;
+    e.svf_process(state, pIn, 1, pCut, 1, 0.2, 1.0, 1.0, BLOCK, SR, pOut); // resonance, drive, mix
+    out.set(m.subarray(pOut >> 2, (pOut >> 2) + BLOCK), i);
+  }
+  return out;
+}
+
 // --- noise: source (NoiseGeneratorProcessor.js), fixed seed, white, gain 1 ---
 function refNoise() {
   const e = load('noise-generator.wasm');
@@ -70,7 +88,7 @@ function refNoise() {
   return out;
 }
 
-for (const [name, fn] of [['karplus', refKarplus], ['ladder', refLadder], ['noise', refNoise]]) {
+for (const [name, fn] of [['karplus', refKarplus], ['ladder', refLadder], ['noise', refNoise], ['svf', refSvf]]) {
   write(`ref_${name}.f32`, fn());
   console.log(`ref ${name}: ${N} samples`);
 }

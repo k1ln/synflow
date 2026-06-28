@@ -35,6 +35,7 @@ juce_add_binary_data(SynflowResources SOURCES
     resources/karplus.wasm
     resources/ladder.wasm
     resources/noise.wasm
+    resources/svf.wasm
     webui/index.html)
 
 # Edit-mode editor bundle (the Synflow editor, built via `npm run build:plugin-ui`)
