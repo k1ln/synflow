@@ -828,4 +828,42 @@ export class AudioGraphManager {
     connectVirtualNodes(edges: Edge[]) {
         edges.forEach((edge) => { this.addConnection(edge); });
     }
+
+    // ─── External command API (drives CommandIn / CommandOut nodes) ─────────────
+
+    /** Fire a command into the flow. CommandIn nodes with this name receive it. */
+    command(name: string, payload: Record<string, any> = {}) {
+        this.eventBus.emit(`command.${name}`, { type: 'on', ...payload });
+    }
+    /** Fire the "off"/gate-release variant of a command. */
+    commandOff(name: string, payload: Record<string, any> = {}) {
+        this.eventBus.emit(`command.${name}`, { type: 'off', ...payload });
+    }
+    /** Note-on alias (carries note/frequency/velocity in payload). */
+    noteOn(name: string, payload: Record<string, any> = {}) { this.command(name, payload); }
+    /** Note-off alias. */
+    noteOff(name: string, payload: Record<string, any> = {}) { this.commandOff(name, payload); }
+
+    /** Subscribe to a CommandOut node's output. Returns an unsubscribe fn. */
+    onCommand(name: string, cb: (payload: any) => void): () => void {
+        const eventName = `commandOut.${name}`;
+        this.eventBus.subscribe(eventName, cb);
+        return () => this.eventBus.unsubscribe(eventName, cb);
+    }
+    offCommand(name: string, cb: (payload: any) => void) {
+        this.eventBus.unsubscribe(`commandOut.${name}`, cb);
+    }
+
+    /** List the flow's Command-In ports (host discovery). */
+    listCommands(): Array<{ id: string; name: string; kind?: string }> {
+        return (this.nodesRef.current || [])
+            .filter((n: any) => n.type === 'CommandInFlowNode' || String(n.id).endsWith('CommandInFlowNode'))
+            .map((n: any) => ({ id: n.id, name: n.data?.commandName || '', kind: n.data?.kind }));
+    }
+    /** List the flow's Command-Out ports. */
+    listCommandOutputs(): Array<{ id: string; name: string }> {
+        return (this.nodesRef.current || [])
+            .filter((n: any) => n.type === 'CommandOutFlowNode' || String(n.id).endsWith('CommandOutFlowNode'))
+            .map((n: any) => ({ id: n.id, name: n.data?.commandName || '' }));
+    }
 }

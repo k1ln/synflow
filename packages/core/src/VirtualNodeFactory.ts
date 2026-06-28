@@ -74,6 +74,8 @@ import VirtualAudioWorkletOscillatorNode from "./virtualNodes/VirtualAudioWorkle
 import VirtualNoiseNode from "./virtualNodes/VirtualNoiseNode";
 import VirtualUnisonBeginNode from "./virtualNodes/VirtualUnisonBeginNode";
 import VirtualUnisonEndNode from "./virtualNodes/VirtualUnisonEndNode";
+import VirtualCommandInNode from "./virtualNodes/VirtualCommandInNode";
+import VirtualCommandOutNode from "./virtualNodes/VirtualCommandOutNode";
 import type { CustomNode, AudioNodeData } from "./AudioGraphTypes";
 
 /**
@@ -755,6 +757,20 @@ export async function addVirtualNode(manager: any, node: CustomNode, parentNode:
                 node
             );
             manager.virtualNodes.set(node.id, virtualUnisonEnd);
+            break;
+        }
+        case "CommandInFlowNode": {
+            const vCommandIn = new VirtualCommandInNode(
+                manager.eventBus,
+                node,
+                manager.handleConnectedEdges.bind(manager)
+            );
+            manager.virtualNodes.set(node.id, vCommandIn);
+            break;
+        }
+        case "CommandOutFlowNode": {
+            const vCommandOut = new VirtualCommandOutNode(manager.eventBus, node);
+            manager.virtualNodes.set(node.id, vCommandOut);
             break;
         }
         default:
