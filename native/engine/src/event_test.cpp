@@ -35,6 +35,7 @@
 #include "synflow/nodes/SwitchNode.h"
 #include "synflow/nodes/UnisonBeginNode.h"
 #include "synflow/nodes/WasmKarplusNode.h"
+#include "synflow/nodes/WasmWorkletNode.h"
 
 #include <sstream>
 
@@ -845,6 +846,57 @@ int main() {
         check(ok, "Orchestrator fires row events with their frequencies (440, 660)");
         check(pr->onSamples.size() >= 2 && pr->onSamples[0] == 0 && pr->onSamples[1] == 24000,
               "Orchestrator fires on the beat the playhead crosses each event (0, 24000)");
+    }
+
+    // --- Test 28: AudioWorklet hosts a precompiled user WASM module (canonical ABI) ---
+    {
+        // A user worklet compiled to WASM: process() multiplies input by `gain`
+        // (param 0, set via set_param). Mirrors how a precompiled AssemblyScript
+        // worklet ships its bytes in node.data.wasmBase64 and is hosted by wasmtime.
+        const std::string wat =
+            "(module"
+            " (memory (export \"memory\") 1)"
+            " (global $bump (mut i32) (i32.const 1024))"
+            " (global $gain (mut f32) (f32.const 1))"
+            " (func (export \"init\") (param f32 i32) (result i32) (i32.const 0))"
+            " (func (export \"alloc_f32\") (param $n i32) (result i32)"
+            "   (local $p i32) (local.set $p (global.get $bump))"
+            "   (global.set $bump (i32.add (global.get $bump) (i32.shl (local.get $n) (i32.const 2))))"
+            "   (local.get $p))"
+            " (func (export \"set_param\") (param $s i32) (param $id i32) (param $v f32)"
+            "   (global.set $gain (local.get $v)))"
+            " (func (export \"process\") (param $s i32) (param $in i32) (param $out i32) (param $frames i32) (param $ch i32)"
+            "   (local $i i32) (block $done (loop $l"
+            "     (br_if $done (i32.ge_s (local.get $i) (local.get $frames)))"
+            "     (f32.store (i32.add (local.get $out) (i32.shl (local.get $i) (i32.const 2)))"
+            "       (f32.mul (global.get $gain) (f32.load (i32.add (local.get $in) (i32.shl (local.get $i) (i32.const 2))))))"
+            "     (local.set $i (i32.add (local.get $i) (i32.const 1))) (br $l)))))";
+        wasm_byte_vec_t wasmOut;
+        wasmtime_error_t* werr = wasmtime_wat2wasm(wat.data(), wat.size(), &wasmOut);
+        check(werr == nullptr, "AudioWorklet: test WAT compiles to wasm");
+        if (!werr) {
+            std::vector<uint8_t> bytes(reinterpret_cast<uint8_t*>(wasmOut.data),
+                                       reinterpret_cast<uint8_t*>(wasmOut.data) + wasmOut.size);
+            wasm_byte_vec_delete(&wasmOut);
+            // base64-encode (the node receives node.data.wasmBase64 and decodes it)
+            static const char* T = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+            std::string b64; int val = 0, bits = -6;
+            for (uint8_t c : bytes) { val = (val << 8) | c; bits += 8; while (bits >= 0) { b64.push_back(T[(val >> bits) & 0x3F]); bits -= 6; } }
+            if (bits > -6) b64.push_back(T[((val << 8) >> (bits + 8)) & 0x3F]);
+            while (b64.size() % 4) b64.push_back('=');
+
+            WasmWorkletNode w;
+            w.setNamedParamStr("wasmBase64", b64);
+            w.prepare(SR, BLOCK);
+            w.setNamedParam("param-0", 3.0); // gain = 3
+            for (int i = 0; i < BLOCK; ++i) w.in[0][static_cast<size_t>(i)] = 0.5f;
+            ProbeNode dummy; (void)dummy;
+            ProcessContext c; c.sampleRate = SR; c.frames = BLOCK; c.mode = RuntimeMode::Plugin; c.nodeIndex = 0;
+            w.process(c);
+            bool ok = true;
+            for (int i = 0; i < BLOCK; ++i) if (std::fabs(w.out[0][static_cast<size_t>(i)] - 1.5f) > 1e-6f) ok = false;
+            check(ok, "AudioWorklet: hosted WASM applies gain=3 via set_param (0.5 -> 1.5)");
+        }
     }
 
     std::printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "ALL PASS", failures, failures == 1 ? "" : "s");

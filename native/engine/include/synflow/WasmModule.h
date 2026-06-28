@@ -57,6 +57,18 @@ public:
         return item.of.func;
     }
 
+    // Optional export lookup — for hosting modules with a flexible ABI (e.g. a
+    // user AudioWorklet that may or may not export set_param/note_on). Returns
+    // false instead of throwing when the function is absent.
+    bool tryFunc(const char* name, wasmtime_func_t& out) {
+        wasmtime_extern_t item;
+        if (!wasmtime_instance_export_get(ctx_, &instance_, name, std::strlen(name), &item) ||
+            item.kind != WASMTIME_EXTERN_FUNC)
+            return false;
+        out = item.of.func;
+        return true;
+    }
+
     void call(wasmtime_func_t f, const wasmtime_val_t* args, size_t na,
               wasmtime_val_t* res, size_t nres) {
         wasm_trap_t* trap = nullptr;

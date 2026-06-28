@@ -16,6 +16,7 @@
 #include "synflow/nodes/WasmNoiseNode.h"
 #include "synflow/nodes/WasmSvfDriveNode.h"
 #include "synflow/nodes/WasmWavetableNode.h"
+#include "synflow/nodes/WasmWorkletNode.h"
 
 namespace synflowplugin {
 using namespace synflow;
@@ -51,6 +52,9 @@ NodeFactoryFn makeShellFactory() {
             return std::make_unique<ReverbNode>();
         if (type == "SampleFlowNode" || type == "AudioBufferSourceFlowNode")
             return std::make_unique<SampleNode>();
+        // User AudioWorklet: precompiled to WASM, bytes embedded in node.data.wasmBase64.
+        if (type == "AudioWorkletFlowNode")
+            return std::make_unique<WasmWorkletNode>();
         return nullptr;
     };
 }
