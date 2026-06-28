@@ -16,7 +16,8 @@ import './Flow.css';
 import { Handle, Position } from '@xyflow/react';
 import NodePaletteDialog, { NODE_CATEGORY_COLORS } from './components/NodePaletteDialog';
 import { useEffect } from 'react';
-import { AudioGraphManager } from './sys/AudioGraphManager';
+import type { IFlowEngine, FlowEngineFactory } from './sys/IFlowEngine';
+import { createDefaultEngine } from './sys/IFlowEngine';
 import { applyNodeChanges } from '@xyflow/react';
 import EventBus from './sys/EventBus';
 import { OpenDialog } from './util/OpenDialog';
@@ -136,7 +137,7 @@ let ctx: AudioContext;
 // Manual saves via Ctrl+S / Cmd+S or explicit save buttons still work.
 const AUTO_SAVE_ENABLED = false;
 
-function Flow() {
+function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEngineFactory } = {}) {
   /**
    * Manages the current instance of the AudioGraphManager or remains undefined if not initialized.
    * 
@@ -146,7 +147,7 @@ function Flow() {
    * To persist the manager across renders, consider using React state or refs.
    */
   // Persist AudioGraphManager instance across renders using a ref
-  const managerRef = useRef<AudioGraphManager | undefined>(undefined);
+  const managerRef = useRef<IFlowEngine | undefined>(undefined);
   let manager = managerRef.current;
   // Audio output latency mode, selectable in the top bar and persisted across
   // reloads. `latencyHint` can only be set when the AudioContext is created, so
@@ -807,7 +808,7 @@ function Flow() {
       )
     );
   }
-  const audioGraphManagerRef = useRef<AudioGraphManager | null>(null);
+  const audioGraphManagerRef = useRef<IFlowEngine | null>(null);
   const eventManagerRef = useRef<EventManager | null>(null);
   eventManagerRef.current = EventManager.getInstance();
 
@@ -1521,10 +1522,11 @@ function Flow() {
       managerRef.current.dispose();
       managerRef.current = undefined;
     }
-    managerRef.current = new AudioGraphManager(ctx, nodesRef, edgesRef);
-    manager = managerRef.current;
-    void manager.initialize();
-    audioGraphManagerRef.current = manager;
+    const engine = engineFactory(ctx, nodesRef, edgesRef);
+    managerRef.current = engine;
+    manager = engine;
+    void engine.initialize();
+    audioGraphManagerRef.current = engine;
     setIsPlaying(true);
     try { EventBus.getInstance().emit('audio.started', {}); } catch { /* noop */ }
   }
