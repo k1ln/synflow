@@ -45,12 +45,14 @@ export function App() {
     const scheduler = new Scheduler(clock, transport, (step, time) => {
       const proj = projectRef.current;
       const lead = Math.max(0, (time - clock.currentTime) * 1000);
+      const gateMs = Math.min(transport.secondsPerStep * 0.9, 0.5) * 1000;
       for (const ch of proj.channels) {
         if (ch.muted || !ch.steps[step]) continue;
         const host = hostsRef.current.get(ch.id);
         if (!host) continue;
         const payload = ch.note ? { frequency: ch.note.frequency } : {};
-        window.setTimeout(() => host.trigger(payload), lead);
+        window.setTimeout(() => host.trigger(payload), lead);          // receiveNodeOn
+        window.setTimeout(() => host.release(payload), lead + gateMs);  // receiveNodeOff
       }
       window.setTimeout(() => setCurrentStep(step), lead);
     });

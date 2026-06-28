@@ -44,4 +44,18 @@ describe('@synflow/core headless', () => {
     await new Promise((r) => setTimeout(r, 5));
     expect(aHits).toBe(0); // busB activity never reached busA
   });
+
+  it('receiveNodeOn/Off + sendNodeOn inject the right bus events (host drives the flow)', async () => {
+    const bus = new EventBus();
+    const got: string[] = [];
+    bus.subscribe('n1.main-input.receiveNodeOn', () => got.push('recvOn'));
+    bus.subscribe('n1.seg1.receiveNodeOff', () => got.push('recvOff'));
+    bus.subscribe('n1.main-input.sendNodeOn', () => got.push('sendOn'));
+    const mgr = new AudioGraphManager(mockCtx(), { current: [] } as any, { current: [] } as any, { bus });
+    mgr.receiveNodeOn('n1');
+    mgr.receiveNodeOff('n1', 'seg1');
+    mgr.sendNodeOn('n1');
+    await new Promise((r) => setTimeout(r, 5));
+    expect(got.sort()).toEqual(['recvOff', 'recvOn', 'sendOn']);
+  });
 });
