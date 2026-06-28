@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import type { IFlowEngine } from './IFlowEngine';
+import EventBus from './EventBus';
 
 // Strip functions / non-JSON bits from the live graph -> the shared flow-JSON
 // contract the C++ FlowLoader reads. (Sub-flow embedding, as in
@@ -29,18 +30,29 @@ function emit(event: string, payload: unknown): void {
  * forward as bridge events.
  */
 export class NativeFlowEngine implements IFlowEngine {
+  // Re-push the flow when a worklet is (re)compiled in the webview, so C++ hot-reloads
+  // the new wasm. The compiled bytes live in node.data.wasmBase64 (set by the worklet
+  // node UI), which serializeFlow already includes.
+  private readonly onWorkletCompiled = () => this.syncFlow();
+
   constructor(
     _audioContext: AudioContext,
     private readonly nodesRef: RefObject<any[]>,
     private readonly edgesRef: RefObject<any[]>,
-  ) {}
+  ) {
+    EventBus.getInstance().subscribe('worklet.compiled', this.onWorkletCompiled);
+  }
 
   private syncFlow(): void {
     emit('loadFlow', { flow: serializeFlow(this.nodesRef.current, this.edgesRef.current) });
   }
 
   initialize(): void { this.syncFlow(); }
-  dispose(): void { emit('disposeFlow', {}); }
+  resync(): void { this.syncFlow(); }
+  dispose(): void {
+    EventBus.getInstance().unsubscribe('worklet.compiled', this.onWorkletCompiled);
+    emit('disposeFlow', {});
+  }
 
   setParam(nodeId: string, key: string, value: number | string): void {
     emit('setParamByName', { nodeId, key, value });

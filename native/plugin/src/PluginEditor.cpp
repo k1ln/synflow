@@ -53,6 +53,18 @@ static juce::WebBrowserComponent::Resource makeResource(const char* data, int si
     return { std::vector<std::byte>(d, d + size), juce::String(mime) };
 }
 
+static const char* mimeForFile(const juce::String& file) {
+    if (file.endsWithIgnoreCase(".html")) return "text/html";
+    if (file.endsWithIgnoreCase(".js") || file.endsWithIgnoreCase(".mjs")) return "text/javascript";
+    if (file.endsWithIgnoreCase(".css")) return "text/css";
+    if (file.endsWithIgnoreCase(".wasm")) return "application/wasm";
+    if (file.endsWithIgnoreCase(".json")) return "application/json";
+    if (file.endsWithIgnoreCase(".png")) return "image/png";
+    if (file.endsWithIgnoreCase(".svg")) return "image/svg+xml";
+    if (file.endsWithIgnoreCase(".woff2")) return "font/woff2";
+    return "application/octet-stream";
+}
+
 std::optional<juce::WebBrowserComponent::Resource>
 SynflowAudioProcessorEditor::provide(const juce::String& path) {
     const auto file = (path == "/") ? juce::String("index.html")
@@ -61,17 +73,17 @@ SynflowAudioProcessorEditor::provide(const juce::String& path) {
     if (file == "index.html")
         return makeResource(BinaryData::index_html, BinaryData::index_htmlSize, "text/html");
 #if SYNFLOW_HAS_EDITOR
-    // Edit-mode: the embedded Synflow editor bundle.
-    if (file == "editor.html")
-        return makeResource(EditorBinaryData::editor_html, EditorBinaryData::editor_htmlSize, "text/html");
-    if (file == "editor.js")
-        return makeResource(EditorBinaryData::editor_js, EditorBinaryData::editor_jsSize, "text/javascript");
-    if (file == "editor.css")
-        return makeResource(EditorBinaryData::editor_css, EditorBinaryData::editor_cssSize, "text/css");
-    if (file == "editor-exportPortableFlow.js")
-        return makeResource(EditorBinaryData::editorexportPortableFlow_js, EditorBinaryData::editorexportPortableFlow_jsSize, "text/javascript");
-    if (file == "editor.png")
-        return makeResource(EditorBinaryData::editor_png, EditorBinaryData::editor_pngSize, "image/png");
+    // Edit-mode: serve ANY file from the embedded editor bundle by its original
+    // filename — editor.html/js/css/png plus every lazy chunk Vite emitted (incl.
+    // the AssemblyScript compiler chunk used to compile worklets inside the plugin).
+    for (int i = 0; i < EditorBinaryData::namedResourceListSize; ++i) {
+        if (file == juce::String(EditorBinaryData::originalFilenames[i])) {
+            int size = 0;
+            const char* data = EditorBinaryData::getNamedResource(EditorBinaryData::namedResourceList[i], size);
+            if (data != nullptr)
+                return makeResource(data, size, mimeForFile(file));
+        }
+    }
 #endif
     return std::nullopt;
 }

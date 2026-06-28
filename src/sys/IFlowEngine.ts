@@ -20,6 +20,11 @@ export interface IFlowEngine {
   // Live note triggering (the editor's keyboard / one-shot hit).
   receiveNodeOn(nodeId: string, handle?: string, payload?: Record<string, any>): void;
   receiveNodeOff(nodeId: string, handle?: string, payload?: Record<string, any>): void;
+  // Optional: re-push the current graph after an in-place node-data change that
+  // isn't a topology edit (e.g. compiling an AudioWorklet to wasm). The native
+  // engine re-sends the flow JSON so it hot-reloads the new module; the web engine
+  // omits it (it reloads the worklet through its own EventBus path).
+  resync?(): void;
   // Optional Web-Audio-only param routing (Flow.tsx calls these with `?.`; the
   // native engine omits them).
   getAudioParam?(nodeId: string, key: string): any;

@@ -51,13 +51,14 @@ set(EDITOR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/webui/editor)
 set(HAS_EDITOR FALSE)
 if(EXISTS ${EDITOR_DIR}/editor.html AND EXISTS ${EDITOR_DIR}/editor.js)
     set(HAS_EDITOR TRUE)
-    juce_add_binary_data(SynflowEditorBundle NAMESPACE EditorBinaryData HEADER_NAME EditorBinaryData.h SOURCES
-        ${EDITOR_DIR}/editor.html
-        ${EDITOR_DIR}/editor.js
-        ${EDITOR_DIR}/editor.css
-        ${EDITOR_DIR}/editor-exportPortableFlow.js
-        ${EDITOR_DIR}/editor.png)
-    message(STATUS "Synflow: embedding edit-mode editor bundle")
+    # Embed EVERY file Vite emitted (editor.html/js/css/png + all lazy chunks, incl.
+    # the AssemblyScript compiler chunk that powers in-plugin worklet compilation).
+    # CONFIGURE_DEPENDS re-globs on build so new chunks are picked up automatically.
+    file(GLOB EDITOR_FILES CONFIGURE_DEPENDS ${EDITOR_DIR}/*)
+    juce_add_binary_data(SynflowEditorBundle NAMESPACE EditorBinaryData HEADER_NAME EditorBinaryData.h
+        SOURCES ${EDITOR_FILES})
+    list(LENGTH EDITOR_FILES EDITOR_FILE_COUNT)
+    message(STATUS "Synflow: embedding edit-mode editor bundle (${EDITOR_FILE_COUNT} files)")
 else()
     message(WARNING "Synflow: editor bundle missing (run `npm run build:plugin-ui`); edit mode disabled")
 endif()

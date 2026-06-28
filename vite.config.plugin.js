@@ -21,6 +21,9 @@ export default defineConfig({
   build: {
     outDir: fileURLToPath(new URL('./native/plugin/webui/editor', import.meta.url)),
     emptyOutDir: true,
+    // The AssemblyScript compiler chunk (in-plugin worklet compilation) uses
+    // top-level await; the webview is modern WebKit/Chromium, so target esnext.
+    target: 'esnext',
     rollupOptions: {
       input: fileURLToPath(new URL('./src/plugin-ui/editor.html', import.meta.url)),
       output: {

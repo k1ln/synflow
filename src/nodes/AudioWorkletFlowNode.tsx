@@ -315,7 +315,10 @@ function userSample(x: f32, i: i32): f32 {
       data.processorCode = shim;
       setProcessorCode(shim);
       const emitNodeId = nodeId || scriptName;
-      if (emitNodeId) eventBus.emit(emitNodeId + '.processor.save', { code: shim });
+      if (emitNodeId) eventBus.emit(emitNodeId + '.processor.save', { code: shim }); // web: reload worklet
+      // native (plugin): NativeFlowEngine re-pushes the flow JSON so C++ hot-reloads
+      // the new wasm (no-op in the web app, where there's no native engine listening).
+      eventBus.emit('worklet.compiled', { nodeId: emitNodeId });
       setNativeStatus(`compiled ✓ (${base64.length} b64 chars)`);
     } catch (e: any) {
       setNativeStatus('error: ' + (e?.message || String(e)).split('\n')[0]);
