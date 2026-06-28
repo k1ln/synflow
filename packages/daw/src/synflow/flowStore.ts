@@ -107,3 +107,41 @@ export async function readAllFlows(root: any): Promise<LibraryEntry[]> {
   }
   return out.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
 }
+
+// ─── songs (the whole project) ───────────────────────────────────────────────
+export const songSlug = (name: string) => (name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'song');
+
+/** Save the whole project as a self-contained JSON under <folder>/songs/. */
+export async function saveProject(root: any, project: any): Promise<string> {
+  if (!(await ensurePermission(root, 'readwrite'))) throw new Error('write permission denied');
+  const d = await dir(root, 'songs');
+  const file = `${songSlug(project.name)}.json`;
+  const fh = await d.getFileHandle(file, { create: true });
+  const w = await fh.createWritable();
+  await w.write(JSON.stringify(project, null, 2));
+  await w.close();
+  return file;
+}
+
+/** List saved songs (file name + display name). */
+export async function listSongs(root: any): Promise<Array<{ file: string; name: string }>> {
+  const out: Array<{ file: string; name: string }> = [];
+  try {
+    const d = await dir(root, 'songs');
+    for await (const [fname, handle] of (d as any).entries()) {
+      if (handle.kind !== 'file' || !fname.endsWith('.json')) continue;
+      let name = fname.replace(/\.json$/, '');
+      try { name = JSON.parse(await (await handle.getFile()).text()).name ?? name; } catch { /* keep file name */ }
+      out.push({ file: fname, name });
+    }
+  } catch { /* none */ }
+  return out.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function loadProject(root: any, file: string): Promise<any | null> {
+  try {
+    const d = await dir(root, 'songs');
+    const fh = await d.getFileHandle(file);
+    return JSON.parse(await (await fh.getFile()).text());
+  } catch { return null; }
+}

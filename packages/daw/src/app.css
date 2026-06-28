@@ -421,3 +421,14 @@ body {
 .bi-del { opacity: 0; width: 18px; height: 18px; flex-shrink: 0; display: grid; place-items: center; border: none; background: transparent; color: var(--ink-3); cursor: pointer; border-radius: 4px; }
 .browser-item:hover .bi-del { opacity: 1; }
 .bi-del:hover { color: #ff8a8a; background: color-mix(in srgb, #ff8a8a 14%, transparent); }
+
+/* Song name + open menu in the top bar */
+.project-name-input { background: transparent; border: 1px solid transparent; border-radius: 5px; padding: 3px 7px; font-size: 13px; font-weight: 600; color: #d0eaff; max-width: 180px; }
+.project-name-input:hover { border-color: var(--border-strong); }
+.project-name-input:focus { outline: none; border-color: var(--accent); background: var(--glass-field); color: var(--ink-1); }
+.project-open { position: relative; }
+.open-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 200; min-width: 180px; max-height: 320px; overflow-y: auto; background: var(--surface-1, #0c0f16); border: 1px solid var(--border-strong); border-radius: var(--r-sm); padding: 5px; box-shadow: 0 14px 34px rgba(0,0,0,.55); display: flex; flex-direction: column; gap: 2px; }
+.open-menu button { text-align: left; font-size: 12px; padding: 7px 9px; border-radius: 5px; cursor: pointer; color: var(--ink-2); background: transparent; border: none; }
+.open-menu button:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.open-none { font-size: 11px; color: var(--ink-3); padding: 6px 9px; }
+.icon-btn.saved { color: var(--accent); box-shadow: var(--glow-accent); }

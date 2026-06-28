@@ -13,7 +13,7 @@ import {
 import { midiToFreq } from './model/pitch';
 import { type Flow } from './synflow/instruments';
 import { LIBRARY, findEntry, cloneFlow, type LibraryEntry } from './synflow/library';
-import { fsSupported, restoreFolder, seedLibrary, readAllFlows, writeFlow, pickFolder } from './synflow/flowStore';
+import { fsSupported, restoreFolder, seedLibrary, readAllFlows, writeFlow, pickFolder, saveProject, listSongs, loadProject } from './synflow/flowStore';
 import { TopBar, type ViewId } from './ui/TopBar';
 import { Pool } from './ui/Pool';
 import { TrackEditor, type TrackEditorHandlers } from './ui/TrackEditor';
@@ -41,6 +41,8 @@ export function App() {
   const [library, setLibrary] = useState<LibraryEntry[]>(LIBRARY);
   const [folder, setFolder] = useState<FileSystemDirectoryHandle | null>(null);
   const [storageSetup, setStorageSetup] = useState(false);
+  const [songs, setSongs] = useState<Array<{ file: string; name: string }>>([]);
+  const [saved, setSaved] = useState(false);
 
   const ctxRef = useRef<AudioContext | null>(null);
   const transportRef = useRef<Transport | null>(null);
@@ -82,8 +84,17 @@ export function App() {
     void (async () => {
       const handle = await restoreFolder();
       if (cancelled) return;
-      if (handle) await adoptFolder(handle);
-      else if (fsSupported) setStorageSetup(true);
+      if (handle) {
+        await adoptFolder(handle);
+        const list = await listSongs(handle); if (cancelled) return; setSongs(list);
+        const last = localStorage.getItem('mothscilla:lastSong');
+        if (last) { const proj = await loadProject(handle, last); if (proj && !cancelled) { setProject(proj); setSelTrack(proj.tracks[0]?.id ?? ''); } }
+      } else if (fsSupported) {
+        setStorageSetup(true);
+      } else {
+        const local = localStorage.getItem('mothscilla:localSong');
+        if (local) { try { const proj = JSON.parse(local); if (!cancelled) { setProject(proj); setSelTrack(proj.tracks[0]?.id ?? ''); } } catch { /* ignore */ } }
+      }
     })();
     return () => { cancelled = true; };
   }, [adoptFolder]);
@@ -206,6 +217,46 @@ export function App() {
   }, []);
 
   const setBpm = (bpm: number) => { setProject((p) => ({ ...p, bpm })); if (transportRef.current) transportRef.current.bpm = bpm; };
+
+  // ─── song save / load (the whole project) ──────────────────────────────────
+  const flashSaved = () => { setSaved(true); window.setTimeout(() => setSaved(false), 1600); };
+  const refreshSongs = useCallback(async () => { const root = folderRef.current; if (root) setSongs(await listSongs(root)); }, []);
+
+  const saveSong = useCallback(async () => {
+    const root = folderRef.current;
+    if (root) {
+      try { const file = await saveProject(root, projectRef.current); localStorage.setItem('mothscilla:lastSong', file); flashSaved(); void refreshSongs(); console.info('[Mothscilla] saved song to disk:', file); }
+      catch (e) { console.warn('[Mothscilla] save song failed', e); }
+    } else {
+      try { localStorage.setItem('mothscilla:localSong', JSON.stringify(projectRef.current)); flashSaved(); console.info('[Mothscilla] no folder — saved song to localStorage'); } catch (e) { console.warn('[Mothscilla] save song failed', e); }
+    }
+  }, [refreshSongs]);
+
+  // Tear down all audio so it rebuilds from a freshly loaded project.
+  const resetAudio = useCallback(() => {
+    schedulerRef.current?.stop(); transportRef.current?.stop();
+    for (const h of hostsRef.current.values()) h.dispose(); hostsRef.current.clear();
+    for (const p of poolsRef.current.values()) p.dispose(); poolsRef.current.clear();
+    for (const p of liveSynthsRef.current.values()) p.dispose(); liveSynthsRef.current.clear();
+    for (const h of liveDrumsRef.current.values()) h.dispose(); liveDrumsRef.current.clear();
+    liveGainRef.current.clear();
+    try { void ctxRef.current?.close(); } catch { /* noop */ }
+    ctxRef.current = null; mixerRef.current = null; schedulerRef.current = null; transportRef.current = null;
+    setIsPlaying(false); setCurrentStep(-1);
+  }, []);
+
+  const loadProjectState = useCallback((proj: Project) => {
+    resetAudio();
+    setProject(proj);
+    setSelTrack(proj.tracks[0]?.id ?? '');
+    setInstPanel(null); setEditor(null);
+  }, [resetAudio]);
+
+  const openSong = useCallback(async (file: string) => {
+    const root = folderRef.current; if (!root) return;
+    const proj = await loadProject(root, file);
+    if (proj) { loadProjectState(proj); localStorage.setItem('mothscilla:lastSong', file); }
+  }, [loadProjectState]);
 
   // ─── audition (click feedback) + live performance ──────────────────────────
   const audition = useCallback(async (useId: string, payload?: { frequency: number }) => {
@@ -460,6 +511,8 @@ export function App() {
         view={view} setView={setView} isPlaying={isPlaying} onPlay={isPlaying ? stop : play} onStop={stop}
         armed={armed} onArm={() => setArmed((a) => !a)} bpm={project.bpm} onBpm={setBpm} position={pos}
         browserOpen={browserOpen} setBrowserOpen={setBrowserOpen}
+        projectName={project.name} onProjectName={(name) => setProject((p) => ({ ...p, name }))}
+        onSave={saveSong} saved={saved} songs={songs} onOpenSong={openSong}
       />
       <div className="workspace">
         {browserOpen && <Pool pool={project.pool} effects={effects} armed={armedPool} onOpenInstrument={openInstrument} onEditEffect={editEffect} onRemoveInstrument={removePoolItem} onRemoveEffect={removeEffect} onAddFromFolder={addFromFolder} source={folder ? `disk · ${folder.name}` : 'built-in'} />}
@@ -553,7 +606,7 @@ export function App() {
         );
       })()}
       {editor && <SynflowEditor flow={editor.flow} title={editor.title} onSaved={editor.onSaved} onClose={() => setEditor(null)} />}
-      {storageSetup && <StorageSetup onFolder={(h2) => adoptFolder(h2, true)} onSkip={() => setStorageSetup(false)} />}
+      {storageSetup && <StorageSetup onFolder={async (h2) => { await adoptFolder(h2, true); void refreshSongs(); }} onSkip={() => setStorageSetup(false)} />}
     </div>
   );
 }
