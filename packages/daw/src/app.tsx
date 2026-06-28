@@ -18,7 +18,6 @@ import { TopBar, type ViewId } from './ui/TopBar';
 import { Pool } from './ui/Pool';
 import { TrackEditor, type TrackEditorHandlers } from './ui/TrackEditor';
 import { FxBar } from './ui/FxBar';
-import { Live } from './ui/Live';
 import { Arrange } from './ui/Arrange';
 import { InstrumentPanel } from './ui/InstrumentPanel';
 import { SynflowEditor } from './ui/SynflowEditor';
@@ -32,7 +31,6 @@ export function App() {
   const [browserOpen, setBrowserOpen] = useState(true);
   const [armed, setArmed] = useState(false);
   const [selTrack, setSelTrack] = useState<string>(() => defaultProject().tracks[0]?.id ?? '');
-  const [liveSynth, setLiveSynth] = useState<string>('');
   const [armedPool, setArmedPool] = useState<string | null>(null);
   const [openItem, setOpenItem] = useState<{ kind: 'instrument' | 'effect'; id: string } | null>(null);
   const [songMode, setSongMode] = useState(false);
@@ -306,17 +304,15 @@ export function App() {
   const liveNoteOn = useCallback(async (poolId: string, midi: number) => { await buildLive(poolId); liveSynthsRef.current.get(poolId)?.noteOn(midi, midiToFreq(midi)); }, [buildLive]);
   const liveNoteOff = useCallback((poolId: string, midi: number) => { liveSynthsRef.current.get(poolId)?.noteOff(midi); }, []);
   const liveDrumDown = useCallback(async (poolId: string) => { await buildLive(poolId); const h = liveDrumsRef.current.get(poolId); h?.trigger(); window.setTimeout(() => h?.release(), 220); }, [buildLive]);
-  const liveDrumUp = useCallback(() => {}, []);
 
-  // Open the full-page live view for a pool item.
+  // Clicking a pool item goes to the Live tab, which shows that item's view.
   const openInstrument = (poolId: string) => {
-    const pool = project.pool.find((p) => p.id === poolId);
     setArmedPool(poolId);
-    if (pool?.kind === 'synth') setLiveSynth(poolId);
     setOpenItem({ kind: 'instrument', id: poolId });
+    setView('live');
     void buildLive(poolId);
   };
-  const openEffectPage = (effectId: string) => setOpenItem({ kind: 'effect', id: effectId });
+  const openEffectPage = (effectId: string) => { setOpenItem({ kind: 'effect', id: effectId }); setView('live'); };
   // Tweak an effect's exposed knob: update the library default + persist (future inserts use it).
   const onEffectKnob = (effectId: string, nodeId: string, param: string, value: number) => {
     const e = library.find((x) => x.id === effectId && x.group === 'effect'); if (!e) return;
@@ -415,7 +411,6 @@ export function App() {
     liveFxRef.current.get(poolId)?.dispose(); liveFxRef.current.delete(poolId);
     setProject((p) => ({ ...p, pool: p.pool.filter((pi) => pi.id !== poolId), tracks: p.tracks.map((t) => ({ ...t, uses: t.uses.filter((u) => u.poolId !== poolId) })) }));
     if (openItem?.id === poolId) setOpenItem(null);
-    if (liveSynth === poolId) setLiveSynth('');
   };
 
   // Remove an effect from the pool (the catalog of effects you can add).
@@ -562,34 +557,7 @@ export function App() {
       <div className="workspace">
         {browserOpen && <Pool pool={project.pool} effects={effects} armed={armedPool} onOpenInstrument={openInstrument} onEditEffect={openEffectPage} onRemoveInstrument={removePoolItem} onRemoveEffect={removeEffect} onAddFromFolder={addFromFolder} source={folder ? `disk · ${folder.name}` : 'built-in'} />}
         <div className="main">
-          {openItem && (() => {
-            if (openItem.kind === 'instrument') {
-              const pool = project.pool.find((p) => p.id === openItem.id);
-              if (!pool) return null;
-              return (
-                <InstrumentPanel
-                  name={pool.name} kind={pool.kind} flow={pool.flow} gain={pool.gain ?? 1}
-                  onGain={(v) => onInstrumentGain(pool.id, v)}
-                  onKnob={(nodeId, param, v) => onInstrumentKnob(pool.id, nodeId, param, v)}
-                  onEdit={() => editInstrument(pool.id)} onBack={() => setOpenItem(null)}
-                  onNoteOn={(m) => void liveNoteOn(pool.id, m)} onNoteOff={(m) => liveNoteOff(pool.id, m)} onHit={() => void liveDrumDown(pool.id)}
-                  fx={pool.fx ?? []} effects={effects}
-                  onFxAdd={(fxId) => onPoolFxAdd(pool.id, fxId)} onFxRemove={(i) => onPoolFxRemove(pool.id, i)}
-                  onFxEdit={(i) => onPoolFxEdit(pool.id, i)} onFxKnob={(i, nodeId, param, v) => onPoolFxKnob(pool.id, i, nodeId, param, v)}
-                />
-              );
-            }
-            const e = library.find((x) => x.id === openItem.id && x.group === 'effect');
-            if (!e) return null;
-            return (
-              <InstrumentPanel
-                name={e.name} kind="effect" flow={e.flow}
-                onKnob={(nodeId, param, v) => onEffectKnob(e.id, nodeId, param, v)}
-                onEdit={() => editEffect(e.id)} onBack={() => setOpenItem(null)}
-              />
-            );
-          })()}
-          {!openItem && view === 'tracks' && (
+          {view === 'tracks' && (
             <div className="tracks-view">
               <div className="tracks-rail">
                 {project.tracks.map((t) => (
@@ -613,7 +581,7 @@ export function App() {
             </div>
           )}
 
-          {!openItem && view === 'song' && (
+          {view === 'song' && (
             <Arrange
               project={project} currentSlot={currentStep < 0 ? -1 : Math.floor(currentStep / project.totalSteps)} songMode={songMode} selTrack={selTrack}
               onToggleSongMode={toggleSongMode} onSetSongSlots={setSongSlots} onSelectTrack={setSelTrack}
@@ -621,14 +589,39 @@ export function App() {
             />
           )}
 
-          {!openItem && view === 'live' && (
-            <Live
-              project={project} synthId={liveSynth} onSelectSynth={setLiveSynth}
-              onNoteOn={liveNoteOn} onNoteOff={liveNoteOff} onDrumDown={liveDrumDown} onDrumUp={liveDrumUp}
-            />
-          )}
+          {view === 'live' && (() => {
+            // The Live tab IS the instrument view: show the instrument you clicked
+            // in the pool (or the first one). No "back" — switch via tabs / the pool.
+            const item = openItem ?? (project.pool[0] ? { kind: 'instrument' as const, id: project.pool[0].id } : null);
+            if (!item) return <div className="te-empty">Add an instrument to the pool, then click it to play it here.</div>;
+            if (item.kind === 'instrument') {
+              const pool = project.pool.find((p) => p.id === item.id);
+              if (!pool) return <div className="te-empty">Click an instrument in the pool.</div>;
+              return (
+                <InstrumentPanel
+                  name={pool.name} kind={pool.kind} flow={pool.flow} gain={pool.gain ?? 1}
+                  onGain={(v) => onInstrumentGain(pool.id, v)}
+                  onKnob={(nodeId, param, v) => onInstrumentKnob(pool.id, nodeId, param, v)}
+                  onEdit={() => editInstrument(pool.id)}
+                  onNoteOn={(m) => void liveNoteOn(pool.id, m)} onNoteOff={(m) => liveNoteOff(pool.id, m)} onHit={() => void liveDrumDown(pool.id)}
+                  fx={pool.fx ?? []} effects={effects}
+                  onFxAdd={(fxId) => onPoolFxAdd(pool.id, fxId)} onFxRemove={(i) => onPoolFxRemove(pool.id, i)}
+                  onFxEdit={(i) => onPoolFxEdit(pool.id, i)} onFxKnob={(i, nodeId, param, v) => onPoolFxKnob(pool.id, i, nodeId, param, v)}
+                />
+              );
+            }
+            const e = library.find((x) => x.id === item.id && x.group === 'effect');
+            if (!e) return null;
+            return (
+              <InstrumentPanel
+                name={e.name} kind="effect" flow={e.flow}
+                onKnob={(nodeId, param, v) => onEffectKnob(e.id, nodeId, param, v)}
+                onEdit={() => editEffect(e.id)}
+              />
+            );
+          })()}
 
-          {!openItem && view === 'mix' && (
+          {view === 'mix' && (
             <div className="mixer-view">
               <div className="mx-master">
                 <FxBar label="Master FX" color="var(--cat-master, var(--accent))" fx={project.masterFx} effects={effects} onAdd={onMasterFxAdd} onRemove={onMasterFxRemove} onEdit={onMasterFxEdit}
