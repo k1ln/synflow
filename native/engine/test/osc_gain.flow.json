@@ -1,0 +1,12 @@
+{
+  "name": "OscGain",
+  "nodes": [
+    { "id": "osc1", "type": "OscillatorFlowNode", "data": { "frequency": 330, "type": "sine" } },
+    { "id": "amp1", "type": "GainFlowNode", "data": { "gain": 0.4 } },
+    { "id": "out1", "type": "MasterOutFlowNode", "data": {} }
+  ],
+  "edges": [
+    { "id": "e1", "source": "osc1", "target": "amp1", "sourceHandle": "output", "targetHandle": "main-input" },
+    { "id": "e2", "source": "amp1", "target": "out1", "sourceHandle": "output", "targetHandle": "destination-input" }
+  ]
+}

@@ -1,0 +1,12 @@
+[package]
+name = "native-render"
+version = "0.0.0"
+edition = "2021"
+
+# wasmtime is the exact engine the JUCE plugin will embed (via its C API).
+# Rendering the same dsp.wasm here proves native parity with the V8/worklet side.
+[dependencies]
+wasmtime = "27"
+
+[profile.release]
+opt-level = 3

@@ -1,0 +1,17 @@
+{
+  "name": "synflow-poc-abi",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "M0 PoC: prove one wasm DSP module renders identically in V8 (worklet) and wasmtime (native).",
+  "scripts": {
+    "build:wasm": "asc assembly/dsp.ts --target release",
+    "render:js": "node render-wasm.mjs",
+    "render:native": "cd native-render && cargo run --quiet --release",
+    "nulltest": "node nulltest.mjs",
+    "poc": "npm run build:wasm && npm run render:js && npm run render:native && npm run nulltest"
+  },
+  "devDependencies": {
+    "assemblyscript": "^0.27.31"
+  }
+}

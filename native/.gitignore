@@ -1,0 +1,7 @@
+# Build artifacts — all regenerable
+node_modules/
+target/
+build/
+*.o
+*.a
+*.f32
