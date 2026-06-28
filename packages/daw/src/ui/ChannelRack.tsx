@@ -11,7 +11,7 @@ export function ChannelRack({
 }) {
   return (
     <div className="rack">
-      {project.channels.map((ch) => (
+      {project.channels.filter((c) => c.kind === 'step').map((ch) => (
         <div className="channel" key={ch.id}>
           <button
             className={`chan-name ${ch.muted ? 'muted' : ''}`}
