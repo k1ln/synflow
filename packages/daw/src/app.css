@@ -415,3 +415,9 @@ body {
 .trk-loop { width: 20px; height: 20px; display: grid; place-items: center; border: none; background: transparent; color: var(--ink-3); cursor: pointer; border-radius: 4px; flex-shrink: 0; }
 .trk-loop:hover { color: var(--ink-1); }
 .trk-loop.on { color: var(--accent); }
+
+/* Pool item delete button (hover) */
+.browser-item { position: relative; }
+.bi-del { opacity: 0; width: 18px; height: 18px; flex-shrink: 0; display: grid; place-items: center; border: none; background: transparent; color: var(--ink-3); cursor: pointer; border-radius: 4px; }
+.browser-item:hover .bi-del { opacity: 1; }
+.bi-del:hover { color: #ff8a8a; background: color-mix(in srgb, #ff8a8a 14%, transparent); }

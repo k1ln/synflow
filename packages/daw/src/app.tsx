@@ -302,6 +302,29 @@ export function App() {
     } });
   };
 
+  // Remove an instrument/drum from the pool: drop its uses from every track,
+  // tear down its engines, and close its panel.
+  const removePoolItem = (poolId: string) => {
+    for (const t of projectRef.current.tracks) {
+      for (const u of t.uses) {
+        if (u.poolId !== poolId) continue;
+        hostsRef.current.get(u.id)?.dispose(); hostsRef.current.delete(u.id);
+        poolsRef.current.get(u.id)?.dispose(); poolsRef.current.delete(u.id);
+        mixerRef.current?.removeUse(u.id);
+      }
+    }
+    liveSynthsRef.current.get(poolId)?.dispose(); liveSynthsRef.current.delete(poolId);
+    liveDrumsRef.current.get(poolId)?.dispose(); liveDrumsRef.current.delete(poolId);
+    try { liveGainRef.current.get(poolId)?.disconnect(); } catch { /* noop */ }
+    liveGainRef.current.delete(poolId);
+    setProject((p) => ({ ...p, pool: p.pool.filter((pi) => pi.id !== poolId), tracks: p.tracks.map((t) => ({ ...t, uses: t.uses.filter((u) => u.poolId !== poolId) })) }));
+    if (instPanel === poolId) setInstPanel(null);
+    if (liveSynth === poolId) setLiveSynth('');
+  };
+
+  // Remove an effect from the pool (the catalog of effects you can add).
+  const removeEffect = (effectId: string) => setLibrary((lib) => lib.filter((e) => !(e.id === effectId && e.group === 'effect')));
+
   // ─── project edits ─────────────────────────────────────────────────────────
   const mapTrack = (trackId: string, fn: (t: Track) => Track) =>
     setProject((p) => ({ ...p, tracks: p.tracks.map((t) => (t.id === trackId ? fn(t) : t)) }));
@@ -439,7 +462,7 @@ export function App() {
         browserOpen={browserOpen} setBrowserOpen={setBrowserOpen}
       />
       <div className="workspace">
-        {browserOpen && <Pool pool={project.pool} effects={effects} armed={armedPool} onOpenInstrument={openInstrument} onEditEffect={editEffect} onAddFromFolder={addFromFolder} source={folder ? `disk · ${folder.name}` : 'built-in'} />}
+        {browserOpen && <Pool pool={project.pool} effects={effects} armed={armedPool} onOpenInstrument={openInstrument} onEditEffect={editEffect} onRemoveInstrument={removePoolItem} onRemoveEffect={removeEffect} onAddFromFolder={addFromFolder} source={folder ? `disk · ${folder.name}` : 'built-in'} />}
         <div className="main">
           {view === 'tracks' && (
             <div className="tracks-view">

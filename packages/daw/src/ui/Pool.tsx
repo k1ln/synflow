@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, FolderPlus, Music2, Drum, Sparkles, Radio } from 'lucide-react';
+import { ChevronDown, ChevronRight, FolderPlus, Music2, Drum, Sparkles, Radio, X } from 'lucide-react';
 import type { PoolItem } from '../model/project';
 import type { LibraryEntry } from '../synflow/library';
 
@@ -14,12 +14,14 @@ const SECTION = {
  * (click → live mode) and the effects available to add. "Add from folder" pulls
  * more flows in from the on-disk library.
  */
-export function Pool({ pool, effects, armed, onOpenInstrument, onEditEffect, onAddFromFolder, source }: {
+export function Pool({ pool, effects, armed, onOpenInstrument, onEditEffect, onRemoveInstrument, onRemoveEffect, onAddFromFolder, source }: {
   pool: PoolItem[];
   effects: LibraryEntry[];
   armed?: string | null;
   onOpenInstrument: (poolId: string) => void;
   onEditEffect: (effectId: string) => void;
+  onRemoveInstrument: (poolId: string) => void;
+  onRemoveEffect: (effectId: string) => void;
   onAddFromFolder: () => void;
   source?: string;
 }) {
@@ -42,12 +44,13 @@ export function Pool({ pool, effects, armed, onOpenInstrument, onEditEffect, onA
     );
   };
 
-  const Item = ({ name, color, live, onClick, tag, title }: { name: string; color: string; live?: boolean; onClick?: () => void; tag?: string; title?: string }) => (
+  const Item = ({ name, color, live, onClick, onRemove, tag, title }: { name: string; color: string; live?: boolean; onClick?: () => void; onRemove?: () => void; tag?: string; title?: string }) => (
     <div className={`browser-item ${live ? 'live' : ''}`} onClick={onClick} title={title}>
       <span className="bi-dot" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
       <span className="bi-name">{name}</span>
       {live && <Radio size={11} className="bi-live" />}
       {tag && <span className="bi-kind">{tag}</span>}
+      {onRemove && <button className="bi-del" title="Remove from project" onClick={(e) => { e.stopPropagation(); onRemove(); }}><X size={12} /></button>}
     </div>
   );
 
@@ -59,15 +62,15 @@ export function Pool({ pool, effects, armed, onOpenInstrument, onEditEffect, onA
       </div>
       <div className="browser-list">
         <Section name="Instruments" count={synths.length}>
-          {synths.map((p) => <Item key={p.id} name={p.name} color={SECTION.Instruments.color} live={armed === p.id} onClick={() => onOpenInstrument(p.id)} title="Open instrument (live + knobs)" />)}
+          {synths.map((p) => <Item key={p.id} name={p.name} color={SECTION.Instruments.color} live={armed === p.id} onClick={() => onOpenInstrument(p.id)} onRemove={() => onRemoveInstrument(p.id)} title="Open instrument (live + knobs)" />)}
           {synths.length === 0 && <div className="browser-empty">none — add from folder</div>}
         </Section>
         <Section name="Drums" count={drums.length}>
-          {drums.map((p) => <Item key={p.id} name={p.name} color={SECTION.Drums.color} live={armed === p.id} onClick={() => onOpenInstrument(p.id)} title="Open instrument (live + knobs)" />)}
+          {drums.map((p) => <Item key={p.id} name={p.name} color={SECTION.Drums.color} live={armed === p.id} onClick={() => onOpenInstrument(p.id)} onRemove={() => onRemoveInstrument(p.id)} title="Open instrument (live + knobs)" />)}
           {drums.length === 0 && <div className="browser-empty">none — add from folder</div>}
         </Section>
         <Section name="Effects" count={effects.length}>
-          {effects.map((e) => <Item key={e.id} name={e.name} color={SECTION.Effects.color} tag="edit" onClick={() => onEditEffect(e.id)} title="Edit effect in Synflow" />)}
+          {effects.map((e) => <Item key={e.id} name={e.name} color={SECTION.Effects.color} tag="edit" onClick={() => onEditEffect(e.id)} onRemove={() => onRemoveEffect(e.id)} title="Edit effect in Synflow" />)}
           {effects.length === 0 && <div className="browser-empty">none — add from folder</div>}
         </Section>
       </div>
