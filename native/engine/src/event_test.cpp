@@ -13,6 +13,7 @@
 #include "synflow/AudioGraphManager.h"
 #include "synflow/FlowLoader.h"
 #include "synflow/nodes/ADSRNode.h"
+#include "synflow/nodes/ArpeggiatorNode.h"
 #include "synflow/nodes/AutomationNode.h"
 #include "synflow/nodes/ClockNode.h"
 #include "synflow/nodes/ConstantNode.h"
@@ -479,6 +480,34 @@ int main() {
         // monotonic decrease
         for (size_t k = 1; ok && k < pr->values.size(); ++k) ok = pr->values[k] <= pr->values[k - 1] + 1e-6;
         check(ok, "Automation ramps steered param max->min through linear point curve on trigger");
+    }
+
+    // --- Test 15: Arpeggiator lays an up-run across the beat (sample-accurate) ---
+    {
+        AudioGraphManager g(RuntimeMode::Plugin);
+        auto clk = std::make_unique<ClockNode>(); clk->setNamedParam("bpm", 120.0);
+        const int ci = g.addNode(std::move(clk));
+        auto arp = std::make_unique<ArpeggiatorNode>();
+        arp->setNamedParamStr("mode", "up");
+        arp->setNamedParam("noteCount", 4);
+        arp->setNamedParam("baseFrequency", 440.0);
+        arp->setNamedParam("octaveSpread", 1.0);
+        const int ai = g.addNode(std::move(arp));
+        auto probe = std::make_unique<ProbeNode>(); ProbeNode* pr = probe.get();
+        const int pi = g.addNode(std::move(probe));
+        g.connectEvent(ci, 0, ai, 0);             // clock -> arp clock-input
+        g.connectEvent(ai, 0, pi, 0, "frequency"); // arp -> probe (Value freq + NoteOn gate)
+        g.prepare(SR, BLOCK);
+        const int N = 23040; // stop before the 2nd beat (24000): one full 4-note run
+        std::vector<float> out(BLOCK, 0.0f);
+        for (int i = 0; i < N; i += BLOCK) g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        // beat at 0 -> notes at 0,6000,12000,18000
+        check(pr->onSamples == std::vector<long>{0, 6000, 12000, 18000},
+              "Arpeggiator subdivides the beat into 4 sample-accurate steps");
+        bool freqOk = pr->values.size() == 4
+            && std::fabs(pr->values[0] - 440.0) < 0.5    // root
+            && std::fabs(pr->values[3] - 880.0) < 0.5;   // +1 octave (octaveSpread 1)
+        check(freqOk, "Arpeggiator emits the ascending arpeggio frequencies (440..880)");
     }
 
     std::printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "ALL PASS", failures, failures == 1 ? "" : "s");

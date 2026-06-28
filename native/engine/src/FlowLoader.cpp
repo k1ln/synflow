@@ -8,6 +8,7 @@
 #include "synflow/nodes/BiquadFilterNode.h"
 #include "synflow/nodes/ChorusNode.h"
 #include "synflow/nodes/ClockNode.h"
+#include "synflow/nodes/ArpeggiatorNode.h"
 #include "synflow/nodes/AutomationNode.h"
 #include "synflow/nodes/ButtonNode.h"
 #include "synflow/nodes/ConstantNode.h"
@@ -59,6 +60,7 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
     if (type == "RingModFlowNode") return std::make_unique<RingModNode>();
     if (type == "IIRFilterFlowNode") return std::make_unique<IIRFilterNode>();
     if (type == "AutomationFlowNode") return std::make_unique<AutomationNode>();
+    if (type == "ArpeggiatorFlowNode") return std::make_unique<ArpeggiatorNode>();
     if (type == "MicFlowNode") return std::make_unique<MicNode>();
     if (type == "LogFlowNode" || type == "EventFlowNode" || type == "CommandInFlowNode" || type == "CommandOutFlowNode")
         return std::make_unique<EventForwardNode>();
