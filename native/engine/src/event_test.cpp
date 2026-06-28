@@ -11,12 +11,15 @@
 #include <vector>
 
 #include "synflow/AudioGraphManager.h"
+#include "synflow/FlowLoader.h"
 #include "synflow/nodes/ADSRNode.h"
 #include "synflow/nodes/ClockNode.h"
 #include "synflow/nodes/GainNode.h"
 #include "synflow/nodes/OscillatorNode.h"
 #include "synflow/nodes/SequencerNode.h"
 #include "synflow/nodes/WasmKarplusNode.h"
+
+#include <sstream>
 
 using namespace synflow;
 
@@ -56,6 +59,12 @@ static std::vector<uint8_t> readBin(const std::string& p) {
 static double rms(const std::vector<float>& v, int s, int n) {
     double acc = 0; for (int i = 0; i < n; ++i) { double x = v[static_cast<size_t>(s + i)]; acc += x * x; }
     return std::sqrt(acc / n);
+}
+
+static std::string readText(const std::string& p) {
+    std::ifstream f(p);
+    std::stringstream ss; ss << f.rdbuf();
+    return ss.str();
 }
 
 static int failures = 0;
@@ -253,6 +262,37 @@ int main() {
         const double sus = rms(voice, 20000, 2000);
         const double tail = rms(voice, 34000, 1000); // well after release
         check(sus > 0.05 && tail < 1e-4, "voice sustains while gated, silent after release");
+    }
+
+    // --- Test 6: load the real saw-lead.json via FlowLoader, trigger a note ---
+    {
+        std::string json = readText("../../packages/daw/flows/instruments/saw-lead.json");
+        if (json.empty()) json = readText("packages/daw/flows/instruments/saw-lead.json");
+        check(!json.empty(), "saw-lead.json found");
+
+        AudioGraphManager g(RuntimeMode::Plugin);
+        FlowLoadResult res = FlowLoader::loadInto(g, json, SR, BLOCK);
+        check(res.unsupportedCount == 0, "saw-lead.json: every node type is supported (no stubs)");
+
+        // The instrument's note input is its ADSR (isTrigger). Inject a host note.
+        int adsrIdx = -1;
+        for (int i = 0; i < g.size(); ++i) if (dynamic_cast<ADSRNode*>(g.node(i))) adsrIdx = i;
+        check(adsrIdx >= 0, "saw-lead exposes an ADSR note trigger");
+
+        auto gate = std::make_unique<GateNode>(); gate->onAt = 0; gate->offAt = 24000;
+        const int gi = g.addNode(std::move(gate));
+        g.connectEvent(gi, 0, adsrIdx, 0);
+        g.prepare(SR, BLOCK); // re-prepare with the injected gate + event edge
+
+        const int N = 36000;
+        std::vector<float> out(static_cast<size_t>(N), 0.0f);
+        for (int i = 0; i < N; i += BLOCK) g.renderBlock(out.data() + i, std::min(BLOCK, N - i), nullptr, 120.0, 0.0, true);
+
+        float maxabs = 0; bool finite = true;
+        for (float x : out) { maxabs = std::max(maxabs, std::fabs(x)); if (!std::isfinite(x)) finite = false; }
+        check(finite && maxabs > 0.05f, "saw-lead renders audible, finite enveloped output");
+        check(rms(out, 10000, 2000) > 0.02, "voice sounds while the note is held");
+        check(rms(out, 34000, 1500) < 1e-3, "voice is silent after the release tail");
     }
 
     std::printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "ALL PASS", failures, failures == 1 ? "" : "s");
