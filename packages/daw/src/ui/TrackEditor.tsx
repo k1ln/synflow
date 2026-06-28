@@ -22,6 +22,7 @@ export interface TrackEditorHandlers {
   onRemoveNote: (useId: string, noteId: number) => void;
   onMoveNote: (useId: string, noteId: number, midi: number, start: number) => void;
   onResizeNote: (useId: string, noteId: number, length: number) => void;
+  onSetVelocity: (useId: string, noteId: number, velocity: number) => void;
   onPlayNote: (useId: string, midi: number) => void;
   onKeyDown: (useId: string, midi: number) => void;
   onKeyUp: (useId: string, midi: number) => void;
@@ -156,7 +157,7 @@ export function TrackEditor({ project, track, effects, currentStep, recTrack, pr
                     id={use.id} name={poolName(use.poolId)} notes={use.notes ?? []} voices={use.voices}
                     totalSteps={T} stepsPerBeat={S} currentStep={cs}
                     onAddNote={h.onAddNote} onRemoveNote={h.onRemoveNote}
-                    onMoveNote={h.onMoveNote} onResizeNote={h.onResizeNote} onPlayNote={h.onPlayNote}
+                    onMoveNote={h.onMoveNote} onResizeNote={h.onResizeNote} onSetVelocity={h.onSetVelocity} onPlayNote={h.onPlayNote}
                     onKeyDown={h.onKeyDown} onKeyUp={h.onKeyUp}
                   />
                 </div>

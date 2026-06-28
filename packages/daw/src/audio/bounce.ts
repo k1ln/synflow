@@ -9,7 +9,7 @@ import { encodeWav } from './wav';
 import { scheduleFade } from './clipFade';
 import type { AudioAssets } from './AudioAssets';
 import { findEntry, cloneFlow } from '../synflow/library';
-import { trackActiveAt, songLengthSteps, songLengthSlots, type Project } from '../model/project';
+import { trackActiveAt, trackAudible, songLengthSteps, songLengthSlots, type Project } from '../model/project';
 import { midiToFreq } from '../model/pitch';
 
 export interface BounceOpts { sampleRate?: number; tailSeconds?: number }
@@ -42,6 +42,8 @@ export async function bounceProjectToWav(project: Project, assets: AudioAssets, 
   // ── build the graph (mirrors app.buildAudio) ──────────────────────────────
   for (const track of project.tracks) {
     const t = mixer.track(track.id, track.volume);
+    mixer.setTrackPan(track.id, track.pan ?? 0);
+    mixer.setTrackGate(track.id, trackAudible(track, project.tracks));   // mute/solo (silences the strip's output)
     await t.chain.setChain(resolveFx(track.fx));
     if (track.type === 'audio') {
       for (const c of track.audioClips ?? []) {

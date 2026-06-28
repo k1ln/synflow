@@ -68,3 +68,18 @@ export class StreamingPeaks {
     return { min, max, buckets: this.buckets };
   }
 }
+
+/** Slice stored overview peaks to a clip window [offset, offset+duration] (seconds). */
+export function slicePeaks(
+  p: { min: ArrayLike<number>; max: ArrayLike<number> },
+  totalDuration: number, offset: number, duration: number,
+): Peaks | null {
+  const n = p.min.length;
+  if (!n || !totalDuration) return null;
+  const a = Math.max(0, Math.floor((offset / totalDuration) * n));
+  const b = Math.min(n, Math.ceil(((offset + duration) / totalDuration) * n));
+  const buckets = Math.max(1, b - a);
+  const min = new Float32Array(buckets), max = new Float32Array(buckets);
+  for (let i = 0; i < buckets; i++) { min[i] = p.min[a + i] ?? 0; max[i] = p.max[a + i] ?? 0; }
+  return { min, max, buckets };
+}

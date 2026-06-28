@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { PianoNote } from '../model/project';
 import { midiName, isBlackKey } from '../model/pitch';
 
@@ -16,7 +16,7 @@ const snapTo = (v: number, unit: number) => (unit > 0 ? Math.round(v / unit) * u
  *  click empty space to add, drag the body to move (pitch+time), drag the right
  *  edge to resize, right-click / Delete to remove. Snap is optional. */
 export function PianoRoll({
-  id, notes, totalSteps, stepsPerBeat, currentStep, onAddNote, onRemoveNote, onMoveNote, onResizeNote, onPlayNote,
+  id, notes, totalSteps, stepsPerBeat, currentStep, onAddNote, onRemoveNote, onMoveNote, onResizeNote, onSetVelocity, onPlayNote,
   onKeyDown: onGutterDown, onKeyUp: onGutterUp,
 }: {
   id: string;
@@ -30,6 +30,7 @@ export function PianoRoll({
   onRemoveNote: (useId: string, noteId: number) => void;
   onMoveNote: (useId: string, noteId: number, midi: number, start: number) => void;
   onResizeNote: (useId: string, noteId: number, length: number) => void;
+  onSetVelocity: (useId: string, noteId: number, velocity: number) => void;
   onPlayNote: (useId: string, midi: number) => void;
   onKeyDown: (useId: string, midi: number) => void;
   onKeyUp: (useId: string, midi: number) => void;
@@ -51,6 +52,26 @@ export function PianoRoll({
 
   const unit = SNAP_UNIT[snap];
   const stepFromX = (clientX: number, laneW: number) => (clientX / laneW) * totalSteps;
+
+  // Scroll-wheel over a note adjusts its velocity. A native non-passive listener is
+  // needed so we can preventDefault (and stop the editor from scrolling). Notes are
+  // read live via a ref so the listener stays attached without re-binding.
+  const notesRef = useRef(notes); notesRef.current = notes;
+  const velRef = useRef(onSetVelocity); velRef.current = onSetVelocity;
+  useEffect(() => {
+    const lane = laneRef.current; if (!lane) return;
+    const onWheel = (e: WheelEvent) => {
+      const el = (e.target as HTMLElement).closest('.pr-note') as HTMLElement | null;
+      if (!el) return;
+      const nid = Number(el.dataset.nid);
+      const n = notesRef.current.find((x) => x.id === nid); if (!n) return;
+      e.preventDefault(); e.stopPropagation();
+      setSel(nid);
+      velRef.current(id, nid, Math.max(0.05, Math.min(1, (n.velocity ?? 1) - Math.sign(e.deltaY) * 0.05)));
+    };
+    lane.addEventListener('wheel', onWheel, { passive: false });
+    return () => lane.removeEventListener('wheel', onWheel);
+  }, [id]);
 
   const onLanePointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
@@ -136,12 +157,14 @@ export function PianoRoll({
             const top = (HIGH - n.midi) * ROW_H;
             const left = (n.start / totalSteps) * 100;
             const width = (n.length / totalSteps) * 100;
+            const vel = n.velocity ?? 1;
             return (
               <div
                 key={n.id}
                 className={`pr-note ${sel === n.id ? 'sel' : ''}`}
-                style={{ top, left: `${left}%`, width: `${width}%`, height: ROW_H - 1 }}
-                title={`${midiName(n.midi)} @ ${n.start.toFixed(2)} · ${n.length.toFixed(2)}`}
+                data-nid={n.id}
+                style={{ top, left: `${left}%`, width: `${width}%`, height: ROW_H - 1, opacity: 0.35 + 0.65 * vel }}
+                title={`${midiName(n.midi)} @ ${n.start.toFixed(2)} · ${n.length.toFixed(2)} · vel ${Math.round(vel * 100)}% (scroll to change)`}
                 onPointerDown={(e) => beginDrag(e, n, 'move')}
                 onContextMenu={(e) => { e.preventDefault(); onRemoveNote(id, n.id); }}
               >

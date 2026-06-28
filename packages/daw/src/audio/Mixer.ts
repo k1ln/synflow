@@ -86,7 +86,8 @@ export class Mixer {
   readonly masterSum: GainNode;
   readonly masterChain: FxChain;
   private masterVol: GainNode;
-  private tracks = new Map<string, { sum: GainNode; chain: FxChain; vol: GainNode }>();
+  readonly masterMeter: AnalyserNode;
+  private tracks = new Map<string, { sum: GainNode; chain: FxChain; vol: GainNode; pan: StereoPannerNode; gate: GainNode; meter: AnalyserNode }>();
   // Per use: instrument → inst FX (the pool instrument's general FX) → insert FX
   // (this instrument-in-track's FX) → track sum.
   private uses = new Map<string, { inst: FxChain; insert: FxChain }>();
@@ -95,22 +96,30 @@ export class Mixer {
     this.masterSum = ctx.createGain();
     this.masterChain = new FxChain(ctx);
     this.masterVol = ctx.createGain();
+    this.masterMeter = ctx.createAnalyser(); this.masterMeter.fftSize = 1024;
     this.masterSum.connect(this.masterChain.input);
     this.masterChain.output.connect(this.masterVol);
     this.masterVol.connect(ctx.destination);
+    this.masterVol.connect(this.masterMeter);   // post-fader meter tap (dead-end)
   }
 
-  /** Get/create a track strip (sum → track FX → vol → master sum). */
+  /** Get/create a track strip (sum → track FX → vol → pan → gate → master sum). */
   track(trackId: string, volume = 0.8): { sum: GainNode; chain: FxChain; vol: GainNode } {
     let t = this.tracks.get(trackId);
     if (!t) {
       const sum = this.ctx.createGain();
       const chain = new FxChain(this.ctx);
       const vol = this.ctx.createGain(); vol.gain.value = volume;
+      const pan = this.ctx.createStereoPanner();
+      const gate = this.ctx.createGain();           // mute/solo gate (0 or 1)
+      const meter = this.ctx.createAnalyser(); meter.fftSize = 1024;
       sum.connect(chain.input);
       chain.output.connect(vol);
-      vol.connect(this.masterSum);
-      t = { sum, chain, vol };
+      vol.connect(pan);
+      pan.connect(gate);
+      gate.connect(this.masterSum);
+      gate.connect(meter);                          // post-fader meter tap (dead-end)
+      t = { sum, chain, vol, pan, gate, meter };
       this.tracks.set(trackId, t);
     }
     return t;
@@ -136,11 +145,17 @@ export class Mixer {
   /** Instrument-level gain: scales a use's signal at its chain input (pre-FX). */
   setUseGain(useId: string, v: number): void { const u = this.uses.get(useId); if (u) u.inst.input.gain.value = v; }
   setTrackVolume(trackId: string, v: number): void { const t = this.tracks.get(trackId); if (t) t.vol.gain.value = v; }
+  /** Stereo pan, −1 (left) … +1 (right). */
+  setTrackPan(trackId: string, v: number): void { const t = this.tracks.get(trackId); if (t) t.pan.pan.value = Math.max(-1, Math.min(1, v)); }
+  /** Mute/solo gate: silences the strip instantly (incl. already-playing audio clips). */
+  setTrackGate(trackId: string, on: boolean): void { const t = this.tracks.get(trackId); if (t) t.gate.gain.value = on ? 1 : 0; }
+  /** Post-fader analyser for a track's level meter (null if the strip isn't built yet). */
+  trackMeter(trackId: string): AnalyserNode | null { return this.tracks.get(trackId)?.meter ?? null; }
   setMaster(v: number): void { this.masterVol.gain.value = v; }
 
   removeUse(useId: string): void { const u = this.uses.get(useId); if (u) { u.inst.dispose(); u.insert.dispose(); this.uses.delete(useId); } }
   removeTrack(trackId: string): void {
     const t = this.tracks.get(trackId);
-    if (t) { t.chain.dispose(); try { t.sum.disconnect(); t.vol.disconnect(); } catch { /* noop */ } this.tracks.delete(trackId); }
+    if (t) { t.chain.dispose(); try { t.sum.disconnect(); t.vol.disconnect(); t.pan.disconnect(); t.gate.disconnect(); } catch { /* noop */ } this.tracks.delete(trackId); }
   }
 }

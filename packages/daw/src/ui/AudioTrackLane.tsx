@@ -1,22 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Scissors, Trash2, Play, Square } from 'lucide-react';
-import { songLengthSteps, type Project, type Track, type AudioClip, type AudioAsset } from '../model/project';
+import { songLengthSteps, type Project, type Track, type AudioClip } from '../model/project';
 import { Waveform } from './Waveform';
-import type { Peaks } from '../audio/waveform';
+import { slicePeaks } from '../audio/waveform';
 
 const LANE_H = 88;
-
-/** Slice an asset's stored overview peaks to a clip's [offset, offset+duration]. */
-function slicePeaks(asset: AudioAsset, offset: number, duration: number): Peaks | null {
-  const p = asset.peaks; if (!p || !asset.duration) return null;
-  const n = p.min.length;
-  const a = Math.max(0, Math.floor((offset / asset.duration) * n));
-  const b = Math.min(n, Math.ceil(((offset + duration) / asset.duration) * n));
-  const buckets = Math.max(1, b - a);
-  const min = new Float32Array(buckets), max = new Float32Array(buckets);
-  for (let i = 0; i < buckets; i++) { min[i] = p.min[a + i] ?? 0; max[i] = p.max[a + i] ?? 0; }
-  return { min, max, buckets };
-}
 
 /** Horizontal timeline lane for an audio track: waveform clips you can drag to
  *  move, edge-drag to trim, split at the playhead, and delete. */
@@ -89,7 +77,7 @@ export function AudioTrackLane({
           const widthPx = Math.max(8, (stepsOfSec(c.duration) / totalSteps) * laneW);
           return (
             <div key={c.id} className="atl-clip" style={{ left: leftPx, width: widthPx, height: LANE_H - 8 }} onPointerDown={(e) => begin(e, 'move', c)}>
-              <Waveform peaks={asset ? slicePeaks(asset, c.offset, c.duration) : null} width={Math.round(widthPx)} height={LANE_H - 8} color="#7cc4ff" background="transparent" />
+              <Waveform peaks={asset?.peaks ? slicePeaks(asset.peaks, asset.duration, c.offset, c.duration) : null} width={Math.round(widthPx)} height={LANE_H - 8} color="#7cc4ff" background="transparent" />
               <span className="atl-clip-name">{asset?.name ?? 'missing audio'}</span>
               <div className="atl-clip-tools" onPointerDown={(e) => e.stopPropagation()}>
                 <button title={previewKey === c.id ? 'Stop' : 'Play'} onClick={() => onPlay(c)}>{previewKey === c.id ? <Square size={11} /> : <Play size={11} />}</button>

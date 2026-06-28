@@ -16,7 +16,7 @@ import { wavHeader, encodeWavFrames } from './wav';
 import { scheduleFadeWindow } from './clipFade';
 import { readWavFrames } from './wavReader';
 import { findEntry, cloneFlow } from '../synflow/library';
-import { trackActiveAt, songLengthSteps, songLengthSlots, type Project } from '../model/project';
+import { trackActiveAt, trackAudible, songLengthSteps, songLengthSlots, type Project } from '../model/project';
 import { midiToFreq } from '../model/pitch';
 import type { AudioAssets } from './AudioAssets';
 
@@ -96,8 +96,9 @@ export async function bounceProjectStream(
     // ── build graph + schedule audio clips for this window ───────────────────
     for (const track of project.tracks) {
       const t = mixer.track(track.id, track.volume);
+      mixer.setTrackPan(track.id, track.pan ?? 0);
       await t.chain.setChain(resolveFx(track.fx));
-      if (track.muted) continue;
+      if (!trackAudible(track, project.tracks)) continue;   // mute/solo
       if (track.type === 'audio') {
         for (const c of track.audioClips ?? []) {
           const clipStart = c.start * spp, clipEnd = clipStart + c.duration;
@@ -135,7 +136,7 @@ export async function bounceProjectStream(
       const slot = Math.floor(s / project.totalSteps);
       const base = s * spp;
       for (const track of project.tracks) {
-        if (track.type === 'audio' || track.muted) continue;
+        if (track.type === 'audio' || !trackAudible(track, project.tracks)) continue;
         if (!trackActiveAt(track.clips, slot, slots)) continue;
         const step = s % Math.max(1, track.length);
         for (const use of track.uses) {

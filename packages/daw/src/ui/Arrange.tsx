@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Repeat, X, Drum, Music2, AudioWaveform, Film, Volume2, VolumeX, Play, Square, Scissors } from 'lucide-react';
-import { songLengthSlots, type Project, type Clip, type AudioClip, type VideoClip } from '../model/project';
+import { songLengthSlots, TIMELINE_HEADROOM_BARS, type Project, type Clip, type AudioClip, type VideoClip } from '../model/project';
+import { Waveform } from './Waveform';
+import { slicePeaks } from '../audio/waveform';
 
 const coverage = (clip: Clip, next: Clip | undefined, slots: number) => (clip.loop ? (next?.start ?? slots) - clip.start : clip.length);
 
@@ -41,7 +43,7 @@ const pickStep = (ladder: number[], minValue: number) => ladder.find((s) => s >=
  *  the playhead (live-seeks while playing); it follows playback. */
 export function Arrange({
   project, currentStep, songMode, selTrack,
-  onToggleSongMode, onSetSongSlots, onSelectTrack, onToggleMute, onTrackVolume, onSeek, onAddClip, onRemoveClip, onToggleLoop, onClipLen, onMoveClip, onMoveAudioClip, onRemoveAudioClip, onMoveVideoClip, onRemoveVideoClip, onSetAudioClip, onSetVideoClip, onSplitAudioClip, onSplitVideoClip, onPlayClip, previewKey,
+  onToggleSongMode, onSetSongSlots, onSelectTrack, onToggleMute, onToggleSolo, onTrackVolume, onSeek, onAddClip, onRemoveClip, onToggleLoop, onClipLen, onMoveClip, onMoveAudioClip, onRemoveAudioClip, onMoveVideoClip, onRemoveVideoClip, onSetAudioClip, onSetVideoClip, onSplitAudioClip, onSplitVideoClip, onPlayClip, previewKey,
 }: {
   project: Project;
   currentStep: number;
@@ -51,6 +53,7 @@ export function Arrange({
   onSetSongSlots: (n: number) => void;
   onSelectTrack: (id: string) => void;
   onToggleMute: (trackId: string) => void;
+  onToggleSolo: (trackId: string) => void;
   onTrackVolume: (trackId: string, v: number) => void;
   onSeek: (step: number) => void;
   onAddClip: (trackId: string, slot: number) => void;
@@ -69,7 +72,8 @@ export function Arrange({
   onPlayClip: (clip: AudioClip) => void;
   previewKey: string | null;
 }) {
-  const N = songLengthSlots(project); // grows past songSlots to contain long audio clips
+  const contentSlots = songLengthSlots(project);          // bars up to the last element (audio/video/title)
+  const N = contentSlots + TIMELINE_HEADROOM_BARS;         // draw a bit further so there's always room past the end
   const secToSteps = (s: number) => s * (project.bpm / 60) * project.stepsPerBeat;
   const totalTimelineSteps = N * project.totalSteps;        // whole-song length in steps
   const secPerStep = 60 / project.bpm / project.stepsPerBeat;
@@ -211,30 +215,32 @@ export function Arrange({
     drag.current = { kind: side === 'L' ? 'trimL' : 'trimR', media, trackId, clipId: clip.id, startX: e.clientX, laneW: (e.currentTarget.closest('.arr2-lane') as HTMLElement).getBoundingClientRect().width, orig: 0, snap: { offset: clip.offset, duration: clip.duration, start: clip.start, max } };
     window.addEventListener('pointermove', onDragMove); window.addEventListener('pointerup', onDragEnd);
   };
-  // Split a media clip at the playhead if it lands inside it, else at its midpoint.
+  // Cut at the playhead: scrub the ruler (or click it) to put the playhead exactly
+  // where you want the cut, then split there — for both audio and video. No blind
+  // midpoint cut; if the playhead isn't over the clip there's nothing to split.
+  const playheadOverClip = (clip: { start: number; duration: number }) =>
+    currentStep > clip.start + 0.05 && currentStep < clip.start + secToSteps(clip.duration) - 0.05;
   const splitMedia = (media: 'audio' | 'video', trackId: string, clip: { id: string; start: number; duration: number }) => {
-    const widthSteps = secToSteps(clip.duration);
-    const inside = currentStep > clip.start && currentStep < clip.start + widthSteps;
-    const at = inside ? currentStep : clip.start + widthSteps / 2;
-    (media === 'audio' ? onSplitAudioClip : onSplitVideoClip)(trackId, clip.id, at);
+    if (!playheadOverClip(clip)) return;
+    (media === 'audio' ? onSplitAudioClip : onSplitVideoClip)(trackId, clip.id, currentStep);
   };
 
   return (
     <div className="arrange2">
       <div className="arr2-bar">
         <button className={`arr2-mode ${songMode ? 'on' : ''}`} onClick={onToggleSongMode} title="Toggle what the transport plays">
-          {songMode ? 'Song' : 'Pattern'}
+          {songMode ? 'Arrangement' : 'Pattern'}
         </button>
-        <span className="arr2-hint">{songMode ? 'transport plays the arrangement' : 'transport loops the current pattern — switch to Song to play the arrangement'}</span>
+        <span className="arr2-hint">{songMode ? 'transport plays the arrangement' : 'transport loops the current pattern — switch to Arrangement to play it'}</span>
         <span className="arr2-time" title="Playhead position / song length (hh:mm:ss)">{fmtTime(posSec)} / {fmtTime(totalSec)}</span>
         <div className="arr2-zoom" title="Zoom timeline (mouse wheel over the song · Shift-wheel to scroll)">
           <button onClick={() => zoom(1 / 1.5)} aria-label="Zoom out">−</button>
           <span>{pxPerBar >= 10 ? Math.round(pxPerBar) : pxPerBar.toFixed(pxPerBar >= 1 ? 1 : 2)}px/bar</span>
           <button onClick={() => zoom(1.5)} aria-label="Zoom in">+</button>
         </div>
-        <label className="arr2-len" title={N > project.songSlots ? `grown to ${N} bars to fit audio` : 'minimum song length in bars'}>bars
+        <label className="arr2-len" title={contentSlots > project.songSlots ? `grown to ${contentSlots} bars to fit the content` : 'minimum length in bars (grows to fit the last element)'}>bars
           <input type="number" min={1} max={9999} value={project.songSlots} onChange={(e) => onSetSongSlots(Math.max(1, Math.min(9999, parseInt(e.target.value, 10) || project.songSlots)))} />
-          {N > project.songSlots && <span className="arr2-len-grown">→ {N}</span>}
+          {contentSlots > project.songSlots && <span className="arr2-len-grown">→ {contentSlots}</span>}
         </label>
       </div>
 
@@ -267,7 +273,7 @@ export function Arrange({
               const sorted = [...track.clips].sort((a, b) => a.start - b.start);
               return (
                 <div key={track.id} className={`arr2-row ${track.id === selTrack ? 'sel' : ''} ${track.muted ? 'muted' : ''}`}>
-                  <div className="arr2-trk" onClick={() => onSelectTrack(track.id)}>
+                  <div className="arr2-trk" data-type={track.type} onClick={() => onSelectTrack(track.id)}>
                     <div className="arr2-trk-head">
                       <button
                         className={`arr2-mute ${track.muted ? 'on' : ''}`}
@@ -276,7 +282,12 @@ export function Arrange({
                       >
                         {track.muted ? <VolumeX size={13} /> : <Volume2 size={13} />}
                       </button>
-                      {track.type === 'drums' ? <Drum size={12} /> : track.type === 'audio' ? <AudioWaveform size={12} /> : track.type === 'video' ? <Film size={12} /> : <Music2 size={12} />}
+                      <button
+                        className={`arr2-solo ${track.soloed ? 'on' : ''}`}
+                        title={track.soloed ? 'Unsolo' : 'Solo'}
+                        onClick={(e) => { e.stopPropagation(); onToggleSolo(track.id); }}
+                      >S</button>
+                      <span className="trk-ico">{track.type === 'drums' ? <Drum size={12} /> : track.type === 'audio' ? <AudioWaveform size={12} /> : track.type === 'video' ? <Film size={12} /> : <Music2 size={12} />}</span>
                       <span>{track.name}</span>
                     </div>
                     <input className="arr2-vol" type="range" min={0} max={1} step={0.01} value={track.volume}
@@ -300,7 +311,7 @@ export function Arrange({
                             >
                               <span className="arr2-clip-name">{c.text != null ? (c.text || 'title') : (asset?.name ?? 'video')}</span>
                               <div className="arr2-clip-tools">
-                                <button className="arr2-clip-btn" title="Split at playhead" onPointerDown={(e) => e.stopPropagation()} onClick={() => splitMedia('video', track.id, c)}><Scissors size={10} /></button>
+                                <button className="arr2-clip-btn" title={playheadOverClip(c) ? 'Split at playhead' : 'Move the playhead over this clip to split'} disabled={!playheadOverClip(c)} onPointerDown={(e) => e.stopPropagation()} onClick={() => splitMedia('video', track.id, c)}><Scissors size={10} /></button>
                                 <button className="arr2-clip-btn" title="Delete clip" onPointerDown={(e) => e.stopPropagation()} onClick={() => onRemoveVideoClip(track.id, c.id)}><X size={10} /></button>
                               </div>
                               <span className="arr2-trim left" title="Trim in" onPointerDown={(e) => beginTrim(e, 'L', 'video', track.id, c)} />
@@ -318,12 +329,17 @@ export function Arrange({
                               style={{ left: `${(c.start / totalTimelineSteps) * 100}%`, width: `${Math.max(0.5, w * 100)}%` }}
                               onPointerDown={(e) => begin(e, 'audio', track.id, c.id, c.start)}
                             >
+                              {asset?.peaks && (
+                                <div className="arr2-wave">
+                                  <Waveform peaks={slicePeaks(asset.peaks, asset.duration, c.offset, c.duration)} width={Math.max(8, Math.round(w * lanePx))} height={38} color="#7cc4ff" background="transparent" />
+                                </div>
+                              )}
                               <span className="arr2-clip-name">{asset?.name ?? 'audio'}</span>
                               <div className="arr2-clip-tools">
                                 <input className="arr2-fade" type="number" min={0} max={Math.max(0.1, c.duration)} step={0.05} value={Number((c.fadeIn ?? 0).toFixed(2))} title="Fade in (s) — overlap clips for a crossfade" onPointerDown={(e) => e.stopPropagation()} onChange={(e) => onSetAudioClip(track.id, c.id, { fadeIn: Math.max(0, parseFloat(e.target.value) || 0) })} />
                                 <input className="arr2-fade" type="number" min={0} max={Math.max(0.1, c.duration)} step={0.05} value={Number((c.fadeOut ?? 0).toFixed(2))} title="Fade out (s)" onPointerDown={(e) => e.stopPropagation()} onChange={(e) => onSetAudioClip(track.id, c.id, { fadeOut: Math.max(0, parseFloat(e.target.value) || 0) })} />
                                 <button className={`arr2-clip-btn ${previewKey === c.id ? 'on' : ''}`} title={previewKey === c.id ? 'Stop' : 'Play'} onPointerDown={(e) => e.stopPropagation()} onClick={() => onPlayClip(c)}>{previewKey === c.id ? <Square size={10} /> : <Play size={10} />}</button>
-                                <button className="arr2-clip-btn" title="Split at playhead" onPointerDown={(e) => e.stopPropagation()} onClick={() => splitMedia('audio', track.id, c)}><Scissors size={10} /></button>
+                                <button className="arr2-clip-btn" title={playheadOverClip(c) ? 'Split at playhead' : 'Move the playhead over this clip to split'} disabled={!playheadOverClip(c)} onPointerDown={(e) => e.stopPropagation()} onClick={() => splitMedia('audio', track.id, c)}><Scissors size={10} /></button>
                                 <button className="arr2-clip-btn" title="Delete clip" onPointerDown={(e) => e.stopPropagation()} onClick={() => onRemoveAudioClip(track.id, c.id)}><X size={10} /></button>
                               </div>
                               <span className="arr2-trim left" title="Trim in" onPointerDown={(e) => beginTrim(e, 'L', 'audio', track.id, c)} />

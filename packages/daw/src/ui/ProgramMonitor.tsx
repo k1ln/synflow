@@ -31,6 +31,7 @@ const PROPS: { key: TKey; label: string; min: number; max: number; step: number 
 export interface CaptureProps {
   cameraStream: MediaStream | null;
   screenStream: MediaStream | null;
+  micOn: boolean;
   cameraLayout: SourceLayout;
   screenLayout: SourceLayout;
   setLayout: (key: 'camera' | 'screen', patch: Partial<SourceLayout>) => void;
@@ -43,9 +44,10 @@ export interface CaptureProps {
 }
 
 export function ProgramMonitor({
-  project, currentStep, isPlaying, getVideoUrl, onClose, onSetClip, canvasRef, capture,
+  project, currentStep, isPlaying, getVideoUrl, onClose, onSetClip, canvasRef, capture, dock = false,
 }: {
   project: Project;
+  dock?: boolean;
   currentStep: number;
   isPlaying: boolean;
   getVideoUrl: (assetId: string) => string | null;
@@ -54,7 +56,7 @@ export function ProgramMonitor({
   canvasRef: React.MutableRefObject<HTMLCanvasElement | null>;
   capture: CaptureProps;
 }) {
-  const { cameraStream, screenStream, cameraLayout, screenLayout, setLayout, cams, mics, camDeviceId, micDeviceId, selectCam, selectMic } = capture;
+  const { cameraStream, screenStream, micOn, cameraLayout, screenLayout, setLayout, cams, mics, camDeviceId, micDeviceId, selectCam, selectMic } = capture;
   const secPerStep = 60 / project.bpm / project.stepsPerBeat;
   const t = Math.max(0, currentStep) * secPerStep;
   const [ease, setEase] = useState<Easing>('ease');
@@ -225,37 +227,15 @@ export function ProgramMonitor({
   });
 
   return (
-    <div className="pgm">
+    <div className={`pgm${dock ? ' pgm-dock' : ''}`}>
       <div className="pgm-head">
         <span className="pgm-title"><Film size={12} /> Program{layers.length > 1 ? ` · ${layers.length} layers` : ''}</span>
-        {(cameraStream || screenStream) && <button className={`pgm-close ${showSources ? 'on' : ''}`} title="Sources / layout" onClick={() => setShowSources((s) => !s)}><SlidersHorizontal size={13} /></button>}
+        {(cameraStream || screenStream || micOn) && <button className={`pgm-close ${showSources ? 'on' : ''}`} title="Sources / layout" onClick={() => setShowSources((s) => !s)}><SlidersHorizontal size={13} /></button>}
         <button className={`pgm-close ${showScope ? 'on' : ''}`} title="Histogram scope" onClick={() => setShowScope((s) => !s)}><BarChart3 size={13} /></button>
         <button className="pgm-close" title="Hide preview" onClick={onClose}><X size={13} /></button>
       </div>
-      {showSources && (cameraStream || screenStream) && (
-        <div className="pgm-sources">
-          {screenStream && <SourceRow label="Screen" L={screenLayout} onSet={(p) => setLayout('screen', p)} />}
-          {cameraStream && (
-            <>
-              <div className="pgm-srow">
-                <span className="pgm-tlabel">Camera</span>
-                <select className="pgm-color-sel pgm-fontsel" value={camDeviceId ?? ''} title="Camera device" onChange={(e) => selectCam(e.target.value)}>
-                  {!camDeviceId && <option value="">Default</option>}
-                  {cams.map((d, i) => <option key={d.deviceId} value={d.deviceId}>{d.label || `Camera ${i + 1}`}</option>)}
-                </select>
-              </div>
-              <div className="pgm-srow">
-                <span className="pgm-tlabel">Mic</span>
-                <select className="pgm-color-sel pgm-fontsel" value={micDeviceId ?? ''} title="Microphone device" onChange={(e) => selectMic(e.target.value)}>
-                  {!micDeviceId && <option value="">Default</option>}
-                  {mics.map((d, i) => <option key={d.deviceId} value={d.deviceId}>{d.label || `Mic ${i + 1}`}</option>)}
-                </select>
-              </div>
-              <SourceRow label="Cam layout" L={cameraLayout} onSet={(p) => setLayout('camera', p)} />
-            </>
-          )}
-        </div>
-      )}
+      <div className="pgm-body">
+        <div className="pgm-stage">
       <div className="pgm-screen">
         <canvas ref={canvasRef} width={1280} height={720} className="pgm-canvas" />
         {layers.length === 0 && !cameraStream && !screenStream && <div className="pgm-empty">{assets.length ? 'No video at the playhead' : 'Add a clip, or start the camera / screen'}</div>}
@@ -275,7 +255,35 @@ export function ProgramMonitor({
           })}
         </div>
       </div>
-      {showScope && <canvas ref={histoRef} width={200} height={46} className="pgm-histo" />}
+        </div>
+        <div className="pgm-controls">
+          {showSources && (cameraStream || screenStream || micOn) && (
+            <div className="pgm-sources">
+              {screenStream && <SourceRow label="Screen" L={screenLayout} onSet={(p) => setLayout('screen', p)} />}
+              {cameraStream && (
+                <>
+                  <div className="pgm-srow">
+                    <span className="pgm-tlabel">Camera</span>
+                    <select className="pgm-color-sel pgm-fontsel" value={camDeviceId ?? ''} title="Camera device" onChange={(e) => selectCam(e.target.value)}>
+                      {!camDeviceId && <option value="">Default</option>}
+                      {cams.map((d, i) => <option key={d.deviceId} value={d.deviceId}>{d.label || `Camera ${i + 1}`}</option>)}
+                    </select>
+                  </div>
+                  <SourceRow label="Cam layout" L={cameraLayout} onSet={(p) => setLayout('camera', p)} />
+                </>
+              )}
+              {micOn && (
+                <div className="pgm-srow">
+                  <span className="pgm-tlabel">Mic</span>
+                  <select className="pgm-color-sel pgm-fontsel" value={micDeviceId ?? ''} title="Microphone device" onChange={(e) => selectMic(e.target.value)}>
+                    {!micDeviceId && <option value="">Default</option>}
+                    {mics.map((d, i) => <option key={d.deviceId} value={d.deviceId}>{d.label || `Mic ${i + 1}`}</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+          {showScope && <canvas ref={histoRef} width={200} height={46} className="pgm-histo" />}
       {top && (
         <div className="pgm-inspector">
           <div className="pgm-irow">
@@ -372,6 +380,8 @@ export function ProgramMonitor({
           )}
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }

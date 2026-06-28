@@ -3,7 +3,7 @@
 // stolen. Depends only on a minimal Voice interface so it's unit-testable.
 
 export interface Voice {
-  noteOn(payload: { frequency: number }): void;
+  noteOn(payload: { frequency: number; velocity?: number }): void;
   noteOff(payload?: Record<string, any>): void;
 }
 
@@ -20,7 +20,7 @@ export class VoicePool {
     return new VoicePool(voices);
   }
 
-  noteOn(noteId: number, frequency: number): void {
+  noteOn(noteId: number, frequency: number, velocity = 1): void {
     let voice = this.voices.find((v) => ![...this.active.values()].includes(v));
     if (!voice) {
       const stealId = this.queue.shift(); // oldest
@@ -29,7 +29,7 @@ export class VoicePool {
     }
     this.active.set(noteId, voice);
     this.queue.push(noteId);
-    voice.noteOn({ frequency });
+    voice.noteOn({ frequency, velocity });
   }
 
   noteOff(noteId: number): void {

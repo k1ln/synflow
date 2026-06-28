@@ -13,6 +13,10 @@ const TRIGGER_TYPES = ['ButtonFlowNode', 'OnOffButtonFlowNode', 'MouseTriggerBut
 export class InstrumentHost {
   readonly engine: AudioGraphManager;
   readonly bus: EventBus;
+  // Per-voice velocity VCA: the engine's master output runs through this gain so a
+  // note's velocity (0..1) scales its loudness, independent of whether the flow
+  // itself has a velocity input. Set on each trigger.
+  private vca: GainNode | null = null;
   // Nodes the DAW drives directly via receiveNodeOn/Off (data.isTrigger flows).
   private triggers: Array<{ nodeId: string; handle: string }> = [];
   // Pitchable params (data.isPitch) set from a note's frequency before triggering.
@@ -22,11 +26,15 @@ export class InstrumentHost {
 
   constructor(ctx: BaseAudioContext, private flow: Flow, destination?: AudioNode) {
     this.bus = new EventBus();
+    // Insert a velocity VCA between the engine output and the real destination.
+    const vca = ctx.createGain();
+    vca.connect(destination ?? ctx.destination);
+    this.vca = vca;
     this.engine = new AudioGraphManager(
       ctx as any,
       { current: flow.nodes } as any,
       { current: flow.edges } as any,
-      { bus: this.bus, destination },
+      { bus: this.bus, destination: vca },
     );
   }
 
@@ -51,8 +59,9 @@ export class InstrumentHost {
   /** Whether this instrument can be triggered at all. */
   get playable(): boolean { return this.triggers.length > 0 || this.commandName !== null || this.triggerNodeId !== null; }
 
-  /** Note/step ON — sets pitch (if given) then injects receiveNodeOn into the trigger node(s). */
+  /** Note/step ON — sets velocity + pitch (if given) then injects receiveNodeOn into the trigger node(s). */
   trigger(payload: Record<string, any> = {}): void {
+    if (this.vca && payload.velocity != null) this.vca.gain.value = Math.max(0, Math.min(1, payload.velocity));
     if (payload.frequency != null) {
       for (const p of this.pitchTargets) this.engine.setParam(p.nodeId, p.param, payload.frequency);
     }
@@ -72,5 +81,5 @@ export class InstrumentHost {
   setParam(nodeId: string, key: string, value: number | string): void { this.engine.setParam(nodeId, key, value); }
   listParams(nodeId: string) { return this.engine.listParams(nodeId); }
 
-  dispose(): void { this.engine.dispose(); }
+  dispose(): void { this.engine.dispose(); try { this.vca?.disconnect(); } catch { /* noop */ } this.vca = null; }
 }

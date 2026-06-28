@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Plus, Trash2, Drum, Music2, Repeat, AudioWaveform, Film } from 'lucide-react';
+import { Plus, Trash2, Drum, Music2, Repeat, AudioWaveform, Film, Volume2, VolumeX } from 'lucide-react';
 import { RealtimeClock } from './audio/ClockSource';
 import { Transport } from './audio/Transport';
 import { Scheduler } from './audio/Scheduler';
+import { Metronome } from './audio/Metronome';
 import { InstrumentHost } from './audio/InstrumentHost';
 import { VoicePool } from './audio/VoicePool';
 import { Mixer, FxChain, type ResolvedFx } from './audio/Mixer';
@@ -12,11 +13,12 @@ import { pickAudioFile } from './audio/decodeAudioFile';
 import { pickVideoFile, probeVideo, extractAudioFromVideo } from './audio/video';
 import { encodeWav } from './audio/wav';
 import { Recorder } from './audio/Recorder';
+import { useMidiInput, type MidiNoteEvent } from './audio/useMidiInput';
 import { bounceProjectToWav } from './audio/bounce';
 import { bounceProjectStream } from './audio/bounceStream';
 import { exportVideo, type ExportOpts, type VideoBlobResolver } from './audio/videoExport';
 import {
-  defaultProject, newNoteId, uid, fxInsert, blankSteps, trackActiveAt, patternLoopLength, songLengthSteps, songLengthSlots, normalizeProject,
+  defaultProject, newNoteId, uid, fxInsert, blankSteps, trackActiveAt, patternLoopLength, songLengthSteps, songLengthSlots, normalizeProject, trackAudible,
   EQ_FX_ID, defaultEq,
   type Project, type Track, type PoolItem, type FxInsert, type AudioAsset, type AudioClip, type VideoAsset, type VideoClip, type SourceLayout, type EqSettings,
 } from './model/project';
@@ -37,8 +39,12 @@ import { InstrumentPanel } from './ui/InstrumentPanel';
 import { SynflowEditor } from './ui/SynflowEditor';
 import { EqEditor } from './ui/EqEditor';
 import { StorageSetup } from './ui/StorageSetup';
+import { Meter } from './ui/Meter';
 
 type ImportInfo = { name: string; phase: 'reading' | 'decoding'; read: number; total: number; startedAt: number };
+
+/** Compact pan readout: "C", "L42", "R42". */
+const panLabel = (p: number): string => { const v = Math.round(p * 100); return v === 0 ? 'C' : v < 0 ? `L${-v}` : `R${v}`; };
 
 /** h:mm:ss (drops the hours field below an hour). */
 function fmtElapsed(ms: number): string {
@@ -107,12 +113,17 @@ export function App() {
   const liveGainRef = useRef<Map<string, GainNode>>(new Map());         // live per-instrument gain, keyed by poolId
   const liveFxRef = useRef<Map<string, FxChain>>(new Map());            // live per-instrument FX chain, keyed by poolId
   const mixerRef = useRef<Mixer | null>(null);
+  const metronomeRef = useRef<Metronome | null>(null);
+  const [metronome, setMetronome] = useState(false);
   const assetsMgrRef = useRef<AudioAssets | null>(null);                // audio asset cache (disk/embedded)
   const audioPlayersRef = useRef<Map<string, AudioClipPlayer>>(new Map()); // audio-track clip players, keyed by track.id
   const videoBlobsRef = useRef<Map<string, Blob>>(new Map());           // videoAssetId → container Blob (session cache for poster/export)
   const videoUrlsRef = useRef<Map<string, string>>(new Map());          // videoAssetId → object URL (program-monitor preview)
   const projectRef = useRef(project); projectRef.current = project;
   const currentStepRef = useRef(currentStep); currentStepRef.current = currentStep;
+  const viewRef = useRef(view); viewRef.current = view;
+  const selTrackRef = useRef(selTrack); selTrackRef.current = selTrack;
+  const armedPoolRef = useRef(armedPool); armedPoolRef.current = armedPool;
   const seekRef = useRef(0);                                            // step playback starts from / playhead rests at
   const recorderRef = useRef<Recorder | null>(null);
   const folderRef = useRef<FileSystemDirectoryHandle | null>(null); folderRef.current = folder;
@@ -153,12 +164,12 @@ export function App() {
       if (handle) {
         await adoptFolder(handle);
         const last = localStorage.getItem('mothscilla:lastSong');
-        if (last) { const raw = await loadProject(handle, last); if (raw && !cancelled) { const proj = normalizeProject(raw); setProject(proj); setSelTrack(proj.tracks[0]?.id ?? ''); } }
+        if (last) { const raw = await loadProject(handle, last); if (raw && !cancelled) { const proj = normalizeProject(raw); setProject(proj); resetHistory(proj); setSelTrack(proj.tracks[0]?.id ?? ''); } }
       } else if (fsSupported) {
         setStorageSetup(true);
       } else {
         const local = localStorage.getItem('mothscilla:localSong');
-        if (local) { try { const proj = normalizeProject(JSON.parse(local)); if (!cancelled) { setProject(proj); setSelTrack(proj.tracks[0]?.id ?? ''); } } catch { /* ignore */ } }
+        if (local) { try { const proj = normalizeProject(JSON.parse(local)); if (!cancelled) { setProject(proj); resetHistory(proj); setSelTrack(proj.tracks[0]?.id ?? ''); } } catch { /* ignore */ } }
       }
     })();
     return () => { cancelled = true; };
@@ -228,6 +239,8 @@ export function App() {
     await mixer.masterChain.setChain(resolveFx(proj.masterFx));
     for (const track of proj.tracks) {
       const t = mixer.track(track.id, track.volume);
+      mixer.setTrackPan(track.id, track.pan ?? 0);
+      mixer.setTrackGate(track.id, trackAudible(track, proj.tracks));
       await t.chain.setChain(resolveFx(track.fx));
       if (track.type === 'audio') {
         let player = audioPlayersRef.current.get(track.id);
@@ -245,10 +258,72 @@ export function App() {
     }
   }, [buildUse, ensureAssets]);
 
+  // ── Undo / redo history ────────────────────────────────────────────────────
+  // Snapshot the (immutable) project on every change, coalescing a burst of rapid
+  // edits (e.g. a drag) into one step. Undo/redo restore a snapshot and rebuild
+  // audio. View, transport mode, playhead and selection live outside the project,
+  // so they're left untouched. Loading/opening a song rebases history (resetHistory).
+  const HISTORY_MAX = 80, HISTORY_DEBOUNCE = 400;
+  const historyRef = useRef<{ stack: Project[]; index: number }>({ stack: [project], index: 0 });
+  const applyingHistoryRef = useRef(false);
+  const histTimerRef = useRef<number | null>(null);
+  const [histUI, setHistUI] = useState({ canUndo: false, canRedo: false });
+  const syncHistUI = () => { const h = historyRef.current; setHistUI({ canUndo: h.index > 0, canRedo: h.index < h.stack.length - 1 }); };
+  const resetHistory = (p: Project) => {
+    if (histTimerRef.current != null) { clearTimeout(histTimerRef.current); histTimerRef.current = null; }
+    historyRef.current = { stack: [p], index: 0 };
+    syncHistUI();
+  };
+  const commitHistory = () => {
+    if (histTimerRef.current != null) { clearTimeout(histTimerRef.current); histTimerRef.current = null; }
+    const h = historyRef.current, present = projectRef.current;
+    if (present === h.stack[h.index]) return;                 // nothing new since the last checkpoint
+    const stack = h.stack.slice(0, h.index + 1);              // a fresh edit discards the redo branch
+    stack.push(present);
+    if (stack.length > HISTORY_MAX) stack.splice(0, stack.length - HISTORY_MAX);
+    historyRef.current = { stack, index: stack.length - 1 };
+    syncHistUI();
+  };
+  const applyHistory = (p: Project) => {
+    applyingHistoryRef.current = true;
+    projectRef.current = p; setProject(p);
+    setSelTrack((id) => (p.tracks.some((t) => t.id === id) ? id : p.tracks[0]?.id ?? ''));
+    void buildAudio(); syncHistUI();
+  };
+  const undo = () => { commitHistory(); const h = historyRef.current; if (h.index <= 0) return; const index = h.index - 1; historyRef.current = { stack: h.stack, index }; applyHistory(h.stack[index]); };
+  const redo = () => { const h = historyRef.current; if (h.index >= h.stack.length - 1) return; const index = h.index + 1; historyRef.current = { stack: h.stack, index }; applyHistory(h.stack[index]); };
+  const histRef = useRef({ undo, redo }); histRef.current = { undo, redo };
+
+  // Watch the project: schedule a coalesced snapshot (skip our own undo/redo applies).
+  useEffect(() => {
+    if (applyingHistoryRef.current) { applyingHistoryRef.current = false; return; }
+    if (project === historyRef.current.stack[historyRef.current.index]) return;
+    const id = window.setTimeout(commitHistory, HISTORY_DEBOUNCE);
+    histTimerRef.current = id;
+    return () => clearTimeout(id);
+  }, [project]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cmd/Ctrl+Z = undo · Cmd/Ctrl+Shift+Z or Cmd/Ctrl+Y = redo (ignored inside text fields).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const k = e.key.toLowerCase();
+      if (k !== 'z' && k !== 'y') return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+      e.preventDefault();
+      if (k === 'y' || e.shiftKey) histRef.current.redo(); else histRef.current.undo();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const ensureAudio = useCallback(async () => {
     if (ctxRef.current) return;
     const ctx = new AudioContext(); ctxRef.current = ctx;
     mixerRef.current = new Mixer(ctx);
+    metronomeRef.current = new Metronome(ctx);
+    metronomeRef.current.enabled = metronome;
     const clock = new RealtimeClock(ctx);
     const transport = new Transport(clock);
     transport.stepsPerBeat = projectRef.current.stepsPerBeat;
@@ -261,8 +336,11 @@ export function App() {
       const lead = Math.max(0, (time - clock.currentTime) * 1000);
       const stepMs = transport.secondsPerStep * 1000;
       const gateMs = Math.min(transport.secondsPerStep * 0.9, 0.5) * 1000;
+      // Metronome: click on each beat, accenting the bar downbeat.
+      const metro = metronomeRef.current;
+      if (metro?.enabled && s % proj.stepsPerBeat === 0) metro.click(time, s % proj.totalSteps === 0);
       for (const track of proj.tracks) {
-        if (track.muted) continue;     // arrangement mute (scheduler reads it live)
+        if (!trackAudible(track, proj.tracks)) continue;   // mute/solo (read live; the gate also silences instantly)
         // Audio tracks live on the song timeline: trigger clips whose start falls in
         // this absolute step (with a sub-step delay for the fractional part).
         if (track.type === 'audio') {
@@ -290,7 +368,7 @@ export function App() {
               if (Math.floor(n.start) !== step) continue;
               const sub = (n.start - step) * stepMs;        // ms into this step
               const f = midiToFreq(n.midi);
-              window.setTimeout(() => vp.noteOn(n.id, f), lead + sub);
+              window.setTimeout(() => vp.noteOn(n.id, f, n.velocity ?? 1), lead + sub);
               window.setTimeout(() => vp.noteOff(n.id), lead + sub + n.length * stepMs);
             }
           } else if (track.type === 'drums' && use.steps?.[step]) {
@@ -348,7 +426,7 @@ export function App() {
     const lead = 0.06;                         // small lead-in so it starts cleanly
     const when = ctx.currentTime + lead;
     for (const track of proj.tracks) {
-      if (track.type !== 'audio' || track.muted) continue;
+      if (track.type !== 'audio' || !trackAudible(track, proj.tracks)) continue;
       const player = audioPlayersRef.current.get(track.id); if (!player) continue;
       for (const c of track.audioClips ?? []) {
         const endStep = c.start + c.duration / spp;
@@ -404,6 +482,7 @@ export function App() {
   }, [stopAudition]);
 
   const setBpm = (bpm: number) => { setProject((p) => ({ ...p, bpm })); if (transportRef.current) transportRef.current.bpm = bpm; };
+  const toggleMetronome = () => setMetronome((on) => { const next = !on; if (metronomeRef.current) metronomeRef.current.enabled = next; return next; });
 
   // ─── song save / load (the whole project) ──────────────────────────────────
   const flashSaved = () => { setSaved(true); window.setTimeout(() => setSaved(false), 1600); };
@@ -547,9 +626,10 @@ export function App() {
     resetAudio();
     const proj = normalizeProject(raw);
     setProject(proj);
+    resetHistory(proj);                 // a freshly loaded/new song is the history baseline
     setSelTrack(proj.tracks[0]?.id ?? '');
     setOpenItem(null); setEditor(null);
-  }, [resetAudio]);
+  }, [resetAudio]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Open a song by picking its .json from the songs folder (native file picker).
   const openSong = useCallback(async () => {
@@ -602,10 +682,10 @@ export function App() {
   // Piano-roll key gutter: hold a note (ADSR on at mouse-down, release at mouse-up)
   // through the use's own voice pool. midi doubles as the voice id (no clash with
   // scheduled notes, whose ids are >1000).
-  const useNoteOn = useCallback(async (useId: string, midi: number) => {
+  const useNoteOn = useCallback(async (useId: string, midi: number, velocity = 1) => {
     await ensureAudio(); await ctxRef.current?.resume();
     if (!poolsRef.current.has(useId)) await buildAudio();
-    poolsRef.current.get(useId)?.noteOn(midi, midiToFreq(midi));
+    poolsRef.current.get(useId)?.noteOn(midi, midiToFreq(midi), velocity);
   }, [ensureAudio, buildAudio]);
   const useNoteOff = useCallback((useId: string, midi: number) => { poolsRef.current.get(useId)?.noteOff(midi); }, []);
 
@@ -633,9 +713,34 @@ export function App() {
     }
   }, [ensureAudio]);
 
-  const liveNoteOn = useCallback(async (poolId: string, midi: number) => { await buildLive(poolId); liveSynthsRef.current.get(poolId)?.noteOn(midi, midiToFreq(midi)); }, [buildLive]);
+  const liveNoteOn = useCallback(async (poolId: string, midi: number, velocity = 1) => { await buildLive(poolId); liveSynthsRef.current.get(poolId)?.noteOn(midi, midiToFreq(midi), velocity); }, [buildLive]);
   const liveNoteOff = useCallback((poolId: string, midi: number) => { liveSynthsRef.current.get(poolId)?.noteOff(midi); }, []);
   const liveDrumDown = useCallback(async (poolId: string) => { await buildLive(poolId); const h = liveDrumsRef.current.get(poolId); h?.trigger(); window.setTimeout(() => h?.release(), 220); }, [buildLive]);
+
+  // ── Web MIDI keyboard input ─────────────────────────────────────────────────
+  // Route hardware MIDI to whatever the on-screen keyboard would play: the armed
+  // pool instrument on the Live page, else the selected synth track's instrument.
+  const midiTarget = (): { kind: 'use'; useId: string } | { kind: 'live'; poolId: string } | null => {
+    const proj = projectRef.current;
+    const armedSynth = () => { const p = proj.pool.find((x) => x.id === armedPoolRef.current); return p?.kind === 'synth' ? p : null; };
+    if (viewRef.current === 'live') { const p = armedSynth(); if (p) return { kind: 'live', poolId: p.id }; }
+    const t = proj.tracks.find((x) => x.id === selTrackRef.current);
+    if (t?.type === 'synth' && t.uses[0]) return { kind: 'use', useId: t.uses[0].id };
+    const p = armedSynth(); if (p) return { kind: 'live', poolId: p.id };
+    return null;
+  };
+  const routeMidi = (e: MidiNoteEvent) => {
+    const tgt = midiTarget(); if (!tgt) return;
+    if (e.type === 'on') {
+      if (tgt.kind === 'use') void useNoteOn(tgt.useId, e.midi, e.velocity);
+      else void liveNoteOn(tgt.poolId, e.midi, e.velocity);
+    } else {
+      if (tgt.kind === 'use') useNoteOff(tgt.useId, e.midi);
+      else liveNoteOff(tgt.poolId, e.midi);
+    }
+  };
+  const midiHandlerRef = useRef(routeMidi); midiHandlerRef.current = routeMidi;
+  const midi = useMidiInput((e) => midiHandlerRef.current(e));
 
   // Clicking a pool item goes to the Live tab, which shows that item's view.
   const openInstrument = (poolId: string) => {
@@ -823,10 +928,11 @@ export function App() {
       return { ...u, steps: (u.steps ?? blankSteps(projectRef.current.totalSteps)).map((s, i) => (i === step ? !s : s)) };
     }),
     onMuteUse: (useId) => mapUse(useId, (u) => ({ ...u, muted: !u.muted })),
-    onAddNote: (useId, midi, start) => { void audition(useId, { frequency: midiToFreq(midi) }); mapUse(useId, (u) => ({ ...u, notes: [...(u.notes ?? []), { id: newNoteId(), midi, start, length: 2 }] })); },
+    onAddNote: (useId, midi, start) => { void audition(useId, { frequency: midiToFreq(midi) }); mapUse(useId, (u) => ({ ...u, notes: [...(u.notes ?? []), { id: newNoteId(), midi, start, length: 2, velocity: 0.8 }] })); },
     onRemoveNote: (useId, noteId) => mapUse(useId, (u) => ({ ...u, notes: (u.notes ?? []).filter((n) => n.id !== noteId) })),
     onMoveNote: (useId, noteId, midi, start) => mapUse(useId, (u) => ({ ...u, notes: (u.notes ?? []).map((n) => (n.id === noteId ? { ...n, midi, start } : n)) })),
     onResizeNote: (useId, noteId, length) => mapUse(useId, (u) => ({ ...u, notes: (u.notes ?? []).map((n) => (n.id === noteId ? { ...n, length } : n)) })),
+    onSetVelocity: (useId, noteId, velocity) => mapUse(useId, (u) => ({ ...u, notes: (u.notes ?? []).map((n) => (n.id === noteId ? { ...n, velocity } : n)) })),
     onPlayNote: (useId, midi) => void audition(useId, { frequency: midiToFreq(midi) }),
     onKeyDown: (useId, midi) => void useNoteOn(useId, midi),
     onKeyUp: (useId, midi) => useNoteOff(useId, midi),
@@ -956,9 +1062,14 @@ export function App() {
     mixerRef.current?.removeTrack(trackId);
   };
   const setTrackVolume = (trackId: string, v: number) => { mapTrack(trackId, (t) => ({ ...t, volume: v })); mixerRef.current?.setTrackVolume(trackId, v); };
+  const setTrackPan = (trackId: string, v: number) => { mapTrack(trackId, (t) => ({ ...t, pan: v })); mixerRef.current?.setTrackPan(trackId, v); };
   const renameTrack = (trackId: string, name: string) => mapTrack(trackId, (t) => ({ ...t, name }));
   const toggleTrackLoop = (trackId: string) => mapTrack(trackId, (t) => ({ ...t, loop: !t.loop })); // scheduler reads loop live
-  const toggleTrackMute = (trackId: string) => mapTrack(trackId, (t) => ({ ...t, muted: !t.muted })); // scheduler reads muted live
+  // Push mute/solo resolution to every track's gate (solo is global, so one track's
+  // change can flip others audible/silent). The scheduler also reads it live for triggering.
+  const applyGates = (tracks: Track[]) => { const m = mixerRef.current; if (m) for (const t of tracks) m.setTrackGate(t.id, trackAudible(t, tracks)); };
+  const toggleTrackMute = (trackId: string) => setProject((p) => { const tracks = p.tracks.map((t) => (t.id === trackId ? { ...t, muted: !t.muted } : t)); applyGates(tracks); return { ...p, tracks }; });
+  const toggleTrackSolo = (trackId: string) => setProject((p) => { const tracks = p.tracks.map((t) => (t.id === trackId ? { ...t, soloed: !t.soloed } : t)); applyGates(tracks); return { ...p, tracks }; });
   const setTrackLength = (trackId: string, length: number) => {
     const len = Math.max(1, Math.min(256, length));
     mapTrack(trackId, (t) => ({
@@ -1124,16 +1235,23 @@ export function App() {
       const baseName = picked.name.replace(/\.[^.]+$/, '');
       const { videoAsset, audioAsset, vclip, aclip, hadAudio } = await buildVideoEntities(picked.bytes, picked.mime, baseName, Math.max(0, currentStepRef.current));
       const cur = projectRef.current;
+      // The video's audio rides on its OWN audio track (video tracks don't play their
+      // own audioClips), aligned to the clip, so it's audible and editable separately.
+      const audioTrack: Track | null = (audioAsset && aclip) ? {
+        id: uid('track'), name: `${baseName} (audio)`, type: 'audio', volume: 0.8, loop: true,
+        length: cur.totalSteps, uses: [], clips: [], audioClips: [aclip], fx: [], automation: [],
+      } : null;
       const next: Project = {
         ...cur,
         videoAssets: [...(cur.videoAssets ?? []), videoAsset],
         assets: audioAsset ? [...cur.assets, audioAsset] : cur.assets,
-        tracks: cur.tracks.map((t) => (t.id !== trackId ? t : {
-          ...t, videoClips: [...(t.videoClips ?? []), vclip],
-          ...(aclip ? { audioClips: [...(t.audioClips ?? []), aclip] } : {}),
-        })),
+        tracks: [
+          ...cur.tracks.map((t) => (t.id !== trackId ? t : { ...t, videoClips: [...(t.videoClips ?? []), vclip] })),
+          ...(audioTrack ? [audioTrack] : []),
+        ],
       };
       projectRef.current = next; setProject(next);
+      setSongMode(true);                 // the extracted audio plays on the arrangement timeline
       await buildAudio();
       if (!hadAudio) window.alert(`Imported "${baseName}". This file's audio couldn't be extracted in-browser (common for AVI). The video still imports; see docs/VIDEO.md for the demux fallback.`);
     } catch (e) {
@@ -1146,10 +1264,11 @@ export function App() {
   // ── Live capture: webcam (reaction) + screen, recorded to a clip ─────────────
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+  const [micStream, setMicStream] = useState<MediaStream | null>(null);
   const [recording, setRecording] = useState(false);
   const monitorCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const recRef = useRef<{ rec: MediaRecorder; chunks: Blob[]; dest: MediaStreamAudioDestinationNode } | null>(null);
-  const cameraOn = !!cameraStream, screenOn = !!screenStream;
+  const recRef = useRef<{ recs: MediaRecorder[] } | null>(null);
+  const cameraOn = !!cameraStream, screenOn = !!screenStream, micOn = !!micStream;
   // Live-source layout (fractions of the frame) — set in the monitor's Sources panel.
   const [cameraLayout, setCameraLayout] = useState<SourceLayout>({ x: 0.70, y: 0.70, w: 0.28 });
   const [screenLayout, setScreenLayout] = useState<SourceLayout>({ x: 0, y: 0, w: 1 });
@@ -1169,11 +1288,11 @@ export function App() {
     return () => navigator.mediaDevices?.removeEventListener?.('devicechange', enumerateMedia);
   }, [enumerateMedia]);
 
-  const startCamera = useCallback(async (camId?: string, micId?: string) => {
+  const startCamera = useCallback(async (camId?: string) => {
     try {
       const s = await navigator.mediaDevices.getUserMedia({
         video: { deviceId: camId ? { exact: camId } : undefined, width: 1280, height: 720 },
-        audio: micId ? { deviceId: { exact: micId } } : true,
+        audio: false,          // the mic is its own source (startMic) — OBS-style independent sources
       });
       setCameraStream((prev) => { prev?.getTracks().forEach((t) => t.stop()); return s; });
       s.getVideoTracks()[0]?.addEventListener('ended', () => setCameraStream(null));
@@ -1184,11 +1303,27 @@ export function App() {
 
   const toggleCamera = useCallback(() => {
     if (cameraOn) { cameraStream?.getTracks().forEach((t) => t.stop()); setCameraStream(null); return; }
-    void startCamera(camDeviceId, micDeviceId);
-  }, [cameraOn, cameraStream, startCamera, camDeviceId, micDeviceId]);
+    void startCamera(camDeviceId);
+  }, [cameraOn, cameraStream, startCamera, camDeviceId]);
 
-  const selectCamDevice = useCallback((id: string) => { setCamDeviceId(id); if (cameraOn) void startCamera(id, micDeviceId); }, [cameraOn, startCamera, micDeviceId]);
-  const selectMicDevice = useCallback((id: string) => { setMicDeviceId(id); if (cameraOn) void startCamera(camDeviceId, id); }, [cameraOn, startCamera, camDeviceId]);
+  // Microphone is an independent source (like OBS): record screen and/or webcam
+  // with the mic, in any combination. Audio-only getUserMedia.
+  const startMic = useCallback(async (micId?: string) => {
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ audio: micId ? { deviceId: { exact: micId } } : true });
+      setMicStream((prev) => { prev?.getTracks().forEach((t) => t.stop()); return s; });
+      s.getAudioTracks()[0]?.addEventListener('ended', () => setMicStream(null));
+      void enumerateMedia();
+    } catch (e) { console.warn('[Mothscilla] mic denied', e); window.alert('Could not start the microphone (permission denied or no device).'); }
+  }, [enumerateMedia]);
+
+  const toggleMic = useCallback(() => {
+    if (micOn) { micStream?.getTracks().forEach((t) => t.stop()); setMicStream(null); return; }
+    void startMic(micDeviceId);
+  }, [micOn, micStream, startMic, micDeviceId]);
+
+  const selectCamDevice = useCallback((id: string) => { setCamDeviceId(id); if (cameraOn) void startCamera(id); }, [cameraOn, startCamera]);
+  const selectMicDevice = useCallback((id: string) => { setMicDeviceId(id); if (micOn) void startMic(id); }, [micOn, startMic]);
   const setSourceLayout = useCallback((key: 'camera' | 'screen', patch: Partial<SourceLayout>) => {
     (key === 'camera' ? setCameraLayout : setScreenLayout)((l) => ({ ...l, ...patch }));
   }, []);
@@ -1203,45 +1338,91 @@ export function App() {
     } catch (e) { console.warn('[Mothscilla] display capture cancelled', e); }
   }, [screenOn]);
 
-  // Record the program-monitor composite (screen + facecam + clips/titles) plus a
-  // mix of screen/camera/song audio → a WebM, ingested as a new video track.
-  const toggleRecord = useCallback(async () => {
-    if (recording) { recRef.current?.rec.stop(); return; }
-    const canvas = monitorCanvasRef.current;
-    if (!canvas) { window.alert('Start the camera or screen first, then record.'); return; }
+  // Ingest the per-source recordings (one blob each) into their OWN new tracks, all
+  // anchored at `startStep` so they line up: screen / webcam → video tracks, mic →
+  // an audio track. Webcam defaults to a corner picture-in-picture (reposition it in
+  // the monitor via its clip transform); screen stays full-frame.
+  const ingestRecordedSources = async (
+    items: { kind: 'screen' | 'webcam' | 'mic'; label: string; mime: string; bytes: ArrayBuffer }[],
+    startStep: number,
+  ) => {
     await ensureAudio();
-    const ctx = ctxRef.current!;
-    const vstream = canvas.captureStream(30);
-    const dest = ctx.createMediaStreamDestination();
-    const tapTrack = (s: MediaStream | null) => { const tr = s?.getAudioTracks?.()[0]; if (tr) { try { ctx.createMediaStreamSource(new MediaStream([tr])).connect(dest); } catch { /* skip */ } } };
-    tapTrack(screenStream); tapTrack(cameraStream);
-    try { mixerRef.current?.masterSum.connect(dest); } catch { /* song mix optional */ }
-    const tracks = [...vstream.getVideoTracks(), ...dest.stream.getAudioTracks()];
-    const mime = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find((m) => MediaRecorder.isTypeSupported(m)) ?? 'video/webm';
-    const rec = new MediaRecorder(new MediaStream(tracks), { mimeType: mime });
-    const chunks: Blob[] = [];
-    rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
-    rec.onstop = async () => {
-      setRecording(false);
-      try { mixerRef.current?.masterSum.disconnect(dest); } catch { /* noop */ }
-      recRef.current = null;
-      const blob = new Blob(chunks, { type: 'video/webm' });
-      try {
-        await ensureAudio();
-        const name = `Recording ${new Date().toLocaleTimeString()}`;
-        const { videoAsset, audioAsset, vclip, aclip } = await buildVideoEntities(await blob.arrayBuffer(), 'video/webm', name, Math.max(0, currentStepRef.current));
-        const id = uid('track');
-        const nt: Track = { id, name, type: 'video', volume: 0.8, loop: false, length: projectRef.current.totalSteps, uses: [], clips: [], videoClips: [vclip], audioClips: aclip ? [aclip] : [], fx: [], automation: [] };
-        const cur = projectRef.current;
-        const next: Project = { ...cur, videoAssets: [...(cur.videoAssets ?? []), videoAsset], assets: audioAsset ? [...cur.assets, audioAsset] : cur.assets, tracks: [...cur.tracks, nt] };
-        projectRef.current = next; setProject(next); setSelTrack(id);
-        await buildAudio();
-      } catch (e) { console.warn('[Mothscilla] recording ingest failed', e); }
+    const videoAssets: VideoAsset[] = [];
+    const audioAssets: AudioAsset[] = [];
+    const newTracks: Track[] = [];
+    const total = projectRef.current.totalSteps;
+    for (const it of items) {
+      if (it.kind === 'mic') {
+        try {
+          const asset = await ensureAssets().ingest(it.label, it.bytes, it.mime);
+          audioAssets.push(asset);
+          const aclip: AudioClip = { id: uid('aclip'), assetId: asset.id, start: startStep, offset: 0, duration: asset.duration, gain: 1 };
+          newTracks.push({ id: uid('track'), name: it.label, type: 'audio', volume: 0.8, loop: true, length: total, uses: [], clips: [], audioClips: [aclip], fx: [], automation: [] });
+        } catch (e) { console.warn('[Mothscilla] mic ingest failed', e); }
+        continue;
+      }
+      const { videoAsset, audioAsset, vclip, aclip } = await buildVideoEntities(it.bytes, it.mime, it.label, startStep);
+      videoAssets.push(videoAsset);
+      const vc: VideoClip = it.kind === 'webcam' ? { ...vclip, transform: { x: 0.33, y: 0.33, scale: 0.3 } } : vclip;
+      newTracks.push({ id: uid('track'), name: it.label, type: 'video', volume: 0.8, loop: false, length: total, uses: [], clips: [], videoClips: [vc], audioClips: [], fx: [], automation: [] });
+      // Captured audio (e.g. screen system audio) rides on its own audio track so it plays.
+      if (audioAsset && aclip) {
+        audioAssets.push(audioAsset);
+        newTracks.push({ id: uid('track'), name: `${it.label} (audio)`, type: 'audio', volume: 0.8, loop: true, length: total, uses: [], clips: [], audioClips: [aclip], fx: [], automation: [] });
+      }
+    }
+    if (!newTracks.length) return;
+    const cur = projectRef.current;
+    const next: Project = {
+      ...cur,
+      videoAssets: [...(cur.videoAssets ?? []), ...videoAssets],
+      assets: [...cur.assets, ...audioAssets],
+      tracks: [...cur.tracks, ...newTracks],
     };
-    recRef.current = { rec, chunks, dest };
-    rec.start(250);
+    projectRef.current = next; setProject(next); setSelTrack(newTracks[newTracks.length - 1].id);
+    setView('song'); setSongMode(true);
+    await buildAudio();
+  };
+
+  // Record each enabled source to its OWN track, all started at the same instant so
+  // they stay time-aligned (screen / webcam / mic). Reposition the visual sources
+  // later in the program monitor via each clip's transform.
+  const toggleRecord = useCallback(async () => {
+    if (recording) { recRef.current?.recs.forEach((r) => { try { r.stop(); } catch { /* already stopped */ } }); return; }
+    const vmime = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find((m) => MediaRecorder.isTypeSupported(m)) ?? 'video/webm';
+    const amime = ['audio/webm;codecs=opus', 'audio/webm'].find((m) => MediaRecorder.isTypeSupported(m)) ?? 'audio/webm';
+    const stamp = new Date().toLocaleTimeString();
+    const sources: { stream: MediaStream; kind: 'screen' | 'webcam' | 'mic'; label: string; mime: string }[] = [];
+    if (screenStream) sources.push({ stream: screenStream, kind: 'screen', label: `Screen ${stamp}`, mime: vmime });
+    if (cameraStream) sources.push({ stream: cameraStream, kind: 'webcam', label: `Webcam ${stamp}`, mime: vmime });
+    if (micStream)    sources.push({ stream: micStream,    kind: 'mic',    label: `Mic ${stamp}`,    mime: amime });
+    if (!sources.length) { window.alert('Enable a source first — screen, webcam, or mic — then record.'); return; }
+    await ensureAudio();
+    const startStep = Math.max(0, currentStepRef.current);
+    const recs = sources.map((src) => {
+      const chunks: Blob[] = [];
+      const rec = new MediaRecorder(src.stream, { mimeType: src.mime });
+      rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+      const blob = new Promise<Blob>((resolve) => { rec.onstop = () => resolve(new Blob(chunks, { type: src.mime })); });
+      return { kind: src.kind, label: src.label, mime: src.mime, rec, blob };
+    });
+    recRef.current = { recs: recs.map((r) => r.rec) };
+    recs.forEach((r) => r.rec.start(250));                 // all sources start together
     setRecording(true);
-  }, [recording, screenStream, cameraStream, ensureAudio]);
+    // When every recorder has stopped, ingest each into its own track at startStep.
+    void Promise.all(recs.map((r) => r.blob.then(async (b) => ({ kind: r.kind, label: r.label, mime: r.mime, bytes: await b.arrayBuffer() }))))
+      .then(async (done) => {
+        setRecording(false);
+        recRef.current = null;
+        try { await ingestRecordedSources(done, startStep); }
+        catch (e) { console.warn('[Mothscilla] recording ingest failed', e); }
+        // Release the live sources — the recorded clips are now the source of truth;
+        // review and position them in the monitor. Re-enable a source for another take.
+        screenStream?.getTracks().forEach((t) => t.stop()); setScreenStream(null);
+        cameraStream?.getTracks().forEach((t) => t.stop()); setCameraStream(null);
+        micStream?.getTracks().forEach((t) => t.stop()); setMicStream(null);
+      });
+  }, [recording, screenStream, cameraStream, micStream, ensureAudio]);
 
   // Shared audio library: every disk asset used by any song in the folder, merged
   // with the open song's assets. Refreshed when the "from project" picker opens.
@@ -1319,11 +1500,13 @@ export function App() {
     <div className="app-shell">
       <TopBar
         view={view} setView={setView} isPlaying={isPlaying} onPlay={isPlaying ? stop : play} onStop={stop}
-        armed={armed} onArm={() => setArmed((a) => !a)} bpm={project.bpm} onBpm={setBpm} position={pos}
+        armed={armed} onArm={() => setArmed((a) => !a)} metronome={metronome} onToggleMetronome={toggleMetronome} bpm={project.bpm} onBpm={setBpm} position={pos}
         browserOpen={browserOpen} setBrowserOpen={setBrowserOpen}
+        canUndo={histUI.canUndo} canRedo={histUI.canRedo} onUndo={undo} onRedo={redo}
         projectName={project.name} onProjectName={(name) => setProject((p) => ({ ...p, name }))}
         onNewSong={newSong} onSave={saveSong} saved={saved} onOpenSong={openSong} onExport={() => setExportOpen(true)} exporting={exporting} exportProgress={exportProgress} onBounce={bounceSong} bouncing={bouncing} bounceProgress={bounceProgress}
-        cameraOn={cameraOn} onToggleCamera={toggleCamera} screenOn={screenOn} onToggleScreen={toggleScreen} recording={recording} onToggleRecord={toggleRecord}
+        cameraOn={cameraOn} onToggleCamera={toggleCamera} screenOn={screenOn} onToggleScreen={toggleScreen} micOn={micOn} onToggleMic={toggleMic} recording={recording} onToggleRecord={toggleRecord}
+        midiConnected={midi.devices.length > 0} midiTitle={midi.devices.length ? `MIDI: ${midi.devices.join(', ')}` : 'No MIDI device'}
       />
       <div className="workspace">
         {browserOpen && <Pool pool={project.pool} effects={effects} instrumentLib={library.filter((e) => e.group === 'instrument')} armed={armedPool} recordings={project.assets} previewKey={previewKey} onPreview={auditionAsset} onPlaceRecording={placeAssetOnTrack} onRemoveRecording={removeRecording} onOpenInstrument={openInstrument} onEditEffect={openEffectPage} onRemoveInstrument={removePoolItem} onRemoveEffect={removeEffect} onAddFromFolder={addFromFolder} onAddInstrument={addInstrumentToPool} onNewEffect={newEffect} source={folder ? `disk · ${folder.name}` : 'built-in'} />}
@@ -1332,8 +1515,8 @@ export function App() {
             <div className="tracks-view">
               <div className="tracks-rail">
                 {project.tracks.map((t) => (
-                  <div key={t.id} className={`trk ${t.id === selTrack ? 'sel' : ''}`} onClick={() => setSelTrack(t.id)}>
-                    {t.type === 'drums' ? <Drum size={13} /> : t.type === 'audio' ? <AudioWaveform size={13} /> : t.type === 'video' ? <Film size={13} /> : <Music2 size={13} />}
+                  <div key={t.id} className={`trk ${t.id === selTrack ? 'sel' : ''}`} data-type={t.type} onClick={() => setSelTrack(t.id)}>
+                    <span className="trk-ico">{t.type === 'drums' ? <Drum size={13} /> : t.type === 'audio' ? <AudioWaveform size={13} /> : t.type === 'video' ? <Film size={13} /> : <Music2 size={13} />}</span>
                     <span className="trk-name">{t.name}</span>
                     <button className={`trk-loop ${t.loop ? 'on' : ''}`} title={t.loop ? 'Looping' : 'Loop off'} onClick={(e) => { e.stopPropagation(); toggleTrackLoop(t.id); }}><Repeat size={12} /></button>
                     <button className="trk-del" title="Delete track" onClick={(e) => { e.stopPropagation(); removeTrack(t.id); }}><Trash2 size={12} /></button>
@@ -1357,18 +1540,21 @@ export function App() {
 
           {view === 'song' && (
             <>
+              {(hasVideoContent || cameraOn || screenOn) && monitorOpen && (
+                <ProgramMonitor dock project={project} currentStep={currentStep} isPlaying={isPlaying} getVideoUrl={getVideoUrl} onSetClip={setVideoClip} onClose={() => setMonitorOpen(false)} canvasRef={monitorCanvasRef}
+                  capture={{ cameraStream, screenStream, micOn, cameraLayout, screenLayout, setLayout: setSourceLayout, cams: mediaDevices.cams, mics: mediaDevices.mics, camDeviceId, micDeviceId, selectCam: selectCamDevice, selectMic: selectMicDevice }} />
+              )}
               <Arrange
                 project={project} currentStep={currentStep} songMode={songMode} selTrack={selTrack}
-                onToggleSongMode={toggleSongMode} onSetSongSlots={setSongSlots} onSelectTrack={setSelTrack} onToggleMute={toggleTrackMute} onTrackVolume={setTrackVolume} onSeek={seekTo}
+                onToggleSongMode={toggleSongMode} onSetSongSlots={setSongSlots} onSelectTrack={setSelTrack} onToggleMute={toggleTrackMute} onToggleSolo={toggleTrackSolo} onTrackVolume={setTrackVolume} onSeek={seekTo}
                 onAddClip={addClip} onRemoveClip={removeClip} onToggleLoop={toggleClipLoop} onClipLen={setClipLen}
                 onMoveClip={moveClip} onMoveAudioClip={moveAudioClip} onRemoveAudioClip={removeAudioClip}
                 onMoveVideoClip={moveVideoClip} onRemoveVideoClip={removeVideoClip} onSetAudioClip={setAudioClip} onSetVideoClip={setVideoClip}
                 onSplitAudioClip={splitAudioClip} onSplitVideoClip={splitVideoClip} onPlayClip={auditionClip} previewKey={previewKey}
               />
-              {(hasVideoContent || cameraOn || screenOn) && (monitorOpen
-                ? <ProgramMonitor project={project} currentStep={currentStep} isPlaying={isPlaying} getVideoUrl={getVideoUrl} onSetClip={setVideoClip} onClose={() => setMonitorOpen(false)} canvasRef={monitorCanvasRef}
-                    capture={{ cameraStream, screenStream, cameraLayout, screenLayout, setLayout: setSourceLayout, cams: mediaDevices.cams, mics: mediaDevices.mics, camDeviceId, micDeviceId, selectCam: selectCamDevice, selectMic: selectMicDevice }} />
-                : <button className="pgm-reopen" title="Show video preview" onClick={() => setMonitorOpen(true)}><Film size={14} /> Preview</button>)}
+              {(hasVideoContent || cameraOn || screenOn) && !monitorOpen && (
+                <button className="pgm-reopen" title="Show video preview" onClick={() => setMonitorOpen(true)}><Film size={14} /> Preview</button>
+              )}
             </>
           )}
 
@@ -1415,12 +1601,31 @@ export function App() {
                     const flow = setFlowParam(base, nodeId, param, v);
                     setProject((p) => ({ ...p, masterFx: p.masterFx.map((x, j) => (j === i ? { ...x, flow } : x)) }));
                   }} />
+                <div className="mx-master-meter"><span className="mx-pan-label">MASTER</span><Meter analyser={() => mixerRef.current?.masterMeter ?? null} height={10} /></div>
               </div>
               <div className="mx-tracks">
                 {project.tracks.map((t) => (
-                  <div className="mx-strip" key={t.id}>
-                    <div className="mx-strip-head">{t.type === 'drums' ? <Drum size={13} /> : t.type === 'audio' ? <AudioWaveform size={13} /> : t.type === 'video' ? <Film size={13} /> : <Music2 size={13} />} {t.name}</div>
-                    <input className="mx-vol" type="range" min={0} max={1} step={0.01} value={t.volume} onChange={(e) => setTrackVolume(t.id, parseFloat(e.target.value))} />
+                  <div className={`mx-strip ${t.muted ? 'muted' : ''} ${t.soloed ? 'soloed' : ''}`} data-type={t.type} key={t.id}>
+                    <div className="mx-strip-head">
+                      <span className="trk-ico">{t.type === 'drums' ? <Drum size={13} /> : t.type === 'audio' ? <AudioWaveform size={13} /> : t.type === 'video' ? <Film size={13} /> : <Music2 size={13} />}</span>
+                      <span className="mx-name-txt">{t.name}</span>
+                      <button className={`mx-solo ${t.soloed ? 'on' : ''}`} title={t.soloed ? 'Unsolo' : 'Solo'} onClick={() => toggleTrackSolo(t.id)}>S</button>
+                      <button className={`mx-mute ${t.muted ? 'on' : ''}`} title={t.muted ? 'Unmute track' : 'Mute track'} onClick={() => toggleTrackMute(t.id)}>
+                        {t.muted ? <VolumeX size={13} /> : <Volume2 size={13} />}
+                      </button>
+                    </div>
+                    <div className="mx-meterrow"><Meter analyser={() => mixerRef.current?.trackMeter(t.id) ?? null} /></div>
+                    <div className="mx-panrow">
+                      <span className="mx-pan-label">PAN</span>
+                      <input className="mx-pan" type="range" min={-1} max={1} step={0.02} value={t.pan ?? 0}
+                        title="Pan (double-click to center)" onDoubleClick={() => setTrackPan(t.id, 0)}
+                        onChange={(e) => setTrackPan(t.id, parseFloat(e.target.value))} />
+                      <span className="mx-pan-val">{panLabel(t.pan ?? 0)}</span>
+                    </div>
+                    <div className="mx-volrow">
+                      <input className="mx-vol" type="range" min={0} max={1} step={0.01} value={t.volume} onChange={(e) => setTrackVolume(t.id, parseFloat(e.target.value))} />
+                      <span className="mx-pct">{Math.round(t.volume * 100)}</span>
+                    </div>
                     <FxBar label="Track FX" fx={t.fx} effects={effects} compact
                       onAdd={(fx) => { const ins = fxInsert(fx); mapTrack(t.id, (x) => ({ ...x, fx: [...x.fx, ins] })); rebuildTrackChain(t.id, [...t.fx, ins]); }}
                       onRemove={(i) => { const next = t.fx.filter((_, j) => j !== i); mapTrack(t.id, (x) => ({ ...x, fx: next })); rebuildTrackChain(t.id, next); }}

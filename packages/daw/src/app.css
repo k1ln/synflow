@@ -59,6 +59,19 @@ body {
 @keyframes cap-pulse { 50% { box-shadow: 0 0 0 4px rgba(224,36,94,.35); } }
 .pgm-reopen { position: absolute; top: 12px; right: 12px; z-index: 40; display: flex; align-items: center; gap: 6px; padding: 7px 11px; font-size: 11px; font-weight: 600; color: color-mix(in srgb, #b06cff 70%, #fff); background: #05060a; border: 1px solid color-mix(in srgb, #b06cff 45%, var(--border-strong)); border-radius: var(--r-xs, 7px); cursor: pointer; }
 .pgm-reopen:hover { background: #0b0c14; }
+/* Floating monitor body: video on top, controls stacked below. */
+.pgm-body { display: flex; flex-direction: column; min-height: 0; }
+.pgm-stage { position: relative; }
+.pgm-controls { display: flex; flex-direction: column; }
+/* Docked monitor: occupies the upper half of the workspace, above the arrangement.
+   Video fills the left, controls scroll in a side column. */
+.pgm-dock { position: relative; inset: auto; top: auto; right: auto; flex: 0 0 52%; width: 100%; max-width: none; border-radius: 0; border-top: 0; border-left: 0; border-right: 0; box-shadow: none; display: flex; flex-direction: column; min-height: 0; }
+.pgm-dock .pgm-body { flex: 1; flex-direction: row; }
+.pgm-dock .pgm-stage { flex: 1 1 auto; min-width: 0; display: grid; place-items: center; background: #000; }
+.pgm-dock .pgm-screen { width: auto; height: 100%; max-width: 100%; aspect-ratio: 16 / 9; }
+.pgm-dock .pgm-controls { flex: 0 0 clamp(280px, 30%, 440px); min-width: 0; overflow-y: auto; border-left: 1px solid var(--border-strong); }
+.pgm-dock .pgm-head { gap: 8px; }
+.pgm-dock .pgm-title { margin-right: auto; }
 .editor-scroll { flex: 1; overflow: auto; padding: var(--sp-3); }
 
 /* ── TopBar ─────────────────────────────────────────────────────────────── */
@@ -92,10 +105,13 @@ body {
 
 .tb-tools { display: flex; align-items: center; gap: 2px; }
 .tb-status { font-size: 11px; color: var(--ink-3); margin-right: 6px; }
+.midi-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; margin-right: 6px; font-size: 10px; font-weight: 700; letter-spacing: .05em; color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); border-radius: var(--r-lg); box-shadow: 0 0 8px var(--accent-glow-soft); }
 .icon-btn { width: 32px; height: 32px; border-radius: 6px; display: grid; place-items: center; background: transparent; border: none; cursor: pointer; color: var(--ink-1); transition: box-shadow 160ms var(--ease), color 120ms var(--ease), transform 90ms var(--ease); }
 .icon-btn:hover { box-shadow: var(--glow-accent); }
 .icon-btn.active { color: var(--accent); box-shadow: var(--glow-accent); }
 .icon-btn:disabled { cursor: default; }
+.icon-btn:disabled:not(.busy) { opacity: .3; }
+.icon-btn:disabled:hover { box-shadow: none; }
 /* export/bounce in progress: widen the button to show its percent */
 .icon-btn.busy { width: auto; display: inline-flex; align-items: center; gap: 5px; padding: 0 9px; color: var(--accent); }
 .btn-pct { font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent); }
@@ -539,7 +555,7 @@ body {
 .fxdev-knobs { display: flex; gap: 12px; align-items: flex-start; padding-top: 2px; }
 
 /* ── Song arrangement ─────────────────────────────────────────────────────── */
-.arrange2 { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.arrange2 { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
 .arr2-bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--border-strong); }
 .arr2-mode { font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 6px; cursor: pointer; color: var(--ink-2); background: var(--glass-field); border: 1px solid var(--border-strong); min-width: 78px; }
 .arr2-mode.on { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 30%, transparent); }
@@ -594,6 +610,8 @@ body {
 .arr2-clip-btn { width: 18px; height: 18px; display: grid; place-items: center; border: none; background: transparent; color: var(--ink-2); cursor: pointer; border-radius: 3px; font-size: 12px; }
 .arr2-clip-btn:hover { background: rgba(0,0,0,.3); color: var(--ink-1); }
 .arr2-clip-btn.on { color: var(--accent); }
+.arr2-clip-btn:disabled { opacity: .3; cursor: default; }
+.arr2-clip-btn:disabled:hover { background: transparent; color: var(--ink-2); }
 .arr2-ph { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); box-shadow: 0 0 8px var(--accent); pointer-events: none; }
 .arr2-ph.ruler { z-index: 5; }
 .arr2-ph.ruler::before { content: ''; position: absolute; top: 0; left: -4px; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid var(--accent); }
@@ -605,6 +623,9 @@ body {
 .arr2-mute { width: 22px; height: 22px; flex-shrink: 0; display: grid; place-items: center; background: transparent; border: none; color: var(--ink-3); cursor: pointer; border-radius: 4px; margin-left: -2px; }
 .arr2-mute:hover { background: rgba(0,0,0,.3); color: var(--ink-1); }
 .arr2-mute.on { color: var(--danger, #ff5a6b); }
+.arr2-solo { width: 20px; height: 20px; flex-shrink: 0; display: grid; place-items: center; background: transparent; border: none; color: var(--ink-3); cursor: pointer; border-radius: 4px; font-size: 10px; font-weight: 800; font-family: var(--font-mono); }
+.arr2-solo:hover { background: rgba(0,0,0,.3); color: var(--ink-1); }
+.arr2-solo.on { color: #0b0f16; background: var(--warn, #f5b73c); }
 .arr2-row.muted .arr2-lane { opacity: .4; }
 
 /* ── Track name / loop / length / voices controls ─────────────────────────── */
@@ -777,6 +798,240 @@ body {
     height: var(--knob-size-mobile, 56px) !important;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   POLISH LAYER — depth, texture, and consistent control styling.
+   Pure visual refinement: no layout or behavior changes.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Themed scrollbars everywhere (arr2-scroll keeps its larger bars) ──────── */
+* { scrollbar-width: thin; scrollbar-color: #2e3340 transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #262b36; border-radius: 6px;
+  border: 2px solid transparent; background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: #3a4252; background-clip: padding-box; }
+
+/* ── Range inputs: glowing thumb on a slim recessed track ──────────────────── */
+input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  height: 20px; background: transparent; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px;
+  background: rgba(255,255,255,.09);
+  box-shadow: inset 0 1px 1px rgba(0,0,0,.5);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 13px; height: 13px; margin-top: -4.5px; border-radius: 50%;
+  background: var(--accent); border: 2px solid #0b0f16;
+  box-shadow: 0 0 7px var(--accent-glow), 0 1px 2px rgba(0,0,0,.6);
+  transition: box-shadow var(--dur) var(--ease), transform var(--dur-fast) var(--ease);
+}
+input[type="range"]::-webkit-slider-thumb:hover { box-shadow: 0 0 12px var(--accent-glow-hot), 0 1px 2px rgba(0,0,0,.6); }
+input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.15); }
+input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 2px; background: rgba(255,255,255,.09);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--accent); border: 2px solid #0b0f16;
+  box-shadow: 0 0 7px var(--accent-glow);
+}
+/* the old vertical mixer fader needs the native look to stay draggable */
+.mx-fader { -webkit-appearance: auto; appearance: auto; accent-color: var(--accent); }
+
+/* ── Selects: glass field + custom chevron instead of the native widget ────── */
+select {
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'><path d='M0 0l4 5 4-5z' fill='%236b7488'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+  padding-right: 22px;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease);
+}
+select:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border-strong)); }
+
+/* ── Consistent focus ring for keyboard navigation ─────────────────────────── */
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 65%, transparent);
+  outline-offset: 1px;
+}
+
+/* ── Top bar: vertical sheen + lifted transport ────────────────────────────── */
+.topbar {
+  background: linear-gradient(180deg, #17181e, var(--bg-base));
+  box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 6px 18px rgba(0,0,0,.35);
+}
+.transport { box-shadow: var(--shadow-pop), var(--inset-top); }
+.viewtabs { box-shadow: var(--inset-top); }
+.t-btn.play.on {
+  background: color-mix(in srgb, var(--accent-neon) 14%, transparent);
+}
+
+/* ── Panels: faint gradients instead of flat fills ─────────────────────────── */
+.browser { background: linear-gradient(180deg, #181920, var(--bg-panel) 120px); }
+.tracks-rail { background: linear-gradient(180deg, rgba(255,255,255,.015), transparent 140px); }
+.fxchain { background: linear-gradient(180deg, #14151a, var(--bg-base)); }
+
+/* ── Pool / browser rows: smoother hover ───────────────────────────────────── */
+.browser-item, .rec-item, .trk, .arr2-trk {
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+/* ── Menus & dialogs: entrance animation + softer glass ────────────────────── */
+@keyframes menu-in { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
+.te-menu, .fxbar-menu, .open-menu, .pool-addmenu {
+  animation: menu-in 130ms var(--ease);
+  background: linear-gradient(180deg, #11141c, #0c0f16);
+  box-shadow: 0 14px 34px rgba(0,0,0,.55), var(--inset-top);
+}
+@keyframes modal-in { from { opacity: 0; transform: translateY(10px) scale(.985); } }
+.sampler-overlay { backdrop-filter: blur(3px); background: rgba(4,6,10,.62); }
+.exp-modal, .eq-modal, .store-modal, .import-card, .inst-panel, .syn-modal, .sampler {
+  animation: modal-in 180ms var(--ease);
+}
+
+/* ── Arrangement clips: glass depth + lift on hover ────────────────────────── */
+.arr2-clip {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 2px 6px rgba(0,0,0,.35);
+  transition: filter var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.arr2-clip:hover {
+  filter: brightness(1.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 4px 12px rgba(0,0,0,.5);
+}
+.arr2-row:hover { background: rgba(255,255,255,.015); }
+.arr2-row.sel { background: color-mix(in srgb, var(--accent) 4%, transparent); }
+
+/* ── Step grid: lit steps get a phosphor gradient ──────────────────────────── */
+.step { transition: background var(--dur-fast) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur-fast) var(--ease); }
+.step:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--border-subtle)); }
+.step.on {
+  background: linear-gradient(180deg, var(--accent-bright), var(--accent-deep));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 55%, transparent), var(--inset-top);
+}
+.step:active { transform: scale(.92); }
+
+/* ── Piano roll notes: gradient bars with a hot edge ───────────────────────── */
+.pr-note {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, #fff), var(--accent-deep));
+  box-shadow: 0 0 7px color-mix(in srgb, var(--accent) 50%, transparent), inset 0 1px 0 rgba(255,255,255,.35);
+}
+
+/* ── Mixer strips & FX device cards: glass depth ───────────────────────────── */
+.mx-strip, .fxdev, .te-use {
+  background: linear-gradient(180deg, rgba(255,255,255,.028), rgba(255,255,255,.008));
+  box-shadow: var(--inset-top);
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur-slow) var(--ease);
+}
+.mx-strip:hover, .fxdev:hover, .te-use:hover {
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border-subtle));
+  box-shadow: var(--inset-top), 0 0 14px var(--accent-glow-soft);
+}
+
+/* ── Buttons: tactile press + inset highlight on filled CTAs ───────────────── */
+.exp-primary, .store-primary, .te-addbtn, .arr2-mode, .lp-back, .te-loop, .eq-bypass {
+  transition: filter var(--dur) var(--ease), transform var(--dur-fast) var(--ease),
+              box-shadow var(--dur) var(--ease), color var(--dur) var(--ease),
+              border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.exp-primary:hover:not(:disabled), .store-primary:hover:not(:disabled) { filter: brightness(1.12); }
+.exp-primary:active:not(:disabled), .store-primary:active:not(:disabled),
+.te-addbtn:active, .arr2-mode:active, .te-loop:active { transform: translateY(1px) scale(.985); }
+
+/* ── Playheads: brighter core with a soft halo ─────────────────────────────── */
+.arr2-ph { background: linear-gradient(180deg, var(--accent-neon), var(--accent)); box-shadow: 0 0 10px var(--accent-glow-hot); }
+
+/* ── Empty states breathe a little more ────────────────────────────────────── */
+.te-empty, .browser-empty, .live-empty, .fxbar-empty {
+  letter-spacing: .02em;
+}
+
+/* ── Per-track color coding (tracks rail + arrangement track heads) ────────── */
+.trk, .arr2-trk { --trk-c: var(--accent); }
+.trk[data-type="drums"],  .arr2-trk[data-type="drums"]  { --trk-c: var(--cat-source); }
+.trk[data-type="synth"],  .arr2-trk[data-type="synth"]  { --trk-c: var(--cat-mod); }
+.trk[data-type="audio"],  .arr2-trk[data-type="audio"]  { --trk-c: var(--cat-gain); }
+.trk[data-type="video"],  .arr2-trk[data-type="video"]  { --trk-c: #b06cff; }
+.trk-ico { display: grid; place-items: center; flex-shrink: 0; color: var(--trk-c); filter: drop-shadow(0 0 4px color-mix(in srgb, var(--trk-c) 45%, transparent)); }
+.trk { box-shadow: inset 2px 0 0 color-mix(in srgb, var(--trk-c) 45%, transparent); }
+.trk.sel {
+  background: color-mix(in srgb, var(--trk-c) 10%, transparent);
+  border-color: color-mix(in srgb, var(--trk-c) 38%, transparent);
+  box-shadow: inset 2px 0 0 var(--trk-c);
+}
+.arr2-trk { box-shadow: inset 3px 0 0 color-mix(in srgb, var(--trk-c) 55%, transparent); }
+.arr2-row.sel .arr2-trk { color: var(--trk-c); box-shadow: inset 3px 0 0 var(--trk-c); }
+.arr2-vol { accent-color: var(--trk-c); }
+.arr2-trk input[type="range"]::-webkit-slider-thumb { background: var(--trk-c); box-shadow: 0 0 7px color-mix(in srgb, var(--trk-c) 35%, transparent), 0 1px 2px rgba(0,0,0,.6); }
+.arr2-trk input[type="range"]::-moz-range-thumb { background: var(--trk-c); }
+
+/* ── Mixer strips: per-track identity, stacked layout ──────────────────────── */
+.mx-strip { --trk-c: var(--accent); }
+.mx-strip[data-type="drums"] { --trk-c: var(--cat-source); }
+.mx-strip[data-type="synth"] { --trk-c: var(--cat-mod); }
+.mx-strip[data-type="audio"] { --trk-c: var(--cat-gain); }
+.mx-strip[data-type="video"] { --trk-c: #b06cff; }
+.mx-tracks .mx-strip {
+  width: 250px;
+  flex: 0 0 250px;
+  padding: 0;
+  align-items: stretch;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--trk-c) 22%, var(--border-subtle));
+  border-top: 2px solid color-mix(in srgb, var(--trk-c) 65%, transparent);
+  gap: 0;
+}
+.mx-tracks .mx-strip:hover { border-color: color-mix(in srgb, var(--trk-c) 45%, var(--border-subtle)); }
+.mx-strip-head {
+  padding: 9px 11px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--trk-c) 7%, transparent), transparent);
+}
+.mx-name-txt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mx-mute, .mx-solo { width: 22px; height: 22px; flex-shrink: 0; display: grid; place-items: center; border: none; background: transparent; color: var(--ink-3); cursor: pointer; border-radius: 4px; }
+.mx-mute:hover, .mx-solo:hover { color: var(--ink-1); background: rgba(255,255,255,.06); }
+.mx-mute.on { color: var(--danger-br, #ff5a5a); }
+.mx-solo { font-size: 11px; font-weight: 800; font-family: var(--font-mono); }
+.mx-solo.on { color: #0b0f16; background: var(--warn, #f5b73c); }
+.mx-strip.muted .mx-volrow, .mx-strip.muted .mx-panrow, .mx-strip.muted .fxbar { opacity: .45; }
+.mx-strip.soloed { border-color: color-mix(in srgb, var(--warn, #f5b73c) 55%, transparent); border-top-color: color-mix(in srgb, var(--warn, #f5b73c) 75%, transparent); }
+
+/* level meter + pan row */
+.mx-meterrow { padding: 7px 11px 0; }
+.meter-canvas { display: block; border-radius: 3px; background: rgba(0,0,0,.35); box-shadow: inset 0 1px 2px rgba(0,0,0,.5); }
+.mx-panrow { display: flex; align-items: center; gap: 8px; padding: 8px 11px 0; }
+.mx-pan-label, .mx-pan-val { font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.mx-pan { flex: 1; }
+.mx-pan-val { min-width: 26px; text-align: right; font-family: var(--font-mono); letter-spacing: 0; color: var(--trk-c); }
+.mx-master-meter { display: flex; align-items: center; gap: 10px; padding: 9px 4px 2px; }
+.mx-master-meter .meter-canvas { flex: 1; }
+.mx-volrow { display: flex; align-items: center; gap: 8px; padding: 8px 11px 2px; }
+.mx-volrow .mx-vol { flex: 1; }
+.mx-volrow input[type="range"]::-webkit-slider-thumb { background: var(--trk-c); box-shadow: 0 0 7px color-mix(in srgb, var(--trk-c) 40%, transparent), 0 1px 2px rgba(0,0,0,.6); }
+.mx-volrow input[type="range"]::-moz-range-thumb { background: var(--trk-c); }
+.mx-pct { min-width: 26px; text-align: right; font-family: var(--font-mono); font-size: 10px; color: var(--trk-c); font-variant-numeric: tabular-nums; }
+/* FX section stacks under a hairline instead of wrapping beside its label */
+.mx-tracks .fxbar { flex-direction: column; align-items: stretch; gap: 6px; padding: 8px 11px 11px; margin-top: 6px; border-top: 1px solid var(--border-subtle); }
+.mx-tracks .fxbar-label { min-width: 0; color: var(--ink-3); }
+.mx-tracks .fxdev { max-width: 100%; }
+.mx-tracks .fxdev-knobs { flex-wrap: wrap; }
+.mx-master .fxbar { padding: 2px 4px; }
+
+/* ── Live page: section titles get a trailing hairline rule ────────────────── */
+.lp-section-title { display: flex; align-items: center; gap: 10px; }
+.lp-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border-subtle); }
+
+/* ── Waveforms inside arrangement audio clips ──────────────────────────────── */
+.arr2-wave { position: absolute; inset: 1px; opacity: .6; pointer-events: none; }
+.arr2-wave canvas { width: 100% !important; height: 100% !important; border-radius: 3px; }
+.arr2-clip-name, .arr2-clip-tools { position: relative; z-index: 1; }
 
 @media (max-width: 1024px) and (orientation: landscape) {
   .browser { max-height: 30vh; }

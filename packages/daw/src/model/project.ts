@@ -3,7 +3,7 @@ import { makeKick, makeBlip, makeBasicSynth, makeSynthVoice } from '../synflow/i
 import { findEntry, cloneFlow } from '../synflow/library';
 
 /** A note in a piano-roll instrument; start/length are in grid steps (fractional). */
-export interface PianoNote { id: number; midi: number; start: number; length: number }
+export interface PianoNote { id: number; midi: number; start: number; length: number; velocity?: number /* 0..1, default 1 */ }
 
 /** Where an audio asset's bytes live. Disk = lightweight ref into <folder>/audio/
  *  (streamed, small song JSON); embedded = base64 in the song (portable export). */
@@ -194,7 +194,9 @@ export interface Track {
   name: string;
   type: 'drums' | 'synth' | 'audio' | 'video';
   volume: number;
+  pan?: number;            // stereo pan, −1 (left) … +1 (right); default 0 (center)
   muted?: boolean;         // arrangement mute: skip this track entirely in the scheduler
+  soloed?: boolean;        // solo: when any track is soloed, only soloed tracks sound
   loop: boolean;           // live-performance loop: the track loops continuously
   length: number;          // this track's pattern length, in steps (polymeter)
   uses: TrackInstrument[];
@@ -219,6 +221,14 @@ export interface Project {
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
+
+/** Whether a track should sound: not muted, and (no track soloed, or this one is). */
+export function trackAudible(track: Track, tracks: Track[]): boolean {
+  if (track.muted) return false;
+  const anySolo = tracks.some((t) => t.soloed);
+  return !anySolo || !!track.soloed;
+}
+
 let _id = 0;
 export const uid = (p: string): string => `${p}-${++_id}-${Math.random().toString(36).slice(2, 7)}`;
 let _noteId = 1000;
@@ -323,24 +333,33 @@ export function patternLoopLength(tracks: Track[]): number {
   return Math.max(1, tracks.map((t) => Math.max(1, t.length)).reduce(lcm, 1));
 }
 
-/** Last step occupied by any audio clip (its absolute end on the song timeline). */
-export function audioContentEndSteps(p: Project): number {
+/** Absolute end (in steps) of the last timeline element — any audio, video, or
+ *  title clip (titles are video clips with `text` set). This is what the song
+ *  length and the playback loop track, so both reach the last element. */
+export function contentEndSteps(p: Project): number {
   const stepsPerSec = (p.bpm / 60) * p.stepsPerBeat;
   let end = 0;
   for (const t of p.tracks) {
     for (const c of t.audioClips ?? []) end = Math.max(end, c.start + c.duration * stepsPerSec);
+    for (const c of t.videoClips ?? []) end = Math.max(end, c.start + c.duration * stepsPerSec);
   }
   return end;
 }
 
-/** Song length in steps. Grows past the user-set `songSlots` to contain every
- *  audio clip (rounded up to whole bars) so long imports play in full and the
- *  timeline/loop spans them — it can grow indefinitely. */
+/** Song length in steps = where the last element ends, rounded up to whole bars
+ *  (with `songSlots` as the minimum). This is the playback loop length: the
+ *  playhead loops back here, just past the last clip / title / video. The
+ *  arrangement timeline draws a little further (see {@link TIMELINE_HEADROOM_BARS})
+ *  so there's always room to drop the next clip. */
 export function songLengthSteps(p: Project): number {
   const base = p.songSlots * p.totalSteps;
-  const content = Math.ceil(audioContentEndSteps(p) / p.totalSteps) * p.totalSteps;
+  const content = Math.ceil(contentEndSteps(p) / p.totalSteps) * p.totalSteps;
   return Math.max(base, content);
 }
+
+/** Empty bars kept past the last element on the arrangement timeline so the song
+ *  always "grows a little more" past where the playhead loops. */
+export const TIMELINE_HEADROOM_BARS = 2;
 
 /** Song length in bars/slots (see {@link songLengthSteps}). */
 export function songLengthSlots(p: Project): number {
