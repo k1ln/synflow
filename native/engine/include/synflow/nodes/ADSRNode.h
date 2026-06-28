@@ -25,7 +25,7 @@ public:
 
     void setNamedParam(const std::string& name, double v) override {
         if (name == "attackTime") attack_ = v;
-        else if (name == "sustainTime") decay_ = v;       // web "sustainTime" == decay duration
+        else if (name == "decayTime" || name == "sustainTime") decay_ = v; // both web conventions: decay duration
         else if (name == "sustainLevel") sustainLevel_ = v;
         else if (name == "releaseTime") release_ = v;
         else if (name == "minPercent") minPercent_ = v;
