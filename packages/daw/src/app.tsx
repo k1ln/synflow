@@ -7,7 +7,7 @@ import { InstrumentHost } from './audio/InstrumentHost';
 import { VoicePool } from './audio/VoicePool';
 import { Mixer, type ResolvedFx } from './audio/Mixer';
 import {
-  defaultProject, newNoteId, uid, fxInsert, blankSteps,
+  defaultProject, newNoteId, uid, fxInsert, blankSteps, trackActiveAt,
   type Project, type Track, type PoolItem, type FxInsert,
 } from './model/project';
 import { midiToFreq } from './model/pitch';
@@ -19,6 +19,7 @@ import { Pool } from './ui/Pool';
 import { TrackEditor, type TrackEditorHandlers } from './ui/TrackEditor';
 import { FxBar } from './ui/FxBar';
 import { Live } from './ui/Live';
+import { Arrange } from './ui/Arrange';
 import { InstrumentPanel } from './ui/InstrumentPanel';
 import { SynflowEditor } from './ui/SynflowEditor';
 import { StorageSetup } from './ui/StorageSetup';
@@ -34,6 +35,8 @@ export function App() {
   const [liveSynth, setLiveSynth] = useState<string>('');
   const [armedPool, setArmedPool] = useState<string | null>(null);
   const [instPanel, setInstPanel] = useState<string | null>(null);
+  const [songMode, setSongMode] = useState(false);
+  const songModeRef = useRef(false); songModeRef.current = songMode;
   const [editor, setEditor] = useState<{ flow: Flow; title: string; onSaved: (f: Flow) => void } | null>(null);
   const [library, setLibrary] = useState<LibraryEntry[]>(LIBRARY);
   const [folder, setFolder] = useState<FileSystemDirectoryHandle | null>(null);
@@ -138,12 +141,16 @@ export function App() {
     transport.stepsPerBeat = projectRef.current.stepsPerBeat;
     transportRef.current = transport;
     await buildAudio();
-    const scheduler = new Scheduler(clock, transport, (step, time) => {
+    const scheduler = new Scheduler(clock, transport, (s, time) => {
       const proj = projectRef.current;
+      const song = songModeRef.current;
+      const step = song ? s % proj.totalSteps : s;     // position within the pattern
+      const slot = song ? Math.floor(s / proj.totalSteps) : 0;
       const lead = Math.max(0, (time - clock.currentTime) * 1000);
       const stepMs = transport.secondsPerStep * 1000;
       const gateMs = Math.min(transport.secondsPerStep * 0.9, 0.5) * 1000;
       for (const track of proj.tracks) {
+        if (song && !trackActiveAt(track.clips, slot, proj.songSlots)) continue; // arrangement gate
         for (const use of track.uses) {
           if (use.muted) continue;
           if (track.type === 'synth' && use.notes) {
@@ -161,7 +168,7 @@ export function App() {
           }
         }
       }
-      window.setTimeout(() => setCurrentStep(step), lead);
+      window.setTimeout(() => setCurrentStep(s), lead);
     });
     scheduler.totalSteps = projectRef.current.totalSteps;
     schedulerRef.current = scheduler;
@@ -171,7 +178,8 @@ export function App() {
     await ensureAudio();
     await ctxRef.current!.resume();
     transportRef.current!.bpm = projectRef.current.bpm;
-    schedulerRef.current!.totalSteps = projectRef.current.totalSteps;
+    const proj = projectRef.current;
+    schedulerRef.current!.totalSteps = songModeRef.current ? proj.songSlots * proj.totalSteps : proj.totalSteps;
     transportRef.current!.start(); schedulerRef.current!.start();
     setIsPlaying(true);
   }, [ensureAudio]);
@@ -334,7 +342,7 @@ export function App() {
 
   const addTrack = (type: 'drums' | 'synth') => {
     const id = uid('track');
-    setProject((p) => ({ ...p, tracks: [...p.tracks, { id, name: `${type === 'drums' ? 'Drums' : 'Synth'} ${p.tracks.length + 1}`, type, volume: 0.8, uses: [], fx: [], automation: [] }] }));
+    setProject((p) => ({ ...p, tracks: [...p.tracks, { id, name: `${type === 'drums' ? 'Drums' : 'Synth'} ${p.tracks.length + 1}`, type, volume: 0.8, uses: [], clips: [{ id: uid('clip'), start: 0, length: 1, loop: true }], fx: [], automation: [] }] }));
     setSelTrack(id);
   };
   const removeTrack = (trackId: string) => {
@@ -346,6 +354,18 @@ export function App() {
     mixerRef.current?.removeTrack(trackId);
   };
   const setTrackVolume = (trackId: string, v: number) => { mapTrack(trackId, (t) => ({ ...t, volume: v })); mixerRef.current?.setTrackVolume(trackId, v); };
+
+  // ─── arrangement (song) ─────────────────────────────────────────────────────
+  const toggleSongMode = () => setSongMode((m) => {
+    const next = !m;
+    if (schedulerRef.current) schedulerRef.current.totalSteps = next ? projectRef.current.songSlots * projectRef.current.totalSteps : projectRef.current.totalSteps;
+    return next;
+  });
+  const setSongSlots = (n: number) => setProject((p) => ({ ...p, songSlots: n }));
+  const addClip = (trackId: string, slot: number) => mapTrack(trackId, (t) => (t.clips.some((c) => c.start === slot) ? t : { ...t, clips: [...t.clips, { id: uid('clip'), start: Math.max(0, slot), length: 1, loop: false }] }));
+  const removeClip = (trackId: string, clipId: string) => mapTrack(trackId, (t) => ({ ...t, clips: t.clips.filter((c) => c.id !== clipId) }));
+  const toggleClipLoop = (trackId: string, clipId: string) => mapTrack(trackId, (t) => ({ ...t, clips: t.clips.map((c) => (c.id === clipId ? { ...c, loop: !c.loop } : c)) }));
+  const setClipLen = (trackId: string, clipId: string, length: number) => mapTrack(trackId, (t) => ({ ...t, clips: t.clips.map((c) => (c.id === clipId ? { ...c, length } : c)) }));
 
   const onMasterFxAdd = (fxId: string) => { const ins = fxInsert(fxId); setProject((p) => ({ ...p, masterFx: [...p.masterFx, ins] })); rebuildMaster([...project.masterFx, ins]); };
   const onMasterFxRemove = (i: number) => { const next = project.masterFx.filter((_, j) => j !== i); setProject((p) => ({ ...p, masterFx: next })); rebuildMaster(next); };
@@ -390,6 +410,14 @@ export function App() {
                   : <div className="te-empty">No track — add one.</div>}
               </div>
             </div>
+          )}
+
+          {view === 'song' && (
+            <Arrange
+              project={project} currentSlot={currentStep < 0 ? -1 : Math.floor(currentStep / project.totalSteps)} songMode={songMode} selTrack={selTrack}
+              onToggleSongMode={toggleSongMode} onSetSongSlots={setSongSlots} onSelectTrack={setSelTrack}
+              onAddClip={addClip} onRemoveClip={removeClip} onToggleLoop={toggleClipLoop} onClipLen={setClipLen}
+            />
           )}
 
           {view === 'live' && (

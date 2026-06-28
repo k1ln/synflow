@@ -372,3 +372,33 @@ body {
 .fxdev-head { display: flex; align-items: center; gap: 5px; }
 .fxdev-name { font-size: 11px; font-weight: 700; letter-spacing: .02em; margin-right: 2px; }
 .fxdev-knobs { display: flex; gap: 12px; align-items: flex-start; padding-top: 2px; }
+
+/* ── Song arrangement ─────────────────────────────────────────────────────── */
+.arrange2 { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.arr2-bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--border-strong); }
+.arr2-mode { font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 6px; cursor: pointer; color: var(--ink-2); background: var(--glass-field); border: 1px solid var(--border-strong); min-width: 78px; }
+.arr2-mode.on { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 30%, transparent); }
+.arr2-hint { font-size: 11px; color: var(--ink-3); flex: 1; }
+.arr2-len { font-size: 11px; color: var(--ink-3); display: flex; align-items: center; gap: 6px; }
+.arr2-len input { width: 52px; background: var(--glass-field); border: 1px solid var(--border-strong); color: var(--ink-1); border-radius: 5px; padding: 4px 6px; font: inherit; font-size: 12px; }
+.arr2-ruler { display: flex; border-bottom: 1px solid var(--border-strong); }
+.arr2-headcell { width: 150px; flex-shrink: 0; border-right: 1px solid var(--border-strong); }
+.arr2-ticks { flex: 1; display: grid; }
+.arr2-tick { font-size: 10px; color: var(--ink-3); padding: 5px 0 5px 5px; border-left: 1px solid var(--border-subtle); font-family: var(--font-mono); }
+.arr2-tick.beat { color: var(--ink-2); border-left-color: var(--border-strong); }
+.arr2-rows { flex: 1; overflow-y: auto; }
+.arr2-row { display: flex; height: 52px; border-bottom: 1px solid var(--border-subtle); }
+.arr2-row.sel .arr2-trk { color: var(--accent); }
+.arr2-trk { width: 150px; flex-shrink: 0; display: flex; align-items: center; gap: 7px; padding: 0 12px; border-right: 1px solid var(--border-strong); cursor: pointer; font-size: 12px; font-weight: 600; color: var(--ink-1); }
+.arr2-lane { flex: 1; position: relative; cursor: copy;
+  background-image: repeating-linear-gradient(90deg, var(--border-subtle), var(--border-subtle) 1px, transparent 1px, transparent calc(100% / var(--n))); }
+.arr2-clip { position: absolute; top: 6px; bottom: 6px; border-radius: var(--r-xs); display: flex; align-items: center; justify-content: space-between; padding: 0 5px; cursor: default; overflow: hidden;
+  background: color-mix(in srgb, var(--cat-mod) 24%, transparent); border: 1px solid color-mix(in srgb, var(--cat-mod) 60%, transparent); }
+.arr2-clip.drums { background: color-mix(in srgb, var(--cat-source) 24%, transparent); border-color: color-mix(in srgb, var(--cat-source) 60%, transparent); }
+.arr2-clip.loop { background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,.06) 5px, rgba(255,255,255,.06) 10px); }
+.arr2-clip-name { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-1); opacity: .8; }
+.arr2-clip-tools { display: flex; gap: 1px; }
+.arr2-clip-btn { width: 18px; height: 18px; display: grid; place-items: center; border: none; background: transparent; color: var(--ink-2); cursor: pointer; border-radius: 3px; font-size: 12px; }
+.arr2-clip-btn:hover { background: rgba(0,0,0,.3); color: var(--ink-1); }
+.arr2-clip-btn.on { color: var(--accent); }
+.arr2-ph { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); box-shadow: 0 0 8px var(--accent); pointer-events: none; }
