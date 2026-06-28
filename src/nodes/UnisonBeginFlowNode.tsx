@@ -11,7 +11,7 @@ export type UnsisonBeginFlowNodeProps = {
     numberOfVoices: number;
     msTimeStartDeviation: number; // random
     msTimeEndDeviation: number; // random
-    detuneCentsDeviation: number; //detune
+    detuneFreqDeviation: number; // detune in cents, scaled linearly with the incoming frequency (cents at A440)
     gainDeviation: number; // random
     style: React.CSSProperties;
     onChange: (data: any) => void;
@@ -23,15 +23,15 @@ const UnisonBeginFlowNode: React.FC<UnsisonBeginFlowNodeProps> = ({ data }) => {
   const [numberOfVoices, setNumberOfVoices] = useState<number>(data.numberOfVoices);
   const [msTimeStartDeviation, setMsTimeStartDeviation] = useState<number>(data.msTimeStartDeviation);
   const [msTimeEndDeviation, setMsTimeEndDeviation] = useState<number>(data.msTimeEndDeviation);
-  const [detuneCentsDeviation, setDetuneCentsDeviation] = useState<number>(data.detuneCentsDeviation);
+  const [detuneFreqDeviation, setDetuneFreqDeviation] = useState<number>(data.detuneFreqDeviation);
   const [gainDeviation, setGainDeviation] = useState<number>(data.gainDeviation);
   const [label, setLabel] = useState(data.label);
   useEffect(() => {
     if (data.onChange instanceof Function) {
-      data.onChange({ ...data, numberOfVoices, msTimeStartDeviation, msTimeEndDeviation, detuneCentsDeviation, gainDeviation, label });
+      data.onChange({ ...data, numberOfVoices, msTimeStartDeviation, msTimeEndDeviation, detuneFreqDeviation, gainDeviation, label });
     }
     // ...additional logic...
-  }, [numberOfVoices, msTimeStartDeviation, msTimeEndDeviation, detuneCentsDeviation, gainDeviation, label]);
+  }, [numberOfVoices, msTimeStartDeviation, msTimeEndDeviation, detuneFreqDeviation, gainDeviation, label]);
   
   
   return (
@@ -48,13 +48,36 @@ const UnisonBeginFlowNode: React.FC<UnsisonBeginFlowNodeProps> = ({ data }) => {
         className="mainInput"
       />
 
-      {/* Main Outpyut */}
+      {/* Main Output */}
       <Handle
         type="source"
         position={Position.Right}
         id="unison-output"
         className="mainOutput"
+        style={{ top: "35%" }}
       />
+
+      {/* Detune Output — per-voice fixed random detune (cents) */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="detune-output"
+        className="mainOutput"
+        style={{ top: "65%" }}
+      />
+      <span
+        style={{
+          position: "absolute",
+          right: 8,
+          top: "65%",
+          transform: "translateY(-50%)",
+          fontSize: 8,
+          opacity: 0.7,
+          pointerEvents: "none",
+        }}
+      >
+        detune
+      </span>
 
       {/* Gain Input with MIDI-learnable knob */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -91,14 +114,14 @@ const UnisonBeginFlowNode: React.FC<UnsisonBeginFlowNodeProps> = ({ data }) => {
           }}
           className="textInput"
         />
-        <span><b>Detune dev. (cents)</b></span>
+        <span><b>Freq detune dev. (cents @ A440)</b></span>
         <input
           type="text"
-          value={detuneCentsDeviation}
+          value={detuneFreqDeviation}
           inputMode="decimal"
-          pattern="[0-9]*\.?[0-9]*"
+          pattern="-?[0-9]*\.?[0-9]*"
           onChange={(e) => {
-            setDetuneCentsDeviation(Number(e.target.value));
+            setDetuneFreqDeviation(Number(e.target.value));
           }}
           className="textInput"
         />
