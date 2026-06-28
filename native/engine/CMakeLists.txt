@@ -26,3 +26,6 @@ target_link_libraries(effects_test PRIVATE synflow_engine)
 
 add_executable(vocoder_test src/vocoder_test.cpp)
 target_link_libraries(vocoder_test PRIVATE synflow_engine)
+
+add_executable(osc_test src/osc_test.cpp)
+target_link_libraries(osc_test PRIVATE synflow_engine)
