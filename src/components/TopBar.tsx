@@ -211,19 +211,19 @@ export const TopBar: React.FC<TopBarProps> = ({
                 whiteSpace: 'nowrap'
               }}
             >
-              {selectedNodeType}
+              {selectedNodeType.replace(/FlowNode$/i, '')}
             </div>
           )}
           {/* Selection color controls (show only when values provided) */}
           {(nodeGlowColor !== undefined || nodeBgColor !== undefined || nodeFontColor !== undefined || edgeColor !== undefined) && <Divider />}
           {nodeGlowColor !== undefined && onNodeGlowColorChange && (
-            <label title="Node glow color" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#ddd', fontSize: 12 }}>
-              Node Glow
+            <label title="Module glow color" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#ddd', fontSize: 12 }}>
+              Module Glow
               <input type="color" value={nodeGlowColor} onChange={(e) => onNodeGlowColorChange(e.target.value)} style={{ width: 26, height: 18, border: 'none', background: 'transparent', cursor: 'pointer' }} />
             </label>
           )}
           {nodeBgColor !== undefined && onNodeBgColorChange && (
-            <label title="Node background color" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#ddd', fontSize: 12 }}>
+            <label title="Module background color" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#ddd', fontSize: 12 }}>
               Background
               <input type="color" value={nodeBgColor} onChange={(e) => onNodeBgColorChange(e.target.value)} style={{ width: 26, height: 18, border: 'none', background: 'transparent', cursor: 'pointer' }} />
             </label>

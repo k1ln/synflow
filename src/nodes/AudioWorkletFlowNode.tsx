@@ -647,7 +647,7 @@ class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {
                 className="audio-codemirror nodrag"
               />
               <div style={{display:'flex', justifyContent:'space-between', marginTop:6}}>
-                <span style={{fontSize:'0.5rem', opacity:0.6}}>ESC closes • Persisted per node</span>
+                <span style={{fontSize:'0.5rem', opacity:0.6}}>ESC closes • Persisted per module</span>
                 <div style={{display:'flex', gap:6}}>
                   <button onClick={saveProcessorCode} style={{padding:'4px 10px', background:'#2563eb', color:'#fff', border:'1px solid #1e4fb3', borderRadius:4, fontSize:'0.55rem'}}>Save</button>
                   <button onClick={closeEditor} style={{padding:'4px 10px', background:'#2f3338', color:'#ddd', border:'1px solid #444', borderRadius:4, fontSize:'0.55rem'}}>Close</button>

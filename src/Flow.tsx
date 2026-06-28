@@ -17,7 +17,7 @@ import { Handle, Position } from '@xyflow/react';
 import OscillatorFlowNode from './nodes/OscillatorFlowNode';
 import AudioWorkletOscillatorFlowNode from './nodes/AudioWorkletOscillatorFlowNode';
 import MasterOutFlowNode from './nodes/MasterOutFlowNode';
-import NodePaletteDialog from './components/NodePaletteDialog';
+import NodePaletteDialog, { NODE_CATEGORY_COLORS } from './components/NodePaletteDialog';
 import BiquadFilterFlowNode from './nodes/BiquadFilterFlowNode';
 import DynamicCompressorFlowNode from './nodes/DynamicCompressorFlowNode';
 import GainFlowNode from './nodes/GainFlowNode';
@@ -125,17 +125,18 @@ const initialNodes = [];
 
 const nodeStyleObj = {
   padding: "5px",
-  border: "1px solid #2a3139",
+  border: "1px solid rgba(80, 95, 130, 0.50)",
   borderRadius: "5px",
   textAlign: "center",
-  background: "#1f1f1f",
+  background: "rgba(18, 19, 36, 0.52)",
+  backdropFilter: "blur(6px)",
   color: "#eee",
   // Subtle glow around nodes for dark theme
   boxShadow: "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
 };
 
 // === Style helpers moved outside component to avoid recreation on every render ===
-const DARK_NODE_BG = '#1f1f1f';
+const DARK_NODE_BG = 'rgba(18, 19, 36, 0.52)';
 
 const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -182,15 +183,26 @@ function normalizeNodeStylesForTheme(arr: any[] | undefined): any[] {
   return arr.map((n) => {
     const data = n?.data || {};
     const style = { ...(data.style || {}) } as any;
-    if (!style.background || style.background === '#333' || style.background === '#222') {
+    if (!style.background || style.background === '#333' || style.background === '#222' || style.background === '#1f1f1f' || style.background === '#161618' || style.background === '#1c1d2a') {
       style.background = DARK_NODE_BG;
     }
+    if (!style.backdropFilter) style.backdropFilter = 'blur(6px)';
     // Ensure a consistent border and subtle glow for legacy nodes
-    if (!style.border) style.border = '1px solid #2a3139';
+    if (!style.border) style.border = '1px solid rgba(80, 95, 130, 0.50)';
     if (!style.borderRadius) style.borderRadius = '5px';
     if (!style.glowColor) style.glowColor = '#00ff88';
     if (!style.boxShadow) style.boxShadow = makeGlow(style.glowColor, 'normal');
     if (!style.color) style.color = '#eeeeee';
+    // Category accent: always (re)apply so stale 2px values from old saves get upgraded
+    const catColor = NODE_CATEGORY_COLORS[n.type as string];
+    if (catColor) {
+      const rgb = hexToRgb(catColor) || { r: 255, g: 255, b: 255 };
+      style.borderTop = `3px solid ${catColor}`;
+      // Combine existing outer glow with an inset top glow for prominence
+      const insetGlow = `inset 0 3px 12px rgba(${rgb.r},${rgb.g},${rgb.b},0.22)`;
+      const outerGlow = makeGlow(style.glowColor || '#00ff88', 'normal');
+      style.boxShadow = `${outerGlow}, ${insetGlow}`;
+    }
     return { ...n, data: { ...data, style } };
   });
 }
@@ -1804,6 +1816,17 @@ function Flow() {
 
     // Determine style width/height for centering.
     const styleObj = (copy && copiedNode?.data?.style) ? copiedNode.data.style : (data.style || { ...nodeStyleObj, glowColor: '#00ff88', boxShadow: makeGlow('#00ff88', 'normal') });
+    // Inject category accent top border for new (non-copy) nodes
+    if (!copy) {
+      const catColor = NODE_CATEGORY_COLORS[type];
+      if (catColor) {
+        const rgb = hexToRgb(catColor) || { r: 255, g: 255, b: 255 };
+        styleObj.borderTop = `3px solid ${catColor}`;
+        const insetGlow = `inset 0 3px 12px rgba(${rgb.r},${rgb.g},${rgb.b},0.22)`;
+        const outerGlow = makeGlow(styleObj.glowColor || '#00ff88', 'normal');
+        styleObj.boxShadow = `${outerGlow}, ${insetGlow}`;
+      }
+    }
     // Width may be like '200px'; parseInt handles that; fallback default 200.
     const nodeWidth = styleObj?.width ? parseInt(styleObj.width, 10) || 200 : 200;
     // Height isn't explicitly defined; approximate via padding & content. Use 120 as heuristic unless provided.
@@ -2199,7 +2222,7 @@ function Flow() {
   ]);
 
   return (
-    <div style={{ display: 'flex', height: "100vh", width: "100%", paddingTop: 44 }} onContextMenu={(e) => { e.preventDefault(); setNodePaletteOpen(prev => !prev); }}>
+    <div style={{ display: 'flex', height: "100vh", width: "100%", paddingTop: 44, background: '#07070d' }} onContextMenu={(e) => { e.preventDefault(); setNodePaletteOpen(prev => !prev); }}>
       {/* Flow container */}
       <div style={{ flex: 1, display: orchestratorEditorOpen ? 'none' : 'flex', flexDirection: 'column', minWidth: 0 }}>
       {/* Inline controls: color pickers for selected node and edge */}
@@ -2588,7 +2611,7 @@ function Flow() {
       >
         <MiniMap />
         <Controls />
-        <Background />
+        <Background color="#090910" gap={40} size={1} />
       </ReactFlow>
 
       {/* Inline Toasts */}

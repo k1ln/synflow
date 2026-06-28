@@ -1786,6 +1786,9 @@ export class AudioGraphManager {
         const sourceNode: AudioNode | undefined = resolveOutputNode(sourceVirtual);
         const targetNodeForParams: AudioNode | AudioContext | undefined = (() => {
             if (!targetVirtual) return undefined;
+            // getParamNode() lets nodes expose a separate node for AudioParam lookups
+            // (e.g. OscillatorNode exposes its oscillator for freq/detune while output goes through a GainNode)
+            if (typeof targetVirtual.getParamNode === 'function') return targetVirtual.getParamNode();
             if (typeof targetVirtual.getOutputNode === 'function') return targetVirtual.getOutputNode();
             if (targetVirtual instanceof AudioNode || targetVirtual instanceof AudioContext) return targetVirtual;
             return targetVirtual.audioNode as AudioNode | undefined;

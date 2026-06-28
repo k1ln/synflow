@@ -279,6 +279,7 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
                 position: "relative", // <-- Important for handle positioning
                 minHeight: Math.max(10, 0 + Math.max(inputArr.length, outputArr.length) * 24), // Ensure enough height
                 width: 120, // 60% of typical 200px node width
+                ...(data.style || {}),
             }}
         >
             <div style={{ textAlign: "center" }}>
