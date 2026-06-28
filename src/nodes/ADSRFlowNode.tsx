@@ -159,7 +159,7 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
         position={Position.Left}
         id="sustainTime-input"
         style={{ top: 80, width: '8px', height: '8px', background: '#47C29D', border: '1px solid #1e5e4d', borderRadius: '50%', boxShadow: '0 0 3px 1px rgba(71,194,157,0.34)' }}
-        title="Modulate Sustain Time (seconds)"
+        title="Modulate Decay Time (seconds)"
       />
       {/* Sustain Level Input */}
       <Handle
@@ -216,7 +216,7 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
           <span style={{fontSize:10}}>{attackTime.toFixed(3)}</span>
         </div>
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center', minWidth:50 }}>
-          <label style={{fontSize:10}}>Sustain</label>
+          <label style={{fontSize:10}}>Decay</label>
           <MidiKnob
             style={{ display: 'inline-block' }}
             min={0}

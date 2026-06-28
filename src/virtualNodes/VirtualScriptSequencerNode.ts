@@ -24,6 +24,11 @@ import { CustomNode } from '../sys/AudioGraphManager';
  *   pulse <handle> <ms>
  *       Emit ON now, OFF after <ms> milliseconds.
  *
+ *   pulse <handle> [v1,v2,...] <pulse-width> [<total-duration>]
+ *       Emit each value as a gated pulse (ON with value, OFF after pulse-width),
+ *       evenly spaced across total-duration (defaults to one tick).
+ *       e.g.  pulse gate [C3,E3,G3] 80ms 500ms
+ *
  *   ramp <handle> <from>..<to> <duration>
  *       Linearly ramp value from `from` to `to` over a duration, emitting
  *       intermediate "send" events at ~60Hz. Duration units:
@@ -51,6 +56,8 @@ import { CustomNode } from '../sys/AudioGraphManager';
  *   clock          → advance one line per ON event
  *   reset          → reset cursor to line 0
  *   bpm-input      → optional explicit clock period in ms
+ *   in-0…in-N      → value inputs; each incoming value is stored in
+ *                    $in0, $in1, … and usable in any expression.
  *
  * Outputs (source handles):
  *   <auto>         → every handle name referenced in the script becomes
@@ -62,6 +69,9 @@ export interface ScriptSequencerVirtualData {
   vars?: Record<string, any>;
   tickIntervalMs?: number; // last measured tick period
   outputCount?: number;
+  /** Number of value-input handles (in-0, in-1, …) whose live values are
+   *  stored in $in0, $in1, … and usable anywhere in the script. */
+  inputCount?: number;
   label?: string;
   onChange?: (d: any) => void;
 }
@@ -203,6 +213,8 @@ export class VirtualScriptSequencerNode extends VirtualNode<
   private lastTickAt: number = 0;
   private vars: Record<string, any> = {};
   private outputCount: number = 0;
+  private inputCount: number = 0;
+  private inputSubs: Array<{ event: string; fn: (data: any) => void }> = [];
   private pink = new PinkNoise();
   private sendOnHandler?: (data: any) => void;
   private sendOffHandler?: (data: any) => void;
@@ -221,10 +233,14 @@ export class VirtualScriptSequencerNode extends VirtualNode<
     if (typeof node.data?.outputCount === 'number') {
       this.outputCount = node.data.outputCount;
     }
+    if (typeof node.data?.inputCount === 'number') {
+      this.inputCount = node.data.inputCount;
+    }
     if (typeof node.data?.tickIntervalMs === 'number') {
       this.tickIntervalMs = node.data.tickIntervalMs;
     }
     this.installSubscriptions();
+    this.resubscribeInputs(this.inputCount);
   }
 
   private installSubscriptions() {
@@ -269,13 +285,41 @@ export class VirtualScriptSequencerNode extends VirtualNode<
         this.outputCount = d.outputCount;
         changed = true;
       }
+      if (typeof d.inputCount === 'number' && d.inputCount !== this.inputCount) {
+        this.inputCount = d.inputCount;
+        this.resubscribeInputs(this.inputCount);
+        changed = true;
+      }
       if (changed && this.node.data) {
         this.node.data.script = this.script;
         this.node.data.activeLine = this.active;
         this.node.data.vars = this.vars;
         this.node.data.outputCount = this.outputCount;
+        this.node.data.inputCount = this.inputCount;
       }
     });
+  }
+
+  /** Subscribe to in-0…in-(count-1) receiveNodeOn events, storing the
+   *  incoming value as $in0, $in1, … so scripts can use them as base values. */
+  private resubscribeInputs(count: number) {
+    const id = this.node.id;
+    // Tear down old subscriptions first.
+    for (const { event, fn } of this.inputSubs) {
+      this.eventBus.unsubscribe(event, fn);
+    }
+    this.inputSubs = [];
+    for (let i = 0; i < count; i++) {
+      const varName = 'in' + i;
+      const fn = (data: any) => {
+        const v = data?.value ?? data?.gate ?? data;
+        this.vars[varName] = typeof v === 'number' ? v : Number(v);
+        this.syncToUI();
+      };
+      const event = id + '.in-' + i + '.receiveNodeOn';
+      this.eventBus.subscribe(event, fn);
+      this.inputSubs.push({ event, fn });
+    }
   }
 
   private syncToUI() {
@@ -415,6 +459,8 @@ export class VirtualScriptSequencerNode extends VirtualNode<
   /**
    * Evaluate a textual expression to a number / string / boolean.
    * Supports:  numbers, $vars, @notes (e.g. @C4, @A#5, @Bb3 → Hz),
+   *            @$var[+/-N] (treat $var as Hz and shift by N semitones,
+   *              e.g. @$in0+2 → $in0 transposed up 2 semitones),
    *            arithmetic + - * / %, parentheses, comparisons
    *            == != < <= > >=, and unary minus.
    */
@@ -471,7 +517,7 @@ export class VirtualScriptSequencerNode extends VirtualNode<
         i = j;
         continue;
       }
-      // @note literal
+      // @note literal  — also @$var[+/-N] to transpose a Hz variable by semitones
       if (c === '@') {
         // Match note + optional semitone offset: @C4+2, @Bb3-1, @C4+$var, @C4-$var
         const noteMatch = /^([A-Ga-g][#b]?-?\d+)(([+-])(\d+|\$[A-Za-z_]\w*))?/.exec(src.slice(i + 1));
@@ -491,7 +537,26 @@ export class VirtualScriptSequencerNode extends VirtualNode<
           toks.push({ type: 'num', value: finalHz });
           i += 1 + noteMatch[0].length;
         } else {
-          i++; // bare '@' — skip
+          // @$var[+/-N|$var2]  — treat variable's Hz value as a pitch, offset in semitones
+          const varMatch = /^\$([A-Za-z0-9_]+)(([+-])(\d+|\$[A-Za-z_]\w*))?/.exec(src.slice(i + 1));
+          if (varMatch) {
+            const baseHz = Number(this.vars[varMatch[1]]) || 0;
+            let semis = 0;
+            if (varMatch[2]) {
+              const sign = varMatch[3] === '-' ? -1 : 1;
+              if (varMatch[4].startsWith('$')) {
+                const varName = varMatch[4].slice(1);
+                semis = sign * (Number(this.vars[varName]) || 0);
+              } else {
+                semis = parseInt(varMatch[2], 10);
+              }
+            }
+            const finalHz = baseHz <= 0 ? 0 : baseHz * Math.pow(2, semis / 12);
+            toks.push({ type: 'num', value: finalHz });
+            i += 1 + varMatch[0].length;
+          } else {
+            i++; // bare '@' — skip
+          }
         }
         continue;
       }
@@ -752,13 +817,54 @@ export class VirtualScriptSequencerNode extends VirtualNode<
       }
       case 'pulse': {
         const handle = p.args[0];
-        const ms = parseDuration(p.args[1], this.tickIntervalMs);
-        this.emitOn(handle, 1);
-        const t = setTimeout(() => {
-          this.rampTimers.delete(t);
-          this.emitOff(handle);
-        }, ms);
-        this.rampTimers.add(t);
+        const arrArg = p.args[1] || '';
+        if (arrArg.startsWith('[')) {
+          // pulse <handle> [v1,v2,...] <pulse-width> [<total-duration>]
+          const values: number[] = arrArg.replace(/^\[|\]$/g, '').trim()
+            ? arrArg.replace(/^\[|\]$/g, '').split(',')
+                .map((s) => Number(this.resolveExpr(s.trim())))
+                .filter((n) => !isNaN(n))
+            : [];
+          if (!values.length) return;
+          const pulseWidth = parseDuration(p.args[2], this.tickIntervalMs * 0.5);
+          const totalDuration = p.args[3]
+            ? parseDuration(p.args[3], this.tickIntervalMs)
+            : this.tickIntervalMs;
+          const stepMs = totalDuration / values.length;
+          values.forEach((v, k) => {
+            const onDelay = k * stepMs;
+            const offDelay = onDelay + Math.max(1, pulseWidth);
+            if (k === 0) {
+              // fire first ON synchronously, schedule its OFF
+              this.emitOn(handle, v);
+              const tOff = setTimeout(() => {
+                this.rampTimers.delete(tOff);
+                this.emitOff(handle);
+              }, Math.max(1, pulseWidth));
+              this.rampTimers.add(tOff);
+            } else {
+              const tOn = setTimeout(() => {
+                this.rampTimers.delete(tOn);
+                this.emitOn(handle, v);
+              }, onDelay);
+              const tOff = setTimeout(() => {
+                this.rampTimers.delete(tOff);
+                this.emitOff(handle);
+              }, offDelay);
+              this.rampTimers.add(tOn);
+              this.rampTimers.add(tOff);
+            }
+          });
+        } else {
+          // pulse <handle> <ms>  — original single-value behaviour
+          const ms = parseDuration(arrArg || p.args[1], this.tickIntervalMs);
+          this.emitOn(handle, 1);
+          const t = setTimeout(() => {
+            this.rampTimers.delete(t);
+            this.emitOff(handle);
+          }, ms);
+          this.rampTimers.add(t);
+        }
         return;
       }
       case 'ramp': {
