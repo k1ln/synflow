@@ -57,6 +57,10 @@ public:
     // routed along eventEdges_ into the target nodes' inboxes (this block).
     void emitEvent(int fromNode, int fromPort, EventType type, double value, int sampleOffset) override;
 
+    // Inject an external event (e.g. host MIDI note) for the NEXT renderBlock,
+    // delivered to the target node's inbox at the given in-block sample offset.
+    void queueInputEvent(int targetNode, int targetPort, EventType type, double value, int sampleOffset);
+
 private:
     void topoSort();
 
@@ -68,7 +72,9 @@ private:
     std::vector<std::unique_ptr<INode>> nodes_;
     std::vector<Edge> edges_;
     std::vector<Edge> eventEdges_;
-    std::vector<std::vector<GraphEvent>> inbox_; // per-node inbound events (this block)
+    struct PendingInput { int node; GraphEvent ev; };
+    std::vector<PendingInput> pendingInput_;      // external (host) events for next block
+    std::vector<std::vector<GraphEvent>> inbox_;  // per-node inbound events (this block)
     std::vector<int> order_;                     // topological order of node indices
     int masterNode_ = -1;
     int masterPort_ = 0;

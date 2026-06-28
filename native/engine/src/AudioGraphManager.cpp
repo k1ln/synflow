@@ -25,6 +25,10 @@ void AudioGraphManager::emitEvent(int fromNode, int fromPort, EventType type, do
     }
 }
 
+void AudioGraphManager::queueInputEvent(int targetNode, int targetPort, EventType type, double value, int sampleOffset) {
+    pendingInput_.push_back({targetNode, {type, value, sampleOffset, targetPort}});
+}
+
 void AudioGraphManager::setMasterOutput(int node, int port) {
     masterNode_ = node;
     masterPort_ = port;
@@ -115,6 +119,12 @@ void AudioGraphManager::renderBlock(float* out, int frames, const float* input,
         for (auto& port : node->in)
             std::fill(port.begin(), port.begin() + frames, 0.0f);
     inbox_.assign(nodes_.size(), {});
+
+    // 1a. Deliver queued external (host MIDI) events into their target inboxes.
+    for (const auto& pi : pendingInput_)
+        if (pi.node >= 0 && pi.node < static_cast<int>(nodes_.size()))
+            inbox_[static_cast<size_t>(pi.node)].push_back(pi.ev);
+    pendingInput_.clear();
 
     // 1b. Inject external input (host/effect input) into the input node.
     if (input && inputNode_ >= 0) {

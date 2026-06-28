@@ -1,0 +1,123 @@
+{
+  "name": "Saw Lead",
+  "daw": {
+    "id": "saw-lead",
+    "category": "Synths",
+    "kind": "piano"
+  },
+  "nodes": [
+    {
+      "id": "osc.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "data": {
+        "frequency": 220,
+        "type": "sawtooth",
+        "isPitch": true,
+        "pitchParam": "frequency",
+        "options": [
+          {
+            "param": "type",
+            "label": "Wave",
+            "choices": ["sine", "square", "sawtooth", "triangle"]
+          }
+        ]
+      },
+      "position": {
+        "x": 100,
+        "y": 80
+      }
+    },
+    {
+      "id": "adsr.ADSRFlowNode",
+      "type": "ADSRFlowNode",
+      "isTrigger": true,
+      "data": {
+        "attackTime": 0.005,
+        "decayTime": 0.12,
+        "sustainLevel": 0.7,
+        "releaseTime": 0.14,
+        "maxTime": 10,
+        "minPercent": 0,
+        "maxPercent": 100,
+        "isTrigger": true,
+        "knobs": [
+          {
+            "param": "attackTime",
+            "label": "Attack",
+            "min": 0,
+            "max": 2,
+            "default": 0.005
+          },
+          {
+            "param": "decayTime",
+            "label": "Decay",
+            "min": 0,
+            "max": 2,
+            "default": 0.12
+          },
+          {
+            "param": "sustainLevel",
+            "label": "Sustain",
+            "min": 0,
+            "max": 1,
+            "default": 0.7
+          },
+          {
+            "param": "releaseTime",
+            "label": "Release",
+            "min": 0,
+            "max": 2,
+            "default": 0.14
+          }
+        ]
+      },
+      "position": {
+        "x": 100,
+        "y": 400
+      }
+    },
+    {
+      "id": "gain.GainFlowNode",
+      "type": "GainFlowNode",
+      "data": {
+        "gain": 1
+      },
+      "position": {
+        "x": 620,
+        "y": 80
+      }
+    },
+    {
+      "id": "master.MasterOutFlowNode",
+      "type": "MasterOutFlowNode",
+      "data": {},
+      "position": {
+        "x": 860,
+        "y": 80
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-adsr-gain",
+      "source": "adsr.ADSRFlowNode",
+      "target": "gain.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "gain"
+    },
+    {
+      "id": "e-osc-gain",
+      "source": "osc.OscillatorFlowNode",
+      "target": "gain.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-gain-master",
+      "source": "gain.GainFlowNode",
+      "target": "master.MasterOutFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "destination-input"
+    }
+  ]
+}
