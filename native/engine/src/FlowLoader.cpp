@@ -49,7 +49,8 @@ bool isEventEmitterType(const std::string& type) {
 } // namespace
 
 FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string& jsonText,
-                                    float sampleRate, int maxBlock) {
+                                    float sampleRate, int maxBlock,
+                                    const NodeFactoryFn& extraFactory) {
     FlowLoadResult result;
     const JsonValue root = JsonParser::parse(jsonText);
 
@@ -67,7 +68,8 @@ FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string&
             const std::string id = n.find("id") ? n.find("id")->asString() : "";
             const std::string type = n.find("type") ? n.find("type")->asString() : "";
 
-            std::unique_ptr<INode> node = makeNode(type);
+            std::unique_ptr<INode> node = extraFactory ? extraFactory(type) : nullptr;
+            if (!node) node = makeNode(type); // shell-provided nodes win, else built-in
             const bool supported = node != nullptr;
             if (!supported) { node = std::make_unique<PassthroughNode>(); result.unsupportedCount++; }
             node->id = id;

@@ -34,9 +34,31 @@ int main() {
             if (buf.getSample(0, i) != buf.getSample(1, i)) channelsMatch = false;
     }
 
-    const bool ok = finite && channelsMatch && peakDuringNote > 0.05 && peakAfterRelease < 1e-3;
-    std::printf("flow=\"%s\"  peakDuringNote=%.4f  peakAfterRelease=%.6f  stereoFanOut=%s  -> %s\n",
-                proc.currentFlowName().toRawUTF8(), peakDuringNote, peakAfterRelease,
-                channelsMatch ? "ok" : "MISMATCH", ok ? "PASS" : "FAIL");
+    const bool sawOk = finite && channelsMatch && peakDuringNote > 0.05 && peakAfterRelease < 1e-3;
+    std::printf("[saw-lead] peakDuringNote=%.4f  peakAfterRelease=%.6f  stereoFanOut=%s  -> %s\n",
+                peakDuringNote, peakAfterRelease, channelsMatch ? "ok" : "MISMATCH", sawOk ? "PASS" : "FAIL");
+
+    // Phase 2: a wasm-backed flow (Noise via wasmtime) renders inside the plugin.
+    const char* noiseFlow =
+        R"JSON({"name":"Noise","nodes":[
+          {"id":"n","type":"NoiseFlowNode","data":{"gain":0.5}},
+          {"id":"m","type":"MasterOutFlowNode","data":{"isOutput":true}}],
+         "edges":[{"source":"n","sourceHandle":"output","target":"m","targetHandle":"destination-input"}]})JSON";
+    proc.loadFlow(juce::String::fromUTF8(noiseFlow));
+    double noisePeak = 0;
+    bool noiseFinite = true;
+    for (int blk = 0; blk < 20; ++blk) {
+        juce::MidiBuffer midi;
+        buf.clear();
+        proc.processBlock(buf, midi);
+        const float pk = buf.getMagnitude(0, 0, BLK);
+        if (!std::isfinite(pk)) noiseFinite = false;
+        noisePeak = std::max<double>(noisePeak, pk);
+    }
+    const bool wasmOk = noiseFinite && noisePeak > 0.05;
+    std::printf("[wasm Noise] peak=%.4f  -> %s\n", noisePeak, wasmOk ? "PASS" : "FAIL");
+
+    const bool ok = sawOk && wasmOk;
+    std::printf("%s\n", ok ? "ALL PASS" : "FAILED");
     return ok ? 0 : 1;
 }

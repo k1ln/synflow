@@ -26,16 +26,29 @@ juce_add_plugin(Synflow
     PLUGIN_CODE Sflw
     FORMATS AU VST3 Standalone)
 
-# Embed the default flow (saw-lead) as a preset -> BinaryData::default_flow_json.
-juce_add_binary_data(SynflowResources SOURCES resources/default_flow.json)
+# Embed the default flow + the wasm DSP modules (the SAME public/*.wasm the
+# browser runs) -> BinaryData::default_flow_json / karplus_wasm / ladder_wasm /
+# noise_wasm.
+juce_add_binary_data(SynflowResources SOURCES
+    resources/default_flow.json
+    resources/karplus.wasm
+    resources/ladder.wasm
+    resources/noise.wasm)
+
+# wasmtime C API (fetched via ../third_party/fetch-wasmtime.sh) — only the plugin
+# shell links it; the engine core stays wasm-free.
+set(WASMTIME_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/wasmtime)
 
 target_sources(Synflow PRIVATE
     src/PluginProcessor.cpp
     src/PluginEditor.cpp
+    src/WasmNodeFactory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../engine/src/AudioGraphManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../engine/src/FlowLoader.cpp)
 
-target_include_directories(Synflow PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../engine/include)
+target_include_directories(Synflow PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../engine/include
+    ${WASMTIME_DIR}/include)
 
 target_compile_definitions(Synflow PUBLIC
     JUCE_WEB_BROWSER=0   # webview GUI lands in a later M5 step
@@ -45,11 +58,13 @@ target_compile_definitions(Synflow PUBLIC
 target_link_libraries(Synflow
     PRIVATE
         SynflowResources
+        ${WASMTIME_DIR}/lib/libwasmtime.dylib
         juce::juce_audio_utils
         juce::juce_dsp
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)
+set_target_properties(Synflow PROPERTIES BUILD_RPATH ${WASMTIME_DIR}/lib)
 
 # Headless render test: drives the AudioProcessor with MIDI, no DAW needed.
 juce_add_console_app(SynflowRenderTest PRODUCT_NAME "SynflowRenderTest")
@@ -57,18 +72,22 @@ target_sources(SynflowRenderTest PRIVATE
     test/render_test.cpp
     src/PluginProcessor.cpp
     src/PluginEditor.cpp
+    src/WasmNodeFactory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../engine/src/AudioGraphManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../engine/src/FlowLoader.cpp)
 target_include_directories(SynflowRenderTest PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../engine/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${WASMTIME_DIR}/include)
 target_compile_definitions(SynflowRenderTest PUBLIC
     JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
 target_link_libraries(SynflowRenderTest
     PRIVATE
         SynflowResources
+        ${WASMTIME_DIR}/lib/libwasmtime.dylib
         juce::juce_audio_utils
         juce::juce_dsp
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)
+set_target_properties(SynflowRenderTest PROPERTIES BUILD_RPATH ${WASMTIME_DIR}/lib)
