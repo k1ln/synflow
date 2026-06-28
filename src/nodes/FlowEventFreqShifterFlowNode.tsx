@@ -41,13 +41,21 @@ const FlowEventFreqShifterFlowNode: React.FC<
   const flowId = data.flowId ?? "default";
 
   useEffect(() => {
-    if (data.onChange instanceof Function) {
-      data.onChange({
-        ...data,
-        shift,
-        label,
-        shiftMidiMapping,
-      });
+    console.log("FlowEventFreqShifterFlowNode useEffect - checking for changes", {
+      shift,
+      label,
+      shiftMidiMapping,
+    });
+    if (shift !== data.shift || label !== data.label || shiftMidiMapping !== data.shiftMidiMapping) {
+      console.log("FlowEventFreqShifterFlowNode - Detected change, calling onChange")
+      if (data.onChange instanceof Function) {
+        data.onChange({
+          ...data,
+          shift,
+          label,
+          shiftMidiMapping,
+        });
+      }
     }
   }, [shift, label, shiftMidiMapping]);
 

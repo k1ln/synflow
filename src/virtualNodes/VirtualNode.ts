@@ -22,14 +22,13 @@ export class VirtualNode<U extends { id: string; data?: any }, T extends AudioNo
 
     subscribeParams() {
         this.eventBus.subscribe(`${this.node.id}.params.updateParams`, (data) => {
-            console.log("VirtualNode received params.updateParams for node:", this.node, "with data:", data)
+           
             this.handleUpdateParams(this.node, data)
         }
         );
     }
 
     handleUpdateParams(node: U, data: any) {
-        console.log("VirtualNode handleUpdateParams called with node:", node, "data:", data);
         if (node.data && typeof node.data === "object" && data) {
             const audioNode = this.audioNode;
 
