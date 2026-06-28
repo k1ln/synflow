@@ -20,6 +20,7 @@
 #include "synflow/nodes/FlowEventFreqShifterNode.h"
 #include "synflow/nodes/FunctionNode.h"
 #include "synflow/nodes/MidiFileNode.h"
+#include "synflow/nodes/OrchestratorNode.h"
 #include "synflow/nodes/ScriptSequencerNode.h"
 #include "synflow/Json.h"
 #include "synflow/nodes/ConstantNode.h"
@@ -816,6 +817,34 @@ int main() {
         }
         bool finite = true; for (float x : out) if (!std::isfinite(x)) finite = false;
         check(finite && rms(out, 8000, 8000) > 0.1, "unison flow: 3 detuned voices sum to an audible output at master");
+    }
+
+    // --- Test 27: Orchestrator advances a timeline row, firing events on crossing ---
+    {
+        // one event row: e1 @0s (dur .3, 440Hz), e2 @0.5s (dur .3, 660Hz). Clock 120bpm
+        // -> 1 beat = 0.5 s per tick. Beat0 (0->0.5s) fires e1; beat1 (0.5->1.0s) fires e2.
+        const char* rowsJson =
+            "[{\"id\":\"rowA\",\"type\":\"event\",\"events\":["
+            "{\"id\":\"e1\",\"startTime\":0,\"duration\":0.3,\"frequency\":440},"
+            "{\"id\":\"e2\",\"startTime\":0.5,\"duration\":0.3,\"frequency\":660}]}]";
+        AudioGraphManager g(RuntimeMode::Plugin);
+        auto clk = std::make_unique<ClockNode>(); clk->setNamedParam("bpm", 120.0);
+        const int ci = g.addNode(std::move(clk));
+        auto orch = std::make_unique<OrchestratorNode>();
+        orch->setNamedParam("duration", 10.0);
+        orch->setJsonParam("rows", JsonParser::parse(rowsJson));
+        const int oi = g.addNode(std::move(orch));
+        auto probe = std::make_unique<ProbeNode>(); ProbeNode* pr = probe.get();
+        const int pi = g.addNode(std::move(probe));
+        g.connectEvent(ci, 0, oi, 0);              // clock -> orchestrator
+        g.connectEvent(oi, 0, pi, 0, "frequency");  // row 0 -> probe
+        g.prepare(SR, BLOCK);
+        std::vector<float> out(BLOCK, 0.0f);
+        for (int i = 0; i < 96000; i += BLOCK) g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        bool ok = pr->values.size() >= 2 && std::fabs(pr->values[0] - 440.0) < 0.5 && std::fabs(pr->values[1] - 660.0) < 0.5;
+        check(ok, "Orchestrator fires row events with their frequencies (440, 660)");
+        check(pr->onSamples.size() >= 2 && pr->onSamples[0] == 0 && pr->onSamples[1] == 24000,
+              "Orchestrator fires on the beat the playhead crosses each event (0, 24000)");
     }
 
     std::printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "ALL PASS", failures, failures == 1 ? "" : "s");

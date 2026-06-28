@@ -39,6 +39,7 @@
 #include "synflow/nodes/FunctionNode.h"
 #include "synflow/nodes/GainNode.h"
 #include "synflow/nodes/MasterOutNode.h"
+#include "synflow/nodes/OrchestratorNode.h"
 #include "synflow/nodes/OscillatorNode.h"
 #include "synflow/nodes/PassthroughNode.h"
 #include "synflow/nodes/VocoderNode.h"
@@ -83,6 +84,7 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
     if (type == "InputNode" || type == "OutputNode") return std::make_unique<BoundaryNode>();
     if (type == "UnisonBeginFlowNode") return std::make_unique<UnisonBeginNode>();
     if (type == "UnisonEndFlowNode") return std::make_unique<BoundaryNode>(); // sums the voice clones
+    if (type == "OrchestratorFlowNode") return std::make_unique<OrchestratorNode>();
     if (type == "FlowEventFreqShifterFlowNode") return std::make_unique<FlowEventFreqShifterNode>();
     // Visualization taps / recording are transparent on the audio path (their audio
     // node is a passthrough gain; the scope/meter/record is a side-branch handled in
@@ -111,7 +113,7 @@ bool isEventEmitterType(const std::string& type) {
         || type == "BlockingSwitchFlowNode" || type == "MidiFileFlowNode"
         || type == "ScriptSequencerFlowNode" || type == "FunctionFlowNode"
         || type == "ArpeggiatorFlowNode" || type == "FlowEventFreqShifterFlowNode"
-        || type == "UnisonBeginFlowNode"
+        || type == "UnisonBeginFlowNode" || type == "OrchestratorFlowNode"
         || type == "EventFlowNode" || type == "LogFlowNode"
         || type == "CommandInFlowNode" || type == "CommandOutFlowNode"
         || type == "AutomationFlowNode";
