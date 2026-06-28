@@ -50,3 +50,25 @@ target_link_libraries(Synflow
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)
+
+# Headless render test: drives the AudioProcessor with MIDI, no DAW needed.
+juce_add_console_app(SynflowRenderTest PRODUCT_NAME "SynflowRenderTest")
+target_sources(SynflowRenderTest PRIVATE
+    test/render_test.cpp
+    src/PluginProcessor.cpp
+    src/PluginEditor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../engine/src/AudioGraphManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../engine/src/FlowLoader.cpp)
+target_include_directories(SynflowRenderTest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../engine/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_compile_definitions(SynflowRenderTest PUBLIC
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_link_libraries(SynflowRenderTest
+    PRIVATE
+        SynflowResources
+        juce::juce_audio_utils
+        juce::juce_dsp
+    PUBLIC
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags)
