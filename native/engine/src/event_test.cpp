@@ -690,6 +690,59 @@ int main() {
               "Function: comparison operators (main == 7) evaluate, not rejected");
     }
 
+    // --- Test 22: sub-flow (FlowNode) — events traverse the Input/Output boundary ---
+    {
+        // outer: Clock -> FlowNode.input-0 ; FlowNode.output-0 -> ADSR -> MasterOut
+        // inner: InputNode(0) -> OutputNode(0)   (pure passthrough boundary)
+        // If boundary event-transparency works, the clock gate reaches the ADSR and
+        // the master output is audible; if events were misrouted as audio, it's silent.
+        const char* flow =
+            "{\"nodes\":["
+            "{\"id\":\"clk\",\"type\":\"ClockFlowNode\",\"data\":{\"bpm\":120}},"
+            "{\"id\":\"fn\",\"type\":\"FlowNode\",\"data\":{\"embeddedFlow\":{"
+                "\"nodes\":[{\"id\":\"in\",\"type\":\"InputNode\",\"data\":{\"index\":0}},"
+                          "{\"id\":\"out\",\"type\":\"OutputNode\",\"data\":{\"index\":0}}],"
+                "\"edges\":[{\"source\":\"in\",\"target\":\"out\",\"targetHandle\":\"input\"}]}}},"
+            "{\"id\":\"adsr\",\"type\":\"ADSRFlowNode\",\"data\":{\"attackTime\":0.05,\"sustainTime\":0.1,\"sustainLevel\":0.8,\"releaseTime\":0.1}},"
+            "{\"id\":\"m\",\"type\":\"MasterOutFlowNode\",\"data\":{}}"
+            "],\"edges\":["
+            "{\"source\":\"clk\",\"target\":\"fn\",\"targetHandle\":\"input-0\"},"
+            "{\"source\":\"fn\",\"sourceHandle\":\"output-0\",\"target\":\"adsr\",\"targetHandle\":\"main-input\"},"
+            "{\"source\":\"adsr\",\"target\":\"m\",\"targetHandle\":\"main-input\"}]}";
+        AudioGraphManager g(RuntimeMode::Plugin);
+        FlowLoadResult res = FlowLoader::loadInto(g, flow, SR, BLOCK);
+        check(res.unsupportedCount == 0, "sub-flow: FlowNode + Input/Output boundary nodes all supported");
+        const int N = 24000;
+        std::vector<float> out(static_cast<size_t>(N), 0.0f);
+        for (int i = 0; i < N; i += BLOCK) g.renderBlock(out.data() + i, std::min(BLOCK, N - i), nullptr, 120.0, 0.0, true);
+        check(rms(out, 2000, 6000) > 0.05, "sub-flow: clock event traverses Input->Output to trigger the ADSR (audible)");
+    }
+
+    // --- Test 23: sub-flow — audio inside the sub-flow reaches the outer master ---
+    {
+        // inner: Oscillator(440) -> OutputNode(0) ; outer: FlowNode.output-0 -> MasterOut
+        const char* flow =
+            "{\"nodes\":["
+            "{\"id\":\"fn\",\"type\":\"FlowNode\",\"data\":{\"embeddedFlow\":{"
+                "\"nodes\":[{\"id\":\"osc\",\"type\":\"OscillatorFlowNode\",\"data\":{\"frequency\":440,\"type\":\"sine\"}},"
+                          "{\"id\":\"out\",\"type\":\"OutputNode\",\"data\":{\"index\":0}}],"
+                "\"edges\":[{\"source\":\"osc\",\"target\":\"out\",\"targetHandle\":\"input\"}]}}},"
+            "{\"id\":\"m\",\"type\":\"MasterOutFlowNode\",\"data\":{}}"
+            "],\"edges\":["
+            "{\"source\":\"fn\",\"sourceHandle\":\"output-0\",\"target\":\"m\",\"targetHandle\":\"main-input\"}]}";
+        AudioGraphManager g(RuntimeMode::Plugin);
+        FlowLoadResult res = FlowLoader::loadInto(g, flow, SR, BLOCK);
+        check(res.unsupportedCount == 0, "audio sub-flow: every node supported");
+        const int N = 24000;
+        std::vector<float> out(static_cast<size_t>(N), 0.0f);
+        for (int i = 0; i < N; i += BLOCK) g.renderBlock(out.data() + i, std::min(BLOCK, N - i), nullptr, 120.0, 0.0, true);
+        int crossings = 0;
+        for (int i = 1; i < N; ++i) if (out[static_cast<size_t>(i - 1)] <= 0 && out[static_cast<size_t>(i)] > 0) ++crossings;
+        // ~440 Hz over 0.5 s -> ~220 zero crossings; just confirm the sub-flow osc reaches master
+        check(rms(out, 1000, 4000) > 0.1 && crossings > 200 && crossings < 240,
+              "audio sub-flow: inner oscillator (440 Hz) reaches the outer master output");
+    }
+
     std::printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "ALL PASS", failures, failures == 1 ? "" : "s");
     return failures ? 1 : 0;
 }

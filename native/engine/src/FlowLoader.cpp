@@ -1,7 +1,12 @@
 #include "synflow/FlowLoader.h"
 
+#include <cctype>
+#include <cstdlib>
+#include <functional>
 #include <map>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "synflow/Json.h"
 #include "synflow/nodes/ADSRNode.h"
@@ -11,6 +16,7 @@
 #include "synflow/nodes/ArpeggiatorNode.h"
 #include "synflow/nodes/AutomationNode.h"
 #include "synflow/nodes/BlockingSwitchNode.h"
+#include "synflow/nodes/BoundaryNode.h"
 #include "synflow/nodes/ButtonNode.h"
 #include "synflow/nodes/ConstantNode.h"
 #include "synflow/nodes/MicNode.h"
@@ -71,6 +77,7 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
     if (type == "VocoderFlowNode") return std::make_unique<VocoderNode>();
     if (type == "ScriptSequencerFlowNode") return std::make_unique<ScriptSequencerNode>();
     if (type == "FunctionFlowNode") return std::make_unique<FunctionNode>();
+    if (type == "InputNode" || type == "OutputNode") return std::make_unique<BoundaryNode>();
     if (type == "MicFlowNode") return std::make_unique<MicNode>();
     if (type == "LogFlowNode" || type == "EventFlowNode" || type == "CommandInFlowNode" || type == "CommandOutFlowNode")
         return std::make_unique<EventForwardNode>();
@@ -97,6 +104,63 @@ bool isEventEmitterType(const std::string& type) {
         || type == "AutomationFlowNode";
 }
 
+// --- sub-flow flattening (Bucket D) -----------------------------------------
+// A FlowNode carries its child flow in data.embeddedFlow (the portable export
+// inlines sub-flows recursively). We flatten the whole tree into one node/edge
+// list: child nodes get id-prefixed, and the FlowNode's external input-X / output-X
+// edges are rewritten onto the child's InputNode / OutputNode (matched by index),
+// so the FlowNode itself disappears and the child renders inline in the parent graph.
+struct FlatNode { std::string id; const JsonValue* node; };
+struct FlatEdge { std::string src, dst, srcHandle, dstHandle; };
+using BoundaryMap = std::map<std::string, std::map<int, std::string>>; // flowId -> {index -> boundary node id}
+
+int trailingInt(const std::string& h) {
+    for (size_t i = 0; i < h.size(); ++i)
+        if (std::isdigit(static_cast<unsigned char>(h[i]))) return std::atoi(h.c_str() + i);
+    return 0;
+}
+
+void flattenFlow(const JsonValue& flow, const std::string& prefix,
+                 std::vector<FlatNode>& outNodes, std::vector<FlatEdge>& outEdges,
+                 BoundaryMap& flowInputs, BoundaryMap& flowOutputs) {
+    if (const JsonValue* nodes = flow.find("nodes"); nodes && nodes->isArray()) {
+        for (const JsonValue& n : nodes->arr) {
+            const std::string id = n.find("id") ? n.find("id")->asString() : "";
+            const std::string type = n.find("type") ? n.find("type")->asString() : "";
+            const std::string fullId = prefix + id;
+            const JsonValue* data = n.find("data");
+            const JsonValue* embedded = (type == "FlowNode" && data) ? data->find("embeddedFlow") : nullptr;
+            if (embedded && embedded->isObject()) {
+                const std::string innerPrefix = fullId + "/";
+                flattenFlow(*embedded, innerPrefix, outNodes, outEdges, flowInputs, flowOutputs);
+                if (const JsonValue* inner = embedded->find("nodes"); inner && inner->isArray()) {
+                    for (const JsonValue& m : inner->arr) {
+                        const std::string mt = m.find("type") ? m.find("type")->asString() : "";
+                        const JsonValue* md = m.find("data");
+                        const int idx = (md && md->find("index")) ? static_cast<int>(md->find("index")->asNumber(0)) : 0;
+                        const std::string mid = innerPrefix + (m.find("id") ? m.find("id")->asString() : "");
+                        if (mt == "InputNode") flowInputs[fullId][idx] = mid;
+                        else if (mt == "OutputNode") flowOutputs[fullId][idx] = mid;
+                    }
+                }
+                // the FlowNode itself is not emitted — it becomes pure routing
+            } else {
+                outNodes.push_back({fullId, &n});
+            }
+        }
+    }
+    if (const JsonValue* edges = flow.find("edges"); edges && edges->isArray()) {
+        for (const JsonValue& e : edges->arr) {
+            FlatEdge fe;
+            fe.src = prefix + (e.find("source") ? e.find("source")->asString() : "");
+            fe.dst = prefix + (e.find("target") ? e.find("target")->asString() : "");
+            fe.srcHandle = e.find("sourceHandle") ? e.find("sourceHandle")->asString() : "output";
+            fe.dstHandle = e.find("targetHandle") ? e.find("targetHandle")->asString() : "main-input";
+            outEdges.push_back(fe);
+        }
+    }
+}
+
 } // namespace
 
 FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string& jsonText,
@@ -109,15 +173,37 @@ FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string&
 
     std::map<std::string, int> idToIndex;
     std::map<int, INode*> indexToNode;
-    std::map<std::string, bool> idIsEmitter; // source id -> routes edges as events
+    std::map<std::string, std::string> typeById;       // flat id -> node type
+    std::map<std::string, std::string> incomingSrc;    // flat id -> first upstream source id
     int masterIndex = -1;
     int inputIndex = -1;
 
+    // Flatten the flow tree (expanding FlowNode sub-flows) into one node/edge list,
+    // rewriting FlowNode boundary edges onto the child Input/Output nodes.
+    std::vector<FlatNode> flatNodes;
+    std::vector<FlatEdge> flatEdges;
+    BoundaryMap flowInputs, flowOutputs;
+    flattenFlow(root, "", flatNodes, flatEdges, flowInputs, flowOutputs);
+    for (auto& e : flatEdges) {
+        if (auto o = flowOutputs.find(e.src); o != flowOutputs.end()) {
+            auto x = o->second.find(trailingInt(e.srcHandle));
+            e.src = (x != o->second.end()) ? x->second : std::string();
+            e.srcHandle = "output";
+        }
+        if (auto in = flowInputs.find(e.dst); in != flowInputs.end()) {
+            auto x = in->second.find(trailingInt(e.dstHandle));
+            e.dst = (x != in->second.end()) ? x->second : std::string();
+            e.dstHandle = "main-input";
+        }
+    }
+
     // --- nodes ---
-    if (const JsonValue* nodes = root.find("nodes"); nodes && nodes->isArray()) {
-        for (const JsonValue& n : nodes->arr) {
-            const std::string id = n.find("id") ? n.find("id")->asString() : "";
+    {
+        for (const FlatNode& fn : flatNodes) {
+            const JsonValue& n = *fn.node;
+            const std::string id = fn.id;
             const std::string type = n.find("type") ? n.find("type")->asString() : "";
+            typeById[id] = type;
 
             std::unique_ptr<INode> node = extraFactory ? extraFactory(type) : nullptr;
             if (!node) node = makeNode(type); // shell-provided nodes win, else built-in
@@ -164,7 +250,6 @@ FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string&
             const int index = graph.addNode(std::move(node));
             idToIndex[id] = index;
             indexToNode[index] = raw;
-            idIsEmitter[id] = isEventEmitterType(type);
             result.nodeIndexById[id] = index;
             if (type == "MasterOutFlowNode" || isOutputFlag) masterIndex = index;
             if (isInputFlag || type == "MicFlowNode") inputIndex = index;
@@ -189,26 +274,37 @@ FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string&
         }
     }
 
-    // --- edges ---  source/target are node ids; *Handle are port names.
-    if (const JsonValue* edges = root.find("edges"); edges && edges->isArray()) {
-        for (const JsonValue& e : edges->arr) {
-            const std::string src = e.find("source") ? e.find("source")->asString() : "";
-            const std::string dst = e.find("target") ? e.find("target")->asString() : "";
-            const std::string srcHandle = e.find("sourceHandle") ? e.find("sourceHandle")->asString() : "output";
-            const std::string dstHandle = e.find("targetHandle") ? e.find("targetHandle")->asString() : "main-input";
+    // --- edges --- (flattened: source/target are flat ids; *Handle are port names)
+    // First upstream source per node, so a boundary (Input/Output) node's outgoing
+    // edges inherit event-vs-audio from whatever actually feeds the boundary.
+    for (const FlatEdge& e : flatEdges)
+        if (!e.src.empty() && !e.dst.empty() && !incomingSrc.count(e.dst)) incomingSrc[e.dst] = e.src;
 
-            auto si = idToIndex.find(src);
-            auto di = idToIndex.find(dst);
-            if (si == idToIndex.end() || di == idToIndex.end()) continue; // dangling edge
+    // A source feeds the event queue if it's an event emitter — tracing through
+    // transparent Input/Output boundary nodes to the real producer.
+    std::function<bool(const std::string&, int)> isEventSource =
+        [&](const std::string& id, int depth) -> bool {
+            if (depth > 64) return false;
+            auto t = typeById.find(id);
+            if (t == typeById.end()) return false;
+            if (t->second == "InputNode" || t->second == "OutputNode") {
+                auto up = incomingSrc.find(id);
+                return up != incomingSrc.end() && isEventSource(up->second, depth + 1);
+            }
+            return isEventEmitterType(t->second);
+        };
 
-            const int fromPort = indexToNode[si->second]->outPortForHandle(srcHandle);
-            const int toPort = indexToNode[di->second]->inPortForHandle(dstHandle);
-            // Event-emitter sources (Clock/Sequencer) feed the event queue; all
-            // other edges carry audio/control signal summed into input ports.
-            if (idIsEmitter[src]) graph.connectEvent(si->second, fromPort, di->second, toPort, dstHandle);
-            else graph.connect(si->second, fromPort, di->second, toPort);
-            result.edgeCount++;
-        }
+    for (const FlatEdge& e : flatEdges) {
+        if (e.src.empty() || e.dst.empty()) continue; // unresolved boundary edge
+        auto si = idToIndex.find(e.src);
+        auto di = idToIndex.find(e.dst);
+        if (si == idToIndex.end() || di == idToIndex.end()) continue; // dangling edge
+
+        const int fromPort = indexToNode[si->second]->outPortForHandle(e.srcHandle);
+        const int toPort = indexToNode[di->second]->inPortForHandle(e.dstHandle);
+        if (isEventSource(e.src, 0)) graph.connectEvent(si->second, fromPort, di->second, toPort, e.dstHandle);
+        else graph.connect(si->second, fromPort, di->second, toPort);
+        result.edgeCount++;
     }
 
     if (masterIndex >= 0) graph.setMasterOutput(masterIndex, 0);
