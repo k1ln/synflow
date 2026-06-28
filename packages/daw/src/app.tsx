@@ -9,7 +9,7 @@ import { defaultProject, newNoteId, uid, type Instrument, type Project, type Tra
 import { midiToFreq } from './model/pitch';
 import { makeBlip, makeSynthVoice, type Flow } from './synflow/instruments';
 import { findEntry, cloneFlow, type LibraryEntry } from './synflow/library';
-import { openInSynflow } from './synflow/editorBridge';
+import { SynflowEditor } from './ui/SynflowEditor';
 import { TopBar, type ViewId } from './ui/TopBar';
 import { Browser } from './ui/Browser';
 import { Arrange } from './ui/Arrange';
@@ -30,6 +30,7 @@ export function App() {
   const [armed, setArmed] = useState(false);
   const [selTrack, setSelTrack] = useState<string>(() => defaultProject().tracks[0]?.id ?? '');
   const [openPlugin, setOpenPlugin] = useState<string | null>(null);
+  const [editor, setEditor] = useState<{ flow: Flow; title: string; onSaved: (f: Flow) => void } | null>(null);
 
   const ctxRef = useRef<AudioContext | null>(null);
   const transportRef = useRef<Transport | null>(null);
@@ -242,11 +243,12 @@ export function App() {
     void mixerRef.current?.get(trackId)?.replaceFx(fxIndex, def?.name ?? 'FX', cloneFlow(flow));
   };
 
-  // "Edit in Synflow" — open the flow in the editor window; reload on save.
-  const editInstrument = (inst: Instrument) => openInSynflow(inst.flow, (f) => reloadInstrument(inst.id, f));
+  // "Edit in Synflow" — open the flow in the embedded editor panel; reload on save.
+  const editInstrument = (inst: Instrument) =>
+    setEditor({ flow: inst.flow, title: inst.name, onSaved: (f) => reloadInstrument(inst.id, f) });
   const editFx = (track: Track, fxIndex: number) => {
     const flow = track.fxFlows?.[fxIndex] ?? findEntry(track.fx[fxIndex])?.flow;
-    if (flow) openInSynflow(flow, (f) => reloadFx(track.id, fxIndex, f));
+    if (flow) setEditor({ flow, title: findEntry(track.fx[fxIndex])?.name ?? 'FX', onSaved: (f) => reloadFx(track.id, fxIndex, f) });
   };
 
   const addSampleInstrument = useCallback((name: string, flow: Flow) => {
@@ -338,6 +340,9 @@ export function App() {
         {openInst && <PluginPanel instrument={openInst} onClose={() => setOpenPlugin(null)} onParam={pluginParam(openInst)} onEdit={() => editInstrument(openInst)} />}
       </div>
       {samplerTrack && <SamplerEditor onCreate={addSampleInstrument} onClose={() => setSamplerTrack(null)} />}
+      {editor && (
+        <SynflowEditor flow={editor.flow} title={editor.title} onSaved={editor.onSaved} onClose={() => setEditor(null)} />
+      )}
     </div>
   );
 }

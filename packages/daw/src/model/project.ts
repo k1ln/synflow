@@ -1,5 +1,13 @@
 import type { Flow } from '../synflow/instruments';
 import { makeKick, makeBlip, makeBasicSynth, makeSynthVoice } from '../synflow/instruments';
+import { findEntry, cloneFlow } from '../synflow/library';
+
+// Prefer the editable library flow (it carries node positions so it opens cleanly
+// in the synflow editor); fall back to the code factory if the library is unavailable.
+const libFlow = (id: string, fallback: () => Flow): Flow => {
+  const e = findEntry(id);
+  return cloneFlow(e ? e.flow : fallback());
+};
 
 /** A note in a piano-roll instrument; start/length are in grid steps. */
 export interface PianoNote {
@@ -74,16 +82,16 @@ export function defaultProject(): Project {
       {
         id: 'drums', name: 'Drums', volume: 0.8, fx: [], automation: [],
         instruments: [
-          { id: 'kick', name: 'Kick', kind: 'step', flow: makeKick(), steps: steps(total, [0, 4, 8, 12]) },
-          { id: 'snare', name: 'Snare', kind: 'step', flow: makeBasicSynth({ frequency: 180, type: 'triangle', decay: 0.12 }), steps: steps(total, [4, 12]) },
-          { id: 'hat', name: 'Hat', kind: 'step', flow: makeBlip(1200), steps: steps(total, [2, 6, 10, 14]) },
+          { id: 'kick', name: 'Kick', kind: 'step', flow: libFlow('kick', makeKick), steps: steps(total, [0, 4, 8, 12]) },
+          { id: 'snare', name: 'Snare', kind: 'step', flow: libFlow('snare', () => makeBasicSynth({ frequency: 180, type: 'triangle', decay: 0.12 })), steps: steps(total, [4, 12]) },
+          { id: 'hat', name: 'Hat', kind: 'step', flow: libFlow('hat', () => makeBlip(1200)), steps: steps(total, [2, 6, 10, 14]) },
         ],
       },
       {
         id: 'synth', name: 'Synth', volume: 0.8, fx: ['lowpass'],
         instruments: [
           {
-            id: 'lead', name: 'Lead', kind: 'piano', flow: makeSynthVoice('sawtooth'), steps: [], voices: 6,
+            id: 'lead', name: 'Lead', kind: 'piano', flow: libFlow('saw-lead', () => makeSynthVoice('sawtooth')), steps: [], voices: 6,
             notes: [
               { id: 1, midi: 60, start: 0, length: 4 },
               { id: 2, midi: 63, start: 4, length: 4 },
