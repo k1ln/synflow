@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
     }
 
     std::vector<float> out(static_cast<size_t>(frames), 0.0f);
-    graph.renderBlock(out.data(), frames, 120.0, 0.0, true);
+    graph.renderBlock(out.data(), frames, nullptr, 120.0, 0.0, true);
 
     double sum = 0.0;
     for (float s : out) sum += static_cast<double>(s) * s;

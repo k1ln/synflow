@@ -15,6 +15,7 @@ struct FlowLoadResult {
     int nodeCount = 0;
     int edgeCount = 0;
     int unsupportedCount = 0; // node types that fell back to a stub
+    bool hasInput = false;    // an isInput node was found (effect / host input)
     std::string name;
 };
 

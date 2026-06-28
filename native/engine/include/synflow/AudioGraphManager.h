@@ -32,13 +32,18 @@ public:
     int addNode(std::unique_ptr<INode> node);
     void connect(int from, int fromPort, int to, int toPort);
     void setMasterOutput(int node, int port);
+    // The node that receives external audio (effect's isInput gain, or the
+    // plugin's host input). -1 = none (pure source graph).
+    void setInputNode(int node, int port);
 
     void prepare(float sampleRate, int maxBlock);
 
-    // Render `frames` mono samples into out. Transport args are ignored in
-    // Standalone (engine clock used) and supplied by the host in Plugin mode.
-    void renderBlock(float* out, int frames, double bpm = 120.0,
-                     double ppqPosition = 0.0, bool isPlaying = false);
+    // Render `frames` mono samples into out. `input` (optional) is external audio
+    // fed into the input node (host input / effect input); nullptr for sources.
+    // Transport args are ignored in Standalone (engine clock) and supplied by the
+    // host in Plugin mode.
+    void renderBlock(float* out, int frames, const float* input = nullptr,
+                     double bpm = 120.0, double ppqPosition = 0.0, bool isPlaying = false);
 
     RuntimeMode mode() const { return mode_; }
     INode* node(int i) { return nodes_.at(static_cast<size_t>(i)).get(); }
@@ -57,6 +62,8 @@ private:
     std::vector<int> order_; // topological order of node indices
     int masterNode_ = -1;
     int masterPort_ = 0;
+    int inputNode_ = -1;
+    int inputPort_ = 0;
 };
 
 } // namespace synflow

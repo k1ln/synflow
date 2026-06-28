@@ -25,7 +25,7 @@ static float renderRms(RuntimeMode mode, float gain) {
     g.prepare(48000.0f, frames);
 
     std::vector<float> out(static_cast<size_t>(frames), 0.0f);
-    g.renderBlock(out.data(), frames, /*bpm*/ 120.0, /*ppq*/ 0.0, /*playing*/ true);
+    g.renderBlock(out.data(), frames, /*input*/ nullptr, /*bpm*/ 120.0, /*ppq*/ 0.0, /*playing*/ true);
 
     double sum = 0.0;
     for (float s : out) sum += static_cast<double>(s) * s;

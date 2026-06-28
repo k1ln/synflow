@@ -19,6 +19,11 @@ void AudioGraphManager::setMasterOutput(int node, int port) {
     masterPort_ = port;
 }
 
+void AudioGraphManager::setInputNode(int node, int port) {
+    inputNode_ = node;
+    inputPort_ = port;
+}
+
 void AudioGraphManager::prepare(float sampleRate, int maxBlock) {
     sampleRate_ = sampleRate;
     maxBlock_ = maxBlock;
@@ -58,8 +63,8 @@ void AudioGraphManager::topoSort() {
             order_.push_back(i);
 }
 
-void AudioGraphManager::renderBlock(float* out, int frames, double bpm,
-                                    double ppqPosition, bool isPlaying) {
+void AudioGraphManager::renderBlock(float* out, int frames, const float* input,
+                                    double bpm, double ppqPosition, bool isPlaying) {
     ProcessContext ctx;
     ctx.sampleRate = sampleRate_;
     ctx.frames = frames;
@@ -81,6 +86,12 @@ void AudioGraphManager::renderBlock(float* out, int frames, double bpm,
     for (auto& node : nodes_)
         for (auto& port : node->in)
             std::fill(port.begin(), port.begin() + frames, 0.0f);
+
+    // 1b. Inject external input (host/effect input) into the input node.
+    if (input && inputNode_ >= 0) {
+        Buffer& dst = nodes_[static_cast<size_t>(inputNode_)]->in[static_cast<size_t>(inputPort_)];
+        for (int i = 0; i < frames; ++i) dst[static_cast<size_t>(i)] += input[i];
+    }
 
     // 2. Process in topo order, summing upstream outputs into inputs first.
     for (int idx : order_) {

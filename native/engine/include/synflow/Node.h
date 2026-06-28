@@ -55,6 +55,9 @@ public:
     // "frequency", "gain"). Default ignores unknown names.
     virtual void setNamedParam(const std::string& /*name*/, double /*value*/) {}
 
+    // Apply a string-valued param from node.data (e.g. "filterType":"lowpass").
+    virtual void setNamedParamStr(const std::string& /*name*/, const std::string& /*value*/) {}
+
     // Resolve a flow-JSON handle name ("output", "main-input", "frequency",
     // "gain", …) to a port index. Defaults to port 0; nodes override for named
     // modulation/param ports.

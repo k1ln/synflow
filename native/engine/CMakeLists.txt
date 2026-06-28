@@ -17,3 +17,6 @@ target_link_libraries(engine_demo PRIVATE synflow_engine)
 
 add_executable(flow_demo src/flow_demo.cpp)
 target_link_libraries(flow_demo PRIVATE synflow_engine)
+
+add_executable(builtin_test src/builtin_test.cpp)
+target_link_libraries(builtin_test PRIVATE synflow_engine)

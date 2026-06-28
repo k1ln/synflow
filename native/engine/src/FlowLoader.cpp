@@ -4,6 +4,8 @@
 #include <memory>
 
 #include "synflow/Json.h"
+#include "synflow/nodes/BiquadFilterNode.h"
+#include "synflow/nodes/DelayNode.h"
 #include "synflow/nodes/GainNode.h"
 #include "synflow/nodes/MasterOutNode.h"
 #include "synflow/nodes/OscillatorNode.h"
@@ -19,6 +21,8 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
     if (type == "OscillatorFlowNode") return std::make_unique<OscillatorNode>();
     if (type == "GainFlowNode") return std::make_unique<GainNode>();
     if (type == "MasterOutFlowNode") return std::make_unique<MasterOutNode>();
+    if (type == "BiquadFilterFlowNode") return std::make_unique<BiquadFilterNode>();
+    if (type == "DelayFlowNode") return std::make_unique<DelayNode>();
     return nullptr;
 }
 
@@ -34,6 +38,7 @@ FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string&
     std::map<std::string, int> idToIndex;
     std::map<int, INode*> indexToNode;
     int masterIndex = -1;
+    int inputIndex = -1;
 
     // --- nodes ---
     if (const JsonValue* nodes = root.find("nodes"); nodes && nodes->isArray()) {
@@ -46,12 +51,15 @@ FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string&
             if (!supported) { node = std::make_unique<PassthroughNode>(); result.unsupportedCount++; }
             node->id = id;
 
-            // apply scalar params + detect master from node.data
+            // apply scalar + string params, detect input/output, from node.data
             bool isOutputFlag = false;
+            bool isInputFlag = false;
             if (const JsonValue* data = n.find("data"); data && data->isObject()) {
                 for (const auto& [key, val] : data->obj) {
                     if (val.isNumber()) node->setNamedParam(key, val.num);
+                    else if (val.type == JsonValue::Type::String) node->setNamedParamStr(key, val.str);
                     if (key == "isOutput" && val.asBool()) isOutputFlag = true;
+                    if (key == "isInput" && val.asBool()) isInputFlag = true;
                 }
             }
 
@@ -60,6 +68,7 @@ FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string&
             idToIndex[id] = index;
             indexToNode[index] = raw;
             if (type == "MasterOutFlowNode" || isOutputFlag) masterIndex = index;
+            if (isInputFlag) inputIndex = index;
             result.nodeCount++;
         }
     }
@@ -84,6 +93,7 @@ FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string&
     }
 
     if (masterIndex >= 0) graph.setMasterOutput(masterIndex, 0);
+    if (inputIndex >= 0) { graph.setInputNode(inputIndex, 0); result.hasInput = true; }
     graph.prepare(sampleRate, maxBlock);
     return result;
 }
