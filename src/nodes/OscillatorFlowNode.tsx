@@ -568,7 +568,7 @@ const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
             {(['pulse', 'wavetable'] as CustomMode[]).map(m => (
               <button key={m}
                 onClick={() => setCustomMode(m)}
-                style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, cursor: 'pointer', border: '1px solid #444', background: customMode === m ? '#fff' : '#222', color: customMode === m ? '#000' : '#888', textAlign: 'center' }}
+                style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, cursor: 'pointer', border: customMode === m ? '1px solid #4ade80' : '1px solid #444', background: '#222', color: customMode === m ? '#4ade80' : '#888', textAlign: 'center' }}
               >{m}</button>
             ))}
           </div>
