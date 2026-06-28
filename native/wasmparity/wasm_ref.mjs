@@ -74,6 +74,21 @@ function refSvf() {
   return out;
 }
 
+// --- envgen: gated envelope SIGNAL source (EnvGenProcessor.js) ---
+function refEnvGen() {
+  const e = load('envgen.wasm');
+  const state = e.env_new();
+  const pOut = e.alloc_f32(BLOCK);
+  e.env_gate_on(state); // gate on before block 0
+  const out = new Float32Array(N);
+  for (let i = 0; i < N; i += BLOCK) {
+    e.env_process(state, BLOCK, SR, pOut, 0.01, 0.2, 0.5, 0.3, 1.0, 0.0); // a,d,s,r,amount,bias
+    const m = new Float32Array(e.memory.buffer);
+    out.set(m.subarray(pOut >> 2, (pOut >> 2) + BLOCK), i);
+  }
+  return out;
+}
+
 // --- noise: source (NoiseGeneratorProcessor.js), fixed seed, white, gain 1 ---
 function refNoise() {
   const e = load('noise-generator.wasm');
@@ -88,7 +103,7 @@ function refNoise() {
   return out;
 }
 
-for (const [name, fn] of [['karplus', refKarplus], ['ladder', refLadder], ['noise', refNoise], ['svf', refSvf]]) {
+for (const [name, fn] of [['karplus', refKarplus], ['ladder', refLadder], ['noise', refNoise], ['svf', refSvf], ['envgen', refEnvGen]]) {
   write(`ref_${name}.f32`, fn());
   console.log(`ref ${name}: ${N} samples`);
 }

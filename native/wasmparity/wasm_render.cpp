@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "synflow/AudioGraphManager.h"
+#include "synflow/nodes/WasmEnvGenNode.h"
 #include "synflow/nodes/WasmKarplusNode.h"
 #include "synflow/nodes/WasmLadderNode.h"
 #include "synflow/nodes/WasmNoiseNode.h"
@@ -66,6 +67,7 @@ int main() {
             sv->setNamedParam("mix", 1.0);
         }
         // noise uses its default fixed seed / white / gain 1
+        if (dynamic_cast<WasmEnvGenNode*>(raw)) g.queueInputEvent(idx, 0, EventType::NoteOn, 1.0, 0); // gate on
 
         std::vector<float> out(static_cast<size_t>(N), 0.0f);
         for (int i = 0; i < N; i += BLOCK)
@@ -78,5 +80,6 @@ int main() {
     run("ladder", std::make_unique<WasmLadderNode>(readBin(pub + "ladder.wasm")), true);
     run("noise", std::make_unique<WasmNoiseNode>(readBin(pub + "noise-generator.wasm")), false);
     run("svf", std::make_unique<WasmSvfDriveNode>(readBin(pub + "svf-drive.wasm")), true);
+    run("envgen", std::make_unique<WasmEnvGenNode>(readBin(pub + "envgen.wasm")), false);
     return 0;
 }

@@ -10,7 +10,7 @@ const readF32 = (name) => {
 };
 const rms = (v) => { let s = 0; for (const x of v) s += x * x; return Math.sqrt(s / v.length); };
 
-const modules = ['karplus', 'ladder', 'noise', 'svf'];
+const modules = ['karplus', 'ladder', 'noise', 'svf', 'envgen'];
 console.log('module'.padEnd(16), 'maxDiff'.padStart(11), 'errVsRef'.padStart(11), '  verdict');
 console.log('-'.repeat(52));
 for (const m of modules) {
