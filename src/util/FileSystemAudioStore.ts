@@ -448,6 +448,7 @@ export interface FlowData {
   edges: any[];
   updated_at?: string;
   folder_path?: string; // relative folder path inside flows directory ("" for root)
+  customUi?: string;     // optional custom HTML faceplate for the Live/DAW instrument UI
 }
 
 // Ensure flows subdirectory exists (optionally nested folder path)
@@ -479,6 +480,7 @@ export async function saveFlowToDisk(root: FileSystemDirectoryHandle, flowData: 
       edges: flowData.edges,
       folder_path: flowData.folder_path || '',
       updated_at: flowData.updated_at || new Date().toISOString(),
+      ...(flowData.customUi ? { customUi: flowData.customUi } : {}),
     }, null, 2);
     
     await writable.write(content);

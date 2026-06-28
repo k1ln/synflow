@@ -15,10 +15,10 @@ function humanize(type: string){
 
 // ── Category definitions (mirroring the presentation layout) ──────────────
 
-const AUDIO_SOURCES = ['OscillatorFlowNode','AudioWorkletOscillatorFlowNode','NoiseFlowNode','SampleFlowNode','MicFlowNode','AudioWorkletFlowNode'];
+const AUDIO_SOURCES = ['OscillatorFlowNode','AudioWorkletOscillatorFlowNode','KarplusFlowNode','FMFlowNode','WavetableFlowNode','NoiseFlowNode','SampleFlowNode','MicFlowNode','AudioWorkletFlowNode'];
 const AUDIO_DESTINATIONS = ['MasterOutFlowNode','RecordingFlowNode','OscilloscopeFlowNode','AnalyzerNodeGPT'];
-const AUDIO_TRANSFORMING = ['GainFlowNode','BiquadFilterFlowNode','IIRFilterFlowNode','DelayFlowNode','ReverbFlowNode','DistortionFlowNode','DynamicCompressorFlowNode','EqualizerFlowNode','VocoderFlowNode','AudioSignalFreqShifterFlowNode','UnisonBeginFlowNode','UnisonEndFlowNode'];
-const EVENT_NODES = ['ADSRFlowNode','AutomationFlowNode','ClockFlowNode','MidiKnobFlowNode','FrequencyFlowNode','ConstantFlowNode','EventFlowNode','FlowEventFreqShifterFlowNode'];
+const AUDIO_TRANSFORMING = ['GainFlowNode','BiquadFilterFlowNode','SvfDriveFilterFlowNode','LadderFilterFlowNode','RingModFlowNode','ChorusFlowNode','GranularFlowNode','IIRFilterFlowNode','DelayFlowNode','ReverbFlowNode','DistortionFlowNode','DynamicCompressorFlowNode','EqualizerFlowNode','VocoderFlowNode','AudioSignalFreqShifterFlowNode','UnisonBeginFlowNode','UnisonEndFlowNode'];
+const EVENT_NODES = ['ADSRFlowNode','EnvGenFlowNode','AutomationFlowNode','ClockFlowNode','MidiKnobFlowNode','FrequencyFlowNode','ConstantFlowNode','EventFlowNode','FlowEventFreqShifterFlowNode'];
 const MIDI_SEQ = ['MidiFlowNote','MidiButtonFlowNode','MidiFileFlowNode','SequencerFlowNode','SequencerFrequencyFlowNode','ArpeggiatorFlowNode','OrchestratorFlowNode','ScriptSequencerFlowNode'];
 const LOGIC = ['FunctionFlowNode','SwitchFlowNode','BlockingSwitchFlowNode','SpeedDividerFlowNode','FlowNode','InputNode','OutputNode','ButtonFlowNode','OnOffButtonFlowNode','MouseTriggerButton','LogFlowNode','WebRTCInputFlowNode','WebRTCOutputFlowNode'];
 

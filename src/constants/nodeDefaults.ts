@@ -17,6 +17,15 @@ import * as AudioWorkletOscillatorFlowNode from '../nodes/AudioWorkletOscillator
 import * as GainFlowNode from '../nodes/GainFlowNode';
 import * as DelayFlowNode from '../nodes/DelayFlowNode';
 import * as BiquadFilterFlowNode from '../nodes/BiquadFilterFlowNode';
+import * as SvfDriveFilterFlowNode from '../nodes/SvfDriveFilterFlowNode';
+import * as LadderFilterFlowNode from '../nodes/LadderFilterFlowNode';
+import * as KarplusFlowNode from '../nodes/KarplusFlowNode';
+import * as FMFlowNode from '../nodes/FMFlowNode';
+import * as WavetableFlowNode from '../nodes/WavetableFlowNode';
+import * as GranularFlowNode from '../nodes/GranularFlowNode';
+import * as EnvGenFlowNode from '../nodes/EnvGenFlowNode';
+import * as RingModFlowNode from '../nodes/RingModFlowNode';
+import * as ChorusFlowNode from '../nodes/ChorusFlowNode';
 import * as DynamicCompressorFlowNode from '../nodes/DynamicCompressorFlowNode';
 import * as IIRFilterFlowNode from '../nodes/IIRFilterFlowNode';
 import * as DistortionFlowNode from '../nodes/DistortionFlowNode';
@@ -53,6 +62,15 @@ export const nodeDefaults: Record<string, Record<string, any>> = {
   GainFlowNode: GainFlowNode.defaultData,
   DelayFlowNode: DelayFlowNode.defaultData,
   BiquadFilterFlowNode: BiquadFilterFlowNode.defaultData,
+  SvfDriveFilterFlowNode: SvfDriveFilterFlowNode.defaultData,
+  LadderFilterFlowNode: LadderFilterFlowNode.defaultData,
+  KarplusFlowNode: KarplusFlowNode.defaultData,
+  FMFlowNode: FMFlowNode.defaultData,
+  WavetableFlowNode: WavetableFlowNode.defaultData,
+  GranularFlowNode: GranularFlowNode.defaultData,
+  EnvGenFlowNode: EnvGenFlowNode.defaultData,
+  RingModFlowNode: RingModFlowNode.defaultData,
+  ChorusFlowNode: ChorusFlowNode.defaultData,
   DynamicCompressorFlowNode: DynamicCompressorFlowNode.defaultData,
   IIRFilterFlowNode: IIRFilterFlowNode.defaultData,
   DistortionFlowNode: DistortionFlowNode.defaultData,

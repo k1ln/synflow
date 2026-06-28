@@ -29,6 +29,15 @@ import { VirtualGainNode } from "./virtualNodes/VirtualGainNode";
 import { VirtualDelayNode } from "./virtualNodes/VirtualDelayNode";
 import VirtualReverbNode from "./virtualNodes/VirtualReverbNode";
 import VirtualBiquadFilterNode from "./virtualNodes/VirtualBiquadFilterNode";
+import VirtualSvfDriveFilterNode from "./virtualNodes/VirtualSvfDriveFilterNode";
+import VirtualLadderFilterNode from "./virtualNodes/VirtualLadderFilterNode";
+import VirtualKarplusNode from "./virtualNodes/VirtualKarplusNode";
+import VirtualFMNode from "./virtualNodes/VirtualFMNode";
+import VirtualWavetableNode from "./virtualNodes/VirtualWavetableNode";
+import VirtualGranularNode from "./virtualNodes/VirtualGranularNode";
+import VirtualEnvGenNode from "./virtualNodes/VirtualEnvGenNode";
+import VirtualRingModNode from "./virtualNodes/VirtualRingModNode";
+import VirtualChorusNode from "./virtualNodes/VirtualChorusNode";
 import VirtualIIRFilterNode from "./virtualNodes/VirtualIIRFilterNode";
 import VirtualDynamicCompressorNode from "./virtualNodes/VirtualDynamicCompressorNode";
 import VirtualDistortionNode from "./virtualNodes/VirtualDistortionNode";
@@ -190,6 +199,96 @@ export async function addVirtualNode(manager: any, node: CustomNode, parentNode:
                 nodeData.detune ?? 0
             );
             manager.virtualNodes.set(node.id, virtualBiquadFilterNode);
+            break;
+        }
+        case "SvfDriveFilterFlowNode": {
+            const virtualSvfDriveFilterNode = new VirtualSvfDriveFilterNode(
+                manager.audioContext,
+                manager.eventBus,
+                node
+            );
+            virtualSvfDriveFilterNode.render(nodeData);
+            manager.virtualNodes.set(node.id, virtualSvfDriveFilterNode);
+            break;
+        }
+        case "LadderFilterFlowNode": {
+            const virtualLadderFilterNode = new VirtualLadderFilterNode(
+                manager.audioContext,
+                manager.eventBus,
+                node
+            );
+            virtualLadderFilterNode.render(nodeData);
+            manager.virtualNodes.set(node.id, virtualLadderFilterNode);
+            break;
+        }
+        case "KarplusFlowNode": {
+            const virtualKarplusNode = new VirtualKarplusNode(
+                manager.audioContext,
+                manager.eventBus,
+                node
+            );
+            virtualKarplusNode.render(nodeData);
+            manager.virtualNodes.set(node.id, virtualKarplusNode);
+            break;
+        }
+        case "FMFlowNode": {
+            const virtualFMNode = new VirtualFMNode(
+                manager.audioContext,
+                manager.eventBus,
+                node
+            );
+            virtualFMNode.render(nodeData);
+            manager.virtualNodes.set(node.id, virtualFMNode);
+            break;
+        }
+        case "WavetableFlowNode": {
+            const virtualWavetableNode = new VirtualWavetableNode(
+                manager.audioContext,
+                manager.eventBus,
+                node
+            );
+            virtualWavetableNode.render(nodeData);
+            manager.virtualNodes.set(node.id, virtualWavetableNode);
+            break;
+        }
+        case "GranularFlowNode": {
+            const virtualGranularNode = new VirtualGranularNode(
+                manager.audioContext,
+                manager.eventBus,
+                node
+            );
+            virtualGranularNode.render(nodeData);
+            manager.virtualNodes.set(node.id, virtualGranularNode);
+            break;
+        }
+        case "EnvGenFlowNode": {
+            const virtualEnvGenNode = new VirtualEnvGenNode(
+                manager.audioContext,
+                manager.eventBus,
+                node
+            );
+            virtualEnvGenNode.render(nodeData);
+            manager.virtualNodes.set(node.id, virtualEnvGenNode);
+            break;
+        }
+        case "RingModFlowNode": {
+            const virtualRingModNode = new VirtualRingModNode(
+                manager.audioContext,
+                manager.eventBus,
+                node
+            );
+            virtualRingModNode.render();
+            manager.virtualNodes.set(node.id, virtualRingModNode);
+            break;
+        }
+        case "ChorusFlowNode": {
+            const virtualChorusNode = new VirtualChorusNode(
+                manager.audioContext,
+                manager.eventBus,
+                node
+            );
+            virtualChorusNode.render(nodeData);
+            manager.virtualNodes.set(node.id, virtualChorusNode);
             break;
         }
         case "IIRFilterFlowNode": {

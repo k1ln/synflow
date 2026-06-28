@@ -95,6 +95,7 @@ body {
 .t-btn { width: 32px; height: 32px; border-radius: 6px; display: grid; place-items: center; background: transparent; border: none; cursor: pointer; color: var(--ink-1); transition: all 160ms var(--ease); }
 .t-btn:hover { box-shadow: var(--glow-accent); }
 .t-btn.play.on { color: var(--accent-neon); box-shadow: 0 0 16px 5px var(--accent-glow-hot); }
+.t-btn.metro.on { color: var(--accent); box-shadow: var(--glow-accent); }
 .t-btn.rec { color: var(--rec); }
 .t-btn.rec.on { background: var(--rec); color: #fff; box-shadow: 0 0 12px 3px rgba(255,59,59,.6); }
 .t-sep { width: 1px; height: 22px; background: var(--hairline); }
@@ -1023,6 +1024,27 @@ select:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border-
 .mx-tracks .fxdev { max-width: 100%; }
 .mx-tracks .fxdev-knobs { flex-wrap: wrap; }
 .mx-master .fxbar { padding: 2px 4px; }
+
+/* ── Custom instrument UI (Live view) + its editor ─────────────────────────── */
+.lp-uimode { display: inline-flex; gap: 2px; background: var(--bg-inset); border: 1px solid var(--border-strong); border-radius: 7px; padding: 2px; margin-left: auto; }
+.lp-uitab { padding: 4px 11px; font-size: 11px; font-weight: 600; border: none; border-radius: 5px; cursor: pointer; background: transparent; color: var(--ink-2); }
+.lp-uitab.on { background: color-mix(in srgb, var(--cat-mod) 18%, transparent); color: var(--cat-mod); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cat-mod) 40%, transparent); }
+.lp-uimode + .pp-edit { margin-left: 8px; }
+.lp-custom { padding: 6px 2px; }
+
+.cui-modal { width: min(1180px, 96vw); height: min(800px, 92vh); display: flex; flex-direction: column; background: var(--surface-1, #0c0f16); border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border-strong)); border-radius: var(--r-md, 12px); overflow: hidden; box-shadow: var(--shadow-modal, 0 24px 80px rgba(0,0,0,.6)); }
+.cui-body { flex: 1; display: flex; min-height: 0; }
+.cui-edit { flex: 1 1 50%; display: flex; flex-direction: column; min-width: 0; border-right: 1px solid var(--border-strong); }
+.cui-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border-strong); flex-wrap: wrap; }
+.cui-tool { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 5px 9px; border-radius: 6px; cursor: pointer; color: var(--ink-2); background: var(--glass-field); border: 1px solid var(--border-strong); }
+.cui-tool:hover:not(:disabled) { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, var(--border-strong)); }
+.cui-tool:disabled { opacity: .4; cursor: default; }
+.cui-attrs { flex: 1; min-width: 0; font-size: 10px; color: var(--ink-3); font-family: var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cui-code { flex: 1; resize: none; border: none; outline: none; padding: 12px 14px; background: #070a0f; color: #cfe6da; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.55; tab-size: 2; }
+.cui-preview { flex: 1 1 50%; display: flex; flex-direction: column; min-width: 0; background: radial-gradient(120% 120% at 50% 0%, #0e1118, #070a0f); }
+.cui-preview-label { padding: 8px 12px; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); border-bottom: 1px solid var(--border-strong); }
+.cui-preview-stage { flex: 1; overflow: auto; padding: 18px; display: grid; place-items: start center; }
+.cui-foot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 12px 14px; border-top: 1px solid var(--border-strong); background: var(--glass-field, rgba(255,255,255,.02)); }
 
 /* ── Live page: section titles get a trailing hairline rule ────────────────── */
 .lp-section-title { display: flex; align-items: center; gap: 10px; }

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Pencil } from 'lucide-react';
+import { ArrowLeft, Pencil, LayoutDashboard } from 'lucide-react';
 import type { Flow } from '../synflow/instruments';
 import type { FxInsert } from '../model/project';
 import type { LibraryEntry } from '../synflow/library';
@@ -7,6 +7,7 @@ import { isBlackKey, midiName } from '../model/pitch';
 import { flowKnobs, knob01, knobValue, knobReadout } from '../synflow/knobs';
 import { Knob } from './Knob';
 import { FxBar } from './FxBar';
+import { CustomInstrumentUI } from './CustomInstrumentUI';
 
 const KEYMAP: Record<string, number> = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12, o: 13, l: 14, p: 15 };
 const VISIBLE = 17;
@@ -16,7 +17,7 @@ const VISIBLE = 17;
  * / drum pad), tweak every knob exported from Synflow, set its gain, edit the flow.
  * Effects show only their knobs (no live play).
  */
-export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onKnobRename, onEdit, onBack, onNoteOn, onNoteOff, onHit, fx, effects, onFxAdd, onFxRemove, onFxEdit, onFxKnob }: {
+export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onKnobRename, onEdit, onBack, onNoteOn, onNoteOff, onHit, customUi, onEditUi, fx, effects, onFxAdd, onFxRemove, onFxEdit, onFxKnob }: {
   name: string;
   kind: 'synth' | 'drum' | 'effect';
   flow: Flow;
@@ -29,6 +30,9 @@ export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onKnob
   onNoteOn?: (midi: number) => void;
   onNoteOff?: (midi: number) => void;
   onHit?: () => void;
+  // custom HTML UI (instruments only)
+  customUi?: string;
+  onEditUi?: () => void;
   // instrument-general FX (instruments only)
   fx?: FxInsert[];
   effects?: LibraryEntry[];
@@ -38,6 +42,10 @@ export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onKnob
   onFxKnob?: (i: number, nodeId: string, param: string, value: number) => void;
 }) {
   const knobs = flowKnobs(flow);
+  const valueOf = (nodeId: string, param: string): number | undefined => flow.nodes.find((n: any) => n.id === nodeId)?.data?.[param];
+  const hasCustom = kind !== 'effect' && !!customUi;
+  const [customMode, setCustomMode] = useState(hasCustom);
+  useEffect(() => { setCustomMode(hasCustom); }, [hasCustom, name]);
   const cat = kind === 'synth' ? 'var(--cat-mod)' : kind === 'drum' ? 'var(--cat-source)' : 'var(--cat-fx)';
   const [octave, setOctave] = useState(4);
   const base = 12 * (octave + 1);
@@ -69,10 +77,23 @@ export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onKnob
         <span className="inst-dot" style={{ background: cat, boxShadow: `0 0 8px ${cat}` }} />
         <span className="lp-name" style={{ color: cat }}>{name}</span>
         <span className="inst-kind">{kind}</span>
+        {hasCustom && (
+          <div className="lp-uimode">
+            <button className={`lp-uitab ${customMode ? 'on' : ''}`} onClick={() => setCustomMode(true)}>Custom</button>
+            <button className={`lp-uitab ${!customMode ? 'on' : ''}`} onClick={() => setCustomMode(false)}>Default</button>
+          </div>
+        )}
+        {kind !== 'effect' && onEditUi && (
+          <button className="pp-edit" onClick={onEditUi} title="Design a custom HTML UI for the Live view"><LayoutDashboard size={13} /> {customUi ? 'Edit UI' : 'Custom UI'}</button>
+        )}
         <button className="pp-edit" onClick={onEdit} title="Edit this flow in Synflow"><Pencil size={13} /> Edit flow</button>
       </div>
 
       <div className="lp-body">
+        {customMode && customUi ? (
+          <CustomInstrumentUI className="lp-custom" html={customUi} knobs={knobs} valueOf={valueOf}
+            onKnob={onKnob} onNoteOn={onNoteOn} onNoteOff={onNoteOff} onHit={onHit} />
+        ) : (<>
         {knobs.length === 0 && <div className="inst-noknobs">No knobs exported. Open <b>Edit flow</b> and expose params in Synflow’s Host Interface.</div>}
         {knobs.length > 0 && (
           <div className="lp-group">
@@ -140,6 +161,7 @@ export function InstrumentPanel({ name, kind, flow, gain, onGain, onKnob, onKnob
         {kind === 'drum' && (
           <button className="inst-pad lp-pad" onPointerDown={(e) => { e.preventDefault(); onHit?.(); }} title="Hit (Space)">{name}<span>tap / Space</span></button>
         )}
+        </>)}
       </div>
     </div>
   );

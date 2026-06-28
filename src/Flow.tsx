@@ -53,6 +53,9 @@ import OrchestratorDialog from './nodes/OrchestratorDialog';
 import DocsPlayground from './components/DocsPlayground';
 import { DawEditorBridge, isDawEditMode } from './host/dawEditorBridge';
 import { HostInterfacePanel } from './host/hostInterface';
+import { InstrumentLiveUI } from './components/InstrumentLiveUI';
+import { CustomUiEditor } from './components/CustomUiEditor';
+import { flowKnobs, flowKind } from './host/flowKnobs';
 import {
   hexToRgb,
   makeGlow,
@@ -238,6 +241,14 @@ function Flow() {
   // Standalone "Expose to DAW": toggles the Host Interface overlay outside DAW edit mode,
   // so authors can declare exposed knobs / I/O / trigger while editing flows directly.
   const [exposeOpen, setExposeOpen] = useState(false);
+  // Live Instrument UI: a floating, playable panel for the current flow (default
+  // knobs + piano, or a custom HTML faceplate). The faceplate HTML lives on the
+  // flow (customUi) so it persists locally and round-trips to the DAW.
+  const [liveUiOpen, setLiveUiOpen] = useState(false);
+  const [customUiEdit, setCustomUiEdit] = useState(false);
+  const [customUi, setCustomUi] = useState<string>('');
+  const customUiRef = useRef('');
+  customUiRef.current = customUi;
   const [flowItems, setFlowItems] = useState<string[]>([]);
   const [folderPaths, setFolderPaths] = useState<string[]>([]); // all known folders (local)
   const [currentFlowFolder, setCurrentFlowFolder] = useState<string>(''); // folder of currently open flow
@@ -355,6 +366,7 @@ function Flow() {
       let recNodes: any[] = [];
       let recEdges: any[] = [];
       let recFolder = folderPathOverride || '';
+      let recCustomUi = '';
       let loadedFromDisk = false;
 
       // Try disk first if handle is available
@@ -369,6 +381,7 @@ function Flow() {
             recNodes = diskFlow.nodes || [];
             recEdges = diskFlow.edges || [];
             recFolder = diskFlow.folder_path || folderPathOverride || '';
+            recCustomUi = diskFlow.customUi || '';
             loadedFromDisk = true;
 
             // Sync to IndexedDB so DB stays in sync with disk
@@ -377,6 +390,7 @@ function Flow() {
               edges: recEdges,
               folder_path: recFolder,
               updated_at: diskFlow.updated_at || new Date().toISOString(),
+              ...(recCustomUi ? { customUi: recCustomUi } : {}),
             };
             const dbKey = makeFlowDbKey(flowName, recFolder);
             db.put(dbKey, payload).catch((e: any) => {
@@ -401,6 +415,7 @@ function Flow() {
           const rec = records[0];
           recNodes = rec.nodes || rec.value?.nodes || [];
           recEdges = rec.edges || rec.value?.edges || [];
+          recCustomUi = rec.customUi || rec.value?.customUi || '';
           recFolder = rec.folder_path
             || rec.value?.folder_path
             || folderPathOverride
@@ -435,6 +450,7 @@ function Flow() {
       addOnchangeToNodes(themedNodes);
       setNodes(themedNodes);
       setEdges(recEdges);
+      setCustomUi(recCustomUi);
       setFlowNameInput(flowName);
       setCurrentFlowFolder(recFolder);
       writeCurrentFlowName(flowName);
@@ -536,7 +552,7 @@ function Flow() {
 
 
   const exportFlowAsJSON = useCallback(() => {
-    const flowData = { nodes, edges };
+    const flowData = { nodes, edges, ...(customUiRef.current ? { customUi: customUiRef.current } : {}) };
     const json = JSON.stringify(flowData, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -598,6 +614,7 @@ function Flow() {
         const flowData = JSON.parse(json);
         setNodes(flowData.nodes || []);
         setEdges(flowData.edges || []);
+        setCustomUi(flowData.customUi || '');
         // Set flow name from file name (without .json extension) or from data
         const flowName = flowData.name || file.name.replace(/\.json$/i, '');
         setFlowNameInput(flowName);
@@ -1020,6 +1037,7 @@ function Flow() {
       edges: strippEverythingButData(edges),
       updated_at,
       folder_path: currentFlowFolder,
+      ...(customUiRef.current ? { customUi: customUiRef.current } : {}),
     } as any;
 
     // Disk is the leader; save to disk first if available
@@ -1031,6 +1049,7 @@ function Flow() {
           edges: payloadLocal.edges,
           folder_path: currentFlowFolder,
           updated_at,
+          customUi: customUiRef.current || undefined,
         };
         const diskResult = await saveFlowToDisk(fsRootHandle, flowData);
         if (!diskResult.ok) {
@@ -1095,6 +1114,8 @@ function Flow() {
     if (saveDialogIsNewFlow) {
       setNodes([]);
       setEdges([]);
+      setCustomUi('');
+      customUiRef.current = '';
       setSaveDialogIsNewFlow(false);
     }
 
@@ -1114,6 +1135,7 @@ function Flow() {
           edges: payloadEdges,
           folder_path: folder,
           updated_at,
+          customUi: customUiRef.current || undefined,
         };
         const diskResult = await saveFlowToDisk(fsRootHandle, flowData);
         if (!diskResult.ok) {
@@ -1131,6 +1153,7 @@ function Flow() {
       edges: payloadEdges,
       folder_path: folder,
       updated_at,
+      ...(customUiRef.current ? { customUi: customUiRef.current } : {}),
     });
 
     setFlowNameInput(name);
@@ -1377,6 +1400,52 @@ function Flow() {
     try { EventBus.getInstance().emit('audio.started', {}); } catch { /* noop */ }
   }
 
+  // ───────── Live Instrument UI engine control ─────────
+  // Drive the live @synflow/core graph exactly like the DAW's InstrumentHost:
+  // set every isPitch param to the note frequency, then inject receiveNodeOn/Off
+  // into every isTrigger node. Used by the default panel, the piano and any
+  // custom faceplate's data-note / data-param bindings.
+  const midiToFreq = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
+  const ensureLiveAudio = () => { if (!managerRef.current) init(); };
+  const triggerNodes = (): any[] => ((nodesRef.current || []) as any[]).filter((n) => n.data?.isTrigger);
+  const handleOf = (n: any): string => (n.data?.triggerHandle as string) || 'main-input';
+  const liveNoteOn = (midi: number, velocity = 1) => {
+    ensureLiveAudio();
+    const mgr = managerRef.current; if (!mgr) return;
+    const freq = midiToFreq(midi);
+    for (const n of (nodesRef.current || []) as any[]) if (n.data?.isPitch) mgr.setParam(n.id, (n.data.pitchParam as string) || 'frequency', freq);
+    const payload = { frequency: freq, value: freq, noteNumber: midi, velocity };
+    for (const t of triggerNodes()) mgr.receiveNodeOn(t.id, handleOf(t), payload);
+  };
+  const liveNoteOff = (midi: number) => {
+    const mgr = managerRef.current; if (!mgr) return;
+    const payload = { frequency: midiToFreq(midi), noteNumber: midi };
+    for (const t of triggerNodes()) mgr.receiveNodeOff(t.id, handleOf(t), payload);
+  };
+  const liveHit = () => {
+    ensureLiveAudio();
+    const mgr = managerRef.current; if (!mgr) return;
+    const ts = triggerNodes();
+    for (const t of ts) mgr.receiveNodeOn(t.id, handleOf(t), { velocity: 1 });
+    window.setTimeout(() => { for (const t of ts) mgr.receiveNodeOff(t.id, handleOf(t), {}); }, 220);
+  };
+  // Set an exposed param live (engine) and persist it into node.data.
+  const setLiveParam = (nodeId: string, param: string, value: number) => {
+    managerRef.current?.setParam(nodeId, param, value);
+    setNodes((nds) => nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, [param]: value } } : n)));
+  };
+  const valueOfParam = (nodeId: string, param: string): number | undefined => {
+    const v = ((nodesRef.current || []) as any[]).find((n) => n.id === nodeId)?.data?.[param];
+    return typeof v === 'number' ? v : undefined;
+  };
+  const renameLiveKnob = (nodeId: string, param: string, label: string) => {
+    setNodes((nds) => nds.map((n) => (n.id === nodeId
+      ? { ...n, data: { ...n.data, knobs: (((n.data as any)?.knobs as any[]) || []).map((k) => (k.param === param ? { ...k, label } : k)) } }
+      : n)));
+  };
+  // Open the Live UI; start audio so the first note isn't dropped while the graph builds.
+  const toggleLiveUi = () => { setLiveUiOpen((v) => { const nv = !v; if (nv) ensureLiveAudio(); return nv; }); };
+
   
 
   // Function to add a new node
@@ -1500,6 +1569,11 @@ function Flow() {
     'DelayFlowNode',
     'ReverbFlowNode',
     'BiquadFilterFlowNode',
+    'SvfDriveFilterFlowNode',
+    'LadderFilterFlowNode',
+    'RingModFlowNode',
+    'ChorusFlowNode',
+    'GranularFlowNode',
     'DynamicCompressorFlowNode',
     'IIRFilterFlowNode',
     'DistortionFlowNode',
@@ -1510,6 +1584,10 @@ function Flow() {
     'ChannelMergerFlowNode',
     'ChannelSplitterFlowNode',
     'NoiseFlowNode',
+    'KarplusFlowNode',
+    'FMFlowNode',
+    'WavetableFlowNode',
+    'EnvGenFlowNode',
     'MicFlowNode',
     'RecordingFlowNode',
     'WebRTCPulseNode',
@@ -1772,6 +1850,7 @@ function Flow() {
           edges: payloadEdges,
           folder_path: currentFlowFolder,
           updated_at: updatedAt,
+          ...(customUiRef.current ? { customUi: customUiRef.current } : {}),
         });
 
         if (fsRootHandle) {
@@ -1790,6 +1869,7 @@ function Flow() {
               edges: payloadEdges,
               folder_path: currentFlowFolder,
               updated_at: updatedAt,
+              customUi: customUiRef.current || undefined,
             };
 
             await saveFlowToDisk(fsRootHandle, flowData);
@@ -1907,7 +1987,7 @@ function Flow() {
     setLocalFlowMeta(meta => meta.filter(m => m.name !== flowNameInput));
     setFlowNameInput('');
     clearCurrentFlowPointer();
-    setNodes([]); setEdges([]);
+    setNodes([]); setEdges([]); setCustomUi('');
   };
 
   // AudioExplorer
@@ -1992,7 +2072,7 @@ function Flow() {
     if (flowNameInput === name) {
       setFlowNameInput('');
       clearCurrentFlowPointer();
-      setNodes([]); setEdges([]);
+      setNodes([]); setEdges([]); setCustomUi('');
     }
   };
   const handleCreateFolder = (fullPath?: string) => {
@@ -2089,10 +2169,56 @@ function Flow() {
   return (
     <div className={`flow-root${dawEdit ? ' flow-root--daw' : ''}`} onContextMenu={handleRootContextMenu}>
       {/* DAW bridge: when opened by Mothscilla (#mothscilla), load the incoming flow + show "Send to Mothscilla". No-op otherwise. */}
-      <DawEditorBridge nodes={nodes} edges={edges} setNodes={setNodes as any} setEdges={setEdges as any} />
+      <DawEditorBridge nodes={nodes} edges={edges} setNodes={setNodes as any} setEdges={setEdges as any}
+        customUi={customUi} onCustomUi={setCustomUi} />
       {/* Host interface editor (edit mode only): expose audio I/O, trigger, pitch + knobs to Mothscilla. */}
       <HostInterfacePanel nodes={nodes} setNodes={setNodes as any} active={dawEdit || exposeOpen}
         onClose={dawEdit ? undefined : () => setExposeOpen(false)} />
+
+      {/* In DAW edit mode the TopBar is hidden, so offer a compact toggle for the Live UI. */}
+      {dawEdit && (
+        <button onClick={toggleLiveUi} title="Instrument UI — play this flow and design its faceplate"
+          style={{ position: 'fixed', top: 12, right: 168, zIndex: 99999, display: 'inline-flex', alignItems: 'center', gap: 6,
+            background: liveUiOpen ? 'rgba(110,231,168,.18)' : 'linear-gradient(180deg,#1c2a3a,#142031)',
+            color: '#6ee7a8', border: '1px solid #2f6b4a', borderRadius: 8, padding: '9px 12px',
+            fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+          ▥ Instrument UI
+        </button>
+      )}
+
+      {/* Live Instrument UI panel: default knobs + piano / drum, or a custom HTML faceplate. */}
+      {liveUiOpen && (
+        <InstrumentLiveUI
+          title={flowNameInput || 'Instrument'}
+          nodes={nodes}
+          customUi={customUi || undefined}
+          valueOf={valueOfParam}
+          onKnob={setLiveParam}
+          onKnobRename={renameLiveKnob}
+          onNoteOn={(m) => liveNoteOn(m)}
+          onNoteOff={liveNoteOff}
+          onHit={liveHit}
+          onEditUi={() => setCustomUiEdit(true)}
+          onClose={() => setLiveUiOpen(false)}
+        />
+      )}
+
+      {/* Custom UI authoring modal — writes the HTML faceplate onto flow.customUi. */}
+      {customUiEdit && (
+        <CustomUiEditor
+          title={flowNameInput || 'Instrument'}
+          kind={flowKind(nodes)}
+          initialHtml={customUi}
+          knobs={flowKnobs(nodes)}
+          valueOf={valueOfParam}
+          onKnob={setLiveParam}
+          onNoteOn={(m) => liveNoteOn(m)}
+          onNoteOff={liveNoteOff}
+          onHit={liveHit}
+          onSave={(html) => setCustomUi(html)}
+          onClose={() => setCustomUiEdit(false)}
+        />
+      )}
       {/* Flow container */}
       <div className={`flow-canvas-col${orchestratorEditorOpen ? ' flow-canvas-col--hidden' : ''}`}>
       {/* Inline controls: color pickers for selected node and edge */}
@@ -2137,6 +2263,8 @@ function Flow() {
         onDeleteFlow={flowNameInput ? handleDeleteCurrentFlow : undefined}
         exposeActive={exposeOpen}
         onToggleExpose={() => setExposeOpen((v) => !v)}
+        liveUiActive={liveUiOpen}
+        onToggleLiveUi={toggleLiveUi}
       />}
 
       {showDocsPlayground && (

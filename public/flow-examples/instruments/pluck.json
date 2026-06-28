@@ -1,0 +1,24 @@
+{
+  "name": "Pluck (Karplus)",
+  "nodes": [
+    { "id": "kp.KarplusFlowNode", "type": "KarplusFlowNode", "position": { "x": 0, "y": 80 },
+      "data": { "label": "String", "frequency": 220, "decay": 0.72, "tone": 0.55, "isTrigger": true, "isPitch": true, "pitchParam": "frequency", "id": "kp.KarplusFlowNode",
+        "knobs": [ { "param": "decay", "label": "Decay", "min": 0, "max": 1, "default": 0.72 }, { "param": "tone", "label": "Tone", "min": 0, "max": 1, "default": 0.55 } ] } },
+    { "id": "ladder.LadderFilterFlowNode", "type": "LadderFilterFlowNode", "position": { "x": 280, "y": 80 },
+      "data": { "label": "Filter", "cutoff": 4000, "resonance": 0.12, "drive": 1, "poles": 4, "id": "ladder.LadderFilterFlowNode",
+        "knobs": [ { "param": "cutoff", "label": "Cutoff", "min": 120, "max": 12000, "default": 4000 }, { "param": "resonance", "label": "Reso", "min": 0, "max": 1, "default": 0.12 } ] } },
+    { "id": "lfo.OscillatorFlowNode", "type": "OscillatorFlowNode", "position": { "x": 0, "y": 320 },
+      "data": { "label": "LFO", "type": "sine", "frequency": 4, "detune": 0, "gain": 1, "id": "lfo.OscillatorFlowNode", "knobs": [{ "param": "frequency", "label": "LFO Rate", "min": 0.1, "max": 12, "default": 4 }] } },
+    { "id": "gLfo.GainFlowNode", "type": "GainFlowNode", "position": { "x": 150, "y": 360 },
+      "data": { "label": "LFO Amt", "gain": 0, "id": "gLfo.GainFlowNode", "knobs": [{ "param": "gain", "label": "Wah", "min": 0, "max": 3000, "default": 0 }] } },
+    { "id": "vca.GainFlowNode", "type": "GainFlowNode", "position": { "x": 560, "y": 80 }, "data": { "label": "Level", "gain": 0.8, "id": "vca.GainFlowNode" } },
+    { "id": "master.MasterOutFlowNode", "type": "MasterOutFlowNode", "position": { "x": 800, "y": 80 }, "data": { "label": "Master", "id": "master.MasterOutFlowNode" } }
+  ],
+  "edges": [
+    { "id": "e-kp-l", "source": "kp.KarplusFlowNode", "target": "ladder.LadderFilterFlowNode", "sourceHandle": "output", "targetHandle": "main-input" },
+    { "id": "e-lfo-glfo", "source": "lfo.OscillatorFlowNode", "target": "gLfo.GainFlowNode", "sourceHandle": "output", "targetHandle": "main-input" },
+    { "id": "e-glfo-cut", "source": "gLfo.GainFlowNode", "target": "ladder.LadderFilterFlowNode", "sourceHandle": "output", "targetHandle": "cutoff" },
+    { "id": "e-l-vca", "source": "ladder.LadderFilterFlowNode", "target": "vca.GainFlowNode", "sourceHandle": "output", "targetHandle": "main-input" },
+    { "id": "e-vca-m", "source": "vca.GainFlowNode", "target": "master.MasterOutFlowNode", "sourceHandle": "output", "targetHandle": "destination-input" }
+  ]
+}

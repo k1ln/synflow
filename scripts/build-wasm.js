@@ -31,6 +31,41 @@ const CRATES = [
     out:  'public/freq-shifter.wasm',
     bin:  'freq_shifter',
   },
+  {
+    dir:  'src/wasm/ladder_filter',
+    out:  'public/ladder.wasm',
+    bin:  'ladder_filter',
+  },
+  {
+    dir:  'src/wasm/karplus',
+    out:  'public/karplus.wasm',
+    bin:  'karplus',
+  },
+  {
+    dir:  'src/wasm/fm_synth',
+    out:  'public/fm.wasm',
+    bin:  'fm_synth',
+  },
+  {
+    dir:  'src/wasm/wavetable',
+    out:  'public/wavetable.wasm',
+    bin:  'wavetable',
+  },
+  {
+    dir:  'src/wasm/granular',
+    out:  'public/granular.wasm',
+    bin:  'granular',
+  },
+  {
+    dir:  'src/wasm/svf_drive',
+    out:  'public/svf-drive.wasm',
+    bin:  'svf_drive',
+  },
+  {
+    dir:  'src/wasm/envgen',
+    out:  'public/envgen.wasm',
+    bin:  'envgen',
+  },
 ];
 
 const ANSI = { reset:'\x1b[0m', green:'\x1b[32m', yellow:'\x1b[33m', red:'\x1b[31m', gray:'\x1b[90m' };

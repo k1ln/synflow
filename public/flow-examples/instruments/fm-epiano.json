@@ -1,0 +1,157 @@
+{
+  "name": "FM-7 E.Piano",
+  "nodes": [
+    {
+      "id": "fm.FMFlowNode",
+      "type": "FMFlowNode",
+      "position": {
+        "x": 0,
+        "y": 60
+      },
+      "data": {
+        "label": "DX E.Piano",
+        "algorithm": 4,
+        "feedback": 0,
+        "attack": 0.002,
+        "decay": 1.6,
+        "sustain": 0,
+        "release": 0.35,
+        "ratio0": 1,
+        "ratio1": 14,
+        "ratio2": 1,
+        "ratio3": 1,
+        "ratio4": 1,
+        "ratio5": 1,
+        "level0": 1,
+        "level1": 0.42,
+        "level2": 0.7,
+        "level3": 0.3,
+        "level4": 0,
+        "level5": 0,
+        "isTrigger": true,
+        "isPitch": true,
+        "pitchParam": "frequency",
+        "id": "fm.FMFlowNode",
+        "knobs": [
+          {
+            "param": "level1",
+            "label": "Tine",
+            "min": 0,
+            "max": 1,
+            "default": 0.42
+          },
+          {
+            "param": "ratio1",
+            "label": "Tine Ratio",
+            "min": 0.5,
+            "max": 20,
+            "default": 14
+          },
+          {
+            "param": "level3",
+            "label": "Bell",
+            "min": 0,
+            "max": 1,
+            "default": 0.3
+          },
+          {
+            "param": "feedback",
+            "label": "Feedback",
+            "min": 0,
+            "max": 1,
+            "default": 0
+          },
+          {
+            "param": "attack",
+            "label": "Atk",
+            "min": 0,
+            "max": 1,
+            "default": 0.002
+          },
+          {
+            "param": "decay",
+            "label": "Decay",
+            "min": 0.1,
+            "max": 4,
+            "default": 1.6
+          },
+          {
+            "param": "sustain",
+            "label": "Sus",
+            "min": 0,
+            "max": 1,
+            "default": 0
+          },
+          {
+            "param": "release",
+            "label": "Rel",
+            "min": 0,
+            "max": 3,
+            "default": 0.35
+          }
+        ]
+      }
+    },
+    {
+      "id": "ladder.LadderFilterFlowNode",
+      "type": "LadderFilterFlowNode",
+      "position": {
+        "x": 320,
+        "y": 60
+      },
+      "data": {
+        "label": "Tone",
+        "cutoff": 5500,
+        "resonance": 0.08,
+        "drive": 1,
+        "poles": 2,
+        "id": "ladder.LadderFilterFlowNode",
+        "knobs": [
+          {
+            "param": "cutoff",
+            "label": "Tone",
+            "min": 300,
+            "max": 14000,
+            "default": 5500
+          },
+          {
+            "param": "resonance",
+            "label": "Reso",
+            "min": 0,
+            "max": 1,
+            "default": 0.08
+          }
+        ]
+      }
+    },
+    {
+      "id": "master.MasterOutFlowNode",
+      "type": "MasterOutFlowNode",
+      "position": {
+        "x": 600,
+        "y": 60
+      },
+      "data": {
+        "label": "Master",
+        "id": "master.MasterOutFlowNode"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-fm-l",
+      "source": "fm.FMFlowNode",
+      "target": "ladder.LadderFilterFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-l-m",
+      "source": "ladder.LadderFilterFlowNode",
+      "target": "master.MasterOutFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "destination-input"
+    }
+  ],
+  "customUi": "<style>\n  *{box-sizing:border-box}\n  .panel{font-family:'Inter',system-ui,sans-serif;width:520px;max-width:100%;border-radius:14px;padding:16px 18px 18px;\n    background:var(--bg);color:var(--ink);box-shadow:0 10px 30px rgba(0,0,0,.5), var(--edge);}\n  .brand{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;border-bottom:1px solid var(--line);padding-bottom:10px}\n  .logo{font-size:18px;font-weight:900;letter-spacing:.04em;color:var(--accent);text-shadow:var(--logoSh)}\n  .model{font-size:9px;letter-spacing:.34em;text-transform:uppercase;color:var(--dim)}\n  .sect{display:flex;flex-wrap:wrap;gap:14px 10px;align-items:flex-end}\n  .group{display:flex;flex-direction:column;gap:7px}\n  .gt{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}\n  .knobs{display:flex;flex-wrap:wrap;gap:12px 8px}\n  .kn{display:flex;flex-direction:column;align-items:center;gap:2px;width:54px}\n  .dial{width:40px;height:40px;border-radius:50%;position:relative;background:var(--knob);\n    box-shadow:0 2px 4px rgba(0,0,0,.5),inset 0 1px 1px rgba(255,255,255,.18);border:1px solid rgba(0,0,0,.55)}\n  .tk{position:absolute;left:50%;top:4px;width:3px;height:13px;border-radius:2px;background:var(--accent);\n    transform-origin:50% 16px;transform:translateX(-50%) rotate(var(--a,-135deg));box-shadow:0 0 5px var(--accent)}\n  .kl{font-size:8px;letter-spacing:.03em;text-transform:uppercase;color:var(--ink);text-align:center;line-height:1.05;max-width:54px}\n  .kv{font-size:8px;font-family:ui-monospace,monospace;color:var(--accent)}\n  .fd{display:flex;flex-direction:column;align-items:center;gap:5px;width:34px}\n  .fd input[type=range]{writing-mode:vertical-lr;direction:rtl;width:7px;height:96px;accent-color:var(--accent);background:transparent}\n  .kbd{position:relative;height:96px;margin-top:16px;border-radius:0 0 8px 8px;overflow:hidden}\n  .wks{display:grid;grid-template-columns:repeat(var(--n),1fr);height:100%;gap:2px}\n  .wk{position:relative;border-radius:0 0 5px 5px;background:linear-gradient(180deg,#fbfdff,#cdd4dc);cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px}\n  .wk span{font-size:8px;color:#5a6470;font-weight:700}\n  .wk.on{background:linear-gradient(180deg,var(--accent),var(--accent2))}\n  .bks{position:absolute;inset:0;pointer-events:none}\n  .bk{position:absolute;top:0;width:calc((100%/var(--n,8))*0.62);height:60%;border-radius:0 0 4px 4px;background:linear-gradient(180deg,#2a2f36,#0c0f13);cursor:pointer;pointer-events:auto;box-shadow:0 2px 3px rgba(0,0,0,.5)}\n  .bk.on{background:linear-gradient(180deg,var(--accent),#0c0f13)}\n  .pad{height:130px;border-radius:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;\n    font-size:18px;font-weight:800;letter-spacing:.1em;color:var(--bg);background:linear-gradient(180deg,var(--accent),var(--accent2));margin-top:14px}\n  .pad span{font-size:9px;font-weight:600;opacity:.8}\n  .pad.on{filter:brightness(1.25)}\n\n</style>\n<div class=\"panel\" style=\"--bg:linear-gradient(180deg,#10263d,#070f18);--ink:#cfe6ff;--dim:#5e84a8;--line:#1c344c;--accent:#4cc4ff;--accent2:#1f7fb8;--logoSh:0 0 12px rgba(76,196,255,.5);--edge:inset 0 1px 0 rgba(120,200,255,.12);--knob:radial-gradient(circle at 50% 35%,#1b3a55,#08151f 72%)\">\n  <div class=\"brand\"><div class=\"logo\">FM-7</div><div class=\"model\">Digital FM · 6-Operator</div></div>\n  <div class=\"sect\">\n        <div class=\"group\"><div class=\"gt\">Operators</div><div class=\"knobs\"><div class=\"kn\" data-knob=\"fm.FMFlowNode.level1\" title=\"Tine\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Tine</div><div class=\"kv\" data-readout=\"fm.FMFlowNode.level1\"></div></div><div class=\"kn\" data-knob=\"fm.FMFlowNode.ratio1\" title=\"Tine Ratio\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Tine Ratio</div><div class=\"kv\" data-readout=\"fm.FMFlowNode.ratio1\"></div></div><div class=\"kn\" data-knob=\"fm.FMFlowNode.level3\" title=\"Bell\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Bell</div><div class=\"kv\" data-readout=\"fm.FMFlowNode.level3\"></div></div><div class=\"kn\" data-knob=\"fm.FMFlowNode.feedback\" title=\"Feedback\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Feedback</div><div class=\"kv\" data-readout=\"fm.FMFlowNode.feedback\"></div></div></div></div>\n        <div class=\"group\"><div class=\"gt\">Envelope</div><div class=\"knobs\"><div class=\"kn\" data-knob=\"fm.FMFlowNode.attack\" title=\"Atk\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Atk</div><div class=\"kv\" data-readout=\"fm.FMFlowNode.attack\"></div></div><div class=\"kn\" data-knob=\"fm.FMFlowNode.decay\" title=\"Decay\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Decay</div><div class=\"kv\" data-readout=\"fm.FMFlowNode.decay\"></div></div><div class=\"kn\" data-knob=\"fm.FMFlowNode.sustain\" title=\"Sus\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Sus</div><div class=\"kv\" data-readout=\"fm.FMFlowNode.sustain\"></div></div><div class=\"kn\" data-knob=\"fm.FMFlowNode.release\" title=\"Rel\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Rel</div><div class=\"kv\" data-readout=\"fm.FMFlowNode.release\"></div></div></div></div>\n        <div class=\"group\"><div class=\"gt\">Tone</div><div class=\"knobs\"><div class=\"kn\" data-knob=\"ladder.LadderFilterFlowNode.cutoff\" title=\"Tone\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Tone</div><div class=\"kv\" data-readout=\"ladder.LadderFilterFlowNode.cutoff\"></div></div><div class=\"kn\" data-knob=\"ladder.LadderFilterFlowNode.resonance\" title=\"Reso\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Reso</div><div class=\"kv\" data-readout=\"ladder.LadderFilterFlowNode.resonance\"></div></div></div></div>\n      </div>\n  <div class=\"kbd\"><div class=\"wks\" style=\"--n:8\"><div class=\"wk\" data-note=\"60\"><span>C4</span></div><div class=\"wk\" data-note=\"62\"></div><div class=\"wk\" data-note=\"64\"></div><div class=\"wk\" data-note=\"65\"></div><div class=\"wk\" data-note=\"67\"></div><div class=\"wk\" data-note=\"69\"></div><div class=\"wk\" data-note=\"71\"></div><div class=\"wk\" data-note=\"72\"><span>C5</span></div></div><div class=\"bks\"><div class=\"bk\" data-note=\"61\" style=\"left:calc(12.5% - (100%/8)*0.32)\"></div><div class=\"bk\" data-note=\"63\" style=\"left:calc(25% - (100%/8)*0.32)\"></div><div class=\"bk\" data-note=\"66\" style=\"left:calc(50% - (100%/8)*0.32)\"></div><div class=\"bk\" data-note=\"68\" style=\"left:calc(62.5% - (100%/8)*0.32)\"></div><div class=\"bk\" data-note=\"70\" style=\"left:calc(75% - (100%/8)*0.32)\"></div></div></div>\n</div>"
+}

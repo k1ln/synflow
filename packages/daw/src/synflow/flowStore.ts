@@ -72,7 +72,7 @@ export async function writeFlow(root: any, e: FlowFileMeta): Promise<void> {
   const d = await dir(root, 'flows', sub(e.group));
   const fh = await d.getFileHandle(`${e.id}.json`, { create: true });
   const w = await fh.createWritable();
-  const file = { name: e.name, daw: { id: e.id, category: e.category, kind: e.kind }, nodes: e.flow.nodes, edges: e.flow.edges };
+  const file = { name: e.name, daw: { id: e.id, category: e.category, kind: e.kind, customUi: e.flow.customUi }, nodes: e.flow.nodes, edges: e.flow.edges };
   await w.write(JSON.stringify(file, null, 2));
   await w.close();
 }
@@ -105,7 +105,7 @@ export async function readAllFlows(root: any): Promise<LibraryEntry[]> {
           id: data.daw?.id ?? data.name ?? base,
           name: data.name ?? base,
           category: data.daw?.category ?? (group === 'effect' ? 'Effects' : 'Instruments'),
-          kind: data.daw?.kind, group, flow: { nodes: data.nodes, edges: data.edges },
+          kind: data.daw?.kind, group, flow: { nodes: data.nodes, edges: data.edges, customUi: data.daw?.customUi },
         });
       }
     } catch { /* folder not created yet */ }

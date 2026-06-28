@@ -1,0 +1,250 @@
+{
+  "name": "WaveScan Pad",
+  "nodes": [
+    {
+      "id": "wt.WavetableFlowNode",
+      "type": "WavetableFlowNode",
+      "position": {
+        "x": 0,
+        "y": 40
+      },
+      "data": {
+        "label": "Wavetable",
+        "mode": 0,
+        "position": 0.4,
+        "warp": 0.1,
+        "unison": 7,
+        "detune": 18,
+        "attack": 0.5,
+        "decay": 0.6,
+        "sustain": 0.85,
+        "release": 0.9,
+        "isTrigger": true,
+        "isPitch": true,
+        "pitchParam": "frequency",
+        "id": "wt.WavetableFlowNode",
+        "knobs": [
+          {
+            "param": "position",
+            "label": "Wave",
+            "min": 0,
+            "max": 1,
+            "default": 0.4
+          },
+          {
+            "param": "warp",
+            "label": "Warp",
+            "min": 0,
+            "max": 1,
+            "default": 0.1
+          },
+          {
+            "param": "detune",
+            "label": "Detune",
+            "min": 0,
+            "max": 50,
+            "default": 18
+          },
+          {
+            "param": "attack",
+            "label": "Atk",
+            "min": 0,
+            "max": 3,
+            "default": 0.5
+          },
+          {
+            "param": "decay",
+            "label": "Dec",
+            "min": 0.01,
+            "max": 3,
+            "default": 0.6
+          },
+          {
+            "param": "sustain",
+            "label": "Sus",
+            "min": 0,
+            "max": 1,
+            "default": 0.85
+          },
+          {
+            "param": "release",
+            "label": "Rel",
+            "min": 0,
+            "max": 4,
+            "default": 0.9
+          }
+        ]
+      }
+    },
+    {
+      "id": "ladder.LadderFilterFlowNode",
+      "type": "LadderFilterFlowNode",
+      "position": {
+        "x": 320,
+        "y": 40
+      },
+      "data": {
+        "label": "Filter",
+        "cutoff": 1800,
+        "resonance": 0.25,
+        "drive": 1.2,
+        "poles": 4,
+        "id": "ladder.LadderFilterFlowNode",
+        "knobs": [
+          {
+            "param": "cutoff",
+            "label": "Cutoff",
+            "min": 80,
+            "max": 12000,
+            "default": 1800
+          },
+          {
+            "param": "resonance",
+            "label": "Reso",
+            "min": 0,
+            "max": 1,
+            "default": 0.25
+          }
+        ]
+      }
+    },
+    {
+      "id": "fenv.EnvGenFlowNode",
+      "type": "EnvGenFlowNode",
+      "position": {
+        "x": 320,
+        "y": 300
+      },
+      "data": {
+        "label": "Filter Env",
+        "attack": 0.6,
+        "decay": 1.2,
+        "sustain": 0.6,
+        "release": 1,
+        "amount": 3000,
+        "bias": 0,
+        "isTrigger": true,
+        "id": "fenv.EnvGenFlowNode",
+        "knobs": [
+          {
+            "param": "amount",
+            "label": "F.Env",
+            "min": 0,
+            "max": 8000,
+            "default": 3000
+          },
+          {
+            "param": "attack",
+            "label": "F.Atk",
+            "min": 0,
+            "max": 4,
+            "default": 0.6
+          },
+          {
+            "param": "decay",
+            "label": "F.Dec",
+            "min": 0.01,
+            "max": 4,
+            "default": 1.2
+          }
+        ]
+      }
+    },
+    {
+      "id": "lfo.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 0,
+        "y": 320
+      },
+      "data": {
+        "label": "Wave LFO",
+        "type": "sine",
+        "frequency": 0.3,
+        "detune": 0,
+        "gain": 1,
+        "id": "lfo.OscillatorFlowNode",
+        "knobs": [
+          {
+            "param": "frequency",
+            "label": "LFO Rate",
+            "min": 0.02,
+            "max": 6,
+            "default": 0.3
+          }
+        ]
+      }
+    },
+    {
+      "id": "gLfo.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 150,
+        "y": 360
+      },
+      "data": {
+        "label": "Wave Mod",
+        "gain": 0.12,
+        "id": "gLfo.GainFlowNode",
+        "knobs": [
+          {
+            "param": "gain",
+            "label": "Wave LFO",
+            "min": 0,
+            "max": 0.5,
+            "default": 0.12
+          }
+        ]
+      }
+    },
+    {
+      "id": "master.MasterOutFlowNode",
+      "type": "MasterOutFlowNode",
+      "position": {
+        "x": 600,
+        "y": 40
+      },
+      "data": {
+        "label": "Master",
+        "id": "master.MasterOutFlowNode"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-wt-l",
+      "source": "wt.WavetableFlowNode",
+      "target": "ladder.LadderFilterFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-l-m",
+      "source": "ladder.LadderFilterFlowNode",
+      "target": "master.MasterOutFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "destination-input"
+    },
+    {
+      "id": "e-fenv-cut",
+      "source": "fenv.EnvGenFlowNode",
+      "target": "ladder.LadderFilterFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "cutoff"
+    },
+    {
+      "id": "e-lfo-glfo",
+      "source": "lfo.OscillatorFlowNode",
+      "target": "gLfo.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-glfo-pos",
+      "source": "gLfo.GainFlowNode",
+      "target": "wt.WavetableFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "position"
+    }
+  ]
+}

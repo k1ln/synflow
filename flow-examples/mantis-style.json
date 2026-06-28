@@ -1,0 +1,771 @@
+{
+  "nodes": [
+    {
+      "id": "midi.MidiFlowNote",
+      "type": "MidiFlowNote",
+      "position": {
+        "x": -300,
+        "y": 200
+      },
+      "data": {
+        "label": "",
+        "lastNote": "C3",
+        "frequency": 130.8128,
+        "enabled": true,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "midi.MidiFlowNote"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 140,
+        "height": 180
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "osc1.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 0,
+        "y": -40
+      },
+      "data": {
+        "label": "OSC1",
+        "frequency": 130.81,
+        "detune": 0,
+        "type": "sawtooth",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "osc1.OscillatorFlowNode"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 140,
+        "height": 180
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "osc2.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 0,
+        "y": 120
+      },
+      "data": {
+        "label": "OSC2",
+        "frequency": 130.81,
+        "detune": 7,
+        "type": "square",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "osc2.OscillatorFlowNode"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 140,
+        "height": 180
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "sub.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 0,
+        "y": 280
+      },
+      "data": {
+        "label": "SUB",
+        "frequency": 130.81,
+        "detune": -1200,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "sub.OscillatorFlowNode"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 140,
+        "height": 180
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "noise.NoiseFlowNode",
+      "type": "NoiseFlowNode",
+      "position": {
+        "x": 0,
+        "y": 440
+      },
+      "data": {
+        "label": "Noise",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "noise.NoiseFlowNode"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 140,
+        "height": 180
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "ring.RingModFlowNode",
+      "type": "RingModFlowNode",
+      "position": {
+        "x": 260,
+        "y": 40
+      },
+      "data": {
+        "label": "Ring Mod",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "ring.RingModFlowNode"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 140,
+        "height": 180
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "mixer.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 480,
+        "y": 200
+      },
+      "data": {
+        "label": "Mix",
+        "gain": 0.22,
+        "gainMidiMapping": null,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "mixer.GainFlowNode"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 140,
+        "height": 180
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "svf.SvfDriveFilterFlowNode",
+      "type": "SvfDriveFilterFlowNode",
+      "position": {
+        "x": 720,
+        "y": 160
+      },
+      "data": {
+        "label": "SVF Drive",
+        "cutoff": 320,
+        "resonance": 0.45,
+        "drive": 4,
+        "mix": 1,
+        "mode": 0,
+        "slope": 2,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "svf.SvfDriveFilterFlowNode"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 140,
+        "height": 180
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "adsr.ADSRFlowNode",
+      "type": "ADSRFlowNode",
+      "position": {
+        "x": 480,
+        "y": 460
+      },
+      "data": {
+        "label": "Amp Env",
+        "attackTime": 0.01,
+        "decayTime": 0.25,
+        "sustainLevel": 0.7,
+        "releaseTime": 0.35,
+        "maxTime": 10,
+        "sustainTime": 0.5,
+        "minPercent": 0,
+        "maxPercent": 100,
+        "lengthSec": 0.5,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "adsr.ADSRFlowNode"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 140,
+        "height": 180
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "vca.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 980,
+        "y": 160
+      },
+      "data": {
+        "label": "VCA",
+        "gain": 1,
+        "gainMidiMapping": null,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "vca.GainFlowNode"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 140,
+        "height": 180
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "envcut.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 720,
+        "y": 460
+      },
+      "data": {
+        "label": "Env->Cut",
+        "gain": 3200,
+        "gainMidiMapping": null,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "envcut.GainFlowNode"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 140,
+        "height": 180
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "lfo.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 480,
+        "y": 660
+      },
+      "data": {
+        "label": "LFO",
+        "frequency": 4,
+        "detune": 0,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "lfo.OscillatorFlowNode"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 140,
+        "height": 180
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "lfocut.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 720,
+        "y": 660
+      },
+      "data": {
+        "label": "LFO->Cut",
+        "gain": 700,
+        "gainMidiMapping": null,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "lfocut.GainFlowNode"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 140,
+        "height": 180
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "chorus.ChorusFlowNode",
+      "type": "ChorusFlowNode",
+      "position": {
+        "x": 1220,
+        "y": 160
+      },
+      "data": {
+        "label": "Chorus",
+        "rate": 0.7,
+        "depth": 3,
+        "mix": 0.5,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "chorus.ChorusFlowNode"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 140,
+        "height": 180
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "reverb.ReverbFlowNode",
+      "type": "ReverbFlowNode",
+      "position": {
+        "x": 1460,
+        "y": 300
+      },
+      "data": {
+        "label": "Reverb",
+        "seconds": 3,
+        "decay": 2.2,
+        "reverse": false,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "reverb.ReverbFlowNode"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 140,
+        "height": 180
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "master.MasterOutFlowNode",
+      "type": "MasterOutFlowNode",
+      "position": {
+        "x": 1700,
+        "y": 180
+      },
+      "data": {
+        "label": "Master Out",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "master.MasterOutFlowNode"
+      },
+      "zIndex": 1,
+      "measured": {
+        "width": 140,
+        "height": 180
+      },
+      "dragging": false,
+      "selected": false
+    }
+  ],
+  "edges": [
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "midi.MidiFlowNote",
+      "sourceHandle": "output",
+      "target": "osc1.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__midi.MidiFlowNoteoutput-osc1.OscillatorFlowNodefrequency"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "midi.MidiFlowNote",
+      "sourceHandle": "output",
+      "target": "osc2.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__midi.MidiFlowNoteoutput-osc2.OscillatorFlowNodefrequency"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "midi.MidiFlowNote",
+      "sourceHandle": "output",
+      "target": "sub.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "xy-edge__midi.MidiFlowNoteoutput-sub.OscillatorFlowNodefrequency"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "midi.MidiFlowNote",
+      "sourceHandle": "note-on",
+      "target": "adsr.ADSRFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__midi.MidiFlowNotenote-on-adsr.ADSRFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "midi.MidiFlowNote",
+      "sourceHandle": "note-off",
+      "target": "adsr.ADSRFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__midi.MidiFlowNotenote-off-adsr.ADSRFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "osc1.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "ring.RingModFlowNode",
+      "targetHandle": "a",
+      "id": "xy-edge__osc1.OscillatorFlowNodeoutput-ring.RingModFlowNodea"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "osc2.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "ring.RingModFlowNode",
+      "targetHandle": "b",
+      "id": "xy-edge__osc2.OscillatorFlowNodeoutput-ring.RingModFlowNodeb"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "osc1.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "mixer.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__osc1.OscillatorFlowNodeoutput-mixer.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "osc2.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "mixer.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__osc2.OscillatorFlowNodeoutput-mixer.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "sub.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "mixer.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__sub.OscillatorFlowNodeoutput-mixer.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "noise.NoiseFlowNode",
+      "sourceHandle": "output",
+      "target": "mixer.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__noise.NoiseFlowNodeoutput-mixer.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "ring.RingModFlowNode",
+      "sourceHandle": "output",
+      "target": "mixer.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__ring.RingModFlowNodeoutput-mixer.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "mixer.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "svf.SvfDriveFilterFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__mixer.GainFlowNodeoutput-svf.SvfDriveFilterFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "svf.SvfDriveFilterFlowNode",
+      "sourceHandle": "output",
+      "target": "vca.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__svf.SvfDriveFilterFlowNodeoutput-vca.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "adsr.ADSRFlowNode",
+      "sourceHandle": "output",
+      "target": "vca.GainFlowNode",
+      "targetHandle": "gain",
+      "id": "xy-edge__adsr.ADSRFlowNodeoutput-vca.GainFlowNodegain"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "vca.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "chorus.ChorusFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__vca.GainFlowNodeoutput-chorus.ChorusFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "adsr.ADSRFlowNode",
+      "sourceHandle": "output",
+      "target": "envcut.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__adsr.ADSRFlowNodeoutput-envcut.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "envcut.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "svf.SvfDriveFilterFlowNode",
+      "targetHandle": "cutoff",
+      "id": "xy-edge__envcut.GainFlowNodeoutput-svf.SvfDriveFilterFlowNodecutoff"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "lfo.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "lfocut.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__lfo.OscillatorFlowNodeoutput-lfocut.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "lfocut.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "svf.SvfDriveFilterFlowNode",
+      "targetHandle": "cutoff",
+      "id": "xy-edge__lfocut.GainFlowNodeoutput-svf.SvfDriveFilterFlowNodecutoff"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "chorus.ChorusFlowNode",
+      "sourceHandle": "output",
+      "target": "master.MasterOutFlowNode",
+      "targetHandle": "destination-input",
+      "id": "xy-edge__chorus.ChorusFlowNodeoutput-master.MasterOutFlowNodedestination-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "chorus.ChorusFlowNode",
+      "sourceHandle": "output",
+      "target": "reverb.ReverbFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__chorus.ChorusFlowNodeoutput-reverb.ReverbFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "reverb.ReverbFlowNode",
+      "sourceHandle": "output",
+      "target": "master.MasterOutFlowNode",
+      "targetHandle": "destination-input",
+      "id": "xy-edge__reverb.ReverbFlowNodeoutput-master.MasterOutFlowNodedestination-input"
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+/* Live Instrument UI for the flow editor — floating play/knob panel + custom
+   faceplate authoring modal. Self-contained (lui- prefix) so it doesn't collide
+   with the rest of the editor's styles. */
+
+.lui-panel {
+  position: fixed; z-index: 99997; width: 512px; max-width: calc(100vw - 24px);
+  background: #0c0f16; border: 1px solid #26324a; border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .6);
+  font-family: Inter, system-ui, sans-serif; color: #cdd6e6; overflow: hidden;
+}
+
+.lui-bar {
+  display: flex; align-items: center; gap: 8px; padding: 9px 10px;
+  background: linear-gradient(180deg, #131a28, #0c0f16);
+  border-bottom: 1px solid #1d2840; cursor: grab; user-select: none;
+}
+.lui-bar:active { cursor: grabbing; }
+.lui-grip { color: #4a5878; flex: none; }
+.lui-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.lui-name { font-weight: 700; font-size: 13px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lui-kind { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #7c8aa3; background: #161d2c; padding: 2px 7px; border-radius: 6px; }
+
+.lui-uimode { display: flex; margin-left: auto; background: #0a0d14; border: 1px solid #26324a; border-radius: 7px; padding: 2px; }
+.lui-uitab { background: transparent; border: none; color: #7c8aa3; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 5px; cursor: pointer; }
+.lui-uitab.on { background: var(--lui-accent, #6ee7a8); color: #06120c; }
+
+.lui-edit, .lui-close {
+  display: inline-flex; align-items: center; gap: 5px; background: transparent;
+  border: 1px solid #2c3a55; color: #cdd6e6; border-radius: 7px; padding: 4px 8px;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+}
+.lui-uimode + .lui-edit { margin-left: 8px; }
+.lui-edit:not(.lui-uimode + .lui-edit) { margin-left: auto; }
+.lui-edit:hover { border-color: var(--lui-accent, #6ee7a8); color: var(--lui-accent, #6ee7a8); }
+.lui-close { padding: 4px 6px; }
+.lui-close:hover { border-color: #d65; color: #f99; }
+
+.lui-body { padding: 14px; display: flex; flex-direction: column; gap: 16px; max-height: 70vh; overflow-y: auto; }
+.lui-custom { width: 100%; }
+.lui-noknobs { color: #7c8aa3; font-size: 12px; line-height: 1.5; background: #0a0d14; border: 1px dashed #26324a; border-radius: 8px; padding: 12px; }
+.lui-noknobs b { color: var(--lui-accent, #6ee7a8); }
+
+.lui-knobs { display: flex; flex-wrap: wrap; gap: 16px 14px; }
+
+/* Rotary knob */
+.lui-knob-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 60px; }
+.lui-knob { position: relative; border-radius: 50%; border: 2px solid #6ee7a8; background: radial-gradient(circle at 50% 38%, #1a2230, #0a0e15); cursor: ns-resize; flex: none; }
+.lui-knob-rot { position: absolute; inset: 0; display: flex; justify-content: center; }
+.lui-knob-ptr { width: 3px; border-radius: 2px; margin-top: 3px; }
+.lui-knob-label { font-size: 10px; color: #aab6cc; text-align: center; max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lui-knob-label.editable { cursor: text; }
+.lui-knob-label-input { width: 58px; font-size: 10px; text-align: center; background: #0a0d14; border: 1px solid #2f6b4a; color: #e8f6ee; border-radius: 4px; }
+.lui-knob-readout { font-family: ui-monospace, monospace; font-size: 10px; color: var(--lui-accent, #6ee7a8); }
+
+/* Octave + keyboard */
+.lui-octrow { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #aab6cc; }
+.lui-octlabel { text-transform: uppercase; letter-spacing: .06em; color: #7c8aa3; }
+.lui-oct { width: 22px; height: 22px; border-radius: 6px; border: 1px solid #2c3a55; background: #131a28; color: #cdd6e6; font-size: 14px; line-height: 1; cursor: pointer; }
+.lui-oct:hover { border-color: var(--lui-accent, #6ee7a8); }
+.lui-octval { font-family: ui-monospace, monospace; color: var(--lui-accent, #6ee7a8); min-width: 28px; }
+.lui-playhint { margin-left: auto; color: #5a6781; font-size: 10px; }
+
+.lui-keyboard { position: relative; height: 110px; user-select: none; touch-action: none; }
+.lui-whites { display: grid; grid-template-columns: repeat(var(--whites), 1fr); height: 100%; gap: 3px; }
+.lui-white { position: relative; border: none; border-radius: 0 0 6px 6px; background: linear-gradient(180deg, #f2f6fb, #c7d0dd); cursor: pointer; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; }
+.lui-white.on { background: linear-gradient(180deg, var(--lui-accent, #6ee7a8), #1f9d63); }
+.lui-keylabel { font-size: 9px; color: #2a3340; font-weight: 700; }
+.lui-blacks { position: absolute; inset: 0; pointer-events: none; }
+.lui-black { position: absolute; top: 0; width: calc((100% / var(--whites)) * 0.6); height: 62%; border: none; border-radius: 0 0 5px 5px; background: linear-gradient(180deg, #2a3340, #0a0e15); cursor: pointer; pointer-events: auto; }
+.lui-black.on { background: linear-gradient(180deg, var(--lui-accent, #6ee7a8), #157048); }
+
+/* Drum pad */
+.lui-pad { height: 120px; border-radius: 12px; border: 1px solid #2c3a55; cursor: pointer; color: #06120c; font-weight: 800; font-size: 16px; letter-spacing: .08em; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: linear-gradient(180deg, var(--lui-accent, #ffb454), #b8730f); }
+.lui-pad span { font-size: 10px; font-weight: 600; opacity: .8; }
+.lui-pad:active { filter: brightness(1.25); }
+
+/* ───────── Custom UI authoring modal ───────── */
+.lui-overlay { position: fixed; inset: 0; z-index: 100000; background: rgba(4, 7, 12, .66); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 24px; }
+.lui-cui-modal { width: min(1100px, 96vw); height: min(720px, 92vh); background: #0c0f16; border: 1px solid #26324a; border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, .7); font-family: Inter, system-ui, sans-serif; color: #cdd6e6; }
+.lui-head { display: flex; align-items: center; gap: 9px; padding: 12px 14px; border-bottom: 1px solid #1d2840; background: linear-gradient(180deg, #131a28, #0c0f16); }
+.lui-head .lui-dot { background: #6ee7a8; box-shadow: 0 0 8px #6ee7a8; }
+.lui-title { font-weight: 700; font-size: 14px; }
+.lui-hint { font-size: 11px; color: #7c8aa3; }
+.lui-head .lui-close { margin-left: auto; }
+
+.lui-cui-body { flex: 1; display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
+.lui-cui-edit { display: flex; flex-direction: column; border-right: 1px solid #1d2840; min-height: 0; }
+.lui-cui-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid #1d2840; flex-wrap: wrap; }
+.lui-cui-tool { display: inline-flex; align-items: center; gap: 5px; background: #131a28; border: 1px solid #2c3a55; color: #cdd6e6; border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer; }
+.lui-cui-tool:hover:not(:disabled) { border-color: #6ee7a8; color: #6ee7a8; }
+.lui-cui-tool:disabled { opacity: .4; cursor: default; }
+.lui-cui-attrs { font-size: 10px; color: #5a6781; margin-left: auto; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lui-cui-code { flex: 1; resize: none; border: none; background: #07090e; color: #cfe6d8; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; line-height: 1.5; padding: 12px; outline: none; }
+
+.lui-cui-preview { display: flex; flex-direction: column; min-height: 0; background: #070a10; }
+.lui-cui-preview-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #7c8aa3; padding: 8px 12px; border-bottom: 1px solid #1d2840; }
+.lui-cui-preview-stage { flex: 1; overflow: auto; padding: 18px; display: flex; align-items: flex-start; justify-content: center; }
+
+.lui-cui-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 12px 14px; border-top: 1px solid #1d2840; }
+.lui-btn-secondary { background: transparent; border: 1px solid #2c3a55; color: #cdd6e6; border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer; }
+.lui-btn-secondary:hover { border-color: #4a5878; }
+.lui-btn-primary { display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(180deg, #36e08e, #1f9d63); border: none; color: #06120c; border-radius: 8px; padding: 7px 16px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.lui-btn-primary:hover { filter: brightness(1.08); }
+
+@media (max-width: 760px) {
+  .lui-cui-body { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+  .lui-cui-edit { border-right: none; border-bottom: 1px solid #1d2840; }
+}

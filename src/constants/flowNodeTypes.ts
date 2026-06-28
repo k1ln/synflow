@@ -3,6 +3,15 @@ import OscillatorFlowNode from '../nodes/OscillatorFlowNode';
 import AudioWorkletOscillatorFlowNode from '../nodes/AudioWorkletOscillatorFlowNode';
 import FlowNode from '../nodes/FlowNode';
 import BiquadFilterFlowNode from '../nodes/BiquadFilterFlowNode';
+import SvfDriveFilterFlowNode from '../nodes/SvfDriveFilterFlowNode';
+import LadderFilterFlowNode from '../nodes/LadderFilterFlowNode';
+import KarplusFlowNode from '../nodes/KarplusFlowNode';
+import FMFlowNode from '../nodes/FMFlowNode';
+import WavetableFlowNode from '../nodes/WavetableFlowNode';
+import GranularFlowNode from '../nodes/GranularFlowNode';
+import EnvGenFlowNode from '../nodes/EnvGenFlowNode';
+import RingModFlowNode from '../nodes/RingModFlowNode';
+import ChorusFlowNode from '../nodes/ChorusFlowNode';
 import DynamicCompressorFlowNode from '../nodes/DynamicCompressorFlowNode';
 import GainFlowNode from '../nodes/GainFlowNode';
 import DelayFlowNode from '../nodes/DelayFlowNode';
@@ -56,6 +65,15 @@ export const nodeTypes = {
   AudioWorkletOscillatorFlowNode,
   FlowNode,
   BiquadFilterFlowNode,
+  SvfDriveFilterFlowNode,
+  LadderFilterFlowNode,
+  KarplusFlowNode,
+  FMFlowNode,
+  WavetableFlowNode,
+  GranularFlowNode,
+  EnvGenFlowNode,
+  RingModFlowNode,
+  ChorusFlowNode,
   DynamicCompressorFlowNode,
   GainFlowNode,
   DelayFlowNode,

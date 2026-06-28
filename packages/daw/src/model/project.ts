@@ -157,6 +157,7 @@ export interface PoolItem {
   kind: 'synth' | 'drum';
   gain?: number;           // instrument-level gain (default 1)
   fx?: FxInsert[];         // the instrument's general FX (heard live + in every track)
+  customUi?: string;       // optional custom HTML UI for the Live view (data-attribute bound)
 }
 
 /**

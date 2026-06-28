@@ -1,0 +1,31 @@
+{
+  "name": "RingMod Bell",
+  "nodes": [
+    { "id": "car.OscillatorFlowNode", "type": "OscillatorFlowNode", "position": { "x": 0, "y": 0 },
+      "data": { "label": "Carrier", "type": "sine", "frequency": 220, "detune": 0, "gain": 1, "isPitch": true, "pitchParam": "frequency", "id": "car.OscillatorFlowNode" } },
+    { "id": "mod.OscillatorFlowNode", "type": "OscillatorFlowNode", "position": { "x": 0, "y": 180 },
+      "data": { "label": "Modulator", "type": "sine", "frequency": 317, "detune": 0, "gain": 1, "id": "mod.OscillatorFlowNode",
+        "knobs": [{ "param": "frequency", "label": "Metal", "min": 40, "max": 2000, "default": 317 }] } },
+    { "id": "rm.RingModFlowNode", "type": "RingModFlowNode", "position": { "x": 240, "y": 90 }, "data": { "label": "Ring Mod", "id": "rm.RingModFlowNode" } },
+    { "id": "ladder.LadderFilterFlowNode", "type": "LadderFilterFlowNode", "position": { "x": 460, "y": 90 },
+      "data": { "label": "Filter", "cutoff": 3000, "resonance": 0.2, "drive": 1, "poles": 4, "id": "ladder.LadderFilterFlowNode",
+        "knobs": [ { "param": "cutoff", "label": "Cutoff", "min": 100, "max": 12000, "default": 3000 }, { "param": "resonance", "label": "Reso", "min": 0, "max": 1, "default": 0.2 } ] } },
+    { "id": "fenv.EnvGenFlowNode", "type": "EnvGenFlowNode", "position": { "x": 460, "y": 330 },
+      "data": { "label": "Filter Env", "attack": 0.002, "decay": 1.2, "sustain": 0.0, "release": 0.5, "amount": 4000, "bias": 0, "isTrigger": true, "id": "fenv.EnvGenFlowNode",
+        "knobs": [ { "param": "amount", "label": "F.Env", "min": 0, "max": 9000, "default": 4000 }, { "param": "decay", "label": "F.Dec", "min": 0.05, "max": 3, "default": 1.2 } ] } },
+    { "id": "vca.GainFlowNode", "type": "GainFlowNode", "position": { "x": 700, "y": 90 }, "data": { "label": "VCA", "gain": 1, "id": "vca.GainFlowNode" } },
+    { "id": "amp.ADSRFlowNode", "type": "ADSRFlowNode", "position": { "x": 460, "y": 480 },
+      "data": { "label": "Amp Env", "attackTime": 0.002, "decayTime": 1.4, "sustainTime": 1.4, "sustainLevel": 0.0, "releaseTime": 0.5, "maxTime": 10, "minPercent": 0, "maxPercent": 100, "isTrigger": true, "id": "amp.ADSRFlowNode",
+        "knobs": [ { "param": "sustainTime", "label": "Decay", "min": 0.1, "max": 4, "default": 1.4 } ] } },
+    { "id": "master.MasterOutFlowNode", "type": "MasterOutFlowNode", "position": { "x": 940, "y": 90 }, "data": { "label": "Master", "id": "master.MasterOutFlowNode" } }
+  ],
+  "edges": [
+    { "id": "e-car-rm", "source": "car.OscillatorFlowNode", "target": "rm.RingModFlowNode", "sourceHandle": "output", "targetHandle": "a" },
+    { "id": "e-mod-rm", "source": "mod.OscillatorFlowNode", "target": "rm.RingModFlowNode", "sourceHandle": "output", "targetHandle": "b" },
+    { "id": "e-rm-l", "source": "rm.RingModFlowNode", "target": "ladder.LadderFilterFlowNode", "sourceHandle": "output", "targetHandle": "main-input" },
+    { "id": "e-fenv-cut", "source": "fenv.EnvGenFlowNode", "target": "ladder.LadderFilterFlowNode", "sourceHandle": "output", "targetHandle": "cutoff" },
+    { "id": "e-l-vca", "source": "ladder.LadderFilterFlowNode", "target": "vca.GainFlowNode", "sourceHandle": "output", "targetHandle": "main-input" },
+    { "id": "e-amp-vca", "source": "amp.ADSRFlowNode", "target": "vca.GainFlowNode", "sourceHandle": "output", "targetHandle": "gain" },
+    { "id": "e-vca-m", "source": "vca.GainFlowNode", "target": "master.MasterOutFlowNode", "sourceHandle": "output", "targetHandle": "destination-input" }
+  ]
+}

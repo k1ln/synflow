@@ -1,0 +1,547 @@
+{
+  "name": "Juna-106",
+  "nodes": [
+    {
+      "id": "saw.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "DCO Saw",
+        "type": "sawtooth",
+        "frequency": 220,
+        "detune": 0,
+        "gain": 1,
+        "isPitch": true,
+        "pitchParam": "frequency",
+        "id": "saw.OscillatorFlowNode"
+      }
+    },
+    {
+      "id": "pulse.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 0,
+        "y": 130
+      },
+      "data": {
+        "label": "DCO Pulse",
+        "type": "square",
+        "frequency": 220,
+        "detune": 4,
+        "gain": 1,
+        "isPitch": true,
+        "pitchParam": "frequency",
+        "id": "pulse.OscillatorFlowNode"
+      }
+    },
+    {
+      "id": "sub.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 0,
+        "y": 260
+      },
+      "data": {
+        "label": "Sub",
+        "type": "square",
+        "frequency": 220,
+        "detune": -1200,
+        "gain": 1,
+        "isPitch": true,
+        "pitchParam": "frequency",
+        "id": "sub.OscillatorFlowNode"
+      }
+    },
+    {
+      "id": "noise.NoiseFlowNode",
+      "type": "NoiseFlowNode",
+      "position": {
+        "x": 0,
+        "y": 390
+      },
+      "data": {
+        "label": "Noise",
+        "id": "noise.NoiseFlowNode"
+      }
+    },
+    {
+      "id": "gSaw.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 240,
+        "y": 0
+      },
+      "data": {
+        "label": "Saw Lvl",
+        "gain": 0.5,
+        "id": "gSaw.GainFlowNode",
+        "knobs": [
+          {
+            "param": "gain",
+            "label": "Saw",
+            "min": 0,
+            "max": 1,
+            "default": 0.5
+          }
+        ]
+      }
+    },
+    {
+      "id": "gPulse.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 240,
+        "y": 130
+      },
+      "data": {
+        "label": "Pulse Lvl",
+        "gain": 0.32,
+        "id": "gPulse.GainFlowNode",
+        "knobs": [
+          {
+            "param": "gain",
+            "label": "Pulse",
+            "min": 0,
+            "max": 1,
+            "default": 0.32
+          }
+        ]
+      }
+    },
+    {
+      "id": "gSub.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 240,
+        "y": 260
+      },
+      "data": {
+        "label": "Sub Lvl",
+        "gain": 0.4,
+        "id": "gSub.GainFlowNode",
+        "knobs": [
+          {
+            "param": "gain",
+            "label": "Sub",
+            "min": 0,
+            "max": 1,
+            "default": 0.4
+          }
+        ]
+      }
+    },
+    {
+      "id": "gNoise.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 240,
+        "y": 390
+      },
+      "data": {
+        "label": "Noise Lvl",
+        "gain": 0,
+        "id": "gNoise.GainFlowNode",
+        "knobs": [
+          {
+            "param": "gain",
+            "label": "Noise",
+            "min": 0,
+            "max": 1,
+            "default": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "hpf.BiquadFilterFlowNode",
+      "type": "BiquadFilterFlowNode",
+      "position": {
+        "x": 480,
+        "y": 130
+      },
+      "data": {
+        "label": "HPF",
+        "type": "highpass",
+        "filterType": "highpass",
+        "frequency": 30,
+        "Q": 0.4,
+        "detune": 0,
+        "gain": 0,
+        "id": "hpf.BiquadFilterFlowNode",
+        "knobs": [
+          {
+            "param": "frequency",
+            "label": "HPF",
+            "min": 20,
+            "max": 2000,
+            "default": 30
+          }
+        ]
+      }
+    },
+    {
+      "id": "vcf.BiquadFilterFlowNode",
+      "type": "BiquadFilterFlowNode",
+      "position": {
+        "x": 720,
+        "y": 130
+      },
+      "data": {
+        "label": "VCF",
+        "type": "lowpass",
+        "filterType": "lowpass",
+        "frequency": 2200,
+        "Q": 4,
+        "detune": 0,
+        "gain": 0,
+        "id": "vcf.BiquadFilterFlowNode",
+        "knobs": [
+          {
+            "param": "frequency",
+            "label": "Cutoff",
+            "min": 80,
+            "max": 12000,
+            "default": 2200
+          },
+          {
+            "param": "Q",
+            "label": "Reso",
+            "min": 0,
+            "max": 18,
+            "default": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": "fenv.ADSRFlowNode",
+      "type": "ADSRFlowNode",
+      "position": {
+        "x": 720,
+        "y": 360
+      },
+      "data": {
+        "label": "Filter Env",
+        "attackTime": 0.02,
+        "decayTime": 0.5,
+        "sustainTime": 0.5,
+        "sustainLevel": 0.3,
+        "releaseTime": 0.4,
+        "maxTime": 10,
+        "minPercent": 18,
+        "maxPercent": 140,
+        "isTrigger": true,
+        "id": "fenv.ADSRFlowNode",
+        "knobs": [
+          {
+            "param": "maxPercent",
+            "label": "Env Amt",
+            "min": 50,
+            "max": 400,
+            "default": 140
+          },
+          {
+            "param": "attackTime",
+            "label": "F.Atk",
+            "min": 0,
+            "max": 2,
+            "default": 0.02
+          },
+          {
+            "param": "sustainTime",
+            "label": "F.Dec",
+            "min": 0.01,
+            "max": 3,
+            "default": 0.5
+          },
+          {
+            "param": "sustainLevel",
+            "label": "F.Sus",
+            "min": 0,
+            "max": 1,
+            "default": 0.3
+          },
+          {
+            "param": "releaseTime",
+            "label": "F.Rel",
+            "min": 0,
+            "max": 3,
+            "default": 0.4
+          }
+        ]
+      }
+    },
+    {
+      "id": "lfo.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 480,
+        "y": 380
+      },
+      "data": {
+        "label": "LFO",
+        "type": "sine",
+        "frequency": 5,
+        "detune": 0,
+        "gain": 1,
+        "id": "lfo.OscillatorFlowNode",
+        "knobs": [
+          {
+            "param": "frequency",
+            "label": "LFO Rate",
+            "min": 0.05,
+            "max": 12,
+            "default": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": "gLfo.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 600,
+        "y": 470
+      },
+      "data": {
+        "label": "LFO Depth",
+        "gain": 0,
+        "id": "gLfo.GainFlowNode",
+        "knobs": [
+          {
+            "param": "gain",
+            "label": "LFO Depth",
+            "min": 0,
+            "max": 4000,
+            "default": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "vca.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 960,
+        "y": 130
+      },
+      "data": {
+        "label": "VCA",
+        "gain": 1,
+        "id": "vca.GainFlowNode"
+      }
+    },
+    {
+      "id": "aenv.ADSRFlowNode",
+      "type": "ADSRFlowNode",
+      "position": {
+        "x": 960,
+        "y": 360
+      },
+      "data": {
+        "label": "Amp Env",
+        "attackTime": 0.01,
+        "decayTime": 0.3,
+        "sustainTime": 0.3,
+        "sustainLevel": 0.85,
+        "releaseTime": 0.3,
+        "maxTime": 10,
+        "minPercent": 0,
+        "maxPercent": 100,
+        "isTrigger": true,
+        "id": "aenv.ADSRFlowNode",
+        "knobs": [
+          {
+            "param": "attackTime",
+            "label": "Atk",
+            "min": 0,
+            "max": 2,
+            "default": 0.01
+          },
+          {
+            "param": "sustainTime",
+            "label": "Dec",
+            "min": 0.01,
+            "max": 3,
+            "default": 0.3
+          },
+          {
+            "param": "sustainLevel",
+            "label": "Sus",
+            "min": 0,
+            "max": 1,
+            "default": 0.85
+          },
+          {
+            "param": "releaseTime",
+            "label": "Rel",
+            "min": 0,
+            "max": 3,
+            "default": 0.3
+          }
+        ]
+      }
+    },
+    {
+      "id": "chorus.ChorusFlowNode",
+      "type": "ChorusFlowNode",
+      "position": {
+        "x": 1200,
+        "y": 130
+      },
+      "data": {
+        "label": "Juno Chorus",
+        "rate": 0.8,
+        "depth": 2.6,
+        "mix": 0.5,
+        "id": "chorus.ChorusFlowNode",
+        "knobs": [
+          {
+            "param": "mix",
+            "label": "Chorus",
+            "min": 0,
+            "max": 1,
+            "default": 0.5
+          },
+          {
+            "param": "rate",
+            "label": "Ch Rate",
+            "min": 0.05,
+            "max": 6,
+            "default": 0.8
+          }
+        ]
+      }
+    },
+    {
+      "id": "master.MasterOutFlowNode",
+      "type": "MasterOutFlowNode",
+      "position": {
+        "x": 1440,
+        "y": 130
+      },
+      "data": {
+        "label": "Master",
+        "id": "master.MasterOutFlowNode"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-saw-g",
+      "source": "saw.OscillatorFlowNode",
+      "target": "gSaw.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-pulse-g",
+      "source": "pulse.OscillatorFlowNode",
+      "target": "gPulse.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-sub-g",
+      "source": "sub.OscillatorFlowNode",
+      "target": "gSub.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-noise-g",
+      "source": "noise.NoiseFlowNode",
+      "target": "gNoise.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-gsaw-hpf",
+      "source": "gSaw.GainFlowNode",
+      "target": "hpf.BiquadFilterFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-gpulse-hpf",
+      "source": "gPulse.GainFlowNode",
+      "target": "hpf.BiquadFilterFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-gsub-hpf",
+      "source": "gSub.GainFlowNode",
+      "target": "hpf.BiquadFilterFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-gnoise-hpf",
+      "source": "gNoise.GainFlowNode",
+      "target": "hpf.BiquadFilterFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-hpf-vcf",
+      "source": "hpf.BiquadFilterFlowNode",
+      "target": "vcf.BiquadFilterFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-vcf-vca",
+      "source": "vcf.BiquadFilterFlowNode",
+      "target": "vca.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-fenv-vcf",
+      "source": "fenv.ADSRFlowNode",
+      "target": "vcf.BiquadFilterFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "frequency"
+    },
+    {
+      "id": "e-lfo-glfo",
+      "source": "lfo.OscillatorFlowNode",
+      "target": "gLfo.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-glfo-vcf",
+      "source": "gLfo.GainFlowNode",
+      "target": "vcf.BiquadFilterFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "frequency"
+    },
+    {
+      "id": "e-aenv-vca",
+      "source": "aenv.ADSRFlowNode",
+      "target": "vca.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "gain"
+    },
+    {
+      "id": "e-vca-chorus",
+      "source": "vca.GainFlowNode",
+      "target": "chorus.ChorusFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-chorus-master",
+      "source": "chorus.ChorusFlowNode",
+      "target": "master.MasterOutFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "destination-input"
+    }
+  ],
+  "customUi": "<style>\n  *{box-sizing:border-box}\n  .panel{font-family:'Inter',system-ui,sans-serif;width:520px;max-width:100%;border-radius:14px;padding:16px 18px 18px;\n    background:var(--bg);color:var(--ink);box-shadow:0 10px 30px rgba(0,0,0,.5), var(--edge);}\n  .brand{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;border-bottom:1px solid var(--line);padding-bottom:10px}\n  .logo{font-size:18px;font-weight:900;letter-spacing:.04em;color:var(--accent);text-shadow:var(--logoSh)}\n  .model{font-size:9px;letter-spacing:.34em;text-transform:uppercase;color:var(--dim)}\n  .sect{display:flex;flex-wrap:wrap;gap:14px 10px;align-items:flex-end}\n  .group{display:flex;flex-direction:column;gap:7px}\n  .gt{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}\n  .knobs{display:flex;flex-wrap:wrap;gap:12px 8px}\n  .kn{display:flex;flex-direction:column;align-items:center;gap:2px;width:54px}\n  .dial{width:40px;height:40px;border-radius:50%;position:relative;background:var(--knob);\n    box-shadow:0 2px 4px rgba(0,0,0,.5),inset 0 1px 1px rgba(255,255,255,.18);border:1px solid rgba(0,0,0,.55)}\n  .tk{position:absolute;left:50%;top:4px;width:3px;height:13px;border-radius:2px;background:var(--accent);\n    transform-origin:50% 16px;transform:translateX(-50%) rotate(var(--a,-135deg));box-shadow:0 0 5px var(--accent)}\n  .kl{font-size:8px;letter-spacing:.03em;text-transform:uppercase;color:var(--ink);text-align:center;line-height:1.05;max-width:54px}\n  .kv{font-size:8px;font-family:ui-monospace,monospace;color:var(--accent)}\n  .fd{display:flex;flex-direction:column;align-items:center;gap:5px;width:34px}\n  .fd input[type=range]{writing-mode:vertical-lr;direction:rtl;width:7px;height:96px;accent-color:var(--accent);background:transparent}\n  .kbd{position:relative;height:96px;margin-top:16px;border-radius:0 0 8px 8px;overflow:hidden}\n  .wks{display:grid;grid-template-columns:repeat(var(--n),1fr);height:100%;gap:2px}\n  .wk{position:relative;border-radius:0 0 5px 5px;background:linear-gradient(180deg,#fbfdff,#cdd4dc);cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px}\n  .wk span{font-size:8px;color:#5a6470;font-weight:700}\n  .wk.on{background:linear-gradient(180deg,var(--accent),var(--accent2))}\n  .bks{position:absolute;inset:0;pointer-events:none}\n  .bk{position:absolute;top:0;width:calc((100%/var(--n,8))*0.62);height:60%;border-radius:0 0 4px 4px;background:linear-gradient(180deg,#2a2f36,#0c0f13);cursor:pointer;pointer-events:auto;box-shadow:0 2px 3px rgba(0,0,0,.5)}\n  .bk.on{background:linear-gradient(180deg,var(--accent),#0c0f13)}\n  .pad{height:130px;border-radius:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;\n    font-size:18px;font-weight:800;letter-spacing:.1em;color:var(--bg);background:linear-gradient(180deg,var(--accent),var(--accent2));margin-top:14px}\n  .pad span{font-size:9px;font-weight:600;opacity:.8}\n  .pad.on{filter:brightness(1.25)}\n\n</style>\n<div class=\"panel\" style=\"--bg:linear-gradient(180deg,#d7dade,#b7bcc2);--ink:#23262b;--dim:#5a5f66;--line:#9aa0a8;--accent:#c0392b;--accent2:#8e2820;--logoSh:none;--edge:inset 0 1px 0 #fff;--knob:radial-gradient(circle at 50% 35%,#3a3d42,#16181b 72%)\">\n  <div class=\"brand\"><div class=\"logo\">Juna-106</div><div class=\"model\">Polyphonic Synthesizer</div></div>\n  <div class=\"sect\">\n        <div class=\"group\"><div class=\"gt\">DCO Mixer</div><div class=\"knobs\"><div class=\"fd\"><input type=\"range\" data-param=\"gSaw.GainFlowNode.gain\"><div class=\"kl\">Saw</div></div><div class=\"fd\"><input type=\"range\" data-param=\"gPulse.GainFlowNode.gain\"><div class=\"kl\">Pulse</div></div><div class=\"fd\"><input type=\"range\" data-param=\"gSub.GainFlowNode.gain\"><div class=\"kl\">Sub</div></div><div class=\"fd\"><input type=\"range\" data-param=\"gNoise.GainFlowNode.gain\"><div class=\"kl\">Noise</div></div></div></div>\n        <div class=\"group\"><div class=\"gt\">VCF</div><div class=\"knobs\"><div class=\"kn\" data-knob=\"hpf.BiquadFilterFlowNode.frequency\" title=\"HPF\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">HPF</div><div class=\"kv\" data-readout=\"hpf.BiquadFilterFlowNode.frequency\"></div></div><div class=\"kn\" data-knob=\"vcf.BiquadFilterFlowNode.frequency\" title=\"Cutoff\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Cutoff</div><div class=\"kv\" data-readout=\"vcf.BiquadFilterFlowNode.frequency\"></div></div><div class=\"kn\" data-knob=\"vcf.BiquadFilterFlowNode.Q\" title=\"Reso\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Reso</div><div class=\"kv\" data-readout=\"vcf.BiquadFilterFlowNode.Q\"></div></div></div></div>\n        <div class=\"group\"><div class=\"gt\">Filter Env</div><div class=\"knobs\"><div class=\"kn\" data-knob=\"fenv.ADSRFlowNode.maxPercent\" title=\"Env Amt\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Env Amt</div><div class=\"kv\" data-readout=\"fenv.ADSRFlowNode.maxPercent\"></div></div><div class=\"kn\" data-knob=\"fenv.ADSRFlowNode.attackTime\" title=\"F.Atk\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">F.Atk</div><div class=\"kv\" data-readout=\"fenv.ADSRFlowNode.attackTime\"></div></div><div class=\"kn\" data-knob=\"fenv.ADSRFlowNode.sustainTime\" title=\"F.Dec\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">F.Dec</div><div class=\"kv\" data-readout=\"fenv.ADSRFlowNode.sustainTime\"></div></div><div class=\"kn\" data-knob=\"fenv.ADSRFlowNode.sustainLevel\" title=\"F.Sus\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">F.Sus</div><div class=\"kv\" data-readout=\"fenv.ADSRFlowNode.sustainLevel\"></div></div><div class=\"kn\" data-knob=\"fenv.ADSRFlowNode.releaseTime\" title=\"F.Rel\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">F.Rel</div><div class=\"kv\" data-readout=\"fenv.ADSRFlowNode.releaseTime\"></div></div></div></div>\n        <div class=\"group\"><div class=\"gt\">VCA</div><div class=\"knobs\"><div class=\"kn\" data-knob=\"aenv.ADSRFlowNode.attackTime\" title=\"Atk\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Atk</div><div class=\"kv\" data-readout=\"aenv.ADSRFlowNode.attackTime\"></div></div><div class=\"kn\" data-knob=\"aenv.ADSRFlowNode.sustainTime\" title=\"Dec\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Dec</div><div class=\"kv\" data-readout=\"aenv.ADSRFlowNode.sustainTime\"></div></div><div class=\"kn\" data-knob=\"aenv.ADSRFlowNode.sustainLevel\" title=\"Sus\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Sus</div><div class=\"kv\" data-readout=\"aenv.ADSRFlowNode.sustainLevel\"></div></div><div class=\"kn\" data-knob=\"aenv.ADSRFlowNode.releaseTime\" title=\"Rel\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Rel</div><div class=\"kv\" data-readout=\"aenv.ADSRFlowNode.releaseTime\"></div></div></div></div>\n        <div class=\"group\"><div class=\"gt\">LFO · Chorus</div><div class=\"knobs\"><div class=\"kn\" data-knob=\"lfo.OscillatorFlowNode.frequency\" title=\"LFO Rate\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">LFO Rate</div><div class=\"kv\" data-readout=\"lfo.OscillatorFlowNode.frequency\"></div></div><div class=\"kn\" data-knob=\"gLfo.GainFlowNode.gain\" title=\"LFO Depth\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">LFO Depth</div><div class=\"kv\" data-readout=\"gLfo.GainFlowNode.gain\"></div></div><div class=\"kn\" data-knob=\"chorus.ChorusFlowNode.mix\" title=\"Chorus\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Chorus</div><div class=\"kv\" data-readout=\"chorus.ChorusFlowNode.mix\"></div></div><div class=\"kn\" data-knob=\"chorus.ChorusFlowNode.rate\" title=\"Ch Rate\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Ch Rate</div><div class=\"kv\" data-readout=\"chorus.ChorusFlowNode.rate\"></div></div></div></div>\n      </div>\n  <div class=\"kbd\"><div class=\"wks\" style=\"--n:8\"><div class=\"wk\" data-note=\"48\"><span>C3</span></div><div class=\"wk\" data-note=\"50\"></div><div class=\"wk\" data-note=\"52\"></div><div class=\"wk\" data-note=\"53\"></div><div class=\"wk\" data-note=\"55\"></div><div class=\"wk\" data-note=\"57\"></div><div class=\"wk\" data-note=\"59\"></div><div class=\"wk\" data-note=\"60\"><span>C4</span></div></div><div class=\"bks\"><div class=\"bk\" data-note=\"49\" style=\"left:calc(12.5% - (100%/8)*0.32)\"></div><div class=\"bk\" data-note=\"51\" style=\"left:calc(25% - (100%/8)*0.32)\"></div><div class=\"bk\" data-note=\"54\" style=\"left:calc(50% - (100%/8)*0.32)\"></div><div class=\"bk\" data-note=\"56\" style=\"left:calc(62.5% - (100%/8)*0.32)\"></div><div class=\"bk\" data-note=\"58\" style=\"left:calc(75% - (100%/8)*0.32)\"></div></div></div>\n</div>"
+}

@@ -1,0 +1,32 @@
+{
+  "name": "Granular Texture",
+  "nodes": [
+    { "id": "osc.OscillatorFlowNode", "type": "OscillatorFlowNode", "position": { "x": 0, "y": 40 },
+      "data": { "label": "Source", "type": "sawtooth", "frequency": 220, "detune": 0, "gain": 1, "isPitch": true, "pitchParam": "frequency", "id": "osc.OscillatorFlowNode" } },
+    { "id": "gr.GranularFlowNode", "type": "GranularFlowNode", "position": { "x": 240, "y": 40 },
+      "data": { "label": "Granular", "density": 60, "size": 130, "position": 0.12, "spray": 0.45, "pitch": 1, "mix": 0.85, "freeze": false, "id": "gr.GranularFlowNode",
+        "knobs": [
+          { "param": "density", "label": "Density", "min": 1, "max": 200, "default": 60 },
+          { "param": "size", "label": "Size", "min": 5, "max": 500, "default": 130 },
+          { "param": "position", "label": "Pos", "min": 0, "max": 1, "default": 0.12 },
+          { "param": "spray", "label": "Spray", "min": 0, "max": 1, "default": 0.45 },
+          { "param": "pitch", "label": "Grain Pitch", "min": 0.25, "max": 4, "default": 1 },
+          { "param": "mix", "label": "Mix", "min": 0, "max": 1, "default": 0.85 }
+        ] } },
+    { "id": "ladder.LadderFilterFlowNode", "type": "LadderFilterFlowNode", "position": { "x": 480, "y": 40 },
+      "data": { "label": "Filter", "cutoff": 3000, "resonance": 0.15, "drive": 1, "poles": 4, "id": "ladder.LadderFilterFlowNode",
+        "knobs": [ { "param": "cutoff", "label": "Cutoff", "min": 80, "max": 12000, "default": 3000 }, { "param": "resonance", "label": "Reso", "min": 0, "max": 1, "default": 0.15 } ] } },
+    { "id": "vca.GainFlowNode", "type": "GainFlowNode", "position": { "x": 720, "y": 40 }, "data": { "label": "VCA", "gain": 1, "id": "vca.GainFlowNode" } },
+    { "id": "amp.ADSRFlowNode", "type": "ADSRFlowNode", "position": { "x": 480, "y": 300 },
+      "data": { "label": "Amp Env", "attackTime": 0.3, "decayTime": 0.4, "sustainTime": 0.4, "sustainLevel": 0.85, "releaseTime": 0.6, "maxTime": 10, "minPercent": 0, "maxPercent": 100, "isTrigger": true, "id": "amp.ADSRFlowNode",
+        "knobs": [ { "param": "attackTime", "label": "Atk", "min": 0, "max": 3, "default": 0.3 }, { "param": "releaseTime", "label": "Rel", "min": 0, "max": 4, "default": 0.6 } ] } },
+    { "id": "master.MasterOutFlowNode", "type": "MasterOutFlowNode", "position": { "x": 960, "y": 40 }, "data": { "label": "Master", "id": "master.MasterOutFlowNode" } }
+  ],
+  "edges": [
+    { "id": "e-osc-gr", "source": "osc.OscillatorFlowNode", "target": "gr.GranularFlowNode", "sourceHandle": "output", "targetHandle": "main-input" },
+    { "id": "e-gr-l", "source": "gr.GranularFlowNode", "target": "ladder.LadderFilterFlowNode", "sourceHandle": "output", "targetHandle": "main-input" },
+    { "id": "e-l-vca", "source": "ladder.LadderFilterFlowNode", "target": "vca.GainFlowNode", "sourceHandle": "output", "targetHandle": "main-input" },
+    { "id": "e-amp-vca", "source": "amp.ADSRFlowNode", "target": "vca.GainFlowNode", "sourceHandle": "output", "targetHandle": "gain" },
+    { "id": "e-vca-m", "source": "vca.GainFlowNode", "target": "master.MasterOutFlowNode", "sourceHandle": "output", "targetHandle": "destination-input" }
+  ]
+}

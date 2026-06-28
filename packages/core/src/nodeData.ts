@@ -14,6 +14,77 @@ export type ADSRFlowNodeProps = NodeProps;
 export type AudioSignalFreqShifterFlowNodeProps = NodeProps;
 export type AudioWorkletFlowNodeProps = NodeProps;
 export type BiquadFilterFlowNodeProps = NodeProps;
+export type SvfDriveFilterFlowNodeProps = NodeProps<{
+  cutoff?: number;
+  resonance?: number;
+  drive?: number;
+  mix?: number;
+  mode?: number | string;
+  slope?: number;
+  [key: string]: any;
+}>;
+export type LadderFilterFlowNodeProps = NodeProps<{
+  cutoff?: number;
+  resonance?: number;
+  drive?: number;
+  poles?: number;
+  [key: string]: any;
+}>;
+export type KarplusFlowNodeProps = NodeProps<{
+  frequency?: number;
+  decay?: number;
+  tone?: number;
+  [key: string]: any;
+}>;
+export type FMFlowNodeProps = NodeProps<{
+  frequency?: number;
+  algorithm?: number;
+  feedback?: number;
+  attack?: number;
+  decay?: number;
+  sustain?: number;
+  release?: number;
+  [key: string]: any;
+}>;
+export type WavetableFlowNodeProps = NodeProps<{
+  frequency?: number;
+  position?: number;
+  warp?: number;
+  mode?: number;
+  unison?: number;
+  detune?: number;
+  attack?: number;
+  decay?: number;
+  sustain?: number;
+  release?: number;
+  [key: string]: any;
+}>;
+export type GranularFlowNodeProps = NodeProps<{
+  density?: number;
+  size?: number;
+  position?: number;
+  spray?: number;
+  pitch?: number;
+  mix?: number;
+  freeze?: boolean;
+  [key: string]: any;
+}>;
+export type EnvGenFlowNodeProps = NodeProps<{
+  attack?: number;
+  decay?: number;
+  sustain?: number;
+  release?: number;
+  amount?: number;
+  bias?: number;
+  [key: string]: any;
+}>;
+export type RingModFlowNodeProps = NodeProps;
+export type ChorusFlowNodeProps = NodeProps<{
+  rate?: number;
+  depth?: number;
+  mix?: number;
+  [key: string]: any;
+}>;
 export type ButtonNodeProps = NodeProps;
 export type ClockNodeProps = NodeProps;
 export type ConstantNodeProps = NodeProps;

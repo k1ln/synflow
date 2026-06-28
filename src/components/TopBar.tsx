@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Save, Upload, Download, FolderOpen, Plus, Settings, HardDriveDownload, FilePlus, FileInput, FileOutput, Play, Square, MoreHorizontal, Music, BookOpen, Github, Youtube, HelpCircle, Shield, Trash2, SlidersHorizontal } from 'lucide-react';
+import { Save, Upload, Download, FolderOpen, Plus, Settings, HardDriveDownload, FilePlus, FileInput, FileOutput, Play, Square, MoreHorizontal, Music, BookOpen, Github, Youtube, HelpCircle, Shield, Trash2, SlidersHorizontal, LayoutDashboard } from 'lucide-react';
 
 export interface TopBarProps {
   // Left cluster (sidebar-related)
@@ -52,6 +52,9 @@ export interface TopBarProps {
   // "Expose to DAW": toggle the Host Interface overlay in standalone editing.
   onToggleExpose?: () => void;
   exposeActive?: boolean;
+  // "Instrument UI": toggle the floating playable Live UI panel for this flow.
+  onToggleLiveUi?: () => void;
+  liveUiActive?: boolean;
 }
 
 // Icon-only button with tooltip
@@ -113,6 +116,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   onDeleteFlow,
   onToggleExpose,
   exposeActive,
+  onToggleLiveUi,
+  liveUiActive,
 }) => {
   const showCurrent = (currentItemName && currentItemName.length > 0);
   const [ioMenuOpen, setIoMenuOpen] = useState(false);
@@ -436,6 +441,24 @@ export const TopBar: React.FC<TopBarProps> = ({
             >
               <SlidersHorizontal size={16} />
               <span style={{ fontSize: 11 }}>Expose to DAW</span>
+            </button>
+          )}
+
+          {onToggleLiveUi && (
+            <button
+              title="Instrument UI — play this flow live and design its DAW faceplate"
+              onClick={onToggleLiveUi}
+              className="topbar-btn"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 10px',
+                borderRadius: 6, cursor: 'pointer',
+                background: liveUiActive ? 'rgba(110,231,168,.16)' : 'transparent',
+                color: liveUiActive ? '#6ee7a8' : '#eee',
+                border: `1px solid ${liveUiActive ? '#2f6b4a' : '#333'}`,
+              }}
+            >
+              <LayoutDashboard size={16} />
+              <span style={{ fontSize: 11 }}>Instrument UI</span>
             </button>
           )}
 

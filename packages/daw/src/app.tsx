@@ -24,6 +24,7 @@ import {
 } from './model/project';
 import { midiToFreq } from './model/pitch';
 import { type Flow, makeSynthVoice, makeKick } from './synflow/instruments';
+import { flowKnobs } from './synflow/knobs';
 import { makeFilterFx } from './synflow/effects';
 import { LIBRARY, findEntry, cloneFlow, registerEntries, type LibraryEntry } from './synflow/library';
 import { fsSupported, restoreFolder, seedLibrary, readAllFlows, writeFlow, pickFolder, saveProject, loadProject, listSongs, songSlug, createBounceWritable, createExportWritable, listAllAssets, listAudioFiles, writeVideoFile, readVideoFile } from './synflow/flowStore';
@@ -36,6 +37,7 @@ import { TrackEditor, type TrackEditorHandlers } from './ui/TrackEditor';
 import { FxBar } from './ui/FxBar';
 import { Arrange } from './ui/Arrange';
 import { InstrumentPanel } from './ui/InstrumentPanel';
+import { CustomUiEditor } from './ui/CustomUiEditor';
 import { SynflowEditor } from './ui/SynflowEditor';
 import { EqEditor } from './ui/EqEditor';
 import { StorageSetup } from './ui/StorageSetup';
@@ -96,6 +98,7 @@ export function App() {
   const songModeRef = useRef(false); songModeRef.current = songMode;
   const [editor, setEditor] = useState<{ flow: Flow; title: string; onSaved: (f: Flow) => void } | null>(null);
   const [eqEditor, setEqEditor] = useState<{ title: string; settings: EqSettings; sampleRate: number; getAnalyser: () => AnalyserNode | null; onChange: (s: EqSettings, commit: boolean) => void } | null>(null);
+  const [customUiEdit, setCustomUiEdit] = useState<string | null>(null); // poolId whose custom UI is being edited
   const [library, setLibrary] = useState<LibraryEntry[]>(LIBRARY);
   const [folder, setFolder] = useState<FileSystemDirectoryHandle | null>(null);
   const [storageSetup, setStorageSetup] = useState(false);
@@ -810,6 +813,15 @@ export function App() {
     persistDebounced(`instrument:${pool.libId ?? pool.id}`, { group: 'instrument', id: pool.libId ?? pool.id, name: pool.name, category: pool.kind === 'synth' ? 'Synths' : 'Drums', kind: pool.kind === 'synth' ? 'piano' : 'step', flow });
   };
 
+  // Save a custom UI: keep it on the pool item (per-song) AND embed it in the flow
+  // so it persists to disk and travels with the instrument into other songs.
+  const saveCustomUi = (poolId: string, html: string) => {
+    const pool = projectRef.current.pool.find((p) => p.id === poolId); if (!pool) return;
+    const flow = { ...pool.flow, customUi: html };
+    mapPool(poolId, (pi) => ({ ...pi, customUi: html, flow }));
+    persistDebounced(`instrument:${pool.libId ?? pool.id}`, { group: 'instrument', id: pool.libId ?? pool.id, name: pool.name, category: pool.kind === 'synth' ? 'Synths' : 'Drums', kind: pool.kind === 'synth' ? 'piano' : 'step', flow });
+  };
+
   const onInstrumentGain = (poolId: string, v: number) => {
     mapPool(poolId, (pi) => ({ ...pi, gain: v }));
     for (const u of usesOfPool(poolId)) mixerRef.current?.setUseGain(u.id, v);
@@ -818,8 +830,12 @@ export function App() {
 
   // Open an instrument flow in Synflow → on save replace the pool flow + rebuild engines + persist.
   const openInstrumentEditor = (pool: PoolItem) => {
-    setEditor({ flow: pool.flow, title: pool.name, onSaved: (f) => {
-      mapPool(pool.id, (pi) => ({ ...pi, flow: f }));
+    setEditor({ flow: pool.flow, title: pool.name, onSaved: (f0) => {
+      // Synflow now round-trips flow.customUi — prefer a faceplate edited there,
+      // falling back to whatever the instrument already had.
+      const customUi = f0.customUi ?? pool.customUi ?? pool.flow.customUi;
+      const f = { ...f0, customUi };
+      mapPool(pool.id, (pi) => ({ ...pi, flow: f, customUi }));
       for (const u of usesOfPool(pool.id)) {
         const t = trackOfUse(u.id); const strip = t ? mixerRef.current?.use(u.id, t.id) : undefined;
         hostsRef.current.get(u.id)?.dispose(); hostsRef.current.delete(u.id);
@@ -1573,6 +1589,7 @@ export function App() {
                   onKnob={(nodeId, param, v) => onInstrumentKnob(pool.id, nodeId, param, v)}
                   onKnobRename={(nodeId, param, label) => onInstrumentKnobRename(pool.id, nodeId, param, label)}
                   onEdit={() => editInstrument(pool.id)}
+                  customUi={pool.customUi ?? pool.flow.customUi} onEditUi={() => setCustomUiEdit(pool.id)}
                   onNoteOn={(m) => void liveNoteOn(pool.id, m)} onNoteOff={(m) => liveNoteOff(pool.id, m)} onHit={() => void liveDrumDown(pool.id)}
                   fx={pool.fx ?? []} effects={effects}
                   onFxAdd={(fxId) => onPoolFxAdd(pool.id, fxId)} onFxRemove={(i) => onPoolFxRemove(pool.id, i)}
@@ -1646,6 +1663,19 @@ export function App() {
       </div>
       {editor && <SynflowEditor flow={editor.flow} title={editor.title} onSaved={editor.onSaved} onClose={() => setEditor(null)} />}
       {eqEditor && <EqEditor title={eqEditor.title} settings={eqEditor.settings} sampleRate={eqEditor.sampleRate} getAnalyser={eqEditor.getAnalyser} onChange={eqEditor.onChange} onClose={() => setEqEditor(null)} />}
+      {customUiEdit && (() => {
+        const pool = project.pool.find((p) => p.id === customUiEdit);
+        if (!pool || pool.kind === undefined) { return null; }
+        return (
+          <CustomUiEditor
+            poolName={pool.name} kind={pool.kind} initialHtml={pool.customUi ?? pool.flow.customUi ?? ''} knobs={flowKnobs(pool.flow)}
+            valueOf={(nodeId, param) => projectRef.current.pool.find((p) => p.id === pool.id)?.flow.nodes.find((n: any) => n.id === nodeId)?.data?.[param]}
+            onKnob={(nodeId, param, v) => onInstrumentKnob(pool.id, nodeId, param, v)}
+            onNoteOn={(m, vel) => void liveNoteOn(pool.id, m, vel)} onNoteOff={(m) => liveNoteOff(pool.id, m)} onHit={() => void liveDrumDown(pool.id)}
+            onSave={(html) => saveCustomUi(pool.id, html)}
+            onClose={() => setCustomUiEdit(null)} />
+        );
+      })()}
       {storageSetup && <StorageSetup onFolder={(h2) => adoptFolder(h2, true)} onSkip={() => setStorageSetup(false)} />}
       {exportOpen && (
         <ExportDialog

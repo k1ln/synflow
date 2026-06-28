@@ -1,0 +1,190 @@
+{
+  "name": "RX-808 Hat",
+  "nodes": [
+    {
+      "id": "o1.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "Sq1",
+        "type": "square",
+        "frequency": 803,
+        "detune": 0,
+        "gain": 1,
+        "id": "o1.OscillatorFlowNode"
+      }
+    },
+    {
+      "id": "o2.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 0,
+        "y": 150
+      },
+      "data": {
+        "label": "Sq2",
+        "type": "square",
+        "frequency": 1197,
+        "detune": 0,
+        "gain": 1,
+        "id": "o2.OscillatorFlowNode"
+      }
+    },
+    {
+      "id": "o3.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 0,
+        "y": 300
+      },
+      "data": {
+        "label": "Sq3",
+        "type": "square",
+        "frequency": 1517,
+        "detune": 0,
+        "gain": 1,
+        "id": "o3.OscillatorFlowNode"
+      }
+    },
+    {
+      "id": "mix.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 260,
+        "y": 150
+      },
+      "data": {
+        "label": "Mix",
+        "gain": 0.28,
+        "id": "mix.GainFlowNode"
+      }
+    },
+    {
+      "id": "hp.BiquadFilterFlowNode",
+      "type": "BiquadFilterFlowNode",
+      "position": {
+        "x": 520,
+        "y": 150
+      },
+      "data": {
+        "label": "HP",
+        "type": "highpass",
+        "filterType": "highpass",
+        "frequency": 7200,
+        "Q": 1.2,
+        "detune": 0,
+        "gain": 0,
+        "id": "hp.BiquadFilterFlowNode",
+        "knobs": [
+          {
+            "param": "frequency",
+            "label": "Tone",
+            "min": 3000,
+            "max": 12000,
+            "default": 7200
+          }
+        ]
+      }
+    },
+    {
+      "id": "vca.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 780,
+        "y": 150
+      },
+      "data": {
+        "label": "VCA",
+        "gain": 1,
+        "id": "vca.GainFlowNode"
+      }
+    },
+    {
+      "id": "amp.ADSRFlowNode",
+      "type": "ADSRFlowNode",
+      "position": {
+        "x": 520,
+        "y": 360
+      },
+      "data": {
+        "label": "Amp Env",
+        "attackTime": 0.001,
+        "decayTime": 0.045,
+        "sustainLevel": 0,
+        "releaseTime": 0.03,
+        "maxTime": 10,
+        "minPercent": 0,
+        "maxPercent": 100,
+        "isTrigger": true,
+        "id": "amp.ADSRFlowNode"
+      }
+    },
+    {
+      "id": "master.MasterOutFlowNode",
+      "type": "MasterOutFlowNode",
+      "position": {
+        "x": 1040,
+        "y": 150
+      },
+      "data": {
+        "label": "Master",
+        "id": "master.MasterOutFlowNode"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-o1",
+      "source": "o1.OscillatorFlowNode",
+      "target": "mix.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-o2",
+      "source": "o2.OscillatorFlowNode",
+      "target": "mix.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-o3",
+      "source": "o3.OscillatorFlowNode",
+      "target": "mix.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-mix-hp",
+      "source": "mix.GainFlowNode",
+      "target": "hp.BiquadFilterFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-hp-vca",
+      "source": "hp.BiquadFilterFlowNode",
+      "target": "vca.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "main-input"
+    },
+    {
+      "id": "e-amp-vca",
+      "source": "amp.ADSRFlowNode",
+      "target": "vca.GainFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "gain"
+    },
+    {
+      "id": "e-vca-master",
+      "source": "vca.GainFlowNode",
+      "target": "master.MasterOutFlowNode",
+      "sourceHandle": "output",
+      "targetHandle": "destination-input"
+    }
+  ],
+  "customUi": "<style>\n  *{box-sizing:border-box}\n  .panel{font-family:'Inter',system-ui,sans-serif;width:520px;max-width:100%;border-radius:14px;padding:16px 18px 18px;\n    background:var(--bg);color:var(--ink);box-shadow:0 10px 30px rgba(0,0,0,.5), var(--edge);}\n  .brand{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;border-bottom:1px solid var(--line);padding-bottom:10px}\n  .logo{font-size:18px;font-weight:900;letter-spacing:.04em;color:var(--accent);text-shadow:var(--logoSh)}\n  .model{font-size:9px;letter-spacing:.34em;text-transform:uppercase;color:var(--dim)}\n  .sect{display:flex;flex-wrap:wrap;gap:14px 10px;align-items:flex-end}\n  .group{display:flex;flex-direction:column;gap:7px}\n  .gt{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}\n  .knobs{display:flex;flex-wrap:wrap;gap:12px 8px}\n  .kn{display:flex;flex-direction:column;align-items:center;gap:2px;width:54px}\n  .dial{width:40px;height:40px;border-radius:50%;position:relative;background:var(--knob);\n    box-shadow:0 2px 4px rgba(0,0,0,.5),inset 0 1px 1px rgba(255,255,255,.18);border:1px solid rgba(0,0,0,.55)}\n  .tk{position:absolute;left:50%;top:4px;width:3px;height:13px;border-radius:2px;background:var(--accent);\n    transform-origin:50% 16px;transform:translateX(-50%) rotate(var(--a,-135deg));box-shadow:0 0 5px var(--accent)}\n  .kl{font-size:8px;letter-spacing:.03em;text-transform:uppercase;color:var(--ink);text-align:center;line-height:1.05;max-width:54px}\n  .kv{font-size:8px;font-family:ui-monospace,monospace;color:var(--accent)}\n  .fd{display:flex;flex-direction:column;align-items:center;gap:5px;width:34px}\n  .fd input[type=range]{writing-mode:vertical-lr;direction:rtl;width:7px;height:96px;accent-color:var(--accent);background:transparent}\n  .kbd{position:relative;height:96px;margin-top:16px;border-radius:0 0 8px 8px;overflow:hidden}\n  .wks{display:grid;grid-template-columns:repeat(var(--n),1fr);height:100%;gap:2px}\n  .wk{position:relative;border-radius:0 0 5px 5px;background:linear-gradient(180deg,#fbfdff,#cdd4dc);cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px}\n  .wk span{font-size:8px;color:#5a6470;font-weight:700}\n  .wk.on{background:linear-gradient(180deg,var(--accent),var(--accent2))}\n  .bks{position:absolute;inset:0;pointer-events:none}\n  .bk{position:absolute;top:0;width:calc((100%/var(--n,8))*0.62);height:60%;border-radius:0 0 4px 4px;background:linear-gradient(180deg,#2a2f36,#0c0f13);cursor:pointer;pointer-events:auto;box-shadow:0 2px 3px rgba(0,0,0,.5)}\n  .bk.on{background:linear-gradient(180deg,var(--accent),#0c0f13)}\n  .pad{height:130px;border-radius:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;\n    font-size:18px;font-weight:800;letter-spacing:.1em;color:var(--bg);background:linear-gradient(180deg,var(--accent),var(--accent2));margin-top:14px}\n  .pad span{font-size:9px;font-weight:600;opacity:.8}\n  .pad.on{filter:brightness(1.25)}\n\n</style>\n<div class=\"panel\" style=\"--bg:linear-gradient(180deg,#2b2b2e,#161618);--ink:#e6e2da;--dim:#9a948a;--line:#444;--accent:#f0a020;--accent2:#c06010;--logoSh:0 0 10px rgba(240,160,32,.4);--edge:inset 0 1px 0 rgba(255,255,255,.08);--knob:radial-gradient(circle at 50% 35%,#3a3a3a,#0e0e0e 72%)\">\n  <div class=\"brand\"><div class=\"logo\">Rhythm-808</div><div class=\"model\">RX-808 · Hi-Hat</div></div>\n  <div class=\"sect\"><div class=\"group\"><div class=\"gt\">Voice</div><div class=\"knobs\"><div class=\"kn\" data-knob=\"hp.BiquadFilterFlowNode.frequency\" title=\"Tone\"><div class=\"dial\"><span class=\"tk\"></span></div><div class=\"kl\">Tone</div><div class=\"kv\" data-readout=\"hp.BiquadFilterFlowNode.frequency\"></div></div></div></div></div>\n  <div class=\"pad\" data-hit>HAT<span>tap / play</span></div>\n</div>"
+}

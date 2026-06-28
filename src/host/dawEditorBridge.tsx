@@ -33,11 +33,15 @@ export function isDawEditMode(): boolean {
 
 type AnyArr = any[];
 
-export function DawEditorBridge({ nodes, edges, setNodes, setEdges }: {
+export function DawEditorBridge({ nodes, edges, setNodes, setEdges, customUi, onCustomUi }: {
   nodes: AnyArr;
   edges: AnyArr;
   setNodes: (n: AnyArr) => void;
   setEdges: (e: AnyArr) => void;
+  // The flow's custom HTML faceplate (flow.customUi): received from the DAW on
+  // load, sent back on save, so it round-trips and survives editing in Synflow.
+  customUi?: string;
+  onCustomUi?: (html: string) => void;
 }) {
   const host = bridgeHost();
   const active = !!host;
@@ -55,17 +59,18 @@ export function DawEditorBridge({ nodes, edges, setNodes, setEdges }: {
       }));
       setNodes(incoming);
       setEdges(d.flow.edges ?? []);
+      onCustomUi?.(typeof d.flow.customUi === 'string' ? d.flow.customUi : '');
       try { host.postMessage({ type: 'mothscilla:loaded' }, TARGET); } catch { /* noop */ }
     };
     window.addEventListener('message', onMessage);
     try { host.postMessage({ type: 'mothscilla:ready' }, TARGET); } catch { /* noop */ }
     return () => window.removeEventListener('message', onMessage);
-  }, [host, setNodes, setEdges]);
+  }, [host, setNodes, setEdges, onCustomUi]);
 
   if (!active) return null;
 
   const send = () => {
-    const flow = JSON.parse(JSON.stringify({ nodes, edges }));
+    const flow = JSON.parse(JSON.stringify({ nodes, edges, ...(customUi ? { customUi } : {}) }));
     try { host!.postMessage({ type: 'mothscilla:save', flow }, TARGET); } catch { /* noop */ }
   };
 

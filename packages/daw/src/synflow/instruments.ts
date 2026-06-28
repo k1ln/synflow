@@ -3,7 +3,7 @@
 // drives them by injecting receiveNodeOn / receiveNodeOff (see InstrumentHost),
 // which is how synflow nodes are triggered internally.
 
-export type Flow = { nodes: any[]; edges: any[] };
+export type Flow = { nodes: any[]; edges: any[]; customUi?: string /* optional custom HTML UI, DAW-only */ };
 
 export interface SynthOpts {
   frequency?: number;
