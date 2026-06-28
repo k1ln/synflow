@@ -69,8 +69,13 @@ private:
         const double w0 = 2.0 * M_PI * f / sr_;
         const double cw = std::cos(w0);
         const double sw = std::sin(w0);
-        const double Q = std::fmax(1e-4, static_cast<double>(q_));
-        const double alpha = sw / (2.0 * Q);
+        // Web Audio interprets Q in dB for lowpass/highpass (Qeff = 10^(Q/20)),
+        // but as a linear quality factor for every other type. Verified against
+        // Chrome via the parity harness (native/parity).
+        const bool dbQ = (kind_ == Kind::Lowpass || kind_ == Kind::Highpass);
+        const double Qeff = dbQ ? std::pow(10.0, static_cast<double>(q_) / 20.0)
+                                : std::fmax(1e-4, static_cast<double>(q_));
+        const double alpha = sw / (2.0 * Qeff);
         const double A = std::pow(10.0, static_cast<double>(gainDb_) / 40.0);
         const double sqA = std::sqrt(A);
 

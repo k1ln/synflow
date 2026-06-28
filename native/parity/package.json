@@ -1,0 +1,14 @@
+{
+  "name": "synflow-parity",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Parity harness: render nodes through real Chrome Web Audio (OfflineAudioContext) and null-test the C++ engine against it.",
+  "scripts": {
+    "ref": "node webaudio-ref.mjs",
+    "compare": "node compare.mjs"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^23.0.0"
+  }
+}
