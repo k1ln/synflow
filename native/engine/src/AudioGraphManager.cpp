@@ -14,14 +14,14 @@ void AudioGraphManager::connect(int from, int fromPort, int to, int toPort) {
     edges_.push_back({from, fromPort, to, toPort});
 }
 
-void AudioGraphManager::connectEvent(int from, int fromPort, int to, int toPort) {
-    eventEdges_.push_back({from, fromPort, to, toPort});
+void AudioGraphManager::connectEvent(int from, int fromPort, int to, int toPort, const std::string& toHandle) {
+    eventEdges_.push_back({from, fromPort, to, toPort, toHandle});
 }
 
 void AudioGraphManager::emitEvent(int fromNode, int fromPort, EventType type, double value, int sampleOffset) {
     for (const auto& e : eventEdges_) {
         if (e.from == fromNode && e.fromPort == fromPort)
-            inbox_[static_cast<size_t>(e.to)].push_back({type, value, sampleOffset, e.toPort});
+            inbox_[static_cast<size_t>(e.to)].push_back({type, value, sampleOffset, e.toPort, e.toHandle});
     }
 }
 
@@ -145,10 +145,16 @@ void AudioGraphManager::renderBlock(float* out, int frames, const float* input,
         auto& box = inbox_[static_cast<size_t>(idx)];
         std::stable_sort(box.begin(), box.end(),
                          [](const GraphEvent& a, const GraphEvent& b) { return a.sampleOffset < b.sampleOffset; });
+        INode* node = nodes_[static_cast<size_t>(idx)].get();
+        // Control steering: a Value event tagged with a param name sets that param
+        // on the target (a Constant/Automation/MIDI knob driving frequency/cutoff…).
+        for (const auto& ev : box)
+            if (ev.type == EventType::Value && !ev.param.empty())
+                node->setNamedParam(ev.param, ev.value);
         ctx.nodeIndex = idx;
         ctx.inEvents = &box;
         ctx.sink = this;
-        nodes_[static_cast<size_t>(idx)]->process(ctx);
+        node->process(ctx);
     }
 
     // 3. Copy the master node's output to the engine output.

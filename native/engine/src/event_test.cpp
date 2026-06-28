@@ -14,9 +14,11 @@
 #include "synflow/FlowLoader.h"
 #include "synflow/nodes/ADSRNode.h"
 #include "synflow/nodes/ClockNode.h"
+#include "synflow/nodes/ConstantNode.h"
 #include "synflow/nodes/GainNode.h"
 #include "synflow/nodes/OscillatorNode.h"
 #include "synflow/nodes/SequencerNode.h"
+#include "synflow/nodes/SpeedDividerNode.h"
 #include "synflow/nodes/WasmKarplusNode.h"
 
 #include <sstream>
@@ -293,6 +295,51 @@ int main() {
         check(finite && maxabs > 0.05f, "saw-lead renders audible, finite enveloped output");
         check(rms(out, 10000, 2000) > 0.02, "voice sounds while the note is held");
         check(rms(out, 34000, 1500) < 1e-3, "voice is silent after the release tail");
+    }
+
+    // --- Test 7: a Constant STEERS an oscillator's frequency (control->param) ---
+    {
+        AudioGraphManager g(RuntimeMode::Plugin);
+        auto cst = std::make_unique<ConstantNode>();
+        cst->setNamedParam("value", 440.0);
+        const int ci = g.addNode(std::move(cst));
+        auto osc = std::make_unique<OscillatorNode>();
+        osc->setNamedParam("frequency", 220.0); // default; should be overridden to 440
+        const int oi = g.addNode(std::move(osc));
+        g.connectEvent(ci, 0, oi, 0, "frequency"); // Constant Value -> osc.frequency
+        g.setMasterOutput(oi, 0);
+        g.prepare(SR, BLOCK);
+
+        const int N = 48000; // 1 s
+        std::vector<float> out(static_cast<size_t>(N), 0.0f);
+        for (int i = 0; i < N; i += BLOCK) g.renderBlock(out.data() + i, BLOCK, nullptr, 120.0, 0.0, true);
+
+        int crossings = 0; // positive-going zero crossings ~= frequency over 1 s
+        for (int i = 1; i < N; ++i) if (out[static_cast<size_t>(i - 1)] <= 0 && out[static_cast<size_t>(i)] > 0) ++crossings;
+        check(crossings > 430 && crossings < 450, "Constant steers osc to 440 Hz (not the 220 default)");
+    }
+
+    // --- Test 8: SpeedDivider halves a clock (every 2nd tick passes) ---
+    {
+        AudioGraphManager g(RuntimeMode::Plugin);
+        auto clk = std::make_unique<ClockNode>();
+        clk->setNamedParam("bpm", 120.0);
+        const int ci = g.addNode(std::move(clk));
+        auto div = std::make_unique<SpeedDividerNode>();
+        div->setNamedParam("divider", 2);
+        const int di = g.addNode(std::move(div));
+        auto probe = std::make_unique<ProbeNode>();
+        ProbeNode* pr = probe.get();
+        const int pi = g.addNode(std::move(probe));
+        g.connectEvent(ci, 0, di, 0);
+        g.connectEvent(di, 0, pi, 0);
+        g.prepare(SR, BLOCK);
+
+        const int N = 96000; // clock ticks at 0,24000,48000,72000 -> divider 2 -> 24000,72000
+        std::vector<float> out(BLOCK, 0.0f);
+        for (int i = 0; i < N; i += BLOCK) g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        const std::vector<long> expect = {24000, 72000};
+        check(pr->onSamples == expect, "SpeedDivider(2) passes every 2nd clock tick {24000,72000}");
     }
 
     std::printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "ALL PASS", failures, failures == 1 ? "" : "s");

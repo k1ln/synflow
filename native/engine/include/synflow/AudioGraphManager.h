@@ -15,6 +15,7 @@ struct Edge {
     int fromPort;
     int to;
     int toPort;
+    std::string toHandle; // event edges only: target param name for Value steering
 };
 
 // Native C++ port of the engine's graph runtime. Builds a node graph from the
@@ -33,8 +34,9 @@ public:
     int addNode(std::unique_ptr<INode> node);
     void connect(int from, int fromPort, int to, int toPort);
     // Control/event connection (note on/off, values) — routed via the sample-
-    // stamped event queue rather than summed as audio.
-    void connectEvent(int from, int fromPort, int to, int toPort);
+    // stamped event queue rather than summed as audio. `toHandle` (the target
+    // param name) lets a Value event steer that param on the target.
+    void connectEvent(int from, int fromPort, int to, int toPort, const std::string& toHandle = "");
     void setMasterOutput(int node, int port);
     // The node that receives external audio (effect's isInput gain, or the
     // plugin's host input). -1 = none (pure source graph).

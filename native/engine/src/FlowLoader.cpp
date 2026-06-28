@@ -8,6 +8,8 @@
 #include "synflow/nodes/BiquadFilterNode.h"
 #include "synflow/nodes/ChorusNode.h"
 #include "synflow/nodes/ClockNode.h"
+#include "synflow/nodes/ConstantNode.h"
+#include "synflow/nodes/SpeedDividerNode.h"
 #include "synflow/nodes/DelayNode.h"
 #include "synflow/nodes/DistortionNode.h"
 #include "synflow/nodes/DynamicCompressorNode.h"
@@ -35,6 +37,8 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
     if (type == "ADSRFlowNode") return std::make_unique<ADSRNode>();
     if (type == "ClockFlowNode") return std::make_unique<ClockNode>();
     if (type == "SequencerFlowNode") return std::make_unique<SequencerNode>();
+    if (type == "ConstantFlowNode") return std::make_unique<ConstantNode>();
+    if (type == "SpeedDividerFlowNode") return std::make_unique<SpeedDividerNode>();
     return nullptr;
 }
 
@@ -43,7 +47,8 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
 // event queue (connectEvent). ADSR/Automation are NOT here: natively they emit a
 // continuous a-rate signal, so their output edges are audio. (See plan Bucket C.)
 bool isEventEmitterType(const std::string& type) {
-    return type == "ClockFlowNode" || type == "SequencerFlowNode";
+    return type == "ClockFlowNode" || type == "SequencerFlowNode"
+        || type == "ConstantFlowNode" || type == "SpeedDividerFlowNode";
 }
 
 } // namespace
@@ -125,7 +130,7 @@ FlowLoadResult FlowLoader::loadInto(AudioGraphManager& graph, const std::string&
             const int toPort = indexToNode[di->second]->inPortForHandle(dstHandle);
             // Event-emitter sources (Clock/Sequencer) feed the event queue; all
             // other edges carry audio/control signal summed into input ports.
-            if (idIsEmitter[src]) graph.connectEvent(si->second, fromPort, di->second, toPort);
+            if (idIsEmitter[src]) graph.connectEvent(si->second, fromPort, di->second, toPort, dstHandle);
             else graph.connect(si->second, fromPort, di->second, toPort);
             result.edgeCount++;
         }

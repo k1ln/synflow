@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 // M4 — native event system. The web routes control events (note on/off, values)
@@ -18,12 +19,16 @@ enum class EventType {
 };
 
 // One event delivered to a node's input. `port` is the target input port;
-// `sampleOffset` is the exact sample within the block at which it fires.
+// `sampleOffset` is the exact sample within the block at which it fires. For a
+// Value event that steers a parameter, `param` names the target param (the edge's
+// target handle, e.g. "frequency"/"cutoff") and the manager applies it via
+// setNamedParam.
 struct GraphEvent {
     EventType type;
     double value = 0.0;
     int sampleOffset = 0;
     int port = 0;
+    std::string param;
 };
 
 // Nodes emit through this sink (implemented by AudioGraphManager); emits are
