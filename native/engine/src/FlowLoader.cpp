@@ -5,7 +5,10 @@
 
 #include "synflow/Json.h"
 #include "synflow/nodes/BiquadFilterNode.h"
+#include "synflow/nodes/ChorusNode.h"
 #include "synflow/nodes/DelayNode.h"
+#include "synflow/nodes/DistortionNode.h"
+#include "synflow/nodes/DynamicCompressorNode.h"
 #include "synflow/nodes/GainNode.h"
 #include "synflow/nodes/MasterOutNode.h"
 #include "synflow/nodes/OscillatorNode.h"
@@ -23,6 +26,9 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
     if (type == "MasterOutFlowNode") return std::make_unique<MasterOutNode>();
     if (type == "BiquadFilterFlowNode") return std::make_unique<BiquadFilterNode>();
     if (type == "DelayFlowNode") return std::make_unique<DelayNode>();
+    if (type == "DistortionFlowNode") return std::make_unique<DistortionNode>();
+    if (type == "DynamicCompressorFlowNode") return std::make_unique<DynamicCompressorNode>();
+    if (type == "ChorusFlowNode") return std::make_unique<ChorusNode>();
     return nullptr;
 }
 
