@@ -15,6 +15,7 @@
 #include "synflow/nodes/ADSRNode.h"
 #include "synflow/nodes/ArpeggiatorNode.h"
 #include "synflow/nodes/AutomationNode.h"
+#include "synflow/nodes/BlockingSwitchNode.h"
 #include "synflow/nodes/ClockNode.h"
 #include "synflow/nodes/ConstantNode.h"
 #include "synflow/nodes/GainNode.h"
@@ -508,6 +509,33 @@ int main() {
             && std::fabs(pr->values[0] - 440.0) < 0.5    // root
             && std::fabs(pr->values[3] - 880.0) < 0.5;   // +1 octave (octaveSpread 1)
         check(freqOk, "Arpeggiator emits the ascending arpeggio frequencies (440..880)");
+    }
+
+    // --- Test 16: BlockingSwitch allocates voices and blocks when full ---
+    {
+        AudioGraphManager g(RuntimeMode::Plugin);
+        auto bs = std::make_unique<BlockingSwitchNode>(); bs->setNamedParam("numOutputs", 2);
+        const int bi = g.addNode(std::move(bs));
+        auto p0 = std::make_unique<ProbeNode>(); ProbeNode* pr0 = p0.get(); const int i0 = g.addNode(std::move(p0));
+        auto p1 = std::make_unique<ProbeNode>(); ProbeNode* pr1 = p1.get(); const int i1 = g.addNode(std::move(p1));
+        g.connectEvent(bi, 0, i0, 0); // output 0 -> probe0
+        g.connectEvent(bi, 1, i1, 0); // output 1 -> probe1
+        g.prepare(SR, BLOCK);
+        std::vector<float> out(BLOCK, 0.0f);
+        // 3 distinct notes on (440,550,660) - 3rd blocked (only 2 outs); then note 440 off.
+        g.queueInputEvent(bi, 0, EventType::NoteOn, 440.0, 0);
+        g.queueInputEvent(bi, 0, EventType::NoteOn, 550.0, 10);
+        g.queueInputEvent(bi, 0, EventType::NoteOn, 660.0, 20); // blocked
+        g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        // 440 -> out0, 550 -> out1, 660 blocked
+        bool alloc = pr0->onSamples.size() == 1 && pr1->onSamples.size() == 1;
+        check(alloc, "BlockingSwitch assigns 2 voices to 2 outputs, blocks the 3rd");
+        // Now release 440 (out0 frees), then a new note 770 should take out0.
+        g.queueInputEvent(bi, 0, EventType::NoteOff, 440.0, 0);
+        g.queueInputEvent(bi, 0, EventType::NoteOn, 770.0, 30);
+        g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        check(pr0->offSamples.size() == 1 && pr0->onSamples.size() == 2,
+              "BlockingSwitch frees a voice on note-off and reuses the same output");
     }
 
     std::printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "ALL PASS", failures, failures == 1 ? "" : "s");
