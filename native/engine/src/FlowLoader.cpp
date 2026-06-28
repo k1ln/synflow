@@ -12,6 +12,7 @@
 #include "synflow/nodes/ConstantNode.h"
 #include "synflow/nodes/MidiButtonNode.h"
 #include "synflow/nodes/MidiKnobNode.h"
+#include "synflow/nodes/OnOffButtonNode.h"
 #include "synflow/nodes/SequencerFrequencyNode.h"
 #include "synflow/nodes/SpeedDividerNode.h"
 #include "synflow/nodes/SwitchNode.h"
@@ -46,8 +47,9 @@ std::unique_ptr<INode> makeNode(const std::string& type) {
     if (type == "SpeedDividerFlowNode") return std::make_unique<SpeedDividerNode>();
     if (type == "MidiKnobFlowNode") return std::make_unique<MidiKnobNode>();
     if (type == "MidiButtonFlowNode") return std::make_unique<MidiButtonNode>();
-    if (type == "ButtonFlowNode" || type == "OnOffButtonFlowNode" || type == "MouseTriggerButtonFlowNode")
+    if (type == "ButtonFlowNode" || type == "MouseTriggerButtonFlowNode")
         return std::make_unique<ButtonNode>();
+    if (type == "OnOffButtonFlowNode") return std::make_unique<OnOffButtonNode>();
     if (type == "SwitchFlowNode") return std::make_unique<SwitchNode>();
     if (type == "SequencerFrequencyFlowNode") return std::make_unique<SequencerFrequencyNode>();
     return nullptr;

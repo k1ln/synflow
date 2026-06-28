@@ -18,6 +18,7 @@
 #include "synflow/nodes/GainNode.h"
 #include "synflow/nodes/MidiButtonNode.h"
 #include "synflow/nodes/MidiKnobNode.h"
+#include "synflow/nodes/OnOffButtonNode.h"
 #include "synflow/nodes/OscillatorNode.h"
 #include "synflow/nodes/SequencerFrequencyNode.h"
 #include "synflow/nodes/SequencerNode.h"
@@ -428,6 +429,25 @@ int main() {
         // 4 ticks advance steps 1,2,3,0 -> freqs 220,440,880,110
         check(freqP->values == std::vector<double>{220.0, 440.0, 880.0, 110.0} && gateP->onSamples.size() == 4,
               "SequencerFrequency steps frequencies + fires gate each step");
+    }
+
+    // --- Test 13: OnOffButton latches (toggles on each trigger) ---
+    {
+        AudioGraphManager g(RuntimeMode::Plugin);
+        auto clk = std::make_unique<ClockNode>(); clk->setNamedParam("bpm", 120.0);
+        const int ci = g.addNode(std::move(clk));
+        auto btn = std::make_unique<OnOffButtonNode>();
+        const int bi = g.addNode(std::move(btn));
+        auto probe = std::make_unique<ProbeNode>(); ProbeNode* pr = probe.get();
+        const int pi = g.addNode(std::move(probe));
+        g.connectEvent(ci, 0, bi, 0);
+        g.connectEvent(bi, 0, pi, 0);
+        g.prepare(SR, BLOCK);
+        std::vector<float> out(BLOCK, 0.0f);
+        for (int i = 0; i < 96000; i += BLOCK) g.renderBlock(out.data(), BLOCK, nullptr, 120.0, 0.0, true);
+        // ticks 0,24000,48000,72000 -> on,off,on,off
+        check(pr->onSamples == std::vector<long>{0, 48000} && pr->offSamples == std::vector<long>{24000, 72000},
+              "OnOffButton latches on/off across triggers");
     }
 
     std::printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "ALL PASS", failures, failures == 1 ? "" : "s");
