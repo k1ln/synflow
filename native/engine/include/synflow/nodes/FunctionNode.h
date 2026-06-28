@@ -150,13 +150,13 @@ private:
         }
         err_ = true; return 0;
     }
-    double resolveIdent(const std::string& id) {
-        if (id == "main") return main_;
-        if (id.rfind("input", 0) == 0 && id.size() > 5) { int k = std::atoi(id.c_str() + 5) - 1; return (k >= 0 && k < static_cast<int>(inputs_.size())) ? inputs_[static_cast<size_t>(k)] : 0.0; }
-        if (id == "Math.PI") return M_PI;
-        if (id == "Math.E") return M_E;
-        if (id.rfind("Math.", 0) == 0) {
-            const std::string fn = id.substr(5);
+    double resolveIdent(const std::string& ident) {
+        if (ident == "main") return main_;
+        if (ident.rfind("input", 0) == 0 && ident.size() > 5) { int k = std::atoi(ident.c_str() + 5) - 1; return (k >= 0 && k < static_cast<int>(inputs_.size())) ? inputs_[static_cast<size_t>(k)] : 0.0; }
+        if (ident == "Math.PI") return M_PI;
+        if (ident == "Math.E") return M_E;
+        if (ident.rfind("Math.", 0) == 0) {
+            const std::string fn = ident.substr(5);
             std::vector<double> args = parseArgs();
             const double a = args.empty() ? 0 : args[0];
             const double b = args.size() > 1 ? args[1] : 0;
