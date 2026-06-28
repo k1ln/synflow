@@ -18,6 +18,7 @@ export interface PoolItem {
   libId?: string;          // source library flow id (save edits back to disk)
   flow: Flow;
   kind: 'synth' | 'drum';
+  gain?: number;           // instrument-level gain (default 1)
 }
 
 /**

@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Plus, Pencil, X } from 'lucide-react';
 import type { FxInsert } from '../model/project';
-import type { LibraryEntry } from '../synflow/library';
+import { findEntry, type LibraryEntry } from '../synflow/library';
+import { flowKnobs, knob01, knobValue } from '../synflow/knobs';
+import { Knob } from './Knob';
 
-/** A horizontal FX chain editor, reused at instrument / track / master level. */
-export function FxBar({ label, color, fx, effects, onAdd, onRemove, onEdit, compact }: {
+/** A horizontal FX chain editor (used at instrument / track / master level).
+ *  Each insert is a device card with its Synflow-exported knobs. */
+export function FxBar({ label, color, fx, effects, onAdd, onRemove, onEdit, onKnob, compact }: {
   label: string;
   color?: string;
   fx: FxInsert[];
@@ -12,6 +15,7 @@ export function FxBar({ label, color, fx, effects, onAdd, onRemove, onEdit, comp
   onAdd: (fxId: string) => void;
   onRemove: (index: number) => void;
   onEdit: (index: number) => void;
+  onKnob?: (index: number, nodeId: string, param: string, value: number) => void;
   compact?: boolean;
 }) {
   const [picking, setPicking] = useState(false);
@@ -21,13 +25,28 @@ export function FxBar({ label, color, fx, effects, onAdd, onRemove, onEdit, comp
       <span className="fxbar-label" style={{ color: c }}>{label}</span>
       <div className="fxbar-row">
         {fx.length === 0 && <span className="fxbar-empty">no fx</span>}
-        {fx.map((ins, i) => (
-          <span className="fxbar-chip" key={ins.id} style={{ borderColor: `color-mix(in srgb, ${c} 50%, transparent)` }}>
-            <span className="fxbar-name">{ins.name}</span>
-            <button className="fxbar-icon" title="Edit in Synflow" onClick={() => onEdit(i)}><Pencil size={11} /></button>
-            <button className="fxbar-icon" title="Remove" onClick={() => onRemove(i)}><X size={11} /></button>
-          </span>
-        ))}
+        {fx.map((ins, i) => {
+          const knobs = flowKnobs(ins.flow ?? findEntry(ins.fxId)?.flow);
+          return (
+            <div className="fxdev" key={ins.id} style={{ borderColor: `color-mix(in srgb, ${c} 45%, transparent)` }}>
+              <div className="fxdev-head">
+                <span className="fxdev-name" style={{ color: c }}>{ins.name}</span>
+                <button className="fxbar-icon" title="Edit in Synflow" onClick={() => onEdit(i)}><Pencil size={11} /></button>
+                <button className="fxbar-icon" title="Remove" onClick={() => onRemove(i)}><X size={11} /></button>
+              </div>
+              {knobs.length > 0 && (
+                <div className="fxdev-knobs">
+                  {knobs.map((k) => (
+                    <Knob
+                      key={`${k.nodeId}.${k.param}`} value={knob01(k)} color={c} size={34} label={k.label}
+                      onChange={onKnob ? (v) => onKnob(i, k.nodeId, k.param, knobValue(k, v)) : undefined}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
         <div className="fxbar-add">
           <button className="fxbar-addbtn" onClick={() => setPicking((p) => !p)} title="Add effect"><Plus size={14} /></button>
           {picking && (

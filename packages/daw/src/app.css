@@ -349,3 +349,26 @@ body {
 .live-pad.on { background: color-mix(in srgb, var(--cat-source) 26%, transparent); border-color: var(--cat-source); box-shadow: 0 0 16px color-mix(in srgb, var(--cat-source) 45%, transparent); }
 .live-pad-key { font-size: 10px; color: var(--ink-3); }
 .live-pad-name { font-size: 12px; font-weight: 600; }
+
+/* ── Instrument panel (per-instrument live + knobs + gain) ─────────────────── */
+.inst-panel { width: min(720px, 94vw); max-height: 90vh; overflow: auto; background: var(--surface-1, #0c0f16); border: 1px solid; border-radius: var(--r-md, 12px); box-shadow: var(--shadow-modal, 0 24px 80px rgba(0,0,0,.6)); }
+.inst-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--border-strong); flex-wrap: wrap; }
+.inst-dot { width: 9px; height: 9px; border-radius: 50%; }
+.inst-name { font-size: 15px; font-weight: 700; }
+.inst-kind { font-size: 9px; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-3); }
+.inst-gain { display: inline-flex; align-items: center; gap: 7px; margin-left: auto; font-size: 11px; color: var(--ink-2); }
+.inst-gain input { width: 96px; accent-color: var(--accent); }
+.inst-gain b { font-family: var(--font-mono); color: var(--accent); min-width: 26px; text-align: right; }
+.inst-knobs { display: flex; flex-wrap: wrap; gap: 16px; padding: 16px 14px; align-items: flex-start; }
+.inst-noknobs { font-size: 12px; color: var(--ink-3); line-height: 1.5; }
+.inst-octrow { display: flex; align-items: center; gap: 8px; padding: 0 14px 8px; }
+.inst-kb { margin: 0 14px 16px; height: 150px; }
+.inst-pad { margin: 16px 14px; height: 130px; width: calc(100% - 28px); border-radius: var(--r-sm); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 15px; font-weight: 700; color: var(--ink-1); background: color-mix(in srgb, var(--cat-source) 16%, transparent); border: 1px solid var(--cat-source); }
+.inst-pad span { font-size: 11px; font-weight: 500; color: var(--ink-3); }
+.inst-pad:active { background: color-mix(in srgb, var(--cat-source) 32%, transparent); box-shadow: 0 0 22px color-mix(in srgb, var(--cat-source) 50%, transparent); }
+
+/* ── FX device cards (with exposed knobs) ─────────────────────────────────── */
+.fxdev { display: flex; flex-direction: column; gap: 7px; padding: 8px 9px; border: 1px solid; border-radius: var(--r-sm); background: rgba(255,255,255,.014); }
+.fxdev-head { display: flex; align-items: center; gap: 5px; }
+.fxdev-name { font-size: 11px; font-weight: 700; letter-spacing: .02em; margin-right: 2px; }
+.fxdev-knobs { display: flex; gap: 12px; align-items: flex-start; padding-top: 2px; }
