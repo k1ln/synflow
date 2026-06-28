@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { RealtimeClock } from './audio/ClockSource';
 import { Transport } from './audio/Transport';
 import { Scheduler } from './audio/Scheduler';
@@ -8,8 +8,10 @@ import { Mixer } from './audio/Mixer';
 import { defaultProject, newNoteId, uid, type Instrument, type Project, type Track } from './model/project';
 import { midiToFreq } from './model/pitch';
 import { makeBlip, makeSynthVoice, type Flow } from './synflow/instruments';
-import { findEntry, cloneFlow, type LibraryEntry } from './synflow/library';
+import { LIBRARY, findEntry, cloneFlow, type LibraryEntry } from './synflow/library';
+import { fsSupported, restoreFolder, seedLibrary, readAllFlows, writeFlow } from './synflow/flowStore';
 import { SynflowEditor } from './ui/SynflowEditor';
+import { StorageSetup } from './ui/StorageSetup';
 import { TopBar, type ViewId } from './ui/TopBar';
 import { Browser } from './ui/Browser';
 import { Arrange } from './ui/Arrange';
@@ -31,6 +33,12 @@ export function App() {
   const [selTrack, setSelTrack] = useState<string>(() => defaultProject().tracks[0]?.id ?? '');
   const [openPlugin, setOpenPlugin] = useState<string | null>(null);
   const [editor, setEditor] = useState<{ flow: Flow; title: string; onSaved: (f: Flow) => void } | null>(null);
+  // Flow library: built-in catalog, optionally backed by an on-disk folder (File System Access).
+  const [library, setLibrary] = useState<LibraryEntry[]>(LIBRARY);
+  const [folder, setFolder] = useState<FileSystemDirectoryHandle | null>(null);
+  const [storageSetup, setStorageSetup] = useState(false);
+  const folderRef = useRef<FileSystemDirectoryHandle | null>(null);
+  folderRef.current = folder;
 
   const ctxRef = useRef<AudioContext | null>(null);
   const transportRef = useRef<Transport | null>(null);
@@ -40,6 +48,35 @@ export function App() {
   const mixerRef = useRef<Mixer | null>(null);                      // strips keyed by track id
   const projectRef = useRef(project);
   projectRef.current = project;
+
+  // Adopt an on-disk flow folder: seed it with the built-ins, then load its catalog.
+  const adoptFolder = useCallback(async (handle: FileSystemDirectoryHandle) => {
+    try {
+      await seedLibrary(handle);
+      const entries = await readAllFlows(handle);
+      setLibrary(entries.length ? entries : LIBRARY);
+      setFolder(handle);
+    } catch (e) { console.warn('[Mothscilla] flow folder load failed', e); }
+    setStorageSetup(false);
+  }, []);
+
+  // On startup: restore a previously chosen folder, else prompt (if supported).
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const handle = await restoreFolder();
+      if (cancelled) return;
+      if (handle) await adoptFolder(handle);
+      else if (fsSupported) setStorageSetup(true);
+    })();
+    return () => { cancelled = true; };
+  }, [adoptFolder]);
+
+  // Persist an edited flow back to the folder (best-effort).
+  const persistFlow = useCallback((meta: { group: 'instrument' | 'effect'; id: string; name: string; category: string; kind?: string; flow: Flow }) => {
+    const root = folderRef.current;
+    if (root) void writeFlow(root, meta).catch((e) => console.warn('[Mothscilla] save flow failed', e));
+  }, []);
 
   const buildInstrumentAudio = useCallback(async (inst: Instrument, dest: AudioNode) => {
     const ctx = ctxRef.current!;
@@ -211,8 +248,8 @@ export function App() {
     if (entry.group === 'effect') { void h.onAddFx(trackId, entry.id); return; }
     const total = projectRef.current.totalSteps;
     const inst: Instrument = entry.kind === 'piano'
-      ? { id: uid('inst'), name: entry.name, kind: 'piano', flow: cloneFlow(entry.flow), steps: [], notes: [], voices: 6 }
-      : { id: uid('inst'), name: entry.name, kind: 'step', flow: cloneFlow(entry.flow), steps: Array(total).fill(false) };
+      ? { id: uid('inst'), name: entry.name, libId: entry.id, kind: 'piano', flow: cloneFlow(entry.flow), steps: [], notes: [], voices: 6 }
+      : { id: uid('inst'), name: entry.name, libId: entry.id, kind: 'step', flow: cloneFlow(entry.flow), steps: Array(total).fill(false) };
     mapTrack(trackId, (t) => ({ ...t, instruments: [...t.instruments, inst] }));
     const strip = mixerRef.current?.get(trackId);
     if (strip) void buildInstrumentAudio(inst, strip.destination);
@@ -224,6 +261,7 @@ export function App() {
     mapInstrument(instId, (i) => ({ ...i, flow }));
     const track = projectRef.current.tracks.find((t) => t.instruments.some((i) => i.id === instId));
     const inst = track?.instruments.find((i) => i.id === instId);
+    if (inst) persistFlow({ group: 'instrument', id: inst.libId ?? inst.id, name: inst.name, category: inst.kind === 'piano' ? 'Synths' : 'Drums', kind: inst.kind, flow });
     const strip = track ? mixerRef.current?.get(track.id) : undefined;
     if (!inst || !strip || !ctxRef.current) return;
     hostsRef.current.get(instId)?.dispose(); hostsRef.current.delete(instId);
@@ -239,7 +277,9 @@ export function App() {
       fxFlows[fxIndex] = flow;
       return { ...t, fxFlows };
     });
-    const def = findEntry(projectRef.current.tracks.find((t) => t.id === trackId)?.fx[fxIndex] ?? '');
+    const fxId = projectRef.current.tracks.find((t) => t.id === trackId)?.fx[fxIndex] ?? '';
+    const def = findEntry(fxId);
+    if (fxId) persistFlow({ group: 'effect', id: fxId, name: def?.name ?? fxId, category: def?.category ?? 'Effects', flow });
     void mixerRef.current?.get(trackId)?.replaceFx(fxIndex, def?.name ?? 'FX', cloneFlow(flow));
   };
 
@@ -293,7 +333,7 @@ export function App() {
         browserOpen={browserOpen} setBrowserOpen={setBrowserOpen}
       />
       <div className="workspace">
-        {browserOpen && <Browser onAdd={addFromLibrary} />}
+        {browserOpen && <Browser onAdd={addFromLibrary} entries={library} source={folder ? `disk · ${folder.name}` : undefined} />}
         <div className="main">
           {view === 'arrange' && (
             <Arrange
@@ -334,6 +374,7 @@ export function App() {
       {editor && (
         <SynflowEditor flow={editor.flow} title={editor.title} onSaved={editor.onSaved} onClose={() => setEditor(null)} />
       )}
+      {storageSetup && <StorageSetup onFolder={adoptFolder} onSkip={() => setStorageSetup(false)} />}
     </div>
   );
 }
