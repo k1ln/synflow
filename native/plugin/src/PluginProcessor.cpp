@@ -41,6 +41,7 @@ void SynflowAudioProcessor::loadFlow(const juce::String& json) {
     triggerNode_ = res.triggerNodeIndex; // node.data.isTrigger (flow-declared)
     pitchNode_ = res.pitchNodeIndex;     // node.data.isPitch
     pitchParam_ = res.pitchParam;
+    nodeIndexById_ = res.nodeIndexById;
 
     // Bind the flow's exposed knobs to the generic host-param pool + build the
     // control metadata the webview renders.
@@ -119,6 +120,23 @@ void SynflowAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce:
 
     for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
         buffer.copyFrom(ch, 0, scratch_.data(), numSamples);
+}
+
+void SynflowAudioProcessor::editorSetParam(const juce::String& nodeId, const juce::String& key, const juce::var& value) {
+    if (!graph_) return;
+    auto it = nodeIndexById_.find(nodeId.toStdString());
+    if (it == nodeIndexById_.end()) return;
+    auto* node = graph_->node(it->second);
+    if (value.isString()) node->setNamedParamStr(key.toStdString(), value.toString().toStdString());
+    else node->setNamedParam(key.toStdString(), static_cast<double>(value));
+}
+
+void SynflowAudioProcessor::editorNote(const juce::String& nodeId, bool noteOn, const juce::var& payload) {
+    if (!graph_) return;
+    auto it = nodeIndexById_.find(nodeId.toStdString());
+    if (it == nodeIndexById_.end()) return;
+    const double vel = payload.hasProperty("velocity") ? static_cast<double>(payload.getProperty("velocity", 1.0)) : 1.0;
+    graph_->queueInputEvent(it->second, 0, noteOn ? EventType::NoteOn : EventType::NoteOff, vel, 0);
 }
 
 void SynflowAudioProcessor::getStateInformation(juce::MemoryBlock& dest) {

@@ -3,6 +3,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #include <array>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -50,6 +51,12 @@ public:
     // range/value/slot per knob). Slot == the host parameter it's bound to.
     juce::String exposedControlsJson() const { return controlsJson_; }
 
+    // Editor (edit-mode) bridge — called from the webview event listeners.
+    // Set any node param by flow-node id (number or string value).
+    void editorSetParam(const juce::String& nodeId, const juce::String& key, const juce::var& value);
+    // Live note from the editor keyboard: gate the flow's trigger node by id.
+    void editorNote(const juce::String& nodeId, bool noteOn, const juce::var& payload);
+
 private:
     // A generic host parameter (0..1) the loaded flow binds an exposed knob to.
     struct KnobBinding {
@@ -64,6 +71,7 @@ private:
 
     std::unique_ptr<synflow::AudioGraphManager> graph_;
     juce::String flowJson_, flowName_, controlsJson_;
+    std::map<std::string, int> nodeIndexById_; // flow node id -> graph index (for editor edits)
     std::array<juce::AudioParameterFloat*, kMaxKnobs> knobParams_{};
     std::vector<KnobBinding> knobBindings_;
     int triggerNode_ = -1;          // node.data.isTrigger (host MIDI note gate)

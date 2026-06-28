@@ -36,6 +36,24 @@ juce_add_binary_data(SynflowResources SOURCES
     resources/noise.wasm
     webui/index.html)
 
+# Edit-mode editor bundle (the Synflow editor, built via `npm run build:plugin-ui`)
+# in its OWN binary-data target + namespace, linked only by the plugin (keeps the
+# render-test build fast). Embedded only if present.
+set(EDITOR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/webui/editor)
+set(HAS_EDITOR FALSE)
+if(EXISTS ${EDITOR_DIR}/editor.html AND EXISTS ${EDITOR_DIR}/editor.js)
+    set(HAS_EDITOR TRUE)
+    juce_add_binary_data(SynflowEditorBundle NAMESPACE EditorBinaryData HEADER_NAME EditorBinaryData.h SOURCES
+        ${EDITOR_DIR}/editor.html
+        ${EDITOR_DIR}/editor.js
+        ${EDITOR_DIR}/editor.css
+        ${EDITOR_DIR}/editor-exportPortableFlow.js
+        ${EDITOR_DIR}/editor.png)
+    message(STATUS "Synflow: embedding edit-mode editor bundle")
+else()
+    message(WARNING "Synflow: editor bundle missing (run `npm run build:plugin-ui`); edit mode disabled")
+endif()
+
 # wasmtime C API (fetched via ../third_party/fetch-wasmtime.sh) — only the plugin
 # shell links it; the engine core stays wasm-free.
 set(WASMTIME_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/wasmtime)
@@ -67,6 +85,10 @@ target_link_libraries(Synflow
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)
 set_target_properties(Synflow PROPERTIES BUILD_RPATH ${WASMTIME_DIR}/lib)
+if(HAS_EDITOR)
+    target_link_libraries(Synflow PRIVATE SynflowEditorBundle)
+    target_compile_definitions(Synflow PUBLIC SYNFLOW_HAS_EDITOR=1)
+endif()
 
 # Headless render test: drives the AudioProcessor with MIDI, no DAW needed.
 juce_add_console_app(SynflowRenderTest PRODUCT_NAME "SynflowRenderTest")

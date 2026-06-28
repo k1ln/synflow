@@ -22,6 +22,7 @@ export default defineConfig({
     outDir: fileURLToPath(new URL('./native/plugin/webui/editor', import.meta.url)),
     emptyOutDir: true,
     rollupOptions: {
+      input: fileURLToPath(new URL('./src/plugin-ui/editor.html', import.meta.url)),
       output: {
         entryFileNames: 'editor.js',
         chunkFileNames: 'editor-[name].js',

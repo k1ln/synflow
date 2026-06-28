@@ -1,6 +1,9 @@
 #include "PluginEditor.h"
 
 #include "BinaryData.h"
+#if SYNFLOW_HAS_EDITOR
+#include "EditorBinaryData.h"
+#endif
 
 #if JUCE_WEB_BROWSER
 using Options = juce::WebBrowserComponent::Options;
@@ -20,6 +23,22 @@ SynflowAudioProcessorEditor::SynflowAudioProcessorEditor(SynflowAudioProcessor& 
                    const auto& params = proc_.getParameters();
                    if (slot >= 0 && slot < params.size())
                        params[slot]->setValueNotifyingHost(static_cast<float>(juce::jlimit(0.0, 1.0, v)));
+               })
+               // Edit-mode bridge: the in-webview Synflow editor (NativeFlowEngine)
+               // ships graph + live changes to the C++ engine.
+               .withEventListener("loadFlow", [this](juce::var payload) {
+                   proc_.loadFlow(juce::JSON::toString(payload.getProperty("flow", juce::var())));
+               })
+               .withEventListener("setParamByName", [this](juce::var p) {
+                   proc_.editorSetParam(p.getProperty("nodeId", "").toString(),
+                                        p.getProperty("key", "").toString(),
+                                        p.getProperty("value", juce::var()));
+               })
+               .withEventListener("noteOn", [this](juce::var p) {
+                   proc_.editorNote(p.getProperty("nodeId", "").toString(), true, p.getProperty("payload", juce::var()));
+               })
+               .withEventListener("noteOff", [this](juce::var p) {
+                   proc_.editorNote(p.getProperty("nodeId", "").toString(), false, p.getProperty("payload", juce::var()));
                })) {
     addAndMakeVisible(web_);
     web_.goToURL(juce::WebBrowserComponent::getResourceProviderRoot());
@@ -29,15 +48,31 @@ SynflowAudioProcessorEditor::SynflowAudioProcessorEditor(SynflowAudioProcessor& 
 
 void SynflowAudioProcessorEditor::resized() { web_.setBounds(getLocalBounds()); }
 
+static juce::WebBrowserComponent::Resource makeResource(const char* data, int size, const char* mime) {
+    const auto* d = reinterpret_cast<const std::byte*>(data);
+    return { std::vector<std::byte>(d, d + size), juce::String(mime) };
+}
+
 std::optional<juce::WebBrowserComponent::Resource>
 SynflowAudioProcessorEditor::provide(const juce::String& path) {
     const auto file = (path == "/") ? juce::String("index.html")
                                     : path.fromFirstOccurrenceOf("/", false, false);
-    if (file == "index.html") {
-        const auto* d = reinterpret_cast<const std::byte*>(BinaryData::index_html);
-        return juce::WebBrowserComponent::Resource{
-            std::vector<std::byte>(d, d + BinaryData::index_htmlSize), "text/html"};
-    }
+    // Play panel (default view).
+    if (file == "index.html")
+        return makeResource(BinaryData::index_html, BinaryData::index_htmlSize, "text/html");
+#if SYNFLOW_HAS_EDITOR
+    // Edit-mode: the embedded Synflow editor bundle.
+    if (file == "editor.html")
+        return makeResource(EditorBinaryData::editor_html, EditorBinaryData::editor_htmlSize, "text/html");
+    if (file == "editor.js")
+        return makeResource(EditorBinaryData::editor_js, EditorBinaryData::editor_jsSize, "text/javascript");
+    if (file == "editor.css")
+        return makeResource(EditorBinaryData::editor_css, EditorBinaryData::editor_cssSize, "text/css");
+    if (file == "editor-exportPortableFlow.js")
+        return makeResource(EditorBinaryData::editorexportPortableFlow_js, EditorBinaryData::editorexportPortableFlow_jsSize, "text/javascript");
+    if (file == "editor.png")
+        return makeResource(EditorBinaryData::editor_png, EditorBinaryData::editor_pngSize, "image/png");
+#endif
     return std::nullopt;
 }
 

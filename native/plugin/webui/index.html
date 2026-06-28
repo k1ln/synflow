@@ -24,10 +24,14 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>Synflow</h1>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <h1>Synflow</h1>
+      <button id="editBtn" style="background:#2a2a30;color:#e8e8ea;border:1px solid #3a3a42;border-radius:6px;padding:7px 12px;font:13px system-ui;cursor:pointer">Edit flow →</button>
+    </div>
     <div class="flow" id="flow">loading… <span id="status"></span></div>
     <div class="knobs" id="knobs"></div>
   </div>
+  <script>document.getElementById('editBtn').addEventListener('click',function(){window.location.href='./editor.html';});</script>
   <script>
     // The C++ editor injects the flow + its exposed controls via
     // initialisationData; JUCE may wrap scalars in single-element arrays.
