@@ -5,7 +5,7 @@ import { OscillatorFlowNodeProps, buildPulsePeriodicWave } from "../nodes/Oscill
 
 export class VirtualOscillatorNode extends VirtualNode<CustomNode & OscillatorFlowNodeProps> {
     private resetConnectionsOfNode: (nodeId: string) => void;
-    
+     
     constructor(
         audioContext: AudioContext,
         eventBus: EventBus,
