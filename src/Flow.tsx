@@ -53,7 +53,7 @@ import MiniPlayer from './components/MiniPlayer';
 import AudioExplorer from './components/AudioExplorer';
 import OrchestratorDialog from './nodes/OrchestratorDialog';
 import DocsPlayground from './components/DocsPlayground';
-import { DawEditorBridge } from './host/dawEditorBridge';
+import { DawEditorBridge, isDawEditMode } from './host/dawEditorBridge';
 import {
   makeDistortionCurve,
   hexToRgb,
@@ -232,6 +232,8 @@ function Flow() {
 
   const [nodes, setNodes, onNodesChange] = useNodesState(storedNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(storedEdges);
+  // Embedded in Mothscilla for flow editing: hide chrome + don't restore last flow.
+  const dawEdit = isDawEditMode();
   const [flowItems, setFlowItems] = useState<string[]>([]);
   const [folderPaths, setFolderPaths] = useState<string[]>([]); // all known folders (local)
   const [currentFlowFolder, setCurrentFlowFolder] = useState<string>(''); // folder of currently open flow
@@ -475,7 +477,8 @@ function Flow() {
         setIsFlowLoading(false);
       }
     };
-    void loadInitial();
+    // In Mothscilla edit mode the DAW supplies the flow — don't restore the last one.
+    if (!dawEdit) void loadInitial();
 
     void (async () => {
       const flows = await db.get("*");
@@ -2147,15 +2150,15 @@ function Flow() {
   ]);
 
   return (
-    <div style={{ display: 'flex', height: "100vh", width: "100%", paddingTop: 44, background: '#07070d' }} onContextMenu={(e) => { e.preventDefault(); setNodePaletteOpen(prev => !prev); }}>
+    <div style={{ display: 'flex', height: "100vh", width: "100%", paddingTop: dawEdit ? 0 : 44, background: '#07070d' }} onContextMenu={(e) => { e.preventDefault(); setNodePaletteOpen(prev => !prev); }}>
       {/* DAW bridge: when opened by Mothscilla (#mothscilla), load the incoming flow + show "Send to Mothscilla". No-op otherwise. */}
       <DawEditorBridge nodes={nodes} edges={edges} setNodes={setNodes as any} setEdges={setEdges as any} />
       {/* Flow container */}
       <div style={{ flex: 1, display: orchestratorEditorOpen ? 'none' : 'flex', flexDirection: 'column', minWidth: 0 }}>
       {/* Inline controls: color pickers for selected node and edge */}
       {/* Color pickers moved into TopBar */}
-      {/* Icon Top Bar: left shows open/tools, right shows save/publish/auth/sync */}
-      <TopBar
+      {/* Icon Top Bar: left shows open/tools, right shows save/publish/auth/sync. Hidden in Mothscilla edit mode. */}
+      {!dawEdit && <TopBar
         onNewFlow={() => {
           setSaveDialogName('');
           setSaveDialogFolder('');
@@ -2254,7 +2257,7 @@ function Flow() {
           clearCurrentFlowPointer();
           setNodes([]); setEdges([]);
         } : undefined}
-      />
+      />}
 
       {showDocsPlayground && (
         <DocsPlayground onClose={() => setShowDocsPlayground(false)} />
