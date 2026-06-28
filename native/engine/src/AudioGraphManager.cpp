@@ -40,6 +40,16 @@ void AudioGraphManager::prepare(float sampleRate, int maxBlock) {
     maxBlock_ = maxBlock;
     samplePos_ = 0.0;
     for (auto& n : nodes_) n->prepare(sampleRate, maxBlock);
+
+    // Mark which input ports actually have an audio edge, so nodes can tell a
+    // connected modulation/param input (e.g. ADSR -> gain.gain) from an unconnected
+    // (zeroed) one and pick replace-vs-scalar behavior.
+    for (auto& n : nodes_) n->inConnected.assign(static_cast<size_t>(n->numInputs()), false);
+    for (const auto& e : edges_) {
+        auto& v = nodes_[static_cast<size_t>(e.to)]->inConnected;
+        if (e.toPort >= 0 && e.toPort < static_cast<int>(v.size())) v[static_cast<size_t>(e.toPort)] = true;
+    }
+
     topoSort();
 }
 

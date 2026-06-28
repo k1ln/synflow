@@ -44,6 +44,7 @@ public:
     std::string id;
     std::vector<Buffer> in;  // [inputPort][frames]
     std::vector<Buffer> out; // [outputPort][frames]
+    std::vector<bool> inConnected; // [inputPort]: does an audio edge feed it? (set by the manager)
 
     virtual ~INode() = default;
 

@@ -13,6 +13,8 @@
 #include "synflow/AudioGraphManager.h"
 #include "synflow/nodes/ADSRNode.h"
 #include "synflow/nodes/ClockNode.h"
+#include "synflow/nodes/GainNode.h"
+#include "synflow/nodes/OscillatorNode.h"
 #include "synflow/nodes/SequencerNode.h"
 #include "synflow/nodes/WasmKarplusNode.h"
 
@@ -49,6 +51,11 @@ struct GateNode : INode {
 static std::vector<uint8_t> readBin(const std::string& p) {
     std::ifstream f(p, std::ios::binary);
     return std::vector<uint8_t>((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+}
+
+static double rms(const std::vector<float>& v, int s, int n) {
+    double acc = 0; for (int i = 0; i < n; ++i) { double x = v[static_cast<size_t>(s + i)]; acc += x * x; }
+    return std::sqrt(acc / n);
 }
 
 static int failures = 0;
@@ -123,10 +130,6 @@ int main() {
 
         // Energy should jump right after each beat (a fresh pluck). Compare the
         // 2000-sample window just BEFORE beat 2 (decaying) vs just AFTER (re-pluck).
-        auto rms = [&](const std::vector<float>& v, int s, int n) {
-            double acc = 0; for (int i = 0; i < n; ++i) { double x = v[static_cast<size_t>(s + i)]; acc += x * x; }
-            return std::sqrt(acc / n);
-        };
         const double before = rms(a, 24000 - 2200, 2000); // tail of beat 1
         const double after = rms(a, 24000 + 200, 2000);   // start of beat 2
         check(after > before, "re-pluck at beat boundary raises energy (sample-accurate retrigger)");
@@ -194,6 +197,62 @@ int main() {
         check(near(env[20000], 0.5f), "sustain holds (0.5) until note-off");
         check(near(env[26400], 0.25f), "release is linear (quarter-value at half-release of 0.5->0)");
         check(near(env[28800], 0.0f) && near(env[30000], 0.0f), "release ramps to min (0.0)");
+    }
+
+    // --- Test 5: full synth voice (saw-lead shape): Osc -> Gain[gain=ADSR] -> out ---
+    {
+        const int N = 36000;
+        const long ON = 0, OFF = 24000;
+
+        // Build once; optionally bypass osc or adsr so we can verify voice == osc*env.
+        auto renderVoice = [&](bool withOsc, bool withAdsr, std::vector<float>& out) {
+            AudioGraphManager g(RuntimeMode::Plugin);
+            auto gate = std::make_unique<GateNode>(); gate->onAt = ON; gate->offAt = OFF;
+            const int gi = g.addNode(std::move(gate));
+            auto osc = std::make_unique<OscillatorNode>(); osc->setNamedParam("frequency", 220.0);
+            const int oi = g.addNode(std::move(osc));
+            auto adsr = std::make_unique<ADSRNode>();
+            adsr->setNamedParam("attackTime", 0.1); adsr->setNamedParam("sustainTime", 0.2);
+            adsr->setNamedParam("sustainLevel", 0.5); adsr->setNamedParam("releaseTime", 0.1);
+            const int ai = g.addNode(std::move(adsr));
+            auto gain = std::make_unique<GainNode>();
+            const int gni = g.addNode(std::move(gain));
+
+            g.connectEvent(gi, 0, ai, 0);           // note gate -> ADSR
+            if (withOsc) g.connect(oi, 0, gni, 0);   // osc audio -> gain main
+            if (withAdsr) g.connect(ai, 0, gni, 1);  // ADSR envelope -> gain.gain
+            g.setMasterOutput(gni, 0);
+            g.prepare(SR, BLOCK);
+            out.assign(static_cast<size_t>(N), 0.0f);
+            for (int i = 0; i < N; i += BLOCK) g.renderBlock(out.data() + i, std::min(BLOCK, N - i), nullptr, 120.0, 0.0, true);
+        };
+
+        std::vector<float> voice, oscOnly, envOnly;
+        renderVoice(true, true, voice);   // osc * env
+        renderVoice(true, false, oscOnly); // gain port1 unconnected -> scalar 1.0 -> raw osc
+        // env alone: gain with no osc (port0 zero) won't give env; render ADSR as master instead.
+        {
+            AudioGraphManager g(RuntimeMode::Plugin);
+            auto gate = std::make_unique<GateNode>(); gate->onAt = ON; gate->offAt = OFF;
+            const int gi = g.addNode(std::move(gate));
+            auto adsr = std::make_unique<ADSRNode>();
+            adsr->setNamedParam("attackTime", 0.1); adsr->setNamedParam("sustainTime", 0.2);
+            adsr->setNamedParam("sustainLevel", 0.5); adsr->setNamedParam("releaseTime", 0.1);
+            const int ai = g.addNode(std::move(adsr));
+            g.connectEvent(gi, 0, ai, 0);
+            g.setMasterOutput(ai, 0);
+            g.prepare(SR, BLOCK);
+            envOnly.assign(static_cast<size_t>(N), 0.0f);
+            for (int i = 0; i < N; i += BLOCK) g.renderBlock(envOnly.data() + i, std::min(BLOCK, N - i), nullptr, 120.0, 0.0, true);
+        }
+
+        float maxErr = 0;
+        for (int i = 0; i < N; ++i) maxErr = std::max(maxErr, std::fabs(voice[static_cast<size_t>(i)] - oscOnly[static_cast<size_t>(i)] * envOnly[static_cast<size_t>(i)]));
+        check(maxErr < 1e-6f, "voice == oscillator * ADSR envelope (sample-exact)");
+
+        const double sus = rms(voice, 20000, 2000);
+        const double tail = rms(voice, 34000, 1000); // well after release
+        check(sus > 0.05 && tail < 1e-4, "voice sustains while gated, silent after release");
     }
 
     std::printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "ALL PASS", failures, failures == 1 ? "" : "s");
