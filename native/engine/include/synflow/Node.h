@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "Event.h"
 #include "RuntimeMode.h"
 
 namespace synflow {
@@ -15,9 +16,17 @@ struct ProcessContext {
     float sampleRate = 48000.0f;
     int frames = 0;
     double bpm = 120.0;
-    double ppqPosition = 0.0;
+    double ppqPosition = 0.0;     // beats at block start
     bool isPlaying = false;
     RuntimeMode mode = RuntimeMode::Standalone;
+    double blockStartSample = 0.0; // absolute sample position at block start
+
+    // M4 event plumbing (set by the manager per node). `inEvents` are events
+    // delivered to THIS node this block, sorted by sampleOffset; emit via `sink`
+    // tagged with `nodeIndex`. Non-event nodes ignore these.
+    const std::vector<GraphEvent>* inEvents = nullptr;
+    IEventSink* sink = nullptr;
+    int nodeIndex = -1;
 };
 
 // The native counterpart of a Virtual*Node. One C++ implementation per node

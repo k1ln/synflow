@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "Event.h"
 #include "Node.h"
 #include "RuntimeMode.h"
 
@@ -24,13 +25,16 @@ struct Edge {
 // This is deliberately framework-light right now (std C++ only) so the graph
 // core compiles and is testable on its own. juce::dsp builtin nodes and the
 // wasmtime WasmNode plug into the same INode interface.
-class AudioGraphManager {
+class AudioGraphManager : public IEventSink {
 public:
     explicit AudioGraphManager(RuntimeMode mode) : mode_(mode) {}
 
     // Build directly (used by tests). The JSON loader (juce::JSON) will call these.
     int addNode(std::unique_ptr<INode> node);
     void connect(int from, int fromPort, int to, int toPort);
+    // Control/event connection (note on/off, values) — routed via the sample-
+    // stamped event queue rather than summed as audio.
+    void connectEvent(int from, int fromPort, int to, int toPort);
     void setMasterOutput(int node, int port);
     // The node that receives external audio (effect's isInput gain, or the
     // plugin's host input). -1 = none (pure source graph).
@@ -49,6 +53,10 @@ public:
     INode* node(int i) { return nodes_.at(static_cast<size_t>(i)).get(); }
     int size() const { return static_cast<int>(nodes_.size()); }
 
+    // IEventSink — called by nodes during process() to emit control events;
+    // routed along eventEdges_ into the target nodes' inboxes (this block).
+    void emitEvent(int fromNode, int fromPort, EventType type, double value, int sampleOffset) override;
+
 private:
     void topoSort();
 
@@ -59,7 +67,9 @@ private:
 
     std::vector<std::unique_ptr<INode>> nodes_;
     std::vector<Edge> edges_;
-    std::vector<int> order_; // topological order of node indices
+    std::vector<Edge> eventEdges_;
+    std::vector<std::vector<GraphEvent>> inbox_; // per-node inbound events (this block)
+    std::vector<int> order_;                     // topological order of node indices
     int masterNode_ = -1;
     int masterPort_ = 0;
     int inputNode_ = -1;

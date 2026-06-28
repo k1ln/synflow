@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -55,28 +56,44 @@ public:
 
     void process(const ProcessContext& ctx) override {
         const int frames = ctx.frames;
-        if (pendingPluck_) {
-            wasmtime_val_t pa[2] = { valI32(state_), valF32(pluckVel_) };
-            mod_->call(f_pluck_, pa, 2, nullptr, 0);
-            pendingPluck_ = false;
-        }
-        uint8_t* data = mod_->memData();
-        std::memcpy(data + pFreq_, &frequency_, sizeof(float)); // constant -> freq_len 1
+        { uint8_t* d = mod_->memData(); std::memcpy(d + pFreq_, &frequency_, sizeof(float)); } // constant -> freq_len 1
 
+        int pos = 0; // sample-accurate: render [pos, offset), pluck, continue.
+        if (pendingPluck_) { doPluck(pluckVel_); pendingPluck_ = false; }
+        if (ctx.inEvents) {
+            for (const auto& ev : *ctx.inEvents) {
+                if (ev.type != EventType::NoteOn) continue;
+                const int off = std::min(std::max(ev.sampleOffset, 0), frames);
+                renderSeg(pos, off - pos);
+                pos = off;
+                doPluck(1.0f); // clock/sequencer trigger -> unit velocity
+            }
+        }
+        renderSeg(pos, frames - pos);
+    }
+
+private:
+    void doPluck(float vel) {
+        wasmtime_val_t pa[2] = { valI32(state_), valF32(vel > 0 ? vel : 1.0f) };
+        mod_->call(f_pluck_, pa, 2, nullptr, 0);
+    }
+
+    // Render `n` frames into out[0] starting at sample `pos` (writes pOut at the
+    // wasm's buffer base, then copies the segment to the right output offset).
+    void renderSeg(int pos, int n) {
+        if (n <= 0) return;
         wasmtime_val_t args[10] = {
             valI32(state_), valI32(pFreq_), valI32(1),
             valF32(decay_), valF32(tone_),
             valI32(pIn_), valI32(0),            // has_in = 0 (pure source)
-            valI32(frames), valF32(sr_),
+            valI32(n), valF32(sr_),
             valI32(pOut_),
         };
         mod_->call(f_process_, args, 10, nullptr, 0);
-
-        data = mod_->memData(); // re-fetch in case memory grew
-        std::memcpy(out[0].data(), data + pOut_, sizeof(float) * static_cast<size_t>(frames));
+        uint8_t* d = mod_->memData();
+        std::memcpy(out[0].data() + pos, d + pOut_, sizeof(float) * static_cast<size_t>(n));
     }
 
-private:
     std::vector<uint8_t> wasmBytes_;
     std::unique_ptr<WasmModule> mod_;
     wasmtime_func_t f_alloc_{}, f_new_{}, f_pluck_{}, f_process_{};
