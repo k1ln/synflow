@@ -208,6 +208,7 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
           <label style={{fontSize:10}}>Attack</label>
           <MidiKnob
             style={{ display: 'inline-block' }}
+            accentColor="#facc15"
             min={0}
             max={lengthSec}
             value={attackTime}
@@ -219,6 +220,7 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
           <label style={{fontSize:10}}>Decay</label>
           <MidiKnob
             style={{ display: 'inline-block' }}
+            accentColor="#facc15"
             min={0}
             max={lengthSec}
             value={sustainTime}
@@ -230,6 +232,7 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
           <label style={{fontSize:10}}>Level</label>
           <MidiKnob
             style={{ display: 'inline-block' }}
+            accentColor="#facc15"
             min={0}
             max={1}
             value={sustainLevel}
@@ -241,6 +244,7 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
           <label style={{fontSize:10}}>Release</label>
           <MidiKnob
             style={{ display: 'inline-block' }}
+            accentColor="#facc15"
             min={0}
             max={lengthSec}
             value={releaseTime}
@@ -253,6 +257,7 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
           <label style={{fontSize:10}}>Min %</label>
           <MidiKnob
+            accentColor="#facc15"
             min={-1000}
             max={1000}
             value={minPercent}
@@ -264,6 +269,7 @@ const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
           <label style={{fontSize:10}}>Max %</label>
           <MidiKnob
+            accentColor="#facc15"
             min={-1000}
             max={1000}
             value={maxPercent}

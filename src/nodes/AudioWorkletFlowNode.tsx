@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+﻿import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { Handle, Position } from "@xyflow/react";
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
@@ -596,7 +596,7 @@ class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {
             <strong style={{fontSize:'0.75rem'}}>Script Editor</strong>
             <div style={{display:'flex', gap:8}}>
               <button onClick={createNewScript} style={{padding:'4px 10px', background:'#374151', color:'#fff', border:'1px solid #465264', borderRadius:4, fontSize:'0.65rem'}}>New</button>
-              <button onClick={saveProcessorCode} style={{padding:'4px 10px', background:'#2563eb', color:'#fff', border:'1px solid #1e4fb3', borderRadius:4, fontSize:'0.65rem'}}>Save</button>
+              <button onClick={saveProcessorCode} style={{padding:'4px 10px', background:'#60a5fa', color:'#fff', border:'1px solid #1e4fb3', borderRadius:4, fontSize:'0.65rem'}}>Save</button>
               <button onClick={closeEditor} style={{padding:'4px 10px', background:'#2f3338', color:'#ddd', border:'1px solid #444', borderRadius:4, fontSize:'0.65rem'}}>Close</button>
             </div>
           </div>
@@ -649,7 +649,7 @@ class ExtendAudioWorkletProcessor extends AudioWorkletProcessor {
               <div style={{display:'flex', justifyContent:'space-between', marginTop:6}}>
                 <span style={{fontSize:'0.5rem', opacity:0.6}}>ESC closes • Persisted per module</span>
                 <div style={{display:'flex', gap:6}}>
-                  <button onClick={saveProcessorCode} style={{padding:'4px 10px', background:'#2563eb', color:'#fff', border:'1px solid #1e4fb3', borderRadius:4, fontSize:'0.55rem'}}>Save</button>
+                  <button onClick={saveProcessorCode} style={{padding:'4px 10px', background:'#60a5fa', color:'#fff', border:'1px solid #1e4fb3', borderRadius:4, fontSize:'0.55rem'}}>Save</button>
                   <button onClick={closeEditor} style={{padding:'4px 10px', background:'#2f3338', color:'#ddd', border:'1px solid #444', borderRadius:4, fontSize:'0.55rem'}}>Close</button>
                 </div>
               </div>

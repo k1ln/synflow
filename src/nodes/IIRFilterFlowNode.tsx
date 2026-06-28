@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
 import "./AudioNode.css";
@@ -147,6 +147,7 @@ const IIRFilterFlowNode: React.FC<IIRFilterFlowNodeProps> = ({ data }) => {
                 style={{ width:50, fontSize:10, background:'#222', color:'#eee', border:'1px solid #555', borderRadius:4, marginBottom:2 }}
               />
               <MidiKnob
+                accentColor="#60a5fa"
                 min={-2}
                 max={2}
                 value={v}
@@ -187,6 +188,7 @@ const IIRFilterFlowNode: React.FC<IIRFilterFlowNodeProps> = ({ data }) => {
                 style={{ width:50, fontSize:10, background:'#222', color:'#eee', border:'1px solid #555', borderRadius:4, marginBottom:2 }}
               />
               <MidiKnob
+                accentColor="#60a5fa"
                 min={-2}
                 max={2}
                 value={v}

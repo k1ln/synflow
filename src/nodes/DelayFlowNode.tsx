@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
 import "./AudioNode.css";
@@ -91,6 +91,7 @@ const DelayFlowNode: React.FC<DelayFlowNodeProps> = ({ data }) => {
       {/* Delay Time Input with MIDI-learnable knob */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         <MidiKnob
+          accentColor="#60a5fa"
           min={0}
           max={1}
           value={knobValue}

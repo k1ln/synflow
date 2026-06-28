@@ -1,4 +1,4 @@
-import { useRef, useCallback, useMemo, JSX, useState, use } from 'react';
+﻿import { useRef, useCallback, useMemo, JSX, useState, use } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -202,6 +202,7 @@ function normalizeNodeStylesForTheme(arr: any[] | undefined): any[] {
       const insetGlow = `inset 0 3px 12px rgba(${rgb.r},${rgb.g},${rgb.b},0.22)`;
       const outerGlow = makeGlow(style.glowColor || '#00ff88', 'normal');
       style.boxShadow = `${outerGlow}, ${insetGlow}`;
+      (style as any)['--node-accent'] = catColor;
     }
     return { ...n, data: { ...data, style } };
   });
@@ -265,7 +266,7 @@ const orderedNodeTypes = Object.fromEntries(
 
 
 
-const currentFlow = sessionStorage.getItem('currentFlow');
+const currentFlow = localStorage.getItem('currentFlow');
 
 let ctx: AudioContext;
 
@@ -555,10 +556,8 @@ function Flow() {
       addOnchangeToNodes(themedNodes);
       setNodes(themedNodes);
       setEdges(recEdges);
-      sessionStorage.setItem('currentFlow', flowName);
-
-      setFlowNameInput(flowName);
-      setCurrentFlowFolder(recFolder);
+      localStorage.setItem('currentFlow', flowName);
+      localStorage.setItem('currentFlowFolder', recFolder);
       // Record last opened flow; freshness check runs in effect once auth state & ensureFlowFresh are ready
       lastOpenedFlowRef.current = flowName;
     } finally {
@@ -588,10 +587,11 @@ function Flow() {
     const loadInitial = async () => {
       try {
         // Removed URL path parsing (/editNode/, /editFlow/) due to bugs
-        const storedFlow = sessionStorage.getItem('currentFlow');
+        const storedFlow = localStorage.getItem('currentFlow');
+        const storedFolder = localStorage.getItem('currentFlowFolder') || '';
         if (storedFlow) {
           setIsFlowLoading(true);
-          await openFlowFromIndexedDB(storedFlow);
+          await openFlowFromIndexedDB(storedFlow, storedFolder);
         } else {
           // Ensure spinner is off if nothing to open
           setIsFlowLoading(false);
@@ -720,7 +720,7 @@ function Flow() {
         // Set flow name from file name (without .json extension) or from data
         const flowName = flowData.name || file.name.replace(/\.json$/i, '');
         setFlowNameInput(flowName);
-        sessionStorage.setItem('currentFlow', flowName);
+        localStorage.setItem('currentFlow', flowName);
         showToast?.(`Imported flow: ${flowName}`, 'info');
       } catch (err) {
         console.error('Failed to import flow:', err);
@@ -1096,7 +1096,7 @@ function Flow() {
     if (!flowNameInput) return;
 
     const name = flowNameInput.trim();
-    sessionStorage.setItem('currentFlow', name);
+    localStorage.setItem('currentFlow', name);
     // Always assign a fresh updated_at so
     // "newest wins" sync logic is straightforward
     const updated_at = new Date().toISOString();
@@ -1193,7 +1193,7 @@ function Flow() {
   const handleSaveDialogConfirm = async () => {
     const name = saveDialogName.trim();
     if (!name) return;
-    sessionStorage.setItem('currentFlow', name);
+    localStorage.setItem('currentFlow', name);
     const payloadNodes = strippEverythingButData(nodes);
     const payloadEdges = strippEverythingButData(edges);
     const updated_at = new Date().toISOString();
@@ -1692,7 +1692,8 @@ function Flow() {
     else if (type == "FunctionFlowNode") {
       data = {
         functionCode: "function process(value) {\n  // Modify the value here\n  return value;\n}",
-        value: ""
+        value: "",
+        style: { ...nodeStyleObj }
       }
     } else if (type === "ScriptSequencerFlowNode") {
       data = {
@@ -1825,6 +1826,7 @@ function Flow() {
         const insetGlow = `inset 0 3px 12px rgba(${rgb.r},${rgb.g},${rgb.b},0.22)`;
         const outerGlow = makeGlow(styleObj.glowColor || '#00ff88', 'normal');
         styleObj.boxShadow = `${outerGlow}, ${insetGlow}`;
+        (styleObj as any)['--node-accent'] = catColor;
       }
     }
     // Width may be like '200px'; parseInt handles that; fallback default 200.
@@ -2138,7 +2140,7 @@ function Flow() {
     if (!name) return;
     const dbKey = makeFlowDbKey(name, currentFlowFolder);
     db.put(dbKey, { nodes, edges, folder_path: currentFlowFolder });
-    sessionStorage.setItem('currentFlow', name);
+    localStorage.setItem('currentFlow', name);
     setFlowNameInput(name);
     setFlowItems((prev) => prev.includes(name) ? prev : [...prev, name]);
   }
@@ -2202,7 +2204,7 @@ function Flow() {
       }
     })();
 
-    sessionStorage.setItem('currentFlow', trimmed);
+    localStorage.setItem('currentFlow', trimmed);
     setFlowNameInput(trimmed);
     setFlowItems((items) => {
       const withoutOld = oldName
@@ -2611,7 +2613,7 @@ function Flow() {
       >
         <MiniMap />
         <Controls />
-        <Background color="#090910" gap={40} size={1} />
+        <Background color="#030308" gap={40} size={1} />
       </ReactFlow>
 
       {/* Inline Toasts */}

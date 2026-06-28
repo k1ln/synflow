@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
 import "./AudioNode.css";
@@ -129,6 +129,7 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span>Freq.</span>
           <MidiKnob
+            accentColor="#60a5fa"
             min={0}
             max={1}
             value={freqKnobNorm}
@@ -180,6 +181,7 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span>Detune</span>
           <MidiKnob
+            accentColor="#60a5fa"
             min={-1200}
             max={1200}
             value={detune}
@@ -222,6 +224,7 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span>Q</span>
           <MidiKnob
+            accentColor="#60a5fa"
             min={0.0001}
             max={40}
             value={Q}
@@ -261,6 +264,7 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span>Gain</span>
           <MidiKnob
+            accentColor="#60a5fa"
             min={-40}
             max={40}
             value={gain}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import EventBus from '../sys/EventBus';
 import MidiKnob from '../components/MidiKnob';
@@ -209,6 +209,7 @@ const ArpeggiatorFlowNode: React.FC<ArpeggiatorFlowNodeProps> = ({
           <label style={{ fontSize: 10 }}>Notes</label>
           <MidiKnob
             style={{ display: 'inline-block' }}
+            accentColor="#c084fc"
             min={1}
             max={24}
             value={noteCount}
@@ -220,6 +221,7 @@ const ArpeggiatorFlowNode: React.FC<ArpeggiatorFlowNodeProps> = ({
           <label style={{ fontSize: 10 }}>Octaves</label>
           <MidiKnob
             style={{ display: 'inline-block' }}
+            accentColor="#c084fc"
             min={0.25}
             max={4}
             value={octaveSpread}
@@ -231,6 +233,7 @@ const ArpeggiatorFlowNode: React.FC<ArpeggiatorFlowNodeProps> = ({
           <label style={{ fontSize: 10 }}>Swing</label>
           <MidiKnob
             style={{ display: 'inline-block' }}
+            accentColor="#c084fc"
             min={0}
             max={1}
             value={swing}

@@ -192,6 +192,7 @@ React.FC<FrequencyFlowNodeProps> = ({
           }}
         >
           <MidiKnob
+            accentColor="#facc15"
             min={knobMin}
             max={knobMax}
             value={knobValue}

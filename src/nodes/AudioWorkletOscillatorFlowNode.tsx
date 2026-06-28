@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+﻿import React, { useEffect, useRef, useState } from "react";
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
 import EventBus from "../sys/EventBus";
@@ -129,6 +129,7 @@ const AudioWorkletOscillatorFlowNode: React.FC<AudioWorkletOscillatorFlowNodePro
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         <span>Freq.</span>
         <MidiKnob
+          accentColor="#4ade80"
           min={oscFrequencyType === "midi" ? 24 : oscFrequencyType === "lfo" ? 0 : 0}
           max={oscFrequencyType === "midi" ? 96 : oscFrequencyType === "lfo" ? 250 : 100}
           value={knobValue}
@@ -151,6 +152,7 @@ const AudioWorkletOscillatorFlowNode: React.FC<AudioWorkletOscillatorFlowNodePro
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         <span>Detune</span>
         <MidiKnob
+          accentColor="#4ade80"
           min={-100}
           max={100}
           value={knobDetuneValue}

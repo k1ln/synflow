@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   useEffect,
   useMemo,
   useRef,
@@ -659,7 +659,7 @@ const EqualizerFlowNode: React.FC<EqualizerFlowNodeProps> =
                 fontSize: "10px",
                 background:
                   selectedBand === idx
-                    ? "#2563eb"
+                    ? "#60a5fa"
                     : "#0a0d1a",
                 border: "1px solid #1f2b46",
                 borderRadius: "6px",

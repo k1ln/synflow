@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { Handle, Position } from "@xyflow/react";
 import MidiKnob, { MidiMapping } from "../components/MidiKnob";
 import "./AudioNode.css";
@@ -83,6 +83,7 @@ const DynamicCompressorFlowNode: React.FC<DynamicCompressorFlowNodeProps> = ({ d
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span>Thresh.</span>
           <MidiKnob
+            accentColor="#60a5fa"
             min={-100}
             max={0}
             value={threshold}
@@ -124,6 +125,7 @@ const DynamicCompressorFlowNode: React.FC<DynamicCompressorFlowNodeProps> = ({ d
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span>Knee</span>
           <MidiKnob
+            accentColor="#60a5fa"
             min={0}
             max={40}
             value={knee}
@@ -168,6 +170,7 @@ const DynamicCompressorFlowNode: React.FC<DynamicCompressorFlowNodeProps> = ({ d
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span>Ratio</span>
           <MidiKnob
+            accentColor="#60a5fa"
             min={1}
             max={20}
             value={ratio}
@@ -209,6 +212,7 @@ const DynamicCompressorFlowNode: React.FC<DynamicCompressorFlowNodeProps> = ({ d
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span>Attack</span>
           <MidiKnob
+            accentColor="#60a5fa"
             min={0}
             max={1}
             value={attack}
@@ -253,6 +257,7 @@ const DynamicCompressorFlowNode: React.FC<DynamicCompressorFlowNodeProps> = ({ d
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span>Release</span>
           <MidiKnob
+            accentColor="#60a5fa"
             min={0}
             max={1}
             value={release}

@@ -139,7 +139,7 @@ const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
           <div style={{ width:44, height:44, display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <MidiKnob min={knobMin} max={knobMax} value={knobVal} onChange={onKnobChange} />
+            <MidiKnob min={knobMin} max={knobMax} value={knobVal} onChange={onKnobChange} accentColor="#facc15" />
           </div>
           <div style={{ fontSize: 10, color: '#aaa' }}>
             {isFinite(value) ? value.toFixed(4) : '0.0000'}

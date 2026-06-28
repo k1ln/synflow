@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   useEffect,
   useMemo,
   useRef,
@@ -387,37 +387,37 @@ const OscilloscopeFlowNode: React.FC<OscilloscopeFlowNodeProps> = ({
       <div className="nodrag" style={{ display: "flex", justifyContent: "space-around", alignItems: "flex-start", flexWrap: "wrap", gap: "4px" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span style={{ fontSize: "9px" }}>Zoom X</span>
-          <MidiKnob min={0} max={200} value={zoomX} onChange={setZoomX} label="ZoomX" />
+          <MidiKnob min={0} max={200} value={zoomX} onChange={setZoomX} label="ZoomX" accentColor="#f87171" />
           <span style={{ fontSize: "8px" }}>{Math.round(zoomX)}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span style={{ fontSize: "9px" }}>Zoom Y</span>
-          <MidiKnob min={10} max={400} value={Math.round(zoomY * 100)} onChange={(v) => setZoomY(v / 100)} label="ZoomY" />
+          <MidiKnob min={10} max={400} value={Math.round(zoomY * 100)} onChange={(v) => setZoomY(v / 100)} label="ZoomY" accentColor="#f87171" />
           <span style={{ fontSize: "8px" }}>{zoomY.toFixed(1)}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span style={{ fontSize: "9px" }}>Time</span>
-          <MidiKnob min={25} max={400} value={Math.round(timeScale * 100)} onChange={(v) => setTimeScale(v / 100)} label="Time" />
+          <MidiKnob min={25} max={400} value={Math.round(timeScale * 100)} onChange={(v) => setTimeScale(v / 100)} label="Time" accentColor="#f87171" />
           <span style={{ fontSize: "8px" }}>{timeScale.toFixed(1)}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span style={{ fontSize: "9px" }}>Pan X</span>
-          <MidiKnob min={0} max={100} value={Math.round(panOffset * 100)} onChange={(v) => setPanOffset(v / 100)} label="PanX" />
+          <MidiKnob min={0} max={100} value={Math.round(panOffset * 100)} onChange={(v) => setPanOffset(v / 100)} label="PanX" accentColor="#f87171" />
           <span style={{ fontSize: "8px" }}>{Math.round(panOffset * 100)}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span style={{ fontSize: "9px" }}>Pan Y</span>
-          <MidiKnob min={-100} max={100} value={Math.round(panY * 100)} onChange={(v) => setPanY(v / 100)} label="PanY" />
+          <MidiKnob min={-100} max={100} value={Math.round(panY * 100)} onChange={(v) => setPanY(v / 100)} label="PanY" accentColor="#f87171" />
           <span style={{ fontSize: "8px" }}>{Math.round(panY * 100)}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span style={{ fontSize: "9px" }}>Trig</span>
-          <MidiKnob min={-100} max={100} value={Math.round(triggerLevel * 100)} onChange={(v) => setTriggerLevel(v / 100)} label="Trig" />
+          <MidiKnob min={-100} max={100} value={Math.round(triggerLevel * 100)} onChange={(v) => setTriggerLevel(v / 100)} label="Trig" accentColor="#f87171" />
           <span style={{ fontSize: "8px" }}>{Math.round(triggerLevel * 100)}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span style={{ fontSize: "9px" }}>FPS</span>
-          <MidiKnob min={1} max={600} value={Math.round(fps * 10)} onChange={(v) => setFps(v / 10)} label="FPS" />
+          <MidiKnob min={1} max={600} value={Math.round(fps * 10)} onChange={(v) => setFps(v / 10)} label="FPS" accentColor="#f87171" />
           <span style={{ fontSize: "8px" }}>{fps.toFixed(1)}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
