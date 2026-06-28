@@ -56,8 +56,15 @@ else()
 endif()
 
 # wasmtime C API (fetched via ../third_party/fetch-wasmtime.sh) — only the plugin
-# shell links it; the engine core stays wasm-free.
+# shell links it; the engine core stays wasm-free. Static-link it so the shipped
+# plugin is self-contained (no dylib / rpath dependency).
 set(WASMTIME_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/wasmtime)
+if(APPLE)
+    set(WASMTIME_LIBS ${WASMTIME_DIR}/lib/libwasmtime.a
+        "-framework CoreFoundation" "-framework Security" "-framework SystemConfiguration")
+else()
+    set(WASMTIME_LIBS ${WASMTIME_DIR}/lib/libwasmtime.a pthread dl m)
+endif()
 
 target_sources(Synflow PRIVATE
     src/PluginProcessor.cpp
@@ -78,14 +85,13 @@ target_compile_definitions(Synflow PUBLIC
 target_link_libraries(Synflow
     PRIVATE
         SynflowResources
-        ${WASMTIME_DIR}/lib/libwasmtime.dylib
+        ${WASMTIME_LIBS}
         juce::juce_audio_utils
         juce::juce_dsp
         juce::juce_gui_extra
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)
-set_target_properties(Synflow PROPERTIES BUILD_RPATH ${WASMTIME_DIR}/lib)
 if(HAS_EDITOR)
     target_link_libraries(Synflow PRIVATE SynflowEditorBundle)
     target_compile_definitions(Synflow PUBLIC SYNFLOW_HAS_EDITOR=1)
@@ -109,11 +115,10 @@ target_compile_definitions(SynflowRenderTest PUBLIC
 target_link_libraries(SynflowRenderTest
     PRIVATE
         SynflowResources
-        ${WASMTIME_DIR}/lib/libwasmtime.dylib
+        ${WASMTIME_LIBS}
         juce::juce_audio_utils
         juce::juce_dsp
         juce::juce_gui_extra
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)
-set_target_properties(SynflowRenderTest PROPERTIES BUILD_RPATH ${WASMTIME_DIR}/lib)
