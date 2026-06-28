@@ -2,6 +2,7 @@ import VirtualNode from "./VirtualNode";
 import EventBus from "../sys/EventBus";
 import { CustomNode } from "../sys/AudioGraphManager";
 import { OscillatorFlowNodeProps } from "../nodes/OscillatorFlowNode";
+import { compileWasmModule } from "../sys/wasmUtils";
 
 
 export class VirtualAudioWorkletOscillatorNode extends VirtualNode<CustomNode & OscillatorFlowNodeProps> {
@@ -27,6 +28,7 @@ export class VirtualAudioWorkletOscillatorNode extends VirtualNode<CustomNode & 
     if (this.audioWorkletNode) {
       this.audioWorkletNode.disconnect();
     }
+    const wasmModule = await compileWasmModule('/hard-sync-oscillator.wasm');
     // 3 inputs: 0 = FM, 1 = frequency (event), 2 = sync
     this.audioWorkletNode = new AudioWorkletNode(this.audioContext!, "hard-sync-oscillator", {
       numberOfInputs: 3,
@@ -37,6 +39,7 @@ export class VirtualAudioWorkletOscillatorNode extends VirtualNode<CustomNode & 
         detune: this.node.data.detune || 0,
         type: 0,
       },
+      processorOptions: { wasmModule },
     });
     this.audioNode = this.audioWorkletNode;
     this.setType(type);

@@ -95,13 +95,10 @@ const RecordingFlowNode: React.FC<RecordingFlowNodeProps> = ({ data }) => {
   useEffect(() => {
     if (!tickActive) return;
     const startedAt = performance.now() - elapsedMs;
-    let raf: number;
-    const loop = () => {
+    const id = setInterval(() => {
       setElapsedMs(Math.round(performance.now() - startedAt));
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    }, 1000);
+    return () => clearInterval(id);
   }, [tickActive]);
 
   // (moved earlier)
