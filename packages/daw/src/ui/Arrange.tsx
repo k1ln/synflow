@@ -79,7 +79,8 @@ function ClipWaveform({
 
 const MIN_PX_PER_BAR = 0.02; // zoom out far enough to fit very long (hour+) songs
 const MAX_PX_PER_BAR = 320;
-const TRK_W = 200; // frozen track-name column width (keep in sync with .arr2-trk / .arr2-headcell in app.css)
+const DEFAULT_TRK_W = 200;  // frozen track-name column width, overridable via the trackWidth prop (Settings)
+const DEFAULT_ROW_H = 78;   // track row height, overridable via the trackHeight prop (Settings)
 const clampZoom = (n: number) => Math.max(MIN_PX_PER_BAR, Math.min(MAX_PX_PER_BAR, n));
 
 /** Whole seconds → hh:mm:ss. */
@@ -116,6 +117,7 @@ export function Arrange({
   project, currentStep, songMode, selTrack,
   onToggleSongMode, onSetSongSlots, onSelectTrack, onToggleMute, onToggleSolo, onToggleTrackLoop, onTrackVolume, onSeek, onAddClip, onRemoveClip, onToggleLoop, onCycleClipPattern, onClipLen, onMoveClip, selClip, onSelectClip, onEditAutomationPoints, onMoveAudioClip, onRemoveAudioClip, onMoveVideoClip, onRemoveVideoClip, onSetAudioClip, onSetVideoClip, onSplitAudioClip, onSplitVideoClip, onPlayClip, onDuplicateAudioClip, onNormalizeAudioClip, getClipPeaks, getClipPeaksAsync, previewKey,
   markers, onAddMarker, onRenameMarker, onRemoveMarker, loop, onSetLoop, onOpenInstrument,
+  trackWidth = DEFAULT_TRK_W, trackHeight = DEFAULT_ROW_H,
 }: {
   project: Project;
   currentStep: number;
@@ -159,7 +161,10 @@ export function Arrange({
   getClipPeaks: (assetId: string, startSec: number, endSec: number, buckets: number) => Peaks | null;
   getClipPeaksAsync: (assetId: string, startSec: number, endSec: number, buckets: number) => Promise<Peaks | null>;
   previewKey: string | null;
+  trackWidth?: number;   // frozen track-name column width, px (Settings — default 200)
+  trackHeight?: number;  // track row height, px (Settings — default 78)
 }) {
+  const TRK_W = trackWidth; // kept as a local alias — every internal use below predates the prop
   const isSel = (clipId: string) => selClip?.clipId === clipId;
   const contentSlots = songLengthSlots(project);          // bars up to the last element (audio/video/title)
   const N = contentSlots + TIMELINE_HEADROOM_BARS;         // draw a bit further so there's always room past the end
@@ -431,7 +436,7 @@ export function Arrange({
   const runMenu = (fn: () => void) => { fn(); setMenu(null); };
 
   return (
-    <div className="arrange2">
+    <div className="arrange2" style={{ ['--trk-w' as any]: `${TRK_W}px`, ['--row-h' as any]: `${trackHeight}px` }}>
       <div className="arr2-bar">
         <button className={`arr2-mode ${songMode ? 'on' : ''}`} onClick={onToggleSongMode} title="Toggle what the transport plays">
           {songMode ? 'Arrangement' : 'Pattern'}

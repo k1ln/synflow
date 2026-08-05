@@ -1,6 +1,6 @@
 import { isVstaiFlow } from '../synflow/vstai';
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, FolderPlus, Music2, Drum, Sparkles, Radio, X, Play, Square, Plus, AudioWaveform } from 'lucide-react';
+import { ChevronDown, ChevronRight, ChevronLeft, FolderPlus, Music2, Drum, Sparkles, Radio, X, Play, Square, Plus, AudioWaveform } from 'lucide-react';
 import type { PoolItem, AudioAsset } from '../model/project';
 import type { LibraryEntry } from '../synflow/library';
 
@@ -18,7 +18,7 @@ const fmtDur = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)
  * (click → live mode) and the effects available to add. "Add from folder" pulls
  * more flows in from the on-disk library.
  */
-export function Pool({ pool, effects, instrumentLib, armed, recordings, previewKey, onPreview, onPlaceRecording, onRemoveRecording, onOpenInstrument, onEditEffect, onRemoveInstrument, onRemoveEffect, onAddFromFolder, onAddInstrument, onNewEffect, onBrowsePool, source }: {
+export function Pool({ pool, effects, instrumentLib, armed, recordings, previewKey, onPreview, onPlaceRecording, onRemoveRecording, onOpenInstrument, onEditEffect, onRemoveInstrument, onRemoveEffect, onAddFromFolder, onAddInstrument, onNewEffect, onBrowsePool, source, collapsed, onToggleCollapsed }: {
   pool: PoolItem[];
   effects: LibraryEntry[];
   instrumentLib: LibraryEntry[];   // the on-disk/bundled instruments you can add to the pool
@@ -37,6 +37,8 @@ export function Pool({ pool, effects, instrumentLib, armed, recordings, previewK
   onNewEffect?: () => void;
   onBrowsePool?: (which: 'synth' | 'drum') => void;   // open the plugin browser (library + VibeSynth gallery)
   source?: string;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
 }) {
   const [open, setOpen] = useState<Record<string, boolean>>({ Instruments: true, Drums: true, Effects: true, Recordings: true });
   const [adding, setAdding] = useState<null | 'synth' | 'drum'>(null);
@@ -92,9 +94,18 @@ export function Pool({ pool, effects, instrumentLib, armed, recordings, previewK
     </div>
   );
 
+  if (collapsed) {
+    return (
+      <div className="browser collapsed">
+        <button className="browser-expand" title="Show project pool" onClick={onToggleCollapsed}><ChevronRight size={14} /></button>
+      </div>
+    );
+  }
+
   return (
     <div className="browser">
       <div className="browser-head">
+        <button className="browser-collapse" title="Collapse project pool" onClick={onToggleCollapsed}><ChevronLeft size={14} /></button>
         <span className="browser-title">Project pool</span>
         <button className="browser-addfolder" onClick={onAddFromFolder} title="Add flows from a folder"><FolderPlus size={14} /></button>
       </div>

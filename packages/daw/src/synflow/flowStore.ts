@@ -268,3 +268,23 @@ export async function loadProject(root: any, file: string): Promise<any | null> 
     return JSON.parse(await (await fh.getFile()).text());
   } catch { return null; }
 }
+
+// ─── DAW settings (UI prefs like track sizing) — <folder>/settings.json ──────
+export interface DawSettings { trackWidth: number; trackHeight: number; poolCollapsed: boolean }
+export const DEFAULT_SETTINGS: DawSettings = { trackWidth: 200, trackHeight: 78, poolCollapsed: false };
+
+/** Read <folder>/settings.json, filling in defaults for anything missing/new. */
+export async function loadSettings(root: any): Promise<DawSettings> {
+  try {
+    const fh = await root.getFileHandle('settings.json');
+    return { ...DEFAULT_SETTINGS, ...JSON.parse(await (await fh.getFile()).text()) };
+  } catch { return DEFAULT_SETTINGS; }
+}
+
+export async function saveSettings(root: any, settings: DawSettings): Promise<void> {
+  if (!(await ensurePermission(root, 'readwrite'))) throw new Error('write permission denied');
+  const fh = await root.getFileHandle('settings.json', { create: true });
+  const w = await fh.createWritable();
+  await w.write(JSON.stringify(settings, null, 2));
+  await w.close();
+}

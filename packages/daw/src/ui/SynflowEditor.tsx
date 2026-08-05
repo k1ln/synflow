@@ -2,11 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { X, Check } from 'lucide-react';
 import type { Flow } from '../synflow/instruments';
 
-// URL of the synflow editor. Same-origin (e.g. "/synflow") → an in-app iframe
-// panel with shared storage; cross-origin (e.g. "https://synflow.org") still
-// works via postMessage, the editor just needs to allow framing
-// (Content-Security-Policy: frame-ancestors). Default: the dev editor on :5173.
-const EDITOR_URL = (import.meta.env.VITE_SYNFLOW_URL as string | undefined) ?? 'http://localhost:5173';
+// URL of the synflow editor, resolved by hostname at runtime rather than baked
+// in at build time — the DAW loads correctly wherever it's served from. On
+// localhost, the local dev editor; anywhere else (synflow.org, mothscilla.org,
+// or any other host) the production editor at synflow.org. Cross-origin
+// framing works via postMessage — synflow.org needs to allow being framed
+// (Content-Security-Policy: frame-ancestors / X-Frame-Options).
+const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const EDITOR_URL = isLocalhost ? 'http://localhost:5173' : 'https://synflow.org';
 
 /**
  * In-app "Edit in Synflow" panel: embeds the synflow editor in an iframe, hands

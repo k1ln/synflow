@@ -30,7 +30,7 @@ import { type Flow, makeSynthVoice, makeKick } from './synflow/instruments';
 import { flowKnobs } from './synflow/knobs';
 import { makeFilterFx } from './synflow/effects';
 import { LIBRARY, findEntry, cloneFlow, registerEntries, type LibraryEntry } from './synflow/library';
-import { fsSupported, restoreFolder, seedLibrary, readAllFlows, writeFlow, pickFolder, saveProject, loadProject, listSongs, songSlug, createBounceWritable, createExportWritable, listAllAssets, listAudioFiles, writeVideoFile, readVideoFile } from './synflow/flowStore';
+import { fsSupported, restoreFolder, seedLibrary, readAllFlows, writeFlow, pickFolder, saveProject, loadProject, listSongs, songSlug, createBounceWritable, createExportWritable, listAllAssets, listAudioFiles, writeVideoFile, readVideoFile, loadSettings, saveSettings, DEFAULT_SETTINGS, type DawSettings } from './synflow/flowStore';
 import { ExportDialog } from './ui/ExportDialog';
 import { ProgramMonitor } from './ui/ProgramMonitor';
 import { loadTitleFonts } from './fonts';
@@ -44,6 +44,7 @@ import { CustomUiEditor } from './ui/CustomUiEditor';
 import { SynflowEditor } from './ui/SynflowEditor';
 import { EqEditor } from './ui/EqEditor';
 import { StorageSetup } from './ui/StorageSetup';
+import { SettingsPanel } from './ui/SettingsPanel';
 import { Meter } from './ui/Meter';
 import { LoudnessMeter } from './ui/LoudnessMeter';
 import { SpectrumAnalyzer } from './ui/SpectrumAnalyzer';
@@ -100,6 +101,8 @@ export function App() {
   const [currentStep, setCurrentStep] = useState(-1);
   const [view, setView] = useState<ViewId>('song');
   const [browserOpen, setBrowserOpen] = useState(true);
+  const [settings, setSettings] = useState<DawSettings>(DEFAULT_SETTINGS);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [armed, setArmed] = useState(false);
   const [selTrack, setSelTrack] = useState<string>(() => defaultProject().tracks[0]?.id ?? '');
   const [armedPool, setArmedPool] = useState<string | null>(null);
@@ -173,6 +176,9 @@ export function App() {
       const entries = await readAllFlows(handle);
       setLibrary(entries.length ? entries : LIBRARY);
       setFolder(handle);
+      const diskSettings = await loadSettings(handle);
+      setSettings(diskSettings);
+      setBrowserOpen(!diskSettings.poolCollapsed);
       if (intoPool) {
         setProject((p) => {
           const have = new Set(p.pool.map((pi) => pi.libId ?? pi.id));
@@ -186,6 +192,19 @@ export function App() {
     setStorageSetup(false);
   }, []);
 
+  // Persist DAW settings (track sizing, pool collapsed) to <folder>/settings.json —
+  // falls back to localStorage when no folder is chosen / File System Access isn't
+  // supported, same convention as the rest of this file (e.g. the MIDI map below).
+  const updateSettings = useCallback((patch: Partial<DawSettings>) => {
+    setSettings((s) => {
+      const next = { ...s, ...patch };
+      if (folderRef.current) void saveSettings(folderRef.current, next).catch((e) => console.warn('[Mothscilla] settings save failed', e));
+      else { try { localStorage.setItem('mothscilla:settings', JSON.stringify(next)); } catch { /* ignore */ } }
+      return next;
+    });
+  }, []);
+  const toggleBrowserOpen = useCallback((next: boolean) => { setBrowserOpen(next); updateSettings({ poolCollapsed: !next }); }, [updateSettings]);
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -195,11 +214,16 @@ export function App() {
         await adoptFolder(handle);
         const last = localStorage.getItem('mothscilla:lastSong');
         if (last) { const raw = await loadProject(handle, last); if (raw && !cancelled) { const proj = normalizeProject(raw); setProject(proj); resetHistory(proj); setSelTrack(proj.tracks[0]?.id ?? ''); } }
-      } else if (fsSupported) {
-        setStorageSetup(true);
       } else {
-        const local = localStorage.getItem('mothscilla:localSong');
-        if (local) { try { const proj = normalizeProject(JSON.parse(local)); if (!cancelled) { setProject(proj); resetHistory(proj); setSelTrack(proj.tracks[0]?.id ?? ''); } } catch { /* ignore */ } }
+        // No folder yet (or File System Access unsupported) — fall back to whatever
+        // settings were last saved locally, same convention as the song fallback below.
+        try { const raw = localStorage.getItem('mothscilla:settings'); if (raw) { const s = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) }; if (!cancelled) { setSettings(s); setBrowserOpen(!s.poolCollapsed); } } } catch { /* ignore */ }
+        if (fsSupported) {
+          setStorageSetup(true);
+        } else {
+          const local = localStorage.getItem('mothscilla:localSong');
+          if (local) { try { const proj = normalizeProject(JSON.parse(local)); if (!cancelled) { setProject(proj); resetHistory(proj); setSelTrack(proj.tracks[0]?.id ?? ''); } } catch { /* ignore */ } }
+        }
       }
       // Crash recovery: offer the autosave when it's newer than the last explicit save.
       if (!cancelled) {
@@ -2297,15 +2321,17 @@ export function App() {
       <TopBar
         view={view} setView={setView} isPlaying={isPlaying} onPlay={isPlaying ? stop : play} onStop={stop}
         armed={armed} onArm={() => setArmed((a) => !a)} metronome={metronome} onToggleMetronome={toggleMetronome} bpm={project.bpm} onBpm={setBpm} swing={project.swing ?? 0} onSwing={setSwing} beatsPerBar={Math.max(1, Math.round(project.totalSteps / project.stepsPerBeat))} onTimeSig={setTimeSig} position={pos}
-        browserOpen={browserOpen} setBrowserOpen={setBrowserOpen}
+        browserOpen={browserOpen} setBrowserOpen={toggleBrowserOpen}
         canUndo={histUI.canUndo} canRedo={histUI.canRedo} onUndo={undo} onRedo={redo}
         projectName={project.name} onProjectName={(name) => setProject((p) => ({ ...p, name }))}
         onNewSong={newSong} onSave={saveSong} saved={saved} onOpenSong={openSong} onExport={() => setExportOpen(true)} exporting={exporting} exportProgress={exportProgress} onBounce={bounceSong} bouncing={bouncing} bounceProgress={bounceProgress} onExportMidi={() => downloadMidi(projectRef.current)} onExportStems={exportStems}
         micOn={micOn} onToggleMic={toggleMic} recording={recording} onToggleRecord={toggleRecord}
         midiConnected={midi.devices.length > 0} midiTitle={midi.devices.length ? `MIDI: ${midi.devices.join(', ')}` : 'No MIDI device'} midiLearn={midiLearn.active} onMidiLearn={() => setMidiLearn((m) => ({ active: !m.active, target: null }))}
+        onOpenSettings={() => setSettingsOpen(true)}
       />
+      {settingsOpen && <SettingsPanel settings={settings} onChange={updateSettings} onClose={() => setSettingsOpen(false)} />}
       <div className="workspace">
-        {browserOpen && <Pool pool={project.pool} effects={effects} instrumentLib={library.filter((e) => e.group === 'instrument')} armed={armedPool} recordings={project.assets} previewKey={previewKey} onPreview={auditionAsset} onPlaceRecording={placeAssetOnTrack} onRemoveRecording={removeRecording} onOpenInstrument={openInstrument} onEditEffect={openEffectPage} onRemoveInstrument={removePoolItem} onRemoveEffect={removeEffect} onAddFromFolder={addFromFolder} onAddInstrument={addInstrumentToPool} onNewEffect={newEffect} onBrowsePool={openPoolBrowser} source={folder ? `disk · ${folder.name}` : 'built-in'} />}
+        <Pool pool={project.pool} effects={effects} instrumentLib={library.filter((e) => e.group === 'instrument')} armed={armedPool} recordings={project.assets} previewKey={previewKey} onPreview={auditionAsset} onPlaceRecording={placeAssetOnTrack} onRemoveRecording={removeRecording} onOpenInstrument={openInstrument} onEditEffect={openEffectPage} onRemoveInstrument={removePoolItem} onRemoveEffect={removeEffect} onAddFromFolder={addFromFolder} onAddInstrument={addInstrumentToPool} onNewEffect={newEffect} onBrowsePool={openPoolBrowser} source={folder ? `disk · ${folder.name}` : 'built-in'} collapsed={!browserOpen} onToggleCollapsed={() => toggleBrowserOpen(!browserOpen)} />
         <div className="main">
           {view === 'tracks' && (
             <div className="tracks-view">
@@ -2350,6 +2376,7 @@ export function App() {
                 onSplitAudioClip={splitAudioClip} onSplitVideoClip={splitVideoClip} onPlayClip={auditionClip} previewKey={previewKey}
                 onDuplicateAudioClip={duplicateAudioClip} onNormalizeAudioClip={normalizeAudioClip}
                 getClipPeaks={getClipPeaks} getClipPeaksAsync={getClipPeaksAsync}
+                trackWidth={settings.trackWidth} trackHeight={settings.trackHeight}
               />
               {hasVideoContent && !monitorOpen && (
                 <button className="pgm-reopen" title="Show video preview" onClick={() => setMonitorOpen(true)}><Film size={14} /> Preview</button>

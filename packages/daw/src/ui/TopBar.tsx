@@ -16,6 +16,7 @@ export function TopBar({
   canUndo, canRedo, onUndo, onRedo,
   micOn, onToggleMic, recording, onToggleRecord,
   midiConnected, midiTitle, midiLearn, onMidiLearn,
+  onOpenSettings,
 }: {
   view: ViewId;
   setView: (v: ViewId) => void;
@@ -61,6 +62,7 @@ export function TopBar({
   midiLearn: boolean;
   onMidiLearn: () => void;
   midiTitle: string;
+  onOpenSettings: () => void;
 }) {
   const pct = (f: number) => `${Math.round(f * 100)}%`;
   return (
@@ -134,7 +136,7 @@ export function TopBar({
         </button>
         <button className="icon-btn" title="Export MIDI (.mid — synth tracks' notes)" onClick={onExportMidi}><Piano size={18} /></button>
         <button className={`icon-btn ${bouncing ? 'busy' : ''}`} title="Export stems (one pre-master WAV per track)" onClick={onExportStems} disabled={bouncing}><Layers size={18} /></button>
-        <button className="icon-btn" title="Settings (coming soon)"><Settings size={18} /></button>
+        <button className="icon-btn" title="Settings" onClick={onOpenSettings}><Settings size={18} /></button>
       </div>
     </div>
   );

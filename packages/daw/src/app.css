@@ -131,7 +131,12 @@ body {
 .icon-btn:active:not(:disabled), .t-btn:active, .vtab:active { transform: scale(0.9); }
 
 /* ── Browser ────────────────────────────────────────────────────────────── */
-.browser { width: 230px; flex-shrink: 0; background: var(--bg-panel); border-right: 1px solid var(--border-strong); display: flex; flex-direction: column; overflow: hidden; }
+.browser { width: 230px; flex-shrink: 0; background: var(--bg-panel); border-right: 1px solid var(--border-strong); display: flex; flex-direction: column; overflow: hidden; transition: width var(--dur, 160ms) var(--ease); }
+.browser.collapsed { width: 30px; }
+.browser-expand { width: 100%; flex: 1; display: flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--ink-3); cursor: pointer; }
+.browser-expand:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.browser-collapse { width: 22px; height: 22px; flex-shrink: 0; display: grid; place-items: center; border-radius: 5px; background: transparent; border: none; color: var(--ink-3); cursor: pointer; }
+.browser-collapse:hover { color: var(--ink-1); background: rgba(0,0,0,.3); }
 .browser-search { display: flex; align-items: center; gap: 8px; padding: 11px 12px; border-bottom: 1px solid var(--border-strong); color: var(--ink-3); font-size: 12px; }
 .browser-list { flex: 1; overflow-y: auto; }
 .browser-group-row { display: flex; align-items: center; position: relative; }
@@ -380,6 +385,7 @@ body {
 .exp-seg-btn.on { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
 .exp-seg-btn:disabled { opacity: .4; cursor: not-allowed; }
 .exp-select { width: 100%; padding: 7px 9px; font-size: 12px; color: var(--ink-1); background: var(--glass-field, rgba(255,255,255,.04)); border: 1px solid var(--border-strong); border-radius: var(--r-xs, 6px); }
+.set-input { width: 100%; padding: 7px 9px; font-size: 12px; color: var(--ink-1); background: var(--glass-field, rgba(255,255,255,.04)); border: 1px solid var(--border-strong); border-radius: var(--r-xs, 6px); font: inherit; }
 .exp-rangehead { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 .exp-rangehead input { accent-color: var(--accent); }
 .exp-rangelen { align-self: center; font-size: 11px; color: var(--ink-3); font-family: var(--font-mono, monospace); }
@@ -625,7 +631,7 @@ body {
 .arr2-fade { width: 30px; font-size: 9px; color: var(--ink-1); background: rgba(0,0,0,.35); border: 1px solid var(--border-strong); border-radius: 3px; padding: 1px 2px; -moz-appearance: textfield; }
 .arr2-fade::-webkit-outer-spin-button, .arr2-fade::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .arr2-ruler { display: flex; border-bottom: 1px solid var(--border-strong); position: sticky; top: 0; z-index: 3; background: var(--bg-base); }
-.arr2-headcell { width: 200px; flex-shrink: 0; border-right: 1px solid var(--border-strong); position: sticky; left: 0; z-index: 4; background: var(--bg-base); }
+.arr2-headcell { width: var(--trk-w, 200px); flex-shrink: 0; border-right: 1px solid var(--border-strong); position: sticky; left: 0; z-index: 4; background: var(--bg-base); }
 .arr2-ticks { width: var(--lane-w); height: 34px; position: relative; cursor: pointer; }
 /* bar numbers along the bottom of the ruler (adaptive interval) */
 .arr2-barmark { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--border-strong); pointer-events: none; }
@@ -637,7 +643,7 @@ body {
 .arr2-scroll { flex: 1; overflow: auto; scrollbar-gutter: stable; } /* reserve gutter so clientWidth doesn't jump when the vertical scrollbar toggles (else the fit re-fires) */
 /* soft edge light when the view sits at the very start / end of the song */
 .arr2-edgeglow { position: absolute; top: 0; bottom: 13px; width: 48px; pointer-events: none; opacity: 0; transition: opacity 300ms var(--ease); z-index: 7; }
-.arr2-edgeglow.left { left: 200px; background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 20%, transparent), transparent); }
+.arr2-edgeglow.left { left: var(--trk-w, 200px); background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 20%, transparent), transparent); }
 .arr2-edgeglow.right { right: 0; background: linear-gradient(270deg, color-mix(in srgb, var(--accent) 20%, transparent), transparent); }
 .arr2-edgeglow.on { opacity: 1; }
 .arr2-scroll.panning { cursor: grabbing; user-select: none; }
@@ -650,13 +656,13 @@ body {
 .arr2-grid { width: max-content; min-width: 100%; min-height: 100%; display: flex; flex-direction: column; }
 /* below the last track: keep the header column and bar grid running to the bottom */
 .arr2-fill { flex: 1; display: flex; min-height: 90px; }
-.arr2-fill-head { width: 200px; flex-shrink: 0; border-right: 1px solid var(--border-strong); background: var(--bg-panel); position: sticky; left: 0; z-index: 2; opacity: .5; }
+.arr2-fill-head { width: var(--trk-w, 200px); flex-shrink: 0; border-right: 1px solid var(--border-strong); background: var(--bg-panel); position: sticky; left: 0; z-index: 2; opacity: .5; }
 .arr2-fill-lane { width: var(--lane-w); flex: none;
   background-image: repeating-linear-gradient(90deg, var(--border-subtle), var(--border-subtle) 1px, transparent 1px, transparent calc(100% / var(--n)));
   opacity: .5; }
-.arr2-row { display: flex; height: 78px; border-bottom: 1px solid var(--border-subtle); }
+.arr2-row { display: flex; height: var(--row-h, 78px); border-bottom: 1px solid var(--border-subtle); }
 .arr2-row.sel .arr2-trk { color: var(--accent); }
-.arr2-trk { width: 200px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; gap: 5px; padding: 0 12px; border-right: 1px solid var(--border-strong); cursor: pointer; font-size: 12px; font-weight: 600; color: var(--ink-1); position: sticky; left: 0; z-index: 2; background: var(--bg-panel); }
+.arr2-trk { width: var(--trk-w, 200px); flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; gap: 5px; padding: 0 12px; border-right: 1px solid var(--border-strong); cursor: pointer; font-size: 12px; font-weight: 600; color: var(--ink-1); position: sticky; left: 0; z-index: 2; background: var(--bg-panel); }
 .arr2-trk-head { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .arr2-trk-head span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .arr2-trk-head .trk-ico { flex-shrink: 0; display: inline-flex; }   /* keep the type icon from being squeezed */
