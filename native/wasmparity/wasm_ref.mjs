@@ -33,7 +33,7 @@ function refKarplus() {
   for (let i = 0; i < N; i += BLOCK) {
     const m = new Float32Array(e.memory.buffer);
     m[pFreq >> 2] = 220.0;
-    e.karplus_process(state, pFreq, 1, 0.6, 0.6, pIn, 0, BLOCK, SR, pOut);
+    e.karplus_process(state, pFreq, 1, 0.6, 0.6, 0.15, 0.3, 0.2, pIn, 0, BLOCK, SR, pOut);
     out.set(m.subarray(pOut >> 2, (pOut >> 2) + BLOCK), i);
   }
   return out;

@@ -55,6 +55,7 @@ import * as OscilloscopeFlowNode from '../nodes/OscilloscopeFlowNode';
 import * as MidiFileFlowNode from '../nodes/MidiFileFlowNode';
 import * as UnisonBeginFlowNode from '../nodes/UnisonBeginFlowNode';
 import * as UnisonEndFlowNode from '../nodes/UnisonEndFlowNode';
+import * as AiVstFlowNode from '../nodes/AiVstFlowNode';
 
 export const nodeDefaults: Record<string, Record<string, any>> = {
   OscillatorFlowNode: OscillatorFlowNode.defaultData,
@@ -100,4 +101,5 @@ export const nodeDefaults: Record<string, Record<string, any>> = {
   MidiFileFlowNode: MidiFileFlowNode.defaultData,
   UnisonBeginFlowNode: UnisonBeginFlowNode.defaultData,
   UnisonEndFlowNode: UnisonEndFlowNode.defaultData,
+  AiVstFlowNode: AiVstFlowNode.defaultData,
 };

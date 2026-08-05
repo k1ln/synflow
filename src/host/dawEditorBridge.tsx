@@ -1,13 +1,17 @@
-// Editor side of the Mothscilla (DAW) ↔ Synflow editor bridge.
+// Editor side of the host (DAW) ↔ Synflow editor bridge. Two hosts use it:
 //
-// When the editor is opened by the DAW (URL hash `#mothscilla`) — either as a
-// same-origin/cross-origin IFRAME (host = window.parent) or a separate WINDOW
-// (host = window.opener) — this component receives the flow to edit, loads it
-// into the canvas, and shows a "Send to Mothscilla" button that posts the edited
-// flow back to the DAW. DAW side: packages/daw/src/ui/SynflowEditor.tsx.
+//  • Mothscilla (web DAW): opens the editor with URL hash `#mothscilla` as an
+//    IFRAME (host = window.parent) or a WINDOW (host = window.opener) and ships
+//    the flow over postMessage. A "Send to Mothscilla" button posts edits back.
+//    DAW side: packages/daw/src/ui/SynflowEditor.tsx.
+//  • Native plugin (VST3/AU): the JUCE webview injects the current flow via
+//    WebBrowserComponent initialisationData (PluginEditor.cpp). No postMessage
+//    host — we read `window.__JUCE__.initialisationData.flowJson` once on mount
+//    and load it into the canvas. Edits sync to the C++ engine via NativeFlowEngine,
+//    so there's no "send back" button.
 //
-// In any normal editor session (no host / no hash) this renders nothing and
-// attaches no listeners, so it has zero effect on standalone use.
+// In any normal editor session (no host / no hash / no JUCE) this renders nothing
+// and attaches no listeners, so it has zero effect on standalone web use.
 import React, { useEffect } from 'react';
 
 // We don't know the DAW's origin up front; the DAW verifies `event.source`, and
@@ -20,6 +24,39 @@ function bridgeHost(): Window | null {
   if (window.opener) return window.opener as Window;
   if (window.parent && window.parent !== window) return window.parent;
   return null;
+}
+
+// JUCE wraps scalar initialisationData values in a single-element array.
+function unwrapInit(v: any): any { return Array.isArray(v) ? v[0] : v; }
+
+/** The JUCE plugin webview's injected init data, or null (web app / Mothscilla). */
+function juceInitData(): any | null {
+  const j = typeof window !== 'undefined' ? (window as any).__JUCE__ : undefined;
+  return j && j.initialisationData ? j.initialisationData : null;
+}
+
+/** True when running inside the native plugin's webview (vs. web / Mothscilla iframe). */
+export function isPluginWebview(): boolean {
+  return juceInitData() !== null;
+}
+
+/** The flow the plugin handed us to edit (from initialisationData), or null. */
+function injectedPluginFlow(): { nodes: any[]; edges: any[]; customUi?: string } | null {
+  const data = juceInitData();
+  if (!data) return null;
+  const raw = unwrapInit(data.flowJson);
+  if (raw == null) return null;
+  try {
+    const flow = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (!flow || typeof flow !== 'object') return null;
+    return {
+      nodes: Array.isArray(flow.nodes) ? flow.nodes : [],
+      edges: Array.isArray(flow.edges) ? flow.edges : [],
+      customUi: typeof flow.customUi === 'string' ? flow.customUi : undefined,
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -45,6 +82,24 @@ export function DawEditorBridge({ nodes, edges, setNodes, setEdges, customUi, on
 }) {
   const host = bridgeHost();
   const active = !!host;
+
+  // Native plugin webview: no postMessage host — the flow arrives via JUCE
+  // initialisationData. Load it into the canvas once on mount. (Mothscilla's
+  // postMessage path, below, handles its own load and takes precedence.)
+  useEffect(() => {
+    if (host) return;
+    const flow = injectedPluginFlow();
+    if (!flow) return;
+    const incoming = flow.nodes.map((n: any, i: number) => ({
+      ...n,
+      position: n.position ?? { x: 80 + i * 240, y: 120 + (i % 2) * 130 },
+    }));
+    setNodes(incoming);
+    setEdges(flow.edges);
+    if (flow.customUi != null) onCustomUi?.(flow.customUi);
+    // Mount-once load of the host-supplied flow.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!host) return;

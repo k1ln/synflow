@@ -34,12 +34,22 @@ function sharedRootAssets(): Plugin {
 }
 
 export default defineConfig({
+  // Mounted at /daw under the main Synflow app (dev: proxied there from the
+  // root vite server; prod: nginx serves dist/daw/ at that path). Applies to
+  // both dev and build so Vite's own asset/module URLs — and anything reading
+  // `import.meta.env.BASE_URL` (see src/fonts.ts) — resolve under the prefix.
+  base: '/daw/',
   plugins: [react(), sharedRootAssets()],
   resolve: {
     alias: {
       // Dev resolves @synflow/core from source for live engine HMR.
       '@synflow/core': fileURLToPath(new URL('../core/src/index.ts', import.meta.url)),
     },
+  },
+  build: {
+    // Land inside the root app's dist/ so a single nginx root serves both.
+    outDir: fileURLToPath(new URL('../../dist/daw', import.meta.url)),
+    emptyOutDir: true,
   },
   server: { port: 5174 },
 });

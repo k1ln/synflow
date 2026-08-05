@@ -45,30 +45,23 @@ bool SynflowAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) c
 }
 
 void SynflowAudioProcessor::loadFlow(const juce::String& json) {
-    flowJson_ = json;
     const std::string js = json.toStdString();
     auto g = std::make_unique<AudioGraphManager>(RuntimeMode::Plugin);
     FlowLoadResult res = FlowLoader::loadInto(*g, js, static_cast<float>(sampleRate_),
                                               blockSize_, synflowplugin::makeShellFactory());
-    flowName_ = juce::String(res.name);
-    triggerNode_ = res.triggerNodeIndex; // node.data.isTrigger (flow-declared)
-    pitchNode_ = res.pitchNodeIndex;     // node.data.isPitch
-    pitchParam_ = res.pitchParam;
-    nodeIndexById_ = res.nodeIndexById;
-    midiMaps_ = res.midiMaps;
 
     // Build the control surface the webview renders: exposed knobs (bound to the
     // host-param pool) + the flow's Button nodes (momentary triggers).
     const JsonValue root = JsonParser::parse(js);
     const HostControls hc = extractHostControls(root);
-    knobBindings_.clear();
+    std::vector<KnobBinding> knobBindings;
     juce::String knobs = "[";
     int slot = 0;
     for (const ExposedKnob& k : hc.knobs) {
         if (slot >= kMaxKnobs) break;
         auto it = res.nodeIndexById.find(k.nodeId);
         if (it == res.nodeIndexById.end()) continue;
-        knobBindings_.push_back({slot, it->second, k.param, static_cast<float>(k.min), static_cast<float>(k.max), -1.0f});
+        knobBindings.push_back({slot, it->second, k.param, static_cast<float>(k.min), static_cast<float>(k.max), -1.0f});
         knobParams_[static_cast<size_t>(slot)]->setValueNotifyingHost(static_cast<float>(k.norm()));
         if (slot) knobs += ",";
         knobs += "{\"slot\":" + juce::String(slot)
@@ -96,9 +89,25 @@ void SynflowAudioProcessor::loadFlow(const juce::String& json) {
         }
     }
     buttons += "]";
-    controlsJson_ = "{\"knobs\":" + knobs + ",\"buttons\":" + buttons + "}";
 
-    graph_ = std::move(g);
+    // Commit the new graph + its derived routing atomically against the audio
+    // thread. The old graph is destroyed here on the message thread (after the
+    // swap), never under the audio thread. controlsJson_/flowJson_/flowName_/
+    // nodeIndexById_ are message-thread-only, but we set them under the same lock
+    // to keep the snapshot coherent.
+    {
+        const juce::SpinLock::ScopedLockType sl(graphLock_);
+        flowJson_ = json;
+        flowName_ = juce::String(res.name);
+        triggerNode_ = res.triggerNodeIndex; // node.data.isTrigger (flow-declared)
+        pitchNode_ = res.pitchNodeIndex;     // node.data.isPitch
+        pitchParam_ = res.pitchParam;
+        nodeIndexById_ = res.nodeIndexById;
+        midiMaps_ = res.midiMaps;
+        knobBindings_ = std::move(knobBindings);
+        controlsJson_ = "{\"knobs\":" + knobs + ",\"buttons\":" + buttons + "}";
+        graph_ = std::move(g);
+    }
 }
 
 void SynflowAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock) {
@@ -113,7 +122,11 @@ static inline double midiToHz(int note) { return 440.0 * std::pow(2.0, (note - 6
 void SynflowAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi) {
     juce::ScopedNoDenormals noDenormals;
     const int numSamples = buffer.getNumSamples();
-    if (!graph_) { buffer.clear(); return; }
+
+    // Try-lock against message-thread graph swaps (loadFlow / editor bridge). A
+    // missed lock is rare and one block of silence is inaudible; never block audio.
+    const juce::SpinLock::ScopedTryLockType sl(graphLock_);
+    if (!sl.isLocked() || !graph_) { buffer.clear(); return; }
 
     // Capture host audio input (effect flows) as mono BEFORE we overwrite the
     // buffer. Instrument flows have no inputNode, so renderBlock ignores it.
@@ -180,6 +193,7 @@ void SynflowAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce:
 }
 
 void SynflowAudioProcessor::editorSetParam(const juce::String& nodeId, const juce::String& key, const juce::var& value) {
+    const juce::SpinLock::ScopedLockType sl(graphLock_);
     if (!graph_) return;
     auto it = nodeIndexById_.find(nodeId.toStdString());
     if (it == nodeIndexById_.end()) return;
@@ -189,11 +203,23 @@ void SynflowAudioProcessor::editorSetParam(const juce::String& nodeId, const juc
 }
 
 void SynflowAudioProcessor::editorNote(const juce::String& nodeId, bool noteOn, const juce::var& payload) {
+    const juce::SpinLock::ScopedLockType sl(graphLock_);
     if (!graph_) return;
     auto it = nodeIndexById_.find(nodeId.toStdString());
     if (it == nodeIndexById_.end()) return;
     const double vel = payload.hasProperty("velocity") ? static_cast<double>(payload.getProperty("velocity", 1.0)) : 1.0;
     graph_->queueInputEvent(it->second, 0, noteOn ? EventType::NoteOn : EventType::NoteOff, vel, 0);
+}
+
+void SynflowAudioProcessor::hostNote(int midiNote, bool noteOn, double velocity) {
+    const juce::SpinLock::ScopedLockType sl(graphLock_);
+    if (!graph_) return;
+    if (noteOn) {
+        if (pitchNode_ >= 0) graph_->node(pitchNode_)->setNamedParam(pitchParam_, midiToHz(midiNote));
+        if (triggerNode_ >= 0) graph_->queueInputEvent(triggerNode_, 0, EventType::NoteOn, velocity, 0);
+    } else if (triggerNode_ >= 0) {
+        graph_->queueInputEvent(triggerNode_, 0, EventType::NoteOff, 0.0, 0);
+    }
 }
 
 void SynflowAudioProcessor::getStateInformation(juce::MemoryBlock& dest) {

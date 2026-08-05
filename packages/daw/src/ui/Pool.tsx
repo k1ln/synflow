@@ -1,3 +1,4 @@
+import { isVstaiFlow } from '../synflow/vstai';
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, FolderPlus, Music2, Drum, Sparkles, Radio, X, Play, Square, Plus, AudioWaveform } from 'lucide-react';
 import type { PoolItem, AudioAsset } from '../model/project';
@@ -17,7 +18,7 @@ const fmtDur = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)
  * (click → live mode) and the effects available to add. "Add from folder" pulls
  * more flows in from the on-disk library.
  */
-export function Pool({ pool, effects, instrumentLib, armed, recordings, previewKey, onPreview, onPlaceRecording, onRemoveRecording, onOpenInstrument, onEditEffect, onRemoveInstrument, onRemoveEffect, onAddFromFolder, onAddInstrument, onNewEffect, source }: {
+export function Pool({ pool, effects, instrumentLib, armed, recordings, previewKey, onPreview, onPlaceRecording, onRemoveRecording, onOpenInstrument, onEditEffect, onRemoveInstrument, onRemoveEffect, onAddFromFolder, onAddInstrument, onNewEffect, onBrowsePool, source }: {
   pool: PoolItem[];
   effects: LibraryEntry[];
   instrumentLib: LibraryEntry[];   // the on-disk/bundled instruments you can add to the pool
@@ -34,6 +35,7 @@ export function Pool({ pool, effects, instrumentLib, armed, recordings, previewK
   onAddFromFolder: () => void;
   onAddInstrument?: (entry: LibraryEntry) => void;
   onNewEffect?: () => void;
+  onBrowsePool?: (which: 'synth' | 'drum') => void;   // open the plugin browser (library + VibeSynth gallery)
   source?: string;
 }) {
   const [open, setOpen] = useState<Record<string, boolean>>({ Instruments: true, Drums: true, Effects: true, Recordings: true });
@@ -59,7 +61,8 @@ export function Pool({ pool, effects, instrumentLib, armed, recordings, previewK
         <div className="browser-group-row">
           <button className="browser-group" onClick={() => setOpen((o) => ({ ...o, [name]: !isOpen }))}>
             {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-            <span className="bg-name" style={{ color }}>{name}</span>
+            <span className="bg-dot" style={{ background: color }} />
+            <span className="bg-name">{name}</span>
             <span className="bg-count">{count}</span>
           </button>
           {onNew && <button className="bg-new" title={newTitle ?? 'New'} onClick={onNew}><Plus size={12} /></button>}
@@ -81,7 +84,7 @@ export function Pool({ pool, effects, instrumentLib, armed, recordings, previewK
 
   const item = ({ id, name, color, live, onClick, onRemove, tag, title }: { id: string; name: string; color: string; live?: boolean; onClick?: () => void; onRemove?: () => void; tag?: string; title?: string }) => (
     <div key={id} className={`browser-item ${live ? 'live' : ''}`} onClick={onClick} title={title}>
-      <span className="bi-dot" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
+      <span className="bi-dot" style={{ background: color }} />
       <span className="bi-name">{name}</span>
       {live && <Radio size={11} className="bi-live" />}
       {tag && <span className="bi-kind">{tag}</span>}
@@ -96,15 +99,15 @@ export function Pool({ pool, effects, instrumentLib, armed, recordings, previewK
         <button className="browser-addfolder" onClick={onAddFromFolder} title="Add flows from a folder"><FolderPlus size={14} /></button>
       </div>
       <div className="browser-list">
-        {section({ name: 'Instruments', count: synths.length, onNew: () => setAdding((a) => (a === 'synth' ? null : 'synth')), newTitle: 'Add an instrument to the project', menu: addMenu('synth', synthCand), children: (
+        {section({ name: 'Instruments', count: synths.length, onNew: () => (onBrowsePool ? onBrowsePool('synth') : setAdding((a) => (a === 'synth' ? null : 'synth'))), newTitle: 'Add an instrument — library or VibeSynth gallery', menu: addMenu('synth', synthCand), children: (
           <>
-            {synths.map((p) => item({ id: p.id, name: p.name, color: SECTION.Instruments.color, live: armed === p.id, onClick: () => onOpenInstrument(p.id), onRemove: () => onRemoveInstrument(p.id), title: 'Open instrument (live + knobs)' }))}
+            {synths.map((p) => item({ id: p.id, name: p.name, color: SECTION.Instruments.color, live: armed === p.id, tag: isVstaiFlow(p.flow) ? 'AI' : undefined, onClick: () => onOpenInstrument(p.id), onRemove: () => onRemoveInstrument(p.id), title: isVstaiFlow(p.flow) ? 'Open AI plugin (its own GUI)' : 'Open instrument (live + knobs)' }))}
             {synths.length === 0 && <div className="browser-empty">none — add with + (or a whole folder above)</div>}
           </>
         ) })}
-        {section({ name: 'Drums', count: drums.length, onNew: () => setAdding((a) => (a === 'drum' ? null : 'drum')), newTitle: 'Add a drum to the project', menu: addMenu('drum', drumCand), children: (
+        {section({ name: 'Drums', count: drums.length, onNew: () => (onBrowsePool ? onBrowsePool('drum') : setAdding((a) => (a === 'drum' ? null : 'drum'))), newTitle: 'Add a drum — library or VibeSynth gallery', menu: addMenu('drum', drumCand), children: (
           <>
-            {drums.map((p) => item({ id: p.id, name: p.name, color: SECTION.Drums.color, live: armed === p.id, onClick: () => onOpenInstrument(p.id), onRemove: () => onRemoveInstrument(p.id), title: 'Open instrument (live + knobs)' }))}
+            {drums.map((p) => item({ id: p.id, name: p.name, color: SECTION.Drums.color, live: armed === p.id, tag: isVstaiFlow(p.flow) ? 'AI' : undefined, onClick: () => onOpenInstrument(p.id), onRemove: () => onRemoveInstrument(p.id), title: isVstaiFlow(p.flow) ? 'Open AI plugin (its own GUI)' : 'Open instrument (live + knobs)' }))}
             {drums.length === 0 && <div className="browser-empty">none — add with + (or a whole folder above)</div>}
           </>
         ) })}

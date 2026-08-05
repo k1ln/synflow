@@ -3,12 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Mothscilla — a classical DAW built on @synflow/core.",
+  "description": "Mothscilla \u2014 a classical DAW built on @synflow/core.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "gen:flows": "tsx scripts/gen-flows.ts"
+    "gen:flows": "tsx scripts/gen-flows.ts",
+    "test": "node test/timing.test.mjs && tsx test/midi.test.ts && tsx test/peruse.test.ts && node test/vstai.test.mjs && node test/when-capable.test.mjs && tsx test/voicepool-dup-id.test.mjs"
   },
   "dependencies": {
     "@synflow/core": "*",
@@ -17,5 +18,8 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.1",
     "webm-muxer": "^5.1.4"
+  },
+  "devDependencies": {
+    "node-web-audio-api": "^2.0.0"
   }
 }

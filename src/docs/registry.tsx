@@ -39,6 +39,7 @@ import MicFlowNode from '../nodes/MicFlowNode';
 import RecordingFlowNode from '../nodes/RecordingFlowNode';
 import SpeedDividerFlowNode from '../nodes/SpeedDividerFlowNode';
 import EqualizerFlowNode from '../nodes/EqualizerFlowNode';
+import ScriptSequencerFlowNode, { defaultData as scriptSequencerDefaultData } from '../nodes/ScriptSequencerFlowNode';
 
 export type ControlType = 'string' | 'number' | 'boolean' | 'select';
 
@@ -1417,6 +1418,45 @@ const VocoderPreview: React.FC = () => (
         </div>
       </div>
     </div>
+  </div>
+);
+
+// Script Sequencer: line-per-step DSL sequencer. Renders the real node
+// (CodeMirror editor, favorites/outputs panels, help modal) so the preview
+// doubles as an interactive sandbox.
+const ScriptSequencerPreview: React.FC<{
+  script?: string;
+  outputCount?: number;
+  inputCount?: number;
+}> = ({
+  script = scriptSequencerDefaultData.script,
+  outputCount = scriptSequencerDefaultData.outputCount,
+  inputCount = 0,
+}) => (
+  <div
+    style={{
+      borderRadius: 8,
+      padding: 8,
+      border: '1px solid #262a3a',
+      background: '#050608',
+      display: 'inline-flex',
+      justifyContent: 'center',
+    }}
+  >
+    <ScriptSequencerFlowNode
+      data={{
+        id: 'ssq-doc',
+        label: 'ScriptSequencer',
+        script,
+        activeLine: 0,
+        outputCount,
+        inputCount,
+        showOutputs: true,
+        showFavorites: false,
+        style: baseNodeStyle,
+        onChange: () => {},
+      }}
+    />
   </div>
 );
 
@@ -4257,6 +4297,145 @@ export const docs: DocItem[] = [
     component: VocoderPreview,
     defaultProps: {},
     controls: {},
+  },
+  {
+    id: 'script-sequencer',
+    title: 'Script Sequencer',
+    description: [
+      'Role',
+      '- A code-driven step sequencer. Each LINE of the script is one step; a clock connected to the "clock" input advances a cursor one line per tick (wrapping back to the top). The currently-running line is highlighted live. A line can hold several `;`-separated actions so one step can do many things while still costing exactly one tick.',
+      '',
+      'Important Note',
+      '- All outputs are plain, untyped emitters — there is no per-output "kind" (event vs. value vs. audio-param). Any action (send/on/off/pulse/ramp/array/…) can target any output; it is up to the wiring on the other end to interpret the value correctly.',
+      '',
+      'Inputs (left handles)',
+      '- clock: every ON event advances the cursor by one line. It is also the tempo source — the node measures the real time between ticks (with light smoothing) and uses that as the meaning of `1t`/`1b` in duration expressions, so changing the clock\'s BPM reshapes every duration automatically.',
+      '- reset: snaps the cursor back to line 1, clears any pending repeat/wait counters, cancels in-flight ramps/arrays/pulses, clears "first visit" memory for `once:` lines, and immediately re-runs every `init:` line from the top.',
+      '- in-0, in-1, … (added from the "Value Inputs" panel): each incoming value is stored as $in0, $in1, … and can be used in any expression, e.g. `send #0 $in0 * 2` or `if: $in0 > 0.5: on #1`. Receiving a value updates the variable but does not itself advance the cursor.',
+      '',
+      'Outputs (right handles)',
+      '- out-0, out-1, … (referenced in the script as #0, #1, …): add as many as needed from the "Outputs" panel. If the script references a higher index than declared (e.g. #5 with only 3 added), the missing handle is auto-created so the wire target exists — the panel marks it "auto".',
+      '- debug: fires only from the `print` action; wire it to a Log node to watch values live without wiring a real output for it.',
+      '',
+      'Handle references',
+      '- #N is the normal way to address an output (or, inside `random`, a variable target). A bare number N or the fully-resolved form out-N both work identically. Any other bare word (e.g. `gate`) is passed through unresolved as a legacy/custom handle name — only useful if something listens for `<nodeId>.<name>.receiveNodeOn` directly, since the auto-generated UI only ever creates out-N handles.',
+      '',
+      'Actions',
+      '- send <ref> <expr>: one-shot value emission, e.g. `send #0 0.5`. If <expr> is an array literal `[a,b,…]`, this is shorthand for `array` (see below).',
+      '- on <ref> [<expr>]: emits a gate ON, value defaults to 1 if omitted.',
+      '- off <ref>: emits a gate OFF.',
+      '- pulse <ref> <duration>: ON immediately, OFF after <duration>.',
+      '- pulse <ref> [v1,v2,…] <pulse-width> [<total-duration>]: fires each value as its own ON/OFF pulse, evenly spaced across <total-duration> (default one tick); the first pulse fires synchronously, the rest are timer-scheduled. Example: `pulse #0 [60,64,67] 80ms 600ms`.',
+      '- ramp <ref> a..b <duration>: linearly interpolates from a to b over <duration>, emitting `send` at ~60 Hz.',
+      '- array <ref> [v1,v2,…] [<duration>] [swing white|pink <amount>]: spreads the values evenly across <duration> (default one tick); the first value fires immediately, the rest are scheduled. Optional swing jitters each step\'s timing by ± <amount> × step-length — "white" uses uniform random jitter, "pink" uses a smoother 1/f-noise generator for a more natural human feel.',
+      '- sendrandom <ref> [v1,v2,…] [<duration>] [swing …]: identical scheduling to `array`, but the value list is Fisher–Yates shuffled first — so it re-plays the same set in a new random order every pass. (For picking a single random value instead of reshuffling a whole set, use `random`.)',
+      '- random <ref|$var> [v1,v2,…] | a..b | (nothing): picks one value — an element from the array, a uniform number in a..b, or (with no value given) a uniform 0..1 — then either sends it on the output <ref>, or stores it in $var if the target starts with $.',
+      '- set <var> <expr>: stores the result under $var. Accepts the variable with or without a leading $, and tolerates an optional `=` (`set $i = expr` or `set $i expr`).',
+      '- inc <var> [step] / dec <var> [step]: adds/subtracts <step> (an expression, default 1) from $var. A missing variable is treated as 0.',
+      '- goto <line>: jumps the cursor to the given 1-based line for the next step (does not itself consume an extra tick).',
+      '- loop: alias for `goto 1`.',
+      '- ifgoto <expr> <line>: jumps to <line> only if <expr> is truthy; otherwise falls through to the normal next line.',
+      '- ifloop <expr>: jumps to line 1 only if <expr> is truthy.',
+      '- repeat <n>: re-runs the current line for n additional ticks before the cursor is allowed to advance. Only arms once per visit (re-looping back onto the same line re-arms it correctly; it will not reset mid-repeat).',
+      '- wait <n>: freezes the ENTIRE sequencer for the next n ticks — no line executes and the cursor does not move — then resumes normally. This is a global pause, not a "skip this step" no-op.',
+      '- print <expr>: console.log()s the value and also emits it on the dedicated `debug` output handle.',
+      '- // comment (or an empty line): no-op.',
+      '',
+      'Conditionals — two independent syntaxes',
+      '- Inline form: `if <cond>: <then-action(s)> [else: <else-action(s)>]` (the colon must directly follow the condition; an explicit `if:` prefix works the same way). Both the then- and else- bodies may contain several `;`-joined actions, and are evaluated with a full recursive pass, so this is the form to reach for beyond a single guarded action.',
+      '- Semicolon-gated legacy form: `if <cond> ; <action> [; else: <alt-action>]` (no colon in the condition). This gates only the SINGLE action immediately following it — if another normal action is inserted between the gated action and `else:`, the else branch will not fire. Prefer the colon form for anything more than one guarded action.',
+      '- Comparison operators available in any expression: == != < <= > >=. Arithmetic: + - * / % with parentheses and unary +/-.',
+      '- ifgoto/ifloop (above) are a third, simpler option when the only thing you want on a condition is an unconditional jump.',
+      '',
+      'Line prefixes (init: / once: / exec:)',
+      '- init: <action> — runs exactly once, immediately, when the node is created or whenever `reset` fires (all init: lines run in script order at that moment). It never runs during normal playback; the cursor simply skips over these lines instantly if the cursor lands there via a jump.',
+      '- once: <action> — the line still consumes a normal tick like any other step, but the action body only executes the first time the cursor visits that specific line since the last reset; later visits (e.g. after `loop`) still land on the line and spend a tick, but silently skip the body.',
+      '- exec: <action> — runs without ever consuming a tick, on every pass. Placed right after a line that just executed, it fires together with that line, in the same tick. Placed before the next normal line the cursor will reach (e.g. right after a jump target), it fires together with that upcoming line, just before it executes.',
+      '',
+      'Durations',
+      '- <n>ms — milliseconds (the default unit if none is given).',
+      '- <n>s — seconds.',
+      '- <n>t or <n>b — n × the live-measured clock period ("ticks"/"beats"); these automatically track BPM changes on the clock input.',
+      '',
+      'Expressions & note literals',
+      '- Any value slot accepts a full expression: numbers, $vars, arithmetic (+ - * / %), parentheses, and the comparison operators above.',
+      '- @NoteOctave (e.g. @C4, @A#5, @Bb3) evaluates to that note\'s frequency in Hz (A4 = 440). Sharps use #, flats use lower-case b.',
+      '- @NoteOctave±N or @NoteOctave±$var — same, transposed by N semitones (or by the current value of $var).',
+      '- @$var±N or @$var±$var2 — treats $var\'s current numeric value as a Hz base and shifts it by N semitones (or by another variable\'s value) without needing to convert it back to a note name first.',
+      '- A single "quoted" or \'quoted\' token is returned verbatim as a string rather than going through the numeric parser.',
+      '',
+      'Multiple actions on one line',
+      '- Separate actions with `;`. Semicolons inside `[...]` array literals are not treated as splits, so `array #0 [1,2,3] 1t` is safe on a line with other `;`-joined actions.',
+      '',
+      'Editor & UI features',
+      '- CodeMirror-based editor with a purpose-built syntax highlighter for the DSL: verbs, `#N` output references, `$vars`, `@notes`, strings, numbers-with-duration-suffix, and `//` comments all get distinct coloring.',
+      '- The running line is highlighted live as the sequencer plays; `exec:` lines flash briefly whenever they fire "for free" alongside a normal step.',
+      '- A client-side validator underlines unrecognized verbs or malformed arguments per line and lists them below the editor (separate, faster check than the runtime interpreter\'s own error handling).',
+      '- ◈ token-highlight mode marks every $var / number / @note token inline — click one to star it into the Favorites panel, which shows its live runtime value and can be nudged with the ▲▼ buttons, arrow keys, or mouse wheel, for tweaking a running script without touching the code.',
+      '- Header controls: ⏮ resets the cursor to line 1; ↦ prompts for a line number to jump to; ▶ fires one manual tick (runs the current line and advances) with no clock connected.',
+      '- Keyboard, with focus in the editor: Ctrl/Cmd+L moves the running cursor to the line under the caret; Ctrl/Cmd+Enter manually steps one tick.',
+      '- The Outputs panel\'s ↩ button inserts a `send #N 0` skeleton into the active line at the caret.',
+      '- The "?" button opens a full in-app reference for this syntax.',
+      '',
+      'Examples',
+      '',
+      'Example 1: 4-on-the-floor kick with a filter sweep',
+      '  on #0',
+      '  ramp #1 200..2000 4t',
+      '  on #0',
+      '  on #0',
+      '  on #0 ; off #0',
+      '  loop',
+      '- #0 = gate (wire to an ADSR/sample trigger), #1 = cutoff (wire to a filter\'s frequency input).',
+      '',
+      'Example 2: humanized 4-note arpeggio',
+      '  array #0 [60, 64, 67, 72] 1t swing pink 0.15',
+      '  pulse #1 30',
+      '  loop',
+      '- #0 = note value, #1 = trigger pulse; pink swing keeps the timing natural rather than mechanically even.',
+      '',
+      'Example 3: counter with init/once/exec and an inline conditional',
+      '  init: set $i 0',
+      '  once: print "first pass"',
+      '  send #0 $i',
+      '  exec: inc $i',
+      '  if: $i >= 8: set $i 0',
+      '  loop',
+      '- $i is seeded once at reset, "first pass" prints only on the very first visit to that line, exec: increments $i for free every tick, and the inline if resets it once it reaches 8 — a free-running 8-step counter without spending a tick on the increment.',
+      '',
+      'Example 4: probabilistic fill every 8 bars, driven by a value input',
+      '  ifgoto $in0 > 0.5 3',
+      '  repeat 7',
+      '  goto 1',
+      '  sendrandom #0 [1,1,1,1,0,0,0,0] 1t swing white 0.4',
+      '  loop',
+      '- Wire a probability control to in-0; whenever it is above 0.5 on the tick the cursor reaches line 1, it jumps straight to the fill line instead of repeating the quiet bars.',
+      '',
+      'Typical Use Cases',
+      '- Drum/step sequencing with per-step conditional fills, probability, and swing.',
+      '- Arpeggios and note patterns driven by @note literals and array/sendrandom scheduling.',
+      '- Free-running counters/LFO-like modulation via init:/exec:/set/inc without spending ticks.',
+      '- Building a small state machine (goto/ifgoto/ifloop) for song-section or pattern switching.',
+      '- Debugging other parts of a patch by routing values to the debug output and a Log node.',
+      '- Transposing a live incoming frequency (in-N) using @$var±N instead of separate note math nodes.',
+      '',
+      'Gotchas',
+      '- The `if <cond> ; <action>` legacy form only ever gates the single action directly after it — reach for the `if <cond>: <action> [else: <action>]` colon form for anything more elaborate.',
+      '- `wait <n>` pauses the whole sequencer, not just the current line — no other line in the script runs during those n ticks.',
+      '- Outputs are untyped: nothing stops a gate action from targeting an output wired to an audio-rate param, or vice versa — match the receiving node\'s expectations yourself.',
+      '- Script text, output/input counts, and favorites are saved with the patch; runtime $vars are ephemeral and are reseeded only by whatever `init:` lines set on the next reset.',
+    ].join('\n'),
+    component: ScriptSequencerPreview,
+    defaultProps: {
+      script: scriptSequencerDefaultData.script,
+      outputCount: scriptSequencerDefaultData.outputCount,
+      inputCount: 0,
+    },
+    controls: {
+      script: { type: 'string', label: 'Script' },
+      outputCount: { type: 'number', label: 'Outputs' },
+      inputCount: { type: 'number', label: 'Value inputs' },
+    },
   },
 ];
 

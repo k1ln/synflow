@@ -53,7 +53,7 @@ import MiniPlayer from './components/MiniPlayer';
 import AudioExplorer from './components/AudioExplorer';
 import OrchestratorDialog from './nodes/OrchestratorDialog';
 import DocsPlayground from './components/DocsPlayground';
-import { DawEditorBridge, isDawEditMode } from './host/dawEditorBridge';
+import { DawEditorBridge, isDawEditMode, isPluginWebview } from './host/dawEditorBridge';
 import { HostInterfacePanel } from './host/hostInterface';
 import { InstrumentLiveUI } from './components/InstrumentLiveUI';
 import { CustomUiEditor } from './components/CustomUiEditor';
@@ -90,6 +90,18 @@ const TRIGGER_EXCITED_NODE_TYPES = new Set<string>([
   'WavetableFlowNode',
   'EnvGenFlowNode',
 ]);
+
+// FL Studio's typing-keyboard layout BY PHYSICAL KEY (KeyboardEvent.code), so it
+// matches FL on any locale: the bottom-left letter (US 'Z' / German 'Y' — both are
+// physical code "KeyZ") is the low C, and the Q-row is one octave up. Used by the
+// plugin-webview keyboard handler, since the DAW can't deliver its typing keyboard
+// while the plugin window is focused. Values are semitone offsets from the base C.
+const FL_KEY_LAYOUT: Record<string, number> = {
+  KeyZ: 0, KeyS: 1, KeyX: 2, KeyD: 3, KeyC: 4, KeyV: 5, KeyG: 6, KeyB: 7, KeyH: 8, KeyN: 9, KeyJ: 10, KeyM: 11,
+  Comma: 12, KeyL: 13, Period: 14, Semicolon: 15, Slash: 16,
+  KeyQ: 12, Digit2: 13, KeyW: 14, Digit3: 15, KeyE: 16, KeyR: 17, Digit5: 18, KeyT: 19, Digit6: 20, KeyY: 21, Digit7: 22, KeyU: 23,
+  KeyI: 24, Digit9: 25, KeyO: 26, Digit0: 27, KeyP: 28,
+};
 
 // The shared base node look now lives in the `.flow-node` CSS class
 // (nodes/AudioNode.css); nodes that need it in JS import `baseNodeStyle` from
@@ -544,8 +556,9 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
         setIsFlowLoading(false);
       }
     };
-    // In Mothscilla edit mode the DAW supplies the flow — don't restore the last one.
-    if (!dawEdit) void loadInitial();
+    // When a host supplies the flow — Mothscilla (edit mode) or the native plugin
+    // webview (injected via JUCE initialisationData) — don't restore the last one.
+    if (!dawEdit && !isPluginWebview()) void loadInitial();
 
     void (async () => {
       const flows = await db.get("*");
@@ -1130,6 +1143,36 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
     return `// FlowSynth auto-generated component for ${name}\n// Edit the transform() function to customize behavior.\n// The embeddedGraph object contains the node & edge structure.\nexport const embeddedGraph = ${serialized};\n\nexport function transform(input){\n  // TODO: implement processing logic\n  return input;\n}\n\nexport default { name: '${safeName}', embeddedGraph, transform };`;
   }, [nodes, edges]);
 
+  // Native plugin webview: push the editor graph to the C++ engine. The web app
+  // re-syncs the engine inside init(), but init() builds a Web Audio graph gated on
+  // a started AudioContext — which never exists in the plugin (audio is in C++). So
+  // here we drive the NativeFlowEngine directly: compile any stale AssemblyScript
+  // worklet (in-webview via asc — no Node.js), then create the engine once and
+  // thereafter resync (re-push the flow JSON). This is what makes Save / an edit
+  // actually recompile + reload the flow in the running plugin. No-op in the web app.
+  const nativeTopoRef = useRef<string>('');
+  const syncNativeEngine = useCallback(async () => {
+    if (!isPluginWebview()) return;
+    try {
+      const { compileDirtyWorklets } = await import('./host/compileFlowWorklets');
+      await compileDirtyWorklets(nodesRef.current);
+    } catch (e) {
+      console.warn('[Flow] worklet recompile failed', e);
+    }
+    let engine = managerRef.current;
+    if (!engine) {
+      // First sync: stand up the native engine. It ignores the AudioContext (audio
+      // is native), so we don't create a Web Audio context just to ship flow JSON.
+      engine = engineFactory(null as any, nodesRef, edgesRef);
+      managerRef.current = engine;
+      audioGraphManagerRef.current = engine;
+      engine.initialize();
+    } else {
+      engine.resync?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engineFactory]);
+
   const saveFlow = useCallback(async () => {
     if (!flowNameInput) return;
 
@@ -1196,6 +1239,11 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
   }, [flowNameInput, nodes, edges, db, fsRootHandle, currentFlowFolder]);
 
   const triggerSave = useCallback(() => {
+    // Plugin: Save (button / Ctrl+S) recompiles stale worklets and re-pushes the
+    // flow to C++ even when only a node's data changed (e.g. AssemblyScript source),
+    // which doesn't alter the nodes array identity and so wouldn't trip the topology
+    // effect below. Runs regardless of disk/flow-name state (the plugin has neither).
+    void syncNativeEngine();
     if (flowNameInput) {
       saveFlow()
         .then(() => setLastSavedAt(Date.now()))
@@ -1207,7 +1255,23 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
     setSaveDialogFolder(currentFlowFolder);
     setSaveDialogIsNewFlow(false);
     setSaveDialogOpen(true);
-  }, [flowNameInput, saveFlow, currentFlowFolder]);
+  }, [flowNameInput, saveFlow, currentFlowFolder, syncNativeEngine]);
+
+  // Plugin: keep the C++ engine in lock-step with the editor TOPOLOGY (a node or
+  // edge added/removed). Mirrors the web app, which only rebuilds audio on edge
+  // changes — so selection/drag/param tweaks don't cause audio-rebuild glitches.
+  // Live param tweaks propagate via setParamByName; worklet recompiles happen on
+  // Save (above). The first run stands up the native engine. No-op in the web app.
+  useEffect(() => {
+    if (!isPluginWebview()) return;
+    const topo = nodes.map((n: any) => n.id).sort().join(',')
+      + '|' + edges.map((e: any) => e.id).sort().join(',');
+    if (topo === nativeTopoRef.current) return;
+    nativeTopoRef.current = topo;
+    if (!nodes.length) return; // don't clobber C++ with an empty graph before the flow loads
+    void syncNativeEngine();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodes, edges]);
 
   
   
@@ -1576,6 +1640,51 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
   };
   // Open the Live UI; start audio so the first note isn't dropped while the graph builds.
   const toggleLiveUi = () => { setLiveUiOpen((v) => { const nv = !v; if (nv) ensureLiveAudio(); return nv; }); };
+
+  // Native plugin editor: while the plugin window is focused the DAW can't deliver
+  // its typing keyboard, so the editor plays notes itself — using FL Studio's layout
+  // by PHYSICAL KEY (e.code, locale-independent: German 'Y' == physical KeyZ == low
+  // C). Notes go straight to the C++ host-MIDI path (same routing as the DAW). Robust
+  // note-off: per-key tracking, retrigger on a missed key-up, release-all on blur.
+  // Web app is unaffected (gated on the plugin webview).
+  useEffect(() => {
+    if (!isPluginWebview()) return;
+    const base = 60; // physical KeyZ -> C (MIDI 60)
+    const bridge = (window as any).__JUCE__?.backend;
+    const send = (ev: string, note: number) => { try { bridge?.emitEvent(ev, { note, velocity: 0.9 }); } catch { /* noop */ } };
+    const held: Record<string, number> = {};
+    const isTyping = (el: EventTarget | null) =>
+      el instanceof HTMLElement &&
+      (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable);
+    const kd = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) return;
+      const off = FL_KEY_LAYOUT[e.code];
+      if (off == null) return;
+      e.preventDefault();
+      if (e.repeat) return;
+      if (held[e.code] != null) send('stopNote', held[e.code]); // missed key-up -> retrigger clean
+      const note = base + off;
+      held[e.code] = note;
+      send('playNote', note);
+    };
+    const ku = (e: KeyboardEvent) => {
+      const note = held[e.code];
+      if (note == null) return;
+      e.preventDefault();
+      delete held[e.code];
+      send('stopNote', note);
+    };
+    const releaseAll = () => { for (const c of Object.keys(held)) { send('stopNote', held[c]); delete held[c]; } };
+    window.addEventListener('keydown', kd, true);
+    window.addEventListener('keyup', ku, true);
+    window.addEventListener('blur', releaseAll, true);
+    return () => {
+      window.removeEventListener('keydown', kd, true);
+      window.removeEventListener('keyup', ku, true);
+      window.removeEventListener('blur', releaseAll, true);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   
 
@@ -2464,6 +2573,12 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
               type="text"
               value={saveDialogName}
               onChange={handleSaveDialogNameChange}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && saveDialogName.trim()) {
+                  e.preventDefault();
+                  handleSaveDialogConfirm();
+                }
+              }}
               placeholder="Flow name"
               className="flow-dialog-input"
               autoFocus
@@ -2474,6 +2589,12 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
               list="save-dialog-folder-list"
               value={saveDialogFolder}
               onChange={handleSaveDialogFolderChange}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && saveDialogName.trim()) {
+                  e.preventDefault();
+                  handleSaveDialogConfirm();
+                }
+              }}
               placeholder="Root"
               className="flow-dialog-input flow-dialog-input--folder"
             />

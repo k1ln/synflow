@@ -43,6 +43,7 @@ import VirtualDynamicCompressorNode from "./virtualNodes/VirtualDynamicCompresso
 import VirtualDistortionNode from "./virtualNodes/VirtualDistortionNode";
 import VirtualMasterOut from "./virtualNodes/VirtualMasterOut";
 import { VirtualAudioWorkletNode } from "./virtualNodes/VirtualAudioWorkletNode";
+import { VirtualVstaiNode } from "./virtualNodes/VirtualVstaiNode";
 import VirtualClockNode from "./virtualNodes/VirtualClockNode";
 import VirtualSwitchNode from "./virtualNodes/VirtualSwitchNode";
 import VirtualConstantNode from "./virtualNodes/VirtualConstantNode";
@@ -454,6 +455,13 @@ export async function addVirtualNode(manager: any, node: CustomNode, parentNode:
         case "MasterOutFlowNode": {
             const virtualMasterOut = new VirtualMasterOut(manager.audioContext, manager.eventBus, node);
             manager.virtualNodes.set(node.id, virtualMasterOut);
+            break;
+        }
+        case "AiVstFlowNode": {
+            // VibePlugin ".vstai" host: AI-written DSP (wasm) as a synth/effect.
+            const vstai = new VirtualVstaiNode(manager.audioContext, manager.eventBus, node as any);
+            await vstai.ready;
+            manager.virtualNodes.set(node.id, vstai);
             break;
         }
         case "AudioWorkletFlowNode": {

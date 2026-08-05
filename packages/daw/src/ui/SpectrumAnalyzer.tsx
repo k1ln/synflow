@@ -27,7 +27,7 @@ export function SpectrumAnalyzer({ analyser, height = 60 }: { analyser: () => An
       an.getByteFrequencyData(bins);
       const binHz = (an.context.sampleRate / 2) / n;
       const grad = g.createLinearGradient(0, h, 0, 0);
-      grad.addColorStop(0, '#2bd47a'); grad.addColorStop(0.6, '#7cc4ff'); grad.addColorStop(0.85, '#f5c542'); grad.addColorStop(1, '#ff5a5a');
+      grad.addColorStop(0, '#8fb996'); grad.addColorStop(0.6, '#8fb4d9'); grad.addColorStop(0.85, '#c4ab7d'); grad.addColorStop(1, '#c95c5c');
       const bw = w / BANDS;
       for (let b = 0; b < BANDS; b++) {
         const f0 = F_MIN * Math.pow(F_MAX / F_MIN, b / BANDS);

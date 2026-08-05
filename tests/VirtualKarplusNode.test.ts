@@ -28,8 +28,13 @@ describe('VirtualKarplusNode', () => {
   });
 
   it('caches initial continuous params from node data', () => {
-    const n = new VirtualKarplusNode(mockAudioContext(), bus, makeNode({ frequency: 440, decay: 0.9, tone: 0.2 }) as any);
-    expect((n as any).initial).toMatchObject({ frequency: 440, decay: 0.9, tone: 0.2 });
+    const n = new VirtualKarplusNode(mockAudioContext(), bus, makeNode({ frequency: 440, decay: 0.9, tone: 0.2, attack: 0.5, scatter: 0.7, muffle: 0.1 }) as any);
+    expect((n as any).initial).toMatchObject({ frequency: 440, decay: 0.9, tone: 0.2, attack: 0.5, scatter: 0.7, muffle: 0.1 });
+  });
+
+  it('defaults attack/scatter/muffle when absent from node data', () => {
+    const n = new VirtualKarplusNode(mockAudioContext(), bus, makeNode() as any);
+    expect((n as any).initial).toMatchObject({ attack: 0.15, scatter: 0.3, muffle: 0.2 });
   });
 
   it('a note-on event triggers a pluck', async () => {
@@ -78,11 +83,11 @@ function loadWasm() {
   const view = () => new Float32Array(w.memory.buffer);
   return {
     pluck: (v = 1) => w.karplus_pluck(state, v),
-    process: (input: Float32Array | null = null, { freq = 220, decay = 0.4, tone = 0.6 } = {}) => {
+    process: (input: Float32Array | null = null, { freq = 220, decay = 0.4, tone = 0.6, attack = 0, scatter = 0, muffle = 0 } = {}) => {
       const m = view();
       if (input) m.set(input, pIn >> 2);
       m[pFreq >> 2] = freq;
-      w.karplus_process(state, pFreq, 1, decay, tone, pIn, input ? 1 : 0, N, SR, pOut);
+      w.karplus_process(state, pFreq, 1, decay, tone, attack, scatter, muffle, pIn, input ? 1 : 0, N, SR, pOut);
       return view().slice(pOut >> 2, (pOut >> 2) + N);
     },
   };
@@ -118,6 +123,50 @@ describe('karplus.wasm (DSP)', () => {
       const out = dsp.process(null, { decay: 1, tone: 1 });
       expect(out.every((x) => Number.isFinite(x))).toBe(true);
     }
+  });
+
+  it('stays finite at max attack/scatter/muffle', () => {
+    const dsp = loadWasm();
+    dsp.pluck(4);
+    for (let b = 0; b < 60; b++) {
+      const out = dsp.process(null, { decay: 1, tone: 1, attack: 1, scatter: 1, muffle: 1 });
+      expect(out.every((x) => Number.isFinite(x))).toBe(true);
+    }
+  });
+
+  it('a higher attack softens the initial onset (lower peak right after the pluck)', () => {
+    // High frequency -> short delay length, so the burst reaches the output
+    // tap within this same block instead of needing a block to propagate.
+    const peak = (a: Float32Array) => a.reduce((m, x) => Math.max(m, Math.abs(x)), 0);
+
+    const hard = loadWasm();
+    hard.pluck(1);
+    const hardPeak = peak(hard.process(null, { freq: 4000, attack: 0 }));
+
+    const soft = loadWasm();
+    soft.pluck(1);
+    const softPeak = peak(soft.process(null, { freq: 4000, attack: 1 }));
+
+    expect(softPeak).toBeLessThan(hardPeak);
+  });
+
+  it('a higher muffle darkens the output (reduces sample-to-sample brightness)', () => {
+    const brightness = (a: Float32Array) => {
+      let s = 0;
+      for (let i = 1; i < a.length; i++) { const d = a[i] - a[i - 1]; s += d * d; }
+      return s;
+    };
+    const bright = loadWasm();
+    bright.pluck(1);
+    bright.process(); bright.process();
+    const brightOut = bright.process(null, { muffle: 0 });
+
+    const dark = loadWasm();
+    dark.pluck(1);
+    dark.process(); dark.process();
+    const darkOut = dark.process(null, { muffle: 1 });
+
+    expect(brightness(darkOut)).toBeLessThan(brightness(brightOut));
   });
 
   it('an external exciter input drives the string (no pluck needed)', () => {

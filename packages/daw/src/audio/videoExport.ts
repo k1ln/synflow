@@ -24,6 +24,8 @@ export interface ExportOpts {
   format: ExportFormat;
   quality: ExportQuality;
   range?: { startSec: number; endSec: number }; // in/out; omitted = whole song
+  wavBits?: 16 | 24 | 32;   // audio-only WAV bit depth (32 = float); default 16
+  sampleRate?: number;      // audio-only WAV sample rate; default 44100
 }
 
 export interface ExportResult { blob: Blob; ext: string; }
@@ -111,13 +113,13 @@ async function encodeAudio(project: Project, assets: AudioAssets, muxer: any, co
 }
 
 /** Slice a decoded mixdown to [startSec,endSec] and re-encode as WAV (audio-only range). */
-async function rangedWav(project: Project, assets: AudioAssets, startSec: number, endSec: number): Promise<ArrayBuffer> {
-  const wav = await bounceProjectToWav(project, assets);
+async function rangedWav(project: Project, assets: AudioAssets, startSec: number, endSec: number, bits: 16 | 24 | 32 = 16, sampleRate?: number): Promise<ArrayBuffer> {
+  const wav = await bounceProjectToWav(project, assets, { bits: 32, sampleRate });   // full-precision intermediate
   const buf = await decodeToBuffer(wav);
   const from = Math.max(0, Math.floor(startSec * buf.sampleRate));
   const to = Math.min(buf.length, Math.ceil(endSec * buf.sampleRate));
   const chans = Array.from({ length: buf.numberOfChannels }, (_, c) => buf.getChannelData(c).slice(from, to));
-  return encodeWav(chans, buf.sampleRate);
+  return encodeWav(chans, buf.sampleRate, bits);
 }
 
 /**
@@ -139,7 +141,10 @@ export async function exportVideo(
   // ── audio-only → reuse the existing WAV bounce (sliced to the range) ──
   if (opts.content === 'audio') {
     onProgress?.(0.2, 'Bouncing audio');
-    const wav = opts.range ? await rangedWav(project, assets, startSec, endSec) : await bounceProjectToWav(project, assets);
+    const bits = opts.wavBits ?? 16;
+    const wav = opts.range
+      ? await rangedWav(project, assets, startSec, endSec, bits, opts.sampleRate)
+      : await bounceProjectToWav(project, assets, { bits, sampleRate: opts.sampleRate });
     onProgress?.(1, 'Done');
     return { blob: new Blob([wav], { type: 'audio/wav' }), ext: 'wav' };
   }

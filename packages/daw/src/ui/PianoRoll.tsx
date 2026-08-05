@@ -4,9 +4,11 @@ import { midiName, isBlackKey, inScale, snapToScale, ROOT_NAMES, SCALE_LABELS, t
 
 const LOW = 21;    // A0  — full 88-key piano; the lane scrolls vertically
 const HIGH = 108;  // C8
-const ROW_H = 14;  // px per semitone row
-const VIEW_H = 322;          // visible lane height (px) before it scrolls (~2 octaves)
-const MIN_PX_PER_STEP = 22;  // a step is at least this wide; longer patterns scroll sideways
+const ROW_H = 28;  // px per semitone row
+const VIEW_H = 644;          // visible lane height (px) before it scrolls (~2 octaves)
+const BASE_PX_PER_STEP = 22; // step width at zoom = 1; longer patterns scroll sideways
+const MIN_ZOOM = 0.3;
+const MAX_ZOOM = 6;
 const CENTER_MIDI = 72;      // scroll so this pitch (C5) sits near the top of the initial view
 
 type SnapMode = 'off' | 'quarter' | 'step';
@@ -15,12 +17,16 @@ const SNAP_LABEL: Record<SnapMode, string> = { off: 'free', quarter: '¼', step:
 
 const snapTo = (v: number, unit: number) => (unit > 0 ? Math.round(v / unit) * unit : v);
 
+/** The note lane's current horizontal scale/scroll — reported so sibling UI (a
+ *  track's automation lanes) can size and scroll itself to stay aligned underneath. */
+export interface RollView { px: number; scrollLeft: number; disp: number }
+
 /** Piano roll for one synth instrument-in-track. Notes are free-positioned:
  *  click empty space to add, drag the body to move (pitch+time), drag the right
  *  edge to resize, right-click / Delete to remove. Snap is optional. */
 export function PianoRoll({
   id, notes, totalSteps, stepsPerBeat, barSteps, currentStep, onAddNote, onRemoveNote, onMoveNote, onResizeNote, onUpdateNotes, onSetVelocity, onPlayNote, onQuantize, onTranspose, onHumanize, musicalKey, onSetKey, onAddChord,
-  onKeyDown: onGutterDown, onKeyUp: onGutterUp,
+  onKeyDown: onGutterDown, onKeyUp: onGutterUp, onViewChange,
 }: {
   id: string;
   name: string;
@@ -30,6 +36,7 @@ export function PianoRoll({
   stepsPerBeat: number;
   barSteps: number;          // steps per bar — the lane grows in whole bars to fit notes
   currentStep: number;
+  onViewChange?: (view: RollView) => void; // px/scroll/length, so automation lanes below can align
   onAddNote: (useId: string, midi: number, start: number, length?: number) => void;
   onRemoveNote: (useId: string, noteId: number) => void;
   onMoveNote: (useId: string, noteId: number, midi: number, start: number) => void;
@@ -60,8 +67,18 @@ export function PianoRoll({
   const bodyRef = useRef<HTMLDivElement>(null);    // scroll viewport (vertical pitch + horizontal time)
   const [snap, setSnap] = useState<SnapMode>('quarter');
   const [qGrid, setQGrid] = useState(stepsPerBeat / 4);   // quantize grid in steps (default 1/16)
-  const QGRID: [string, number][] = [['¼', stepsPerBeat], ['⅛', stepsPerBeat / 2], ['1/16', stepsPerBeat / 4], ['1/32', stepsPerBeat / 8]];
+  const QGRID: [string, number][] = [
+    ['¼', stepsPerBeat], ['⅛', stepsPerBeat / 2], ['1/16', stepsPerBeat / 4], ['1/32', stepsPerBeat / 8],
+    ['⅛T', stepsPerBeat / 3], ['1/16T', stepsPerBeat / 6],        // triplet grids
+    ['⅛·', stepsPerBeat * 0.75], ['1/16·', stepsPerBeat * 0.375], // dotted grids
+  ];
   const [chord, setChord] = useState(false);             // chord mode: clicks stamp a triad
+  // Horizontal zoom: Ctrl/Cmd+wheel (anchored at the cursor) or the +/− buttons.
+  // Plain wheel stays native 2-axis scroll — see the wheel effect below.
+  const [zoom, setZoom] = useState(1);
+  const px = BASE_PX_PER_STEP * zoom; // px per step at the current zoom
+  const pxRef = useRef(px); pxRef.current = px;
+  const zoomBy = (factor: number) => setZoom((z) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z * factor)));
   // Snap an entered pitch into the key when snap is on (no-op otherwise).
   const keyed = (m: number) => (musicalKey?.snap ? snapToScale(m, musicalKey.root, musicalKey.scale) : m);
   // A triad rooted at `root`: diatonic (root/3rd/5th up the scale) when a key is
@@ -101,15 +118,59 @@ export function PianoRoll({
   // Start the view centred on a useful octave (the lane is a full piano now).
   useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = Math.max(0, (HIGH - CENTER_MIDI) * ROW_H); }, []);
 
+  // ── velocity lane: draw velocities by dragging; x picks the note, y its level ──
+  const velScrollRef = useRef<HTMLDivElement>(null);
+  const onViewChangeRef = useRef(onViewChange); onViewChangeRef.current = onViewChange;
+  // keep the velocity lane (and the track's automation lanes) horizontally locked
+  // to the note lane: read px/disp from refs so this listener never needs rebinding.
+  useEffect(() => {
+    const body = bodyRef.current; if (!body) return;
+    const sync = () => {
+      if (velScrollRef.current) velScrollRef.current.scrollLeft = body.scrollLeft;
+      onViewChangeRef.current?.({ px: pxRef.current, scrollLeft: body.scrollLeft, disp: dispRef.current });
+    };
+    body.addEventListener('scroll', sync);
+    return () => body.removeEventListener('scroll', sync);
+  }, []);
+  // Also report on zoom / length changes (no scroll event fires for those).
+  useEffect(() => {
+    onViewChangeRef.current?.({ px, scrollLeft: bodyRef.current?.scrollLeft ?? 0, disp });
+  }, [px, disp]);
+  const onVelDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const lane = e.currentTarget as HTMLElement;
+    const paint = (clientX: number, clientY: number) => {
+      const r = lane.getBoundingClientRect();
+      const step = (clientX - r.left) / px;
+      const vel = Math.max(0.05, Math.min(1, 1 - (clientY - r.top) / r.height));
+      // nearest note whose span contains x (else nearest start within half a step)
+      let best: PianoNote | null = null, bestD = 0.5;
+      for (const n of notes) {
+        if (step >= n.start && step < n.start + n.length) { best = n; bestD = 0; break; }
+        const d = Math.abs(n.start - step);
+        if (d < bestD) { best = n; bestD = d; }
+      }
+      if (!best) return;
+      // dragging over a selected note edits the whole selection together
+      if (selSet.has(best.id) && selSet.size > 1) onUpdateNotes(id, (ns) => ns.map((n) => (selSet.has(n.id) ? { ...n, velocity: vel } : n)));
+      else onSetVelocity(id, best.id, vel);
+    };
+    paint(e.clientX, e.clientY);
+    const mv = (ev: PointerEvent) => paint(ev.clientX, ev.clientY);
+    const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); };
+    window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+  };
+
   // Middle-click drag pans the lane (both axes) — like the song board.
   const onBodyPointerDown = (e: React.PointerEvent) => {
     if (e.button !== 1) return;
     e.preventDefault();
     const el = bodyRef.current!; const sx = e.clientX, sy = e.clientY, sl = el.scrollLeft, st = el.scrollTop;
     const move = (ev: PointerEvent) => { el.scrollLeft = sl - (ev.clientX - sx); el.scrollTop = st - (ev.clientY - sy); };
-    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); el.classList.remove('panning'); };
+    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); el.classList.remove('panning'); };
     el.classList.add('panning');
-    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
   };
 
   // Plain wheel/two-finger scrolls the lane natively. Alt+wheel over a note nudges
@@ -132,10 +193,32 @@ export function PianoRoll({
     return () => lane.removeEventListener('wheel', onWheel);
   }, [id]);
 
+  // Ctrl/Cmd+wheel zooms horizontally, anchored at the cursor (trackpad pinch also
+  // sends ctrlKey wheel events). Non-passive so we can preventDefault over the zoom.
+  useEffect(() => {
+    const body = bodyRef.current; if (!body) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const rect = body.getBoundingClientRect();
+      const anchorX = e.clientX - rect.left; // px from the scroll viewport's left edge
+      const cur = pxRef.current;
+      const d = e.deltaY * (e.deltaMode === 1 ? 16 : 1); // normalise line-mode wheels to px
+      const factor = Math.min(1.5, Math.max(1 / 1.5, Math.exp(-d * 0.0008)));
+      const nextPx = Math.max(BASE_PX_PER_STEP * MIN_ZOOM, Math.min(BASE_PX_PER_STEP * MAX_ZOOM, cur * factor));
+      if (nextPx === cur) return;
+      const frac = (anchorX + body.scrollLeft) / cur; // step under the cursor
+      setZoom(nextPx / BASE_PX_PER_STEP);
+      requestAnimationFrame(() => { body.scrollLeft = Math.max(0, frac * nextPx - anchorX); });
+    };
+    body.addEventListener('wheel', onWheel, { passive: false });
+    return () => body.removeEventListener('wheel', onWheel);
+  }, []);
+
   // Note ids intersecting a lane-relative rectangle (marquee). Steps are a fixed
-  // pixel width (MIN_PX_PER_STEP) so the mapping never depends on the lane width.
+  // pixel width (px) so the mapping never depends on the lane width.
   const notesInRect = (ax0: number, ay0: number, ax1: number, ay1: number): number[] => {
-    const sx0 = Math.min(ax0, ax1) / MIN_PX_PER_STEP, sx1 = Math.max(ax0, ax1) / MIN_PX_PER_STEP;
+    const sx0 = Math.min(ax0, ax1) / px, sx1 = Math.max(ax0, ax1) / px;
     const r0 = Math.floor(Math.min(ay0, ay1) / ROW_H), r1 = Math.floor(Math.max(ay0, ay1) / ROW_H);
     const mHi = HIGH - r0, mLo = HIGH - r1;
     return notesRef.current.filter((n) => n.start < sx1 && n.start + n.length > sx0 && n.midi >= mLo && n.midi <= mHi).map((n) => n.id);
@@ -165,7 +248,7 @@ export function PianoRoll({
     if (d.moved) { setMarquee(null); return; }       // finished a selection box
     // a plain click on empty space → add a note (using the remembered length); the
     // pattern grows to fit, so you can place past the current end.
-    const start = Math.max(0, snapTo(d.x0 / MIN_PX_PER_STEP, unit || 0.25));
+    const start = Math.max(0, snapTo(d.x0 / px, unit || 0.25));
     const root = keyed(Math.max(LOW, Math.min(HIGH, HIGH - Math.floor(d.y0 / ROW_H))));
     if (chord) onAddChord(id, fitChord(triadFrom(root)), start, lastLenRef.current);
     else onAddNote(id, root, start, lastLenRef.current);
@@ -193,7 +276,7 @@ export function PianoRoll({
   const onNoteDragMove = (e: PointerEvent) => {
     const d = drag.current; if (!d || (d.kind !== 'note-move' && d.kind !== 'note-resize')) return;
     if (Math.abs(e.clientX - d.startX) > 2 || Math.abs(e.clientY - d.startY) > 2) d.moved = true;
-    const dSteps = snapTo((e.clientX - d.startX) / MIN_PX_PER_STEP, unit);
+    const dSteps = snapTo((e.clientX - d.startX) / px, unit);
     if (d.kind === 'note-move') {
       let dRow = Math.round((e.clientY - d.startY) / ROW_H);
       // clamp the group delta so every note stays in range (keeps the shape intact)
@@ -276,14 +359,19 @@ export function PianoRoll({
         </select>
         <button className={`pr-snap ${musicalKey?.snap ? 'on' : ''}`} disabled={!musicalKey} title="Snap entered notes into the scale" onClick={() => musicalKey && onSetKey({ ...musicalKey, snap: !musicalKey.snap })}>snap</button>
         <button className={`pr-snap ${chord ? 'on' : ''}`} title="Chord mode: each click stamps a triad (diatonic when a key is set)" onClick={() => setChord((c) => !c)}>chord</button>
-        <span className="pr-hint">click to add (keeps last length) · drag empty to select · move/resize a selection together · ⌘D copy · Del remove</span>
+        <div className="arr2-zoom" title="Zoom (Ctrl/Cmd + mouse wheel over the notes)">
+          <button onClick={() => zoomBy(1 / 1.3)} aria-label="Zoom out">−</button>
+          <span>{Math.round(zoom * 100)}%</span>
+          <button onClick={() => zoomBy(1.3)} aria-label="Zoom in">+</button>
+        </div>
+        <span className="pr-hint">click to add (keeps last length) · drag empty to select · move/resize a selection together · ⌘D copy · Del remove · Ctrl+scroll to zoom</span>
       </div>
       <div className="pr-body" ref={bodyRef} style={{ maxHeight: VIEW_H }} onPointerDown={onBodyPointerDown}>
         <div className="pr-ruler-row">
           <div className="pr-corner" />
-          <div className="pr-ruler" style={{ minWidth: disp * MIN_PX_PER_STEP }}>
+          <div className="pr-ruler" style={{ minWidth: disp * px }}>
             {Array.from({ length: Math.ceil(disp / per) }, (_, b) => (
-              <span key={b} className={`pr-barnum ${b * per >= totalSteps ? 'past' : ''}`} style={{ left: b * per * MIN_PX_PER_STEP }}>{b + 1}</span>
+              <span key={b} className={`pr-barnum ${b * per >= totalSteps ? 'past' : ''}`} style={{ left: b * per * px }}>{b + 1}</span>
             ))}
           </div>
         </div>
@@ -303,9 +391,9 @@ export function PianoRoll({
           className="pr-lane"
           style={{
             height: rows.length * ROW_H,
-            minWidth: disp * MIN_PX_PER_STEP,   // fixed px/step: the lane grows rightward without shifting notes
+            minWidth: disp * px,   // fixed px/step: the lane grows rightward without shifting notes
             // bar lines (strongest) · beat lines · fine step lines — order matches .pr-lane background-image
-            backgroundSize: `${MIN_PX_PER_STEP * per}px 100%, ${MIN_PX_PER_STEP * stepsPerBeat}px 100%, ${MIN_PX_PER_STEP}px 100%`,
+            backgroundSize: `${px * per}px 100%, ${px * stepsPerBeat}px 100%, ${px}px 100%`,
           }}
           onPointerDown={onLanePointerDown}
         >
@@ -316,8 +404,8 @@ export function PianoRoll({
           })}
           {notes.map((n) => {
             const top = (HIGH - n.midi) * ROW_H;
-            const left = n.start * MIN_PX_PER_STEP;
-            const width = Math.max(2, n.length * MIN_PX_PER_STEP);
+            const left = n.start * px;
+            const width = Math.max(2, n.length * px);
             const vel = n.velocity ?? 1;
             return (
               <div
@@ -334,14 +422,27 @@ export function PianoRoll({
             );
           })}
           {/* where the pattern loops — the lane extends past it to give drawing room */}
-          {disp > totalSteps && <div className="pr-loopend" style={{ left: totalSteps * MIN_PX_PER_STEP }} title="pattern loops here" />}
+          {disp > totalSteps && <div className="pr-loopend" style={{ left: totalSteps * px }} title="pattern loops here" />}
           {marquee && (
             <div className="pr-marquee" style={{ left: Math.min(marquee.x0, marquee.x1), top: Math.min(marquee.y0, marquee.y1), width: Math.abs(marquee.x1 - marquee.x0), height: Math.abs(marquee.y1 - marquee.y0) }} />
           )}
           {currentStep >= 0 && (
-            <div className="pr-playhead" style={{ left: (currentStep % totalSteps) * MIN_PX_PER_STEP }} />
+            <div className="pr-playhead" style={{ left: (currentStep % totalSteps) * px }} />
           )}
         </div>
+        </div>
+      </div>
+      {/* Velocity lane: one bar per note (aligned with the note lane's x axis,
+          scroll-synced). Click/drag to draw — height = velocity. */}
+      <div className="pr-velrow">
+        <div className="pr-vel-label" title="Note velocity — click/drag to draw">vel</div>
+        <div className="pr-vel-scroll" ref={velScrollRef}>
+          <div className="pr-vel-lane" style={{ minWidth: disp * px }} onPointerDown={onVelDown}>
+            {notes.map((n) => (
+              <div key={n.id} className={`pr-vel-bar ${selSet.has(n.id) ? 'sel' : ''}`}
+                style={{ left: n.start * px, width: Math.max(4, Math.min(10, n.length * px - 2)), height: `${Math.max(4, (n.velocity ?? 1) * 100)}%` }} />
+            ))}
+          </div>
         </div>
       </div>
     </div>

@@ -34,6 +34,9 @@ export type KarplusFlowNodeProps = NodeProps<{
   frequency?: number;
   decay?: number;
   tone?: number;
+  attack?: number;
+  scatter?: number;
+  muffle?: number;
   [key: string]: any;
 }>;
 export type FMFlowNodeProps = NodeProps<{

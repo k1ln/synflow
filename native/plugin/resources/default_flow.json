@@ -33,7 +33,7 @@
       "isTrigger": true,
       "data": {
         "attackTime": 0.005,
-        "decayTime": 0.12,
+        "sustainTime": 0.12,
         "sustainLevel": 0.7,
         "releaseTime": 0.14,
         "maxTime": 10,
@@ -49,7 +49,7 @@
             "default": 0.005
           },
           {
-            "param": "decayTime",
+            "param": "sustainTime",
             "label": "Decay",
             "min": 0,
             "max": 2,

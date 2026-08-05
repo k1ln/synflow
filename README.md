@@ -105,6 +105,7 @@ npm run dev
 - MIDI Flow Note — MIDI note source
 - Sequencer — trigger sequencer
 - Sequencer (Frequency) — pitch/frequency sequencer
+- Script Sequencer — line-per-step DSL sequencer (conditionals, ramps, swing, note literals)
 - Automation — curve-based automation
 - Analyzer (GPT) — audio analyzer display
 - Log — log flow values

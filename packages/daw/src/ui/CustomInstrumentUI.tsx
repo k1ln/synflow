@@ -96,7 +96,7 @@ export function CustomInstrumentUI({ html, knobs, valueOf, onKnob, onNoteOn, onN
           const v = Math.max(min, Math.min(max, startV + (startY - ev.clientY) * sens));
           cbs.current.onKnob(nodeId, param, v); setA((v - min) / range);
         };
-        const up = () => { (el as any).__dragging = false; window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); };
+        const up = () => { (el as any).__dragging = false; window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); window.removeEventListener('pointercancel', up); };
         window.addEventListener('pointermove', move, { passive: false }); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
       };
       el.addEventListener('pointerdown', down);

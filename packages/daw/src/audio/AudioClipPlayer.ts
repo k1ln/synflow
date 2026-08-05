@@ -4,7 +4,7 @@
 // AudioBufferSource. The loose <audio> + MediaElementSource path is opt-in
 // (`stream: true`) for live monitoring. Output connects to the track's mixer strip
 // so track FX + volume apply.
-import type { AudioAsset, AudioClip } from '../model/project';
+import { clipRate, type AudioAsset, type AudioClip } from '../model/project';
 import type { AudioAssets } from './AudioAssets';
 import { ClipStreamer, ensureClipStreamModule } from './ClipStreamer';
 import { scheduleFade } from './clipFade';
@@ -35,7 +35,8 @@ export class AudioClipPlayer {
    *  the sample-accurate buffer path is used. */
   schedule(clip: AudioClip, asset: AudioAsset, when: number, leadMs: number, stream = false): void {
     if (stream && this.assets.isStreamed(asset)) { this.scheduleStreamed(clip, asset, leadMs); return; }
-    const s = this.assets.cachedStream(asset); // populated by preload for any disk asset (after WAV conversion)
+    // Repitched clips need playbackRate → buffer path (the streamer reads 1:1).
+    const s = clip.pitch ? null : this.assets.cachedStream(asset); // populated by preload for any disk asset (after WAV conversion)
     if (s) this.scheduleStream(clip, s.blob, s.meta, when);
     else this.scheduleBuffer(clip, asset, when);
   }
@@ -59,8 +60,12 @@ export class AudioClipPlayer {
       const g = this.ctx.createGain();
       src.connect(g).connect(this.dest);
       const at = Math.max(when, this.ctx.currentTime);
+      const rate = clipRate(clip);
+      src.playbackRate.value = rate;
       scheduleFade(g.gain, clip.gain, at, clip.duration, clip.fadeIn, clip.fadeOut);
-      src.start(at, clip.offset, clip.duration);
+      // start()'s duration is BUFFER seconds: consume duration×rate of source so
+      // the clip occupies clip.duration on the timeline (varispeed).
+      src.start(at, clip.offset, clip.duration * rate);
       const a: Active = { stop: () => { try { src.stop(); } catch { /* noop */ } try { src.disconnect(); } catch { /* noop */ } } };
       this.active.push(a);
       src.onended = () => { this.active = this.active.filter((x) => x !== a); };

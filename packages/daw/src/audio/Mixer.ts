@@ -22,7 +22,24 @@ export class FxChain {
 
   get count(): number { return this.fx.length; }
   get names(): string[] { return this.fx.map((f) => f.name); }
-  setParam(i: number, nodeId: string, param: string, value: number | string): void { this.fx[i]?.engine?.setParam(nodeId, param, value); }
+  setParam(i: number, nodeId: string, param: string, value: number | string, when?: number): void {
+    const engine = this.fx[i]?.engine;
+    if (!engine) return;
+    // Scheduled (sample-accurate) when `when` is given; smoothed to avoid zipper.
+    if (when != null) engine.setParamAtTime(nodeId, param, value, when, 0.01);
+    else engine.setParam(nodeId, param, value);
+  }
+  /** Post a raw message to an insert's worklet node (e.g. .vstai sample upload). */
+  post(i: number, nodeId: string, msg: unknown, transfer?: Transferable[]): void {
+    this.fx[i]?.engine?.postToNode(nodeId, msg, transfer);
+  }
+  /** Exact linear segment v0@t0 → v1@t1 on an insert's param (timeline automation). */
+  setParamSegment(i: number, nodeId: string, param: string, v0: number, t0: number, v1: number, t1: number): void {
+    const engine = this.fx[i]?.engine;
+    if (!engine) return;
+    engine.setParamAtTime(nodeId, param, v0, t0);
+    engine.rampParamTo(nodeId, param, v1, t1);
+  }
 
   /** Rebuild the whole chain from resolved inserts. */
   async setChain(inserts: ResolvedFx[]): Promise<void> {
@@ -97,7 +114,7 @@ export class Mixer {
   private lufsL!: AnalyserNode;
   private lufsR!: AnalyserNode;
   private spectrum!: AnalyserNode;   // raw FFT tap for the master spectrum analyzer
-  private tracks = new Map<string, { sum: GainNode; trim: GainNode; chain: FxChain; duck: GainNode; vol: GainNode; pan: StereoPannerNode; gate: GainNode; meter: AnalyserNode; sends: Map<string, GainNode> }>();
+  private tracks = new Map<string, { sum: GainNode; trim: GainNode; chain: FxChain; duck: GainNode; vol: GainNode; pan: StereoPannerNode; gate: GainNode; meter: AnalyserNode; sends: Map<string, GainNode>; outputBusId: string | null }>();
   // Aux/return buses: a shared FX destination (e.g. one reverb for many tracks).
   private buses = new Map<string, { sum: GainNode; chain: FxChain; vol: GainNode; meter: AnalyserNode }>();
   // Sidechain duckers, keyed by TARGET track id.
@@ -156,7 +173,7 @@ export class Mixer {
       pan.connect(gate);
       gate.connect(this.masterSum);
       gate.connect(meter);                          // post-fader meter tap (dead-end)
-      t = { sum, trim, chain, duck, vol, pan, gate, meter, sends: new Map() };
+      t = { sum, trim, chain, duck, vol, pan, gate, meter, sends: new Map(), outputBusId: null };
       this.tracks.set(trackId, t);
     }
     return t;
@@ -184,14 +201,35 @@ export class Mixer {
   busMeter(busId: string): AnalyserNode | null { return this.buses.get(busId)?.meter ?? null; }
   setBusVolume(busId: string, v: number): void { const b = this.buses.get(busId); if (b) b.vol.gain.value = v; }
 
-  /** Post-fader send from a track into an aux bus. Lazily taps the track's
-   *  post-fader/post-mute node; level 0 keeps a silent tap (cheap). */
-  setSend(trackId: string, busId: string, level: number): void {
+  /** Send from a track into an aux bus. Post-fader taps the post-fader/post-mute
+   *  node (default); `pre` taps post-FX/pre-fader so the send level is independent
+   *  of the track fader. Level 0 keeps a silent tap (cheap). */
+  setSend(trackId: string, busId: string, level: number, pre = false): void {
     const t = this.tracks.get(trackId); const b = this.buses.get(busId);
     if (!t || !b) return;
-    let g = t.sends.get(busId);
-    if (!g) { g = this.ctx.createGain(); t.gate.connect(g); g.connect(b.sum); t.sends.set(busId, g); }
+    const key = pre ? `pre:${busId}` : busId;
+    let g = t.sends.get(key);
+    if (!g) { g = this.ctx.createGain(); (pre ? t.duck : t.gate).connect(g); g.connect(b.sum); t.sends.set(key, g); }
     g.gain.value = level;
+  }
+
+  /** Route a track's OUTPUT into a group/submix bus instead of the master
+   *  (busId null = back to master). Buses always feed the master, so the graph
+   *  stays acyclic (track → bus → master). */
+  setTrackOutput(trackId: string, busId: string | null): void {
+    const t = this.tracks.get(trackId);
+    if (!t || t.outputBusId === (busId ?? null)) return;
+    try { t.gate.disconnect(this.masterSum); } catch { /* wasn't on master */ }
+    if (t.outputBusId) { const old = this.buses.get(t.outputBusId); if (old) { try { t.gate.disconnect(old.sum); } catch { /* noop */ } } }
+    const target = busId ? this.buses.get(busId) : null;
+    t.gate.connect(target ? target.sum : this.masterSum);
+    // re-attach the meter tap (disconnect() above may have severed everything)
+    try { t.gate.disconnect(t.meter); } catch { /* noop */ }
+    t.gate.connect(t.meter);
+    // re-attach post-fader sends + sidechain key taps that hang off the gate
+    for (const [key, g] of t.sends) if (!key.startsWith('pre:')) { try { t.gate.disconnect(g); } catch { /* noop */ } t.gate.connect(g); }
+    for (const e of this.sidechains.values()) if (e.keyId === trackId) { try { t.gate.disconnect(e.proc.input); } catch { /* noop */ } t.gate.connect(e.proc.input); }
+    t.outputBusId = busId ?? null;
   }
 
   /** Tear down a bus and every track send that targets it. */
@@ -244,13 +282,34 @@ export class Mixer {
   usePoolChain(useId: string): FxChain | undefined { return this.uses.get(useId)?.inst; }     // instrument-general FX
   /** Instrument-level gain: scales a use's signal at its chain input (pre-FX). */
   setUseGain(useId: string, v: number): void { const u = this.uses.get(useId); if (u) u.inst.input.gain.value = v; }
-  setTrackVolume(trackId: string, v: number): void { const t = this.tracks.get(trackId); if (t) t.vol.gain.value = v; }
+  setTrackVolume(trackId: string, v: number, when?: number): void {
+    const t = this.tracks.get(trackId); if (!t) return;
+    // Scheduled sets ride the audio clock (sample-accurate) with a short smoothing
+    // constant so stepped automation doesn't zipper.
+    if (when != null) t.vol.gain.setTargetAtTime(v, Math.max(when, this.ctx.currentTime), 0.01);
+    else { t.vol.gain.cancelScheduledValues(this.ctx.currentTime); t.vol.gain.value = v; }
+  }
+  /** Exact linear automation segment v0@t0 → v1@t1 (timeline lanes): volume
+   *  (sentinel '__volume__') or a track-FX param. Sample-accurate, zipper-free. */
+  applyAutomationSegment(trackId: string, lane: { nodeId: string; param: string; fxIndex?: number }, v0: number, t0: number, v1: number, t1: number): void {
+    if (!Number.isFinite(v0) || !Number.isFinite(v1)) return;
+    if (lane.nodeId === '__volume__') {
+      const t = this.tracks.get(trackId); if (!t) return;
+      const now = this.ctx.currentTime;
+      t.vol.gain.setValueAtTime(v0, Math.max(now, t0));
+      t.vol.gain.linearRampToValueAtTime(v1, Math.max(now, t1));
+    } else if (lane.fxIndex != null) {
+      this.trackChain(trackId)?.setParamSegment(lane.fxIndex, lane.nodeId, lane.param, v0, t0, v1, t1);
+    }
+  }
+
   /** Apply one automation value to a track target: volume (sentinel nodeId
-   *  '__volume__') or a track-FX param (by fxIndex/nodeId/param). */
-  applyAutomation(trackId: string, lane: { nodeId: string; param: string; fxIndex?: number }, v: number): void {
+   *  '__volume__') or a track-FX param (by fxIndex/nodeId/param). `when` schedules
+   *  the change on the audio clock instead of applying it immediately. */
+  applyAutomation(trackId: string, lane: { nodeId: string; param: string; fxIndex?: number }, v: number, when?: number): void {
     if (!Number.isFinite(v)) return;
-    if (lane.nodeId === '__volume__') this.setTrackVolume(trackId, v);
-    else if (lane.fxIndex != null) this.trackChain(trackId)?.setParam(lane.fxIndex, lane.nodeId, lane.param, v);
+    if (lane.nodeId === '__volume__') this.setTrackVolume(trackId, v, when);
+    else if (lane.fxIndex != null) this.trackChain(trackId)?.setParam(lane.fxIndex, lane.nodeId, lane.param, v, when);
   }
   /** Pre-FX input gain + polarity: gain = trim × (phase ? −1 : 1). */
   setTrackTrim(trackId: string, trim: number, phase: boolean): void { const t = this.tracks.get(trackId); if (t) t.trim.gain.value = (trim ?? 1) * (phase ? -1 : 1); }

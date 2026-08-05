@@ -41,6 +41,11 @@ import { CustomNode } from '../AudioGraphManager';
  *       Optional swing modulates each step time using white or pink noise:
  *           swing white 0.2   → ±20% time jitter
  *           swing pink  0.3   → ±30% pink-noise jitter (smoother)
+ *       Each element may carry its own hold duration by following the
+ *       value with a number (bare = ms, or with ms|s|t|b suffix):
+ *           array #0 [@C3 120, @C4 50]   → C3 held 120ms, then C4 held 50ms
+ *       Elements without an explicit duration fall back to the shared
+ *       step computed from <duration> / element-count.
  *
  *   set   <var> <expr>
  *       Set an internal variable, accessible later as $var.
@@ -883,11 +888,8 @@ export class VirtualScriptSequencerNode extends VirtualNode<
         const handle = p.args[0];
         const arrToken = p.args[1] || '[]';
         // Evaluate each element through resolveExpr so notes / vars / math work.
-        const inner = arrToken.replace(/^\[|\]$/g, '').trim();
-        const values: number[] = inner
-          ? inner.split(',').map((s) => Number(this.resolveExpr(s.trim())))
-              .filter((n) => !isNaN(n))
-          : [];
+        // An element may carry its own hold duration: "@C3 120".
+        const items = this.parseArrayItems(arrToken);
         let duration = this.tickIntervalMs;
         let swingType: 'white' | 'pink' | null = null;
         let swingAmount = 0;
@@ -906,7 +908,7 @@ export class VirtualScriptSequencerNode extends VirtualNode<
             if (!isNaN(d) && d > 0) duration = d;
           }
         }
-        this.runArray(handle, values, duration, swingType, swingAmount);
+        this.runArray(handle, items, duration, swingType, swingAmount);
         return;
       }
       case 'sendrandom': {
@@ -914,15 +916,11 @@ export class VirtualScriptSequencerNode extends VirtualNode<
         // Same as array but Fisher-Yates shuffles the values first.
         const handle = p.args[0];
         const arrToken = p.args[1] || '[]';
-        const inner = arrToken.replace(/^\[|\]$/g, '').trim();
-        const values: number[] = inner
-          ? inner.split(',').map((s) => Number(this.resolveExpr(s.trim())))
-              .filter((n) => !isNaN(n))
-          : [];
-        // Fisher-Yates shuffle
-        for (let i = values.length - 1; i > 0; i--) {
+        const items = this.parseArrayItems(arrToken);
+        // Fisher-Yates shuffle (keeps each value paired with its own duration)
+        for (let i = items.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
-          [values[i], values[j]] = [values[j], values[i]];
+          [items[i], items[j]] = [items[j], items[i]];
         }
         let duration = this.tickIntervalMs;
         let swingType: 'white' | 'pink' | null = null;
@@ -942,7 +940,7 @@ export class VirtualScriptSequencerNode extends VirtualNode<
             if (!isNaN(d) && d > 0) duration = d;
           }
         }
-        this.runArray(handle, values, duration, swingType, swingAmount);
+        this.runArray(handle, items, duration, swingType, swingAmount);
         return;
       }
       case 'random': {
@@ -1085,6 +1083,36 @@ export class VirtualScriptSequencerNode extends VirtualNode<
     }
   }
 
+  /**
+   * Parse an `array`/`sendrandom` literal into value+duration pairs.
+   * Each comma-separated element is either a bare value expression
+   * ("@C3", "$x", "0.5", "@C3+2") or a value followed by a duration
+   * ("@C3 120", "@C3 120ms", "@C3 1t") that overrides the shared step
+   * for that element. A duration is only recognized when the element
+   * splits into exactly two whitespace-separated tokens and the second
+   * looks like a bare duration — anything else (e.g. multi-token math
+   * expressions) is evaluated as a single expression, unchanged.
+   */
+  private parseArrayItems(arrToken: string): Array<{ value: number; durMs?: number }> {
+    const inner = arrToken.replace(/^\[|\]$/g, '').trim();
+    if (!inner) return [];
+    const durTokenRe = /^-?[\d.]+(?:ms|s|t|b)?$/i;
+    return inner
+      .split(',')
+      .map((raw) => {
+        const s = raw.trim();
+        const parts = s.split(/\s+/);
+        let exprStr = s;
+        let durMs: number | undefined;
+        if (parts.length === 2 && durTokenRe.test(parts[1])) {
+          exprStr = parts[0];
+          durMs = parseDuration(parts[1], this.tickIntervalMs);
+        }
+        return { value: Number(this.resolveExpr(exprStr)), durMs };
+      })
+      .filter((it) => !isNaN(it.value));
+  }
+
   // ---- ramp / array schedulers --------------------------------------------
 
   private runRamp(
@@ -1121,27 +1149,30 @@ export class VirtualScriptSequencerNode extends VirtualNode<
 
   private runArray(
     handle: string,
-    values: number[],
+    items: Array<{ value: number; durMs?: number }>,
     durationMs: number,
     swingType: 'white' | 'pink' | null,
     swingAmount: number
   ) {
-    if (!values.length) return;
-    const baseStep = durationMs / values.length;
+    if (!items.length) return;
+    const baseStep = durationMs / items.length;
     let elapsed = 0;
-    const swingSample = (): number => {
+    const swingSample = (stepMs: number): number => {
       if (!swingType || swingAmount <= 0) return 0;
       const r = swingType === 'white'
         ? Math.random() * 2 - 1
         : this.pink.next();
-      return r * swingAmount * baseStep;
+      return r * swingAmount * stepMs;
     };
     // emit first immediately
-    this.emitSend(handle, values[0]);
-    for (let k = 1; k < values.length; k++) {
-      const jitter = swingSample();
-      elapsed += Math.max(1, baseStep + jitter);
-      const v = values[k];
+    this.emitSend(handle, items[0].value);
+    for (let k = 1; k < items.length; k++) {
+      // Each element's own duration (if given) is how long the *previous*
+      // value is held before this one fires; falls back to the shared step.
+      const step = items[k - 1].durMs ?? baseStep;
+      const jitter = swingSample(step);
+      elapsed += Math.max(1, step + jitter);
+      const v = items[k].value;
       const t = setTimeout(() => {
         this.rampTimers.delete(t);
         this.emitSend(handle, v);

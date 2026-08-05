@@ -20,14 +20,31 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 WT="$HERE/../third_party/wasmtime"
 WT_VERSION="v27.0.0"
 
-INSTALL=0; CLAP=0; EDITOR=1; UNIVERSAL=1
+INSTALL=0; CLAP=0; EDITOR=1; UNIVERSAL=1; BUMP=1
 for a in "$@"; do case "$a" in
   --install)     INSTALL=1 ;;
   --clap)        CLAP=1 ;;
   --no-editor)   EDITOR=0 ;;
   --native-arch) UNIVERSAL=0 ;;
+  --no-bump)     BUMP=0 ;;
   *) echo "unknown flag: $a" >&2; exit 2 ;;
 esac; done
+
+# Auto-bump the MINOR version on every build so it's obvious in the DAW (plugin
+# info + in-GUI badge) whether the freshly built binary actually loaded. Both
+# flavours share the one version. The bump is COMMITTED to the file only after a
+# successful build (commit_version at the end), so failed builds don't burn a
+# number. --no-bump rebuilds at the current version.
+VERSION_FILE="$HERE/VERSION"
+compute_version() {
+  local v; v="$(tr -d ' \n' < "$VERSION_FILE" 2>/dev/null || true)"; v="${v:-0.1.0}"
+  local MA MI PA; IFS=. read -r MA MI PA <<< "$v"
+  if [ "$BUMP" = 1 ]; then MI=$((MI + 1)); PA=0; fi
+  VERSION="${MA:-0}.${MI:-1}.${PA:-0}"
+  echo "== plugin version: $VERSION$([ "$BUMP" = 0 ] && echo ' (not bumped)') =="
+}
+commit_version() { printf '%s\n' "$VERSION" > "$VERSION_FILE"; }
+compute_version
 
 OS="$(uname -s)"
 
@@ -67,7 +84,7 @@ ensure_editor() {
 # --- 3. configure + build one flavour ----------------------------------------------
 build_flavour() {
   local instrument="$1" dir="$2"
-  local args=(-S "$HERE" -B "$dir" -DCMAKE_BUILD_TYPE=Release -DSYNFLOW_INSTRUMENT="$instrument")
+  local args=(-S "$HERE" -B "$dir" -DCMAKE_BUILD_TYPE=Release -DSYNFLOW_INSTRUMENT="$instrument" -DSYNFLOW_VERSION="$VERSION")
   [ "$CLAP" = 1 ] && args+=(-DSYNFLOW_CLAP=ON)
   [ "$OS" = "Darwin" ] && [ "$UNIVERSAL" = 1 ] && args+=("-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64")
   cmake "${args[@]}"
@@ -133,6 +150,9 @@ build_flavour OFF "$HERE/build-effect"
 echo; echo "== artifacts =="
 echo "instrument:"; process_artifacts "$HERE/build-instrument"
 echo "effect:";     process_artifacts "$HERE/build-effect"
+
+commit_version   # both flavours built + installed OK -> persist the bump
+echo "== version committed: $VERSION =="
 
 echo
 echo "Done. 'Synflow' = instrument (channel rack / instrument slot),"

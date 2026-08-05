@@ -67,7 +67,7 @@ function detectSeverity(line, isErr){
   return 'info';
 }
 function prefix(name, text, c, isErr){
-  const tag = '[FRONTEND]';
+  const tag = `[${name.toUpperCase()}]`;
   text.split(/\r?\n/).filter(Boolean).forEach(line=>{
     const sev = detectSeverity(line, isErr);
     const coloredTag = color(tag, 'green');
@@ -76,8 +76,12 @@ function prefix(name, text, c, isErr){
   });
 }
 
+const dawDir = path.resolve(root, 'packages/daw');
+const RUN_DAW = process.env.RUN_DAW !== '0' && fs.existsSync(dawDir);
+
 console.log('Starting dev environment... (set RAW_LOGS=1 for unprefixed streams)');
 console.log(' Frontend:', frontendDir, 'port', FRONTEND_PORT);
+if (RUN_DAW) console.log(' DAW (Mothscilla):', dawDir, 'port 5174, mounted at /daw via the frontend proxy');
 
 // WASM: build hard-sync-oscillator if source changed (MD5-checked)
 try {
@@ -88,6 +92,10 @@ try {
 
 // Frontend: vite
 const frontend = run('frontend', 'npm', ['run','start','--','--port', FRONTEND_PORT, '--strictPort'], { cwd: frontendDir, env: {}, color:'green' });
+
+// DAW (Mothscilla): its own vite dev server, reached through the frontend's
+// /daw proxy (vite.config.js) so it's reachable at http://localhost:<FRONTEND_PORT>/daw/.
+const daw = RUN_DAW ? run('daw', 'npm', ['run', 'dev'], { cwd: dawDir, env: {}, color: 'magenta' }) : null;
 
 // Auto-open browser (prefer Chrome) when frontend is ready
 let browserOpened = false;
@@ -165,6 +173,7 @@ setTimeout(() => {
 function shutdown(){
   console.log('Shutting down dev processes...');
   if (frontend) frontend.kill();
+  if (daw) daw.kill();
   process.exit(0);
 }
 process.on('SIGINT', shutdown);

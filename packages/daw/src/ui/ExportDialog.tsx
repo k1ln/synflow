@@ -28,6 +28,8 @@ export function ExportDialog({
   const [fps, setFps] = useState(30);
   const [format, setFormat] = useState<ExportFormat>('mp4');
   const [quality, setQuality] = useState<ExportQuality>('medium');
+  const [wavBits, setWavBits] = useState<16 | 24 | 32>(24);
+  const [sampleRate, setSampleRate] = useState(44100);
   const [rangeOn, setRangeOn] = useState(false);
   const [startBar, setStartBar] = useState(0);
   const [endBar, setEndBar] = useState(bars);
@@ -40,6 +42,7 @@ export function ExportDialog({
   const run = () => onRun({
     content, height: res.height, fps, format, quality,
     range: rangeOn ? { startSec: lo * secPerBar, endSec: hi * secPerBar } : undefined,
+    wavBits, sampleRate,
   });
 
   const CONTENT: { id: ExportContent; label: string; icon: React.ComponentType<any>; need: boolean }[] = [
@@ -101,6 +104,27 @@ export function ExportDialog({
               </select>
             </div>
           </div>
+
+          {isAudioOnly && (
+            <div className="exp-row">
+              <div className="exp-section">
+                <div className="exp-label">Bit depth</div>
+                <select className="exp-select" value={wavBits} onChange={(e) => setWavBits(parseInt(e.target.value, 10) as 16 | 24 | 32)}>
+                  <option value={16}>16-bit (dithered)</option>
+                  <option value={24}>24-bit</option>
+                  <option value={32}>32-bit float</option>
+                </select>
+              </div>
+              <div className="exp-section">
+                <div className="exp-label">Sample rate</div>
+                <select className="exp-select" value={sampleRate} onChange={(e) => setSampleRate(parseInt(e.target.value, 10))}>
+                  <option value={44100}>44.1 kHz</option>
+                  <option value={48000}>48 kHz</option>
+                  <option value={96000}>96 kHz</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           <div className="exp-section">
             <label className="exp-label exp-rangehead">

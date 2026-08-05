@@ -25,7 +25,7 @@ function humanize(type: string){
 
 // ── Category definitions (mirroring the presentation layout) ──────────────
 
-const AUDIO_SOURCES = ['OscillatorFlowNode','AudioWorkletOscillatorFlowNode','KarplusFlowNode','FMFlowNode','WavetableFlowNode','NoiseFlowNode','SampleFlowNode','MicFlowNode','AudioWorkletFlowNode'];
+const AUDIO_SOURCES = ['OscillatorFlowNode','AudioWorkletOscillatorFlowNode','KarplusFlowNode','FMFlowNode','WavetableFlowNode','NoiseFlowNode','SampleFlowNode','MicFlowNode','AudioWorkletFlowNode','AiVstFlowNode'];
 const AUDIO_DESTINATIONS = ['MasterOutFlowNode','RecordingFlowNode','OscilloscopeFlowNode','AnalyzerNodeGPT'];
 const AUDIO_TRANSFORMING = ['GainFlowNode','BiquadFilterFlowNode','SvfDriveFilterFlowNode','LadderFilterFlowNode','RingModFlowNode','ChorusFlowNode','GranularFlowNode','IIRFilterFlowNode','DelayFlowNode','ReverbFlowNode','DistortionFlowNode','DynamicCompressorFlowNode','EqualizerFlowNode','VocoderFlowNode','AudioSignalFreqShifterFlowNode','UnisonBeginFlowNode','UnisonEndFlowNode'];
 const EVENT_NODES = ['ADSRFlowNode','EnvGenFlowNode','AutomationFlowNode','ClockFlowNode','MidiKnobFlowNode','FrequencyFlowNode','ConstantFlowNode','EventFlowNode','FlowEventFreqShifterFlowNode'];

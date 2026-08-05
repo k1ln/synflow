@@ -54,7 +54,7 @@ export function LogFlowNode(props: NodeProps<any>) {
   };
 
   return (
-  <div style={{ ...(data.style || {}), padding: 6 }}>
+  <div style={{ width: 320, ...(data.style || {}), padding: 6 }}>
       <div className="node-title">LOG</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
         <input
@@ -79,16 +79,19 @@ export function LogFlowNode(props: NodeProps<any>) {
           title="max entries"
         />
       </div>
-      <div style={{
-        fontSize: 10,
-        lineHeight: '14px',
-        maxHeight: 200,
-        overflowY: 'auto',
-        background: 'rgba(8,10,20,0.55)',
-        border: '1px solid #333',
-        padding: 4,
-        borderRadius: 3
-      }}>
+      <div
+        className="nodrag nowheel"
+        style={{
+          fontSize: 11,
+          lineHeight: '15px',
+          maxHeight: 420,
+          overflowY: 'auto',
+          background: 'rgba(8,10,20,0.55)',
+          border: '1px solid #333',
+          padding: 4,
+          borderRadius: 3
+        }}
+      >
         {entries.length === 0 && (
           <div style={{ opacity: 0.5 }}>no events</div>
         )}

@@ -53,6 +53,71 @@ export function encodeMidi(project: Project): Uint8Array {
   return bytes;
 }
 
+// ─── import ──────────────────────────────────────────────────────────────────
+
+export interface MidiImportNote { midi: number; startBeats: number; lengthBeats: number; velocity: number }
+export interface MidiImportTrack { name?: string; notes: MidiImportNote[] }
+export interface MidiImport { bpm?: number; tracks: MidiImportTrack[] }
+
+/** Parse a Standard MIDI File (format 0/1). Returns note times in BEATS (quarter
+ *  notes) so the caller can map them onto the project's step grid at any meter.
+ *  Running status, all channels; tempo = the file's first set-tempo event. */
+export function parseMidiFile(bytes: ArrayBuffer): MidiImport {
+  const d = new DataView(bytes);
+  const u8 = new Uint8Array(bytes);
+  let pos = 0;
+  const str4 = () => { const s = String.fromCharCode(u8[pos], u8[pos + 1], u8[pos + 2], u8[pos + 3]); pos += 4; return s; };
+  if (str4() !== 'MThd') throw new Error('not a MIDI file');
+  const hlen = d.getUint32(pos); pos += 4;
+  const division = d.getUint16(pos + 4);
+  const ntracks = d.getUint16(pos + 2);
+  pos += hlen;
+  if (division & 0x8000) throw new Error('SMPTE time division not supported');
+  const ppq = division || 480;
+
+  let bpm: number | undefined;
+  const tracks: MidiImportTrack[] = [];
+  for (let t = 0; t < ntracks && pos + 8 <= u8.length; t++) {
+    if (str4() !== 'MTrk') break;
+    const len = d.getUint32(pos); pos += 4;
+    const end = pos + len;
+    let tick = 0, status = 0;
+    let name: string | undefined;
+    const notes: MidiImportNote[] = [];
+    const open = new Map<number, { tick: number; vel: number }>(); // key(ch<<8|midi) → on
+    const vlqRead = () => { let v = 0, b; do { b = u8[pos++]; v = (v << 7) | (b & 0x7f); } while (b & 0x80); return v; };
+    const closeNote = (key: number, offTick: number) => {
+      const on = open.get(key); if (!on) return;
+      open.delete(key);
+      notes.push({ midi: key & 0x7f, startBeats: on.tick / ppq, lengthBeats: Math.max(1 / 32, (offTick - on.tick) / ppq), velocity: on.vel / 127 });
+    };
+    while (pos < end) {
+      tick += vlqRead();
+      let b = u8[pos];
+      if (b & 0x80) { status = b; pos++; } else { b = status; }  // running status
+      const type = b & 0xf0, ch = b & 0x0f;
+      if (b === 0xff) {                                          // meta
+        const meta = u8[pos++]; const mlen = vlqRead();
+        if (meta === 0x51 && mlen === 3) { const uspq = (u8[pos] << 16) | (u8[pos + 1] << 8) | u8[pos + 2]; if (!bpm) bpm = Math.round(60000000 / uspq); }
+        if (meta === 0x03 && !name) name = new TextDecoder().decode(u8.slice(pos, pos + mlen));
+        pos += mlen;
+      } else if (b === 0xf0 || b === 0xf7) { pos += vlqRead(); } // sysex
+      else if (type === 0x90 || type === 0x80) {
+        const midi = u8[pos++], vel = u8[pos++];
+        const key = (ch << 8) | midi;
+        if (type === 0x90 && vel > 0) { closeNote(key, tick); open.set(key, { tick, vel }); }
+        else closeNote(key, tick);
+      } else if (type === 0xa0 || type === 0xb0 || type === 0xe0) pos += 2;
+      else if (type === 0xc0 || type === 0xd0) pos += 1;
+      else pos++; // unknown — skip a byte defensively
+    }
+    for (const key of [...open.keys()]) closeNote(key, tick);    // hanging notes end at track end
+    pos = end;
+    if (notes.length || name) tracks.push({ name, notes });
+  }
+  return { bpm, tracks: tracks.filter((t) => t.notes.length) };
+}
+
 /** Encode + trigger a browser download of `<song>.mid`. */
 export function downloadMidi(project: Project): void {
   const blob = new Blob([encodeMidi(project).buffer as ArrayBuffer], { type: 'audio/midi' });

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import type { Track } from '../model/project';
+import { patternContent, patternLengthOf, type Track } from '../model/project';
 
 const MAX_BUF_W = 4096; // backing-buffer cap; CSS stretches to the real display width
 const MAX_STEPS = 8192; // stop drawing cells past here (a song-long loop clip stays cheap)
@@ -8,8 +8,9 @@ const MAX_STEPS = 8192; // stop drawing cells past here (a song-long loop clip s
  *  the way audio clips show a waveform. The pattern restarts at the clip, so it
  *  draws from step 0 and tiles across the clip's span. Drum hits = a cell per
  *  instrument row; synth notes = short streaks placed by pitch. */
-export function PatternMini({ track, barSteps, clipSlots, width, height, color = '#7cc4ff' }: {
+export function PatternMini({ track, patternId, barSteps, clipSlots, width, height, color = '#8fb4d9' }: {
   track: Track;
+  patternId?: string;   // pattern the clip plays (default: track's first/active)
   barSteps: number;     // steps per bar (project.totalSteps)
   clipSlots: number;    // how many bars the clip spans
   width: number;        // display width in px
@@ -22,24 +23,24 @@ export function PatternMini({ track, barSteps, clipSlots, width, height, color =
     const c = ref.current; if (!c) return;
     const g = c.getContext('2d'); if (!g) return;
     g.clearRect(0, 0, buf, height);
-    const len = Math.max(1, track.length);
+    const len = patternLengthOf(track, patternId);
     const clipSteps = Math.max(1, Math.round(clipSlots * barSteps)); // pattern steps the clip spans
     const draw = Math.min(clipSteps, MAX_STEPS);
     const cw = buf / clipSteps;
     g.fillStyle = color;
     if (track.type === 'drums') {
-      const rows = track.uses.filter((u) => u.steps && u.steps.length);
+      const rows = track.uses.map((u) => ({ u, steps: patternContent(track, patternId, u.id).steps })).filter((r) => r.steps && r.steps.length);
       if (!rows.length) return;
       const rh = height / rows.length;
-      rows.forEach((u, r) => {
-        const steps = u.steps!;
+      rows.forEach(({ steps: st }, r) => {
+        const steps = st!;
         const y = r * rh + rh * 0.2, ch = Math.max(1, rh * 0.6);
         for (let k = 0; k < draw; k++) {
           if (steps[k % len]) g.fillRect((k / clipSteps) * buf + Math.min(cw * 0.12, 1), y, Math.max(1, cw * 0.76), ch);
         }
       });
     } else {
-      const notes = track.uses.flatMap((u) => u.notes ?? []);
+      const notes = track.uses.flatMap((u) => patternContent(track, patternId, u.id).notes ?? []);
       if (!notes.length) return;
       let lo = Infinity, hi = -Infinity;
       for (const n of notes) { lo = Math.min(lo, n.midi); hi = Math.max(hi, n.midi); }
@@ -57,6 +58,6 @@ export function PatternMini({ track, barSteps, clipSlots, width, height, color =
         }
       }
     }
-  }, [track, barSteps, clipSlots, buf, height, color]);
+  }, [track, patternId, barSteps, clipSlots, buf, height, color]);
   return <canvas ref={ref} width={buf} height={height} style={{ display: 'block', width, height }} />;
 }

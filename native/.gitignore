@@ -2,6 +2,8 @@
 node_modules/
 target/
 build/
+build-effect/
+build-instrument/
 *.o
 *.a
 *.dylib

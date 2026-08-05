@@ -17,6 +17,7 @@
 #include "synflow/nodes/WasmSvfDriveNode.h"
 #include "synflow/nodes/WasmWavetableNode.h"
 #include "synflow/nodes/WasmWorkletNode.h"
+#include "synflow/nodes/VstaiNode.h"
 
 namespace synflowplugin {
 using namespace synflow;
@@ -55,6 +56,10 @@ NodeFactoryFn makeShellFactory() {
         // User AudioWorklet: precompiled to WASM, bytes embedded in node.data.wasmBase64.
         if (type == "AudioWorkletFlowNode")
             return std::make_unique<WasmWorkletNode>();
+        // VibePlugin ".vstai" (AI VST): compiled WASM + params ride in node.data,
+        // driven via VibePlugin's ABI. Audio in / MIDI in / audio out, into the DAW.
+        if (type == "AiVstFlowNode")
+            return std::make_unique<VstaiNode>();
         return nullptr;
     };
 }

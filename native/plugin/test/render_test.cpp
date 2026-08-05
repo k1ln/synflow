@@ -205,7 +205,68 @@ int main() {
         std::printf("[sampler] decode+play maxErr=%.6f -> %s\n", maxErr, sampleOk ? "PASS" : "FAIL");
     }
 
-    const bool ok = sawOk && wasmOk && reverbOk && knobOk && effectOk && sampleOk;
+    // Phase 7: a VibePlugin ".vstai" (AI VST) hosted as an AiVstFlowNode renders
+    // through the plugin — MIDI note -> the module's noteOn -> audio out. The .vstai
+    // ships the compiled WASM + params; we embed the wasm bytes in node.data.wasmBase64
+    // exactly as the web editor would. Path via $SYNFLOW_VSTAI_TEST or a default; SKIP
+    // if absent (the .vstai factory presets live in the VibePlugin repo, not vendored).
+    bool vstaiOk = true;
+    {
+        const char* env = std::getenv("SYNFLOW_VSTAI_TEST");
+        std::string vp = env ? env : "/Users/k/projects/VibePlugin/factory/plugins/additive-synth/additive.vstai";
+        std::string vjson = readFileStr(vp);
+        if (vjson.empty()) { std::printf("[vstai] %s not found -> SKIP\n", vp.c_str()); }
+        else {
+            const juce::var doc = juce::JSON::parse(juce::String::fromUTF8(vjson.data(), static_cast<int>(vjson.size())));
+            const juce::String wasmB64 = doc.getProperty("wasmBase64", "").toString();
+            const bool isInstr = static_cast<bool>(doc.getProperty("isInstrument", false));
+            juce::var flow(new juce::DynamicObject());
+            // node.data carries the module + (for a synth) the host-MIDI routing flags.
+            auto* data = new juce::DynamicObject();
+            data->setProperty("wasmBase64", wasmB64);
+            // Param defaults ride in node.data as paramN (exactly what the web node writes).
+            if (auto* ps = doc.getProperty("params", juce::var()).getArray())
+                for (const auto& p : *ps)
+                    data->setProperty("param" + juce::String((int) p.getProperty("index", 0)),
+                                      (double) p.getProperty("value", p.getProperty("default", 0.0)));
+            if (isInstr) { data->setProperty("isTrigger", true); data->setProperty("isPitch", true);
+                           data->setProperty("pitchParam", "frequency"); data->setProperty("frequency", 220.0); }
+            else data->setProperty("isInput", true); // effect insert: host audio flows into it
+            auto* vnode = new juce::DynamicObject();
+            vnode->setProperty("id", "vstai"); vnode->setProperty("type", "AiVstFlowNode");
+            vnode->setProperty("data", juce::var(data));
+            auto* mnode = new juce::DynamicObject();
+            mnode->setProperty("id", "m"); mnode->setProperty("type", "MasterOutFlowNode");
+            mnode->setProperty("data", juce::var(new juce::DynamicObject()));
+            juce::Array<juce::var> nodes; nodes.add(juce::var(vnode)); nodes.add(juce::var(mnode));
+            auto* edge = new juce::DynamicObject();
+            edge->setProperty("source", "vstai"); edge->setProperty("sourceHandle", "output");
+            edge->setProperty("target", "m"); edge->setProperty("targetHandle", "destination-input");
+            juce::Array<juce::var> edges; edges.add(juce::var(edge));
+            auto* root = new juce::DynamicObject();
+            root->setProperty("name", "vstai"); root->setProperty("nodes", nodes); root->setProperty("edges", edges);
+            proc.loadFlow(juce::JSON::toString(juce::var(root)));
+
+            double onPeak = 0; bool vf = true;
+            for (int blk = 0; blk < 120; ++blk) {
+                juce::MidiBuffer midi;
+                if (isInstr && blk == 0) midi.addEvent(juce::MidiMessage::noteOn(1, 57, static_cast<juce::uint8>(110)), 0);
+                buf.clear();
+                // For an effect, feed host audio so there's something to process.
+                if (!isInstr) for (int ch = 0; ch < buf.getNumChannels(); ++ch)
+                    for (int i = 0; i < BLK; ++i) buf.setSample(ch, i, std::sin(i * 0.25f) * 0.3f);
+                proc.processBlock(buf, midi);
+                const float pk = buf.getMagnitude(0, 0, BLK);
+                if (!std::isfinite(pk)) vf = false;
+                if (blk >= 5 && blk < 50) onPeak = std::max(onPeak, static_cast<double>(pk));
+            }
+            vstaiOk = vf && onPeak > 0.02;
+            std::printf("[vstai] %s '%s' peak=%.4f -> %s\n", isInstr ? "synth" : "fx",
+                        doc.getProperty("name", "").toString().toRawUTF8(), onPeak, vstaiOk ? "PASS" : "FAIL");
+        }
+    }
+
+    const bool ok = sawOk && wasmOk && reverbOk && knobOk && effectOk && sampleOk && vstaiOk;
     std::printf("%s\n", ok ? "ALL PASS" : "FAILED");
     return ok ? 0 : 1;
 }

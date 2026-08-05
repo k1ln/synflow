@@ -59,6 +59,9 @@ int main() {
             kp->setNamedParam("frequency", 220.0);
             kp->setNamedParam("decay", 0.6);
             kp->setNamedParam("tone", 0.6);
+            kp->setNamedParam("attack", 0.15);
+            kp->setNamedParam("scatter", 0.3);
+            kp->setNamedParam("muffle", 0.2);
             kp->pluck(1.0);
         } else if (auto* ld = dynamic_cast<WasmLadderNode*>(raw)) {
             ld->setNamedParam("cutoff", 1200.0);

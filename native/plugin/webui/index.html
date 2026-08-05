@@ -25,12 +25,151 @@
 <body>
   <div class="wrap">
     <div style="display:flex;align-items:center;justify-content:space-between">
-      <h1>Synflow</h1>
+      <h1>Synflow <span id="ver" style="font-size:13px;font-weight:500;color:#6a6a72;letter-spacing:0;vertical-align:middle"></span></h1>
       <button id="editBtn" style="background:#2a2a30;color:#e8e8ea;border:1px solid #3a3a42;border-radius:6px;padding:7px 12px;font:13px system-ui;cursor:pointer">Edit flow →</button>
     </div>
     <div class="flow" id="flow">loading… <span id="status"></span></div>
     <div class="knobs" id="knobs"></div>
+
+    <div id="pianoWrap" style="margin-top:24px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="color:#c7c7cf;font-size:12px;font-weight:600">Keyboard</span>
+        <button id="octDown" class="octbtn">−</button>
+        <span id="octLabel" style="color:#8a8a93;font-size:12px;min-width:26px;text-align:center">C4</span>
+        <button id="octUp" class="octbtn">+</button>
+        <span style="color:#6a6a72;font-size:11px">click, or type (FL layout: low C = Z / German Y, Q-row = octave up)</span>
+      </div>
+      <div id="piano" style="position:relative;height:120px;user-select:none;touch-action:none"></div>
+    </div>
   </div>
+  <style>
+    .octbtn { background:#2a2a30;color:#e8e8ea;border:1px solid #3a3a42;border-radius:6px;
+      width:26px;height:24px;font:14px system-ui;cursor:pointer;line-height:1 }
+    #piano .wkey { position:absolute;bottom:0;top:0;border:1px solid #2a2a30;border-radius:0 0 5px 5px;
+      background:linear-gradient(#fbfbfd,#e7e7ee);box-shadow:inset 0 -3px 4px rgba(0,0,0,.12) }
+    #piano .wkey.on { background:linear-gradient(#bcd4ff,#7db1ff) }
+    #piano .bkey { position:absolute;top:0;height:62%;border-radius:0 0 4px 4px;z-index:2;
+      background:linear-gradient(#3a3a42,#141417);box-shadow:0 2px 3px rgba(0,0,0,.5) }
+    #piano .bkey.on { background:linear-gradient(#5d82c8,#3f63a8) }
+  </style>
+  <script>
+    // On-screen + computer keyboard -> the plugin's host-MIDI note path (identical
+    // to playing from the DAW). Uses the same JUCE bridge as the knobs/buttons.
+    (function () {
+      function emitNote(ev, note, vel) {
+        try { window.__JUCE__ && window.__JUCE__.backend && window.__JUCE__.backend.emitEvent(ev, { note: note, velocity: vel || 0.9 }); } catch (e) {}
+      }
+      var WHITE = [0, 2, 4, 5, 7, 9, 11], BLACK = [1, 3, 6, 8, 10];
+      var SPAN = 24; // two octaves
+      var octave = 4;
+      var base = function () { return 12 * (octave + 1); }; // C of current octave (C4 = 60)
+      var down = {};     // note -> 'mouse' | 'key' (source, so we release the right ones)
+      var heldKeys = {}; // KeyboardEvent.code -> note currently held (for keyup)
+      var keyEls = {};
+
+      function press(note, src) {
+        if (down[note]) return; down[note] = src;
+        if (keyEls[note]) keyEls[note].classList.add('on');
+        emitNote('playNote', note);
+      }
+      function release(note) {
+        if (!down[note]) return; delete down[note];
+        if (keyEls[note]) keyEls[note].classList.remove('on');
+        emitNote('stopNote', note);
+      }
+
+      function build() {
+        var piano = document.getElementById('piano');
+        piano.innerHTML = ''; keyEls = {};
+        var whites = [];
+        for (var s = 0; s <= SPAN; s++) if (WHITE.indexOf(((s % 12) + 12) % 12) >= 0) whites.push(s);
+        var ww = 100 / whites.length;
+        // white keys
+        whites.forEach(function (s, i) {
+          var note = base() + s;
+          var el = document.createElement('div');
+          el.className = 'wkey'; el.style.left = (i * ww) + '%'; el.style.width = ww + '%';
+          bindKey(el, note); keyEls[note] = el; piano.appendChild(el);
+        });
+        // black keys, positioned at the gap after their white key
+        for (var s2 = 0; s2 <= SPAN; s2++) {
+          var pc = ((s2 % 12) + 12) % 12;
+          if (BLACK.indexOf(pc) < 0) continue;
+          var whitesBefore = 0;
+          for (var t = 0; t < s2; t++) if (WHITE.indexOf(((t % 12) + 12) % 12) >= 0) whitesBefore++;
+          var note2 = base() + s2;
+          var el2 = document.createElement('div');
+          el2.className = 'bkey';
+          el2.style.width = (ww * 0.62) + '%';
+          el2.style.left = (whitesBefore * ww - ww * 0.31) + '%';
+          bindKey(el2, note2); keyEls[note2] = el2; piano.appendChild(el2);
+        }
+      }
+
+      function bindKey(el, note) {
+        // Press on down only. We do NOT capture the pointer or bind the release on
+        // the key: this webview can drop the element's pointerup (esp. under
+        // setPointerCapture), which left notes stuck on. Release is caught globally
+        // (releaseAll) instead, so any up anywhere ends the note.
+        el.addEventListener('pointerdown', function (e) { e.preventDefault(); press(note, 'mouse'); });
+        el.addEventListener('mousedown', function (e) { e.preventDefault(); press(note, 'mouse'); });
+      }
+
+      function setOct(o) { octave = Math.max(0, Math.min(8, o)); document.getElementById('octLabel').textContent = 'C' + octave; build(); }
+
+      // Release helpers. The webview can drop the "up", so mouse notes release on
+      // ANY up anywhere (capture phase) + a move with no button held. Mouse releases
+      // only touch mouse-held notes (never keyboard notes), and vice-versa.
+      function releaseMouse() { Object.keys(down).forEach(function (n) { if (down[n] === 'mouse') release(+n); }); }
+      function releaseAll() { Object.keys(down).forEach(function (n) { release(+n); }); heldKeys = {}; }
+      ['pointerup', 'pointercancel', 'mouseup'].forEach(function (ev) {
+        window.addEventListener(ev, releaseMouse, true);
+        document.addEventListener(ev, releaseMouse, true);
+      });
+      function onMove(e) { if (e.buttons === 0) releaseMouse(); }
+      window.addEventListener('pointermove', onMove, true);
+      window.addEventListener('mousemove', onMove, true);
+      window.addEventListener('blur', releaseAll, true);
+
+      // Computer keyboard -> notes, using FL Studio's typing-keyboard layout BY
+      // PHYSICAL KEY (KeyboardEvent.code) so it matches FL on any locale: the
+      // bottom-left letter (US 'Z' / German 'Y') is the low C and the Q-row is one
+      // octave up. The plugin handles keys itself because while its window is focused
+      // the DAW never receives them. e.code is layout-independent, so the German 'Y'
+      // (physical KeyZ) lands on the same note FL plays.
+      var FL_LAYOUT = {
+        KeyZ: 0, KeyS: 1, KeyX: 2, KeyD: 3, KeyC: 4, KeyV: 5, KeyG: 6, KeyB: 7, KeyH: 8, KeyN: 9, KeyJ: 10, KeyM: 11,
+        Comma: 12, KeyL: 13, Period: 14, Semicolon: 15, Slash: 16,
+        KeyQ: 12, Digit2: 13, KeyW: 14, Digit3: 15, KeyE: 16, KeyR: 17, Digit5: 18, KeyT: 19, Digit6: 20, KeyY: 21, Digit7: 22, KeyU: 23,
+        KeyI: 24, Digit9: 25, KeyO: 26, Digit0: 27, KeyP: 28
+      };
+      function isTextTarget(el) {
+        return el && (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && /text|number|search/.test(el.type || '')) || el.isContentEditable);
+      }
+      window.addEventListener('keydown', function (e) {
+        if (e.metaKey || e.ctrlKey || e.altKey || isTextTarget(e.target)) return;
+        var off = FL_LAYOUT[e.code];
+        if (off == null) return;
+        e.preventDefault();
+        if (e.repeat) return;                                       // ignore auto-repeat
+        if (heldKeys[e.code] != null) release(heldKeys[e.code]);    // missed keyup -> retrigger clean
+        var note = base() + off;
+        heldKeys[e.code] = note;
+        press(note, 'key');
+      }, true);
+      window.addEventListener('keyup', function (e) {
+        var note = heldKeys[e.code];
+        if (note == null) return;
+        e.preventDefault();
+        delete heldKeys[e.code];
+        release(note);
+      }, true);
+
+      document.getElementById('octDown').addEventListener('click', function () { setOct(octave - 1); });
+      document.getElementById('octUp').addEventListener('click', function () { setOct(octave + 1); });
+      build();
+    })();
+  </script>
   <script>document.getElementById('editBtn').addEventListener('click',function(){window.location.href='./editor.html';});</script>
   <script>
     // The C++ editor injects the flow + its exposed controls via
@@ -42,6 +181,20 @@
       return Number(v).toFixed(dp).replace(/\.?0+$/, "") || "0";
     }
     function emit(ev, payload) { try { window.__JUCE__ && window.__JUCE__.backend && window.__JUCE__.backend.emitEvent(ev, payload); } catch (e) {} }
+
+    // Momentary trigger buttons (Button nodes): release globally so a dropped
+    // mouseup on the element can't leave a trigger stuck on (same webview quirk as
+    // the piano). render() adds the node id to heldButtons on press.
+    var heldButtons = new Set();
+    function releaseButtons() { heldButtons.forEach(function (id) { emit("noteOff", { nodeId: id }); }); heldButtons.clear(); }
+    ['pointerup', 'pointercancel', 'mouseup', 'blur'].forEach(function (ev) {
+      window.addEventListener(ev, releaseButtons, true);
+      document.addEventListener(ev, releaseButtons, true);
+    });
+    function onBtnMove(e) { if (e.buttons === 0 && heldButtons.size) releaseButtons(); }
+    window.addEventListener('pointermove', onBtnMove, true);
+    window.addEventListener('mousemove', onBtnMove, true);
+
     function render() {
       const data = (window.__JUCE__ && window.__JUCE__.initialisationData) || {};
       const name = unwrap(data.flowName) || "(none)";
@@ -50,6 +203,8 @@
       const buttons = ctl.buttons || [];
       document.getElementById("status").innerHTML = '<span class="ok">&#10003; connected</span>';
       document.getElementById("flow").innerHTML = "Flow: <b>" + name + "</b> · native engine";
+      var ver = unwrap(data.version);
+      if (ver) document.getElementById("ver").textContent = "v" + ver;
 
       const host = document.getElementById("knobs");
       host.innerHTML = "";
@@ -57,9 +212,9 @@
         const el = document.createElement("button");
         el.textContent = b.label;
         el.style.cssText = "background:#7db1ff22;color:#cfe0ff;border:1px solid #3a4a66;border-radius:10px;padding:14px;font:13px system-ui;cursor:pointer";
-        el.addEventListener("mousedown", () => emit("noteOn", { nodeId: b.id, payload: { velocity: 1 } }));
-        el.addEventListener("mouseup", () => emit("noteOff", { nodeId: b.id }));
-        el.addEventListener("mouseleave", () => emit("noteOff", { nodeId: b.id }));
+        const startBtn = (e) => { e.preventDefault(); if (!heldButtons.has(b.id)) { heldButtons.add(b.id); emit("noteOn", { nodeId: b.id, payload: { velocity: 1 } }); } };
+        el.addEventListener("pointerdown", startBtn);
+        el.addEventListener("mousedown", startBtn);
         host.appendChild(el);
       }
       if (!knobs.length && !buttons.length) { host.innerHTML = '<div class="empty">This flow exposes no controls.</div>'; return; }

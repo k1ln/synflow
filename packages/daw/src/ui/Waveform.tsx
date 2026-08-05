@@ -4,7 +4,7 @@ import type { Peaks } from '../audio/waveform';
 const MAX_CANVAS_W = 4096; // backing-buffer cap; CSS stretches to the real display width
 
 export function Waveform({
-  peaks, width = 600, height = 80, color = '#4ade80', background = '#0e0e10',
+  peaks, width = 600, height = 80, color = '#8fb4d9', background = '#0e0e10',
   loop,
 }: {
   peaks: Peaks | null;

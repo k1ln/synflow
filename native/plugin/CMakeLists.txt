@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.22)
-project(SynflowPlugin VERSION 0.1.0 LANGUAGES C CXX)
+
+# Auto-bumped by build-all.sh (-DSYNFLOW_VERSION=x.y.z) so each build carries a
+# visible version (plugin info + in-GUI badge); defaults for plain cmake builds.
+set(SYNFLOW_VERSION "0.1.0" CACHE STRING "Synflow plugin version")
+project(SynflowPlugin VERSION ${SYNFLOW_VERSION} LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -45,6 +49,7 @@ else()
 endif()
 
 juce_add_plugin(Synflow
+    VERSION ${SYNFLOW_VERSION}
     PRODUCT_NAME "${SYNFLOW_NAME}"
     COMPANY_NAME "Synflow"
     BUNDLE_ID ${SYNFLOW_BUNDLE}
@@ -130,7 +135,8 @@ target_include_directories(Synflow PRIVATE
 target_compile_definitions(Synflow PUBLIC
     JUCE_WEB_BROWSER=1   # webview GUI (serves the embedded page; DAW UI next)
     JUCE_USE_CURL=0
-    JUCE_VST3_CAN_REPLACE_VST2=0)
+    JUCE_VST3_CAN_REPLACE_VST2=0
+    SYNFLOW_VERSION_STRING=${SYNFLOW_VERSION})  # stringified in PluginEditor.cpp
 
 target_link_libraries(Synflow
     PRIVATE

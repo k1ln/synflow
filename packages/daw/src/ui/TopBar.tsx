@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, Square, Circle, SkipBack, Grid3x3, Layers, SlidersHorizontal, PanelLeft, Save, FolderOpen, FilePlus, Settings, Piano, Check, Download, FileAudio, Loader, Camera, ScreenShare, Mic, Disc, Undo2, Redo2 } from 'lucide-react';
+import { Play, Pause, Square, Circle, SkipBack, Grid3x3, Layers, SlidersHorizontal, PanelLeft, Save, FolderOpen, FilePlus, Settings, Piano, Check, Download, FileAudio, Loader, Mic, Disc, Undo2, Redo2 } from 'lucide-react';
 
 export type ViewId = 'tracks' | 'song' | 'live' | 'mix';
 
@@ -14,8 +14,8 @@ export function TopBar({
   view, setView, isPlaying, onPlay, onStop, armed, onArm, metronome, onToggleMetronome, bpm, onBpm, swing, onSwing, beatsPerBar, onTimeSig, position, browserOpen, setBrowserOpen,
   projectName, onProjectName, onNewSong, onSave, saved, onOpenSong, onExport, exporting, exportProgress, onBounce, bouncing, bounceProgress, onExportMidi, onExportStems,
   canUndo, canRedo, onUndo, onRedo,
-  cameraOn, onToggleCamera, screenOn, onToggleScreen, micOn, onToggleMic, recording, onToggleRecord,
-  midiConnected, midiTitle,
+  micOn, onToggleMic, recording, onToggleRecord,
+  midiConnected, midiTitle, midiLearn, onMidiLearn,
 }: {
   view: ViewId;
   setView: (v: ViewId) => void;
@@ -53,27 +53,23 @@ export function TopBar({
   canRedo: boolean;
   onUndo: () => void;
   onRedo: () => void;
-  cameraOn: boolean;
-  onToggleCamera: () => void;
-  screenOn: boolean;
-  onToggleScreen: () => void;
   micOn: boolean;
   onToggleMic: () => void;
   recording: boolean;
   onToggleRecord: () => void;
   midiConnected: boolean;
+  midiLearn: boolean;
+  onMidiLearn: () => void;
   midiTitle: string;
 }) {
   const pct = (f: number) => `${Math.round(f * 100)}%`;
   return (
     <div className="topbar">
       <div className="brand">
-        <img src="/mark.svg" alt="" className="brand-mark" />
-        <span className="brand-word">MOTHSCILLA</span>
+        <img src={`${import.meta.env.BASE_URL}mark.svg`} alt="Mothscilla" className="brand-mark" />
       </div>
       <div className="tb-divider" />
       <div className="project">
-        <span className="project-pill">Song</span>
         <input className="project-name-input" value={projectName} onChange={(e) => onProjectName(e.target.value)} spellCheck={false} title="Song name" />
         <button className="icon-btn" title="New song (fresh project, saved to the songs folder)" onClick={onNewSong}><FilePlus size={16} /></button>
         <button className="icon-btn" title="Open song (choose a .json from the songs folder)" onClick={onOpenSong}><FolderOpen size={16} /></button>
@@ -124,11 +120,10 @@ export function TopBar({
 
       <div className="tb-tools">
         {midiConnected && <span className="midi-chip" title={midiTitle}><Piano size={13} /> MIDI</span>}
-        <span className="tb-status">{isPlaying ? 'Playing' : 'Stopped'}</span>
-        <button className={`icon-btn ${cameraOn ? 'active' : ''}`} title="Webcam (reaction cam in the corner)" onClick={onToggleCamera}><Camera size={18} /></button>
-        <button className={`icon-btn ${screenOn ? 'active' : ''}`} title="Capture screen / window / tab" onClick={onToggleScreen}><ScreenShare size={18} /></button>
-        <button className={`icon-btn ${micOn ? 'active' : ''}`} title={micOn ? 'Microphone on (recorded with the program)' : 'Enable microphone (records with screen / webcam)'} onClick={onToggleMic}><Mic size={18} /></button>
-        <button className={`icon-btn cap-rec ${recording ? 'on' : ''}`} title={recording ? 'Stop recording' : 'Record the program (screen + webcam + mic) to a clip'} onClick={onToggleRecord}><Disc size={18} /></button>
+        {midiConnected && <button className={`midi-learn ${midiLearn ? 'on' : ''}`} onClick={onMidiLearn}
+          title={midiLearn ? 'Learning: touch a volume/pan fader in the DAW, then move a knob on your controller' : 'MIDI learn: map a hardware knob to a fader'}>learn</button>}
+        <button className={`icon-btn ${micOn ? 'active' : ''}`} title={micOn ? 'Microphone on (recorded with the program)' : 'Enable microphone'} onClick={onToggleMic}><Mic size={18} /></button>
+        <button className={`icon-btn cap-rec ${recording ? 'on' : ''}`} title={recording ? 'Stop recording' : 'Record the program (mic) to a clip'} onClick={onToggleRecord}><Disc size={18} /></button>
         <div className="tb-divider" />
         <button className={`icon-btn ${browserOpen ? 'active' : ''}`} title="Browser" onClick={() => setBrowserOpen(!browserOpen)}><PanelLeft size={18} /></button>
         <button className={`icon-btn ${exporting ? 'busy' : ''}`} title="Export portable song (.json with audio embedded as base64)" onClick={onExport} disabled={exporting}>

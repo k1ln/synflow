@@ -2,9 +2,9 @@
 // (streamed), embeds base64 only on export, and resolves assets to AudioBuffers
 // (short, sample-accurate) or blob URLs (long, streamed via <audio>).
 import { decodeToBuffer, arrayBufferToBase64, base64ToArrayBuffer } from './decodeAudioFile';
-import { computePeaksMixed } from './waveform';
+import { computePeaksMixed, type Peaks } from './waveform';
 import { wavHeader, encodeWavFrames } from './wav';
-import { readWavHeader, type WavMeta } from './wavReader';
+import { readWavHeader, readWavFrames, type WavMeta } from './wavReader';
 import { writeAudio, readAudio, createAudioWritable } from '../synflow/flowStore';
 import type { AudioAsset, AudioSource } from '../model/project';
 import { uid } from '../model/project';
@@ -142,6 +142,43 @@ export class AudioAssets {
 
   /** Already-decoded buffer if hot in cache (synchronous; null otherwise). */
   cachedBuffer(asset: AudioAsset): AudioBuffer | null { return this.buffers.get(asset.id) ?? null; }
+
+  /** Hi-res waveform peaks for a sub-window [startSec, endSec] of an asset, computed
+   *  live from the decoded buffer when it is hot in RAM. `buckets` is the target column
+   *  count (≈ the on-screen pixels of the *visible* part of the clip), so zooming in
+   *  re-samples at full detail instead of stretching the coarse stored overview.
+   *  Returns null when the buffer isn't cached (long streamed clips) — callers then
+   *  fall back to {@link slicePeaks} on the stored overview. */
+  peaksWindow(asset: AudioAsset, startSec: number, endSec: number, buckets: number): Peaks | null {
+    const buf = this.buffers.get(asset.id);
+    if (!buf) return null;
+    const sr = buf.sampleRate;
+    const a = Math.max(0, Math.floor(startSec * sr));
+    const b = Math.min(buf.length, Math.ceil(endSec * sr));
+    if (b - a < 1) return null;
+    const chans = Array.from({ length: buf.numberOfChannels }, (_, c) => buf.getChannelData(c).subarray(a, b));
+    return computePeaksMixed(chans, Math.max(1, Math.min(Math.floor(buckets), b - a)));
+  }
+
+  /** Hi-res peaks for a sub-window that reads **only the visible byte range off disk**
+   *  — never decoding the whole file, so a large clip (or many of them) costs only the
+   *  frames actually on screen. Prefers a hot RAM buffer when one exists; otherwise
+   *  random-access-reads [startSec, endSec] from the on-disk WAV via {@link readWavFrames}.
+   *  Returns null when neither is available (e.g. embedded, not decoded) → caller falls
+   *  back to the stored overview. */
+  async peaksWindowFromDisk(asset: AudioAsset, startSec: number, endSec: number, buckets: number): Promise<Peaks | null> {
+    const hot = this.peaksWindow(asset, startSec, endSec, buckets);
+    if (hot) return hot;
+    const stream = await this.resolveStream(asset);   // disk WAV handle (converts a legacy file once)
+    if (!stream) return null;
+    const { blob, meta } = stream;
+    const startFrame = Math.max(0, Math.floor(startSec * meta.sampleRate));
+    const endFrame = Math.min(meta.frames, Math.ceil(endSec * meta.sampleRate));
+    const count = endFrame - startFrame;
+    if (count < 1) return null;
+    const chans = await readWavFrames(blob, meta, startFrame, count); // native rate, no resample
+    return computePeaksMixed(chans, Math.max(1, Math.min(Math.floor(buckets), count)));
+  }
 
   /** Decoded buffer for short clips (sample-accurate playback + waveform fallback). */
   async resolveBuffer(asset: AudioAsset): Promise<AudioBuffer | null> {

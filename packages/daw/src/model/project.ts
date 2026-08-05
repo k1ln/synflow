@@ -32,7 +32,11 @@ export interface AudioClip {
   gain: number;
   fadeIn?: number;     // fade-in length (s) — overlap two clips for a crossfade
   fadeOut?: number;    // fade-out length (s)
+  pitch?: number;      // repitch in semitones (varispeed: speed follows pitch; 0/absent = native)
 }
+
+/** Playback-rate multiplier for a clip's repitch (2^(semitones/12)). */
+export const clipRate = (c: { pitch?: number }): number => (c.pitch ? Math.pow(2, c.pitch / 12) : 1);
 
 /** A decoded video import, referenced by clips on a video track. Container bytes
  *  live on disk or embedded like {@link AudioAsset}. `audioAssetId` links the audio
@@ -57,11 +61,6 @@ export type VideoBlend = 'normal' | 'multiply' | 'screen' | 'overlay' | 'lighten
 export const VIDEO_BLENDS: VideoBlend[] = ['normal', 'multiply', 'screen', 'overlay', 'lighten', 'darken', 'add', 'difference'];
 export const blendCompositeOp = (b: VideoBlend | undefined): GlobalCompositeOperation =>
   b === 'add' ? 'lighter' : (!b || b === 'normal') ? 'source-over' : (b as GlobalCompositeOperation);
-
-/** Placement of a live capture source (webcam/screen) in the program composite —
- *  top-left `x`/`y` + width `w`, all fractions of the frame (height follows the
- *  source aspect). Live-only (not saved with the song). */
-export interface SourceLayout { x: number; y: number; w: number }
 
 /** Keyframe easing (named cubic-bezier presets; 'hold' = stepped). */
 export type Easing = 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'hold';
@@ -126,11 +125,30 @@ export type TitleAppear = 'none' | 'fade' | 'slide-up' | 'slide-down' | 'slide-l
 export const TITLE_APPEARS: TitleAppear[] = ['none', 'fade', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'pop', 'typewriter', 'blur'];
 
 /**
- * A clip on the song timeline: the track's pattern placed at `start` (in pattern
- * slots) for `length` slots. `loop` makes the pattern repeat from `start` forever
- * (until the next clip / song end) — "send loop to the pattern, it just stays".
+ * A clip on the song timeline: places one of the track's PATTERNS at `start` (in
+ * pattern slots) for `length` slots. `loop` makes the pattern repeat from `start`
+ * forever (until the next clip / song end). `patternId` picks which pattern plays
+ * (omitted = the track's first pattern, which keeps old songs playing unchanged).
  */
-export interface Clip { id: string; start: number; length: number; loop: boolean }
+export interface Clip { id: string; start: number; length: number; loop: boolean; patternId?: string }
+
+/**
+ * A named snapshot of a track's musical content — per instrument-use step rows
+ * (drums) or piano-roll notes (synth) plus its own length (polymeter per pattern).
+ *
+ * Editing uses a CHECKOUT model: the track's `uses[].steps/notes` always hold the
+ * content of the ACTIVE pattern (so every editor keeps working on them unchanged);
+ * switching patterns snapshots the current content back into the old pattern and
+ * loads the new one. Inactive patterns are read straight from their snapshot (see
+ * {@link patternContent}); the active one is read live from the uses.
+ */
+export interface Pattern {
+  id: string;
+  name: string;                          // 'A', 'B', … (shown on clips + chips)
+  length: number;                        // steps
+  steps: Record<string, boolean[]>;      // useId → drum row
+  notes: Record<string, PianoNote[]>;    // useId → piano-roll notes
+}
 
 /** One band of the native parametric EQ. */
 export interface EqBand { id: string; type: BiquadFilterType; freq: number; gain: number; q: number; on: boolean }
@@ -146,8 +164,9 @@ export const defaultEq = (): EqSettings => ({ on: true, outDb: 0, bands: [] });
  *  Synflow override, or `eq` holds settings for the built-in graphical EQ. */
 export interface FxInsert { id: string; fxId: string; name: string; flow?: Flow; eq?: EqSettings }
 
-/** A post-fader send from a track to an aux/return bus. `level` is 0..1. */
-export interface Send { busId: string; level: number }
+/** A send from a track to an aux/return bus. `level` is 0..1; `pre` taps
+ *  post-FX/pre-fader (level independent of the track fader) instead of post-fader. */
+export interface Send { busId: string; level: number; pre?: boolean }
 
 /** Sidechain ducking: this track's level dips when `keyTrackId` plays (kick-ducks-
  *  bass). `amount` 0..1 is the max gain reduction; `release` ms shapes the recovery. */
@@ -194,7 +213,10 @@ export interface PoolItem {
  */
 export interface TrackInstrument {
   id: string;
-  poolId: string;          // -> PoolItem
+  poolId: string;          // -> PoolItem (the source/template this instance came from)
+  flow?: Flow;             // this instance's OWN instrument flow — independent param
+                           //   state per track (edits here don't touch the pool template
+                           //   or other tracks). Absent = fall back to the pool's flow.
   fx: FxInsert[];          // instrument-in-track FX (level 1)
   muted?: boolean;
   steps?: boolean[];       // drums track: this row's step pattern
@@ -202,7 +224,13 @@ export interface TrackInstrument {
   voices?: number;         // synth polyphony
 }
 
-/** Automation lane: drives a param over the pattern, at instrument/track/master scope. */
+/** A timeline automation point: absolute song `step` (fractional ok) + value.
+ *  Consecutive points are connected by LINEAR RAMPS (scheduled sample-accurately). */
+export interface AutoPoint { step: number; value: number }
+
+/** Automation lane. Two flavours:
+ *  - per-step (`values`): sample-and-hold over the PATTERN (legacy, loops with it);
+ *  - timeline (`points` non-empty): linear-ramp curve over the SONG arrangement. */
 export interface AutomationLane {
   id: string;
   scope: 'instrument' | 'track' | 'master';
@@ -213,6 +241,23 @@ export interface AutomationLane {
   min: number;
   max: number;
   values: (number | null)[];
+  points?: AutoPoint[];    // timeline lane (song-scope curve) when non-empty
+  label?: string;          // display name (e.g. "Acid Bass: Cutoff") — cosmetic
+}
+
+/** Curve value at absolute song `step` (linear between points; clamped at the ends). */
+export function timelineAutoValue(points: AutoPoint[], step: number): number | null {
+  if (!points.length) return null;
+  const pts = points;                      // kept sorted by step on edit
+  if (step <= pts[0].step) return pts[0].value;
+  for (let i = 1; i < pts.length; i++) {
+    if (step <= pts[i].step) {
+      const a = pts[i - 1], b = pts[i];
+      const f = b.step === a.step ? 1 : (step - a.step) / (b.step - a.step);
+      return a.value + (b.value - a.value) * f;
+    }
+  }
+  return pts[pts.length - 1].value;
 }
 
 /** A track: one TYPE (drums, synth, audio, or video). Drums/synth hold uses of pool
@@ -228,14 +273,18 @@ export interface Track {
   pan?: number;            // stereo pan, −1 (left) … +1 (right); default 0 (center)
   muted?: boolean;         // arrangement mute: skip this track entirely in the scheduler
   soloed?: boolean;        // solo: when any track is soloed, only soloed tracks sound
+  swing?: number;          // per-track groove override (0..1; absent = the song's global swing)
   loop: boolean;           // live-performance loop: the track loops continuously
-  length: number;          // this track's pattern length, in steps (polymeter)
+  length: number;          // the ACTIVE pattern's length, in steps (polymeter)
+  patterns?: Pattern[];    // this track's patterns (see {@link Pattern}; ≥1 after normalize)
+  activePatternId?: string;// the pattern currently "checked out" into uses[].steps/notes
   uses: TrackInstrument[];
   clips: Clip[];           // song arrangement: where this track's pattern plays (when loop is off, in Song mode)
   audioClips?: AudioClip[];// audio tracks: clips placed on the song timeline
   videoClips?: VideoClip[];// video tracks: clips placed on the song timeline
   fx: FxInsert[];          // track-level FX (level 2)
-  sends?: Send[];          // post-fader sends into aux/return buses
+  sends?: Send[];          // sends into aux/return buses (post-fader unless send.pre)
+  outputBusId?: string;    // route this track's OUTPUT into a group/submix bus (default master)
   sidechain?: Sidechain;   // duck this track from another track's signal
   automation: AutomationLane[];
 }
@@ -271,6 +320,19 @@ let _id = 0;
 export const uid = (p: string): string => `${p}-${++_id}-${Math.random().toString(36).slice(2, 7)}`;
 let _noteId = 1000;
 export const newNoteId = (): number => ++_noteId;
+/** Seed the counter past every note id already in a loaded project. Without this,
+ *  `_noteId` restarts at 1000 on every page load, so a freshly minted id can collide
+ *  with one already saved in the file — two notes end up sharing an id, which
+ *  corrupts the audio engine's per-note voice bookkeeping (a stuck/orphaned voice). */
+function bumpNoteIdPast(p: Project): void {
+  let max = _noteId;
+  for (const t of p.tracks ?? []) {
+    if (t.type === 'audio' || t.type === 'video') continue;
+    for (const u of t.uses ?? []) for (const n of u.notes ?? []) if (n.id > max) max = n.id;
+    for (const pat of t.patterns ?? []) for (const notes of Object.values(pat.notes ?? {})) for (const n of notes) if (n.id > max) max = n.id;
+  }
+  _noteId = max;
+}
 
 const stepArr = (n: number, on: number[] = []): boolean[] => Array.from({ length: n }, (_, i) => on.includes(i));
 
@@ -285,8 +347,11 @@ export function fxInsert(fxId: string): FxInsert {
   return { id: uid('fx'), fxId, name: findEntry(fxId)?.name ?? fxId };
 }
 
-/** Default project: a Drums track + a Synth track, drawing from a small pool. */
-export function defaultProject(): Project {
+/** Default project: a Drums track + a Synth track, drawing from a small pool.
+ *  Run through {@link normalizeProject} so tracks get their pattern list. */
+export function defaultProject(): Project { return normalizeProject(rawDefaultProject()); }
+
+function rawDefaultProject(): Project {
   const total = 16;
   const pool: PoolItem[] = [
     { id: 'kick', name: 'Kick', libId: 'kick', kind: 'drum', flow: libFlow('kick', makeKick) },
@@ -347,18 +412,133 @@ export function quantizeNotes(notes: PianoNote[], gridSteps: number): PianoNote[
   return notes.map((n) => ({ ...n, start: Math.max(0, Math.round(n.start / gridSteps) * gridSteps) }));
 }
 
-/** Backfill fields missing from older saved songs (assets registry, audio/video clips). */
+// ─── patterns ────────────────────────────────────────────────────────────────
+
+const isInstrumentTrack = (t: Track) => t.type === 'drums' || t.type === 'synth';
+
+/** Snapshot the track's live uses content into its active pattern (checkout write-back). */
+export function snapshotActivePattern(t: Track): Track {
+  if (!isInstrumentTrack(t) || !t.patterns?.length) return t;
+  const id = t.activePatternId ?? t.patterns[0].id;
+  return {
+    ...t,
+    patterns: t.patterns.map((p) => p.id !== id ? p : {
+      ...p,
+      length: Math.max(1, t.length),
+      steps: Object.fromEntries(t.uses.filter((u) => u.steps).map((u) => [u.id, u.steps!])),
+      notes: Object.fromEntries(t.uses.filter((u) => u.notes).map((u) => [u.id, u.notes!])),
+    }),
+  };
+}
+
+/** Switch the track's active pattern: write the current content back, then load
+ *  `patternId` into the uses (+ track length). No-op if it's already active. */
+export function checkoutPattern(t: Track, patternId: string): Track {
+  if (!isInstrumentTrack(t) || !t.patterns?.length || patternId === t.activePatternId) return t;
+  const target = t.patterns.find((p) => p.id === patternId);
+  if (!target) return t;
+  const saved = snapshotActivePattern(t);
+  return {
+    ...saved,
+    activePatternId: patternId,
+    length: Math.max(1, target.length),
+    uses: saved.uses.map((u) => ({
+      ...u,
+      ...(u.steps ? { steps: target.steps[u.id] ?? blankSteps(target.length) } : {}),
+      ...(u.notes ? { notes: target.notes[u.id] ?? [] } : {}),
+    })),
+  };
+}
+
+/** The pattern a clip plays (its own, or the track's first for legacy clips). */
+export function clipPatternId(t: Track, c: Clip): string | undefined {
+  return c.patternId ?? t.patterns?.[0]?.id;
+}
+
+/** A pattern's content for one instrument-use. The ACTIVE pattern reads live from
+ *  the uses (edits are heard immediately); inactive ones read their snapshot. */
+export function patternContent(t: Track, patternId: string | undefined, useId: string): { steps?: boolean[]; notes?: PianoNote[] } {
+  const pats = t.patterns ?? [];
+  const id = patternId ?? pats[0]?.id;
+  const u = t.uses.find((x) => x.id === useId);
+  if (!id || !pats.length || id === (t.activePatternId ?? pats[0]?.id)) return { steps: u?.steps, notes: u?.notes };
+  const p = pats.find((x) => x.id === id);
+  if (!p) return { steps: u?.steps, notes: u?.notes };
+  return { steps: p.steps[useId], notes: p.notes[useId] };
+}
+
+/** A pattern's length in steps (the active one lives on track.length). */
+export function patternLengthOf(t: Track, patternId: string | undefined): number {
+  const pats = t.patterns ?? [];
+  const id = patternId ?? pats[0]?.id;
+  if (!id || !pats.length || id === (t.activePatternId ?? pats[0]?.id)) return Math.max(1, t.length);
+  return Math.max(1, pats.find((x) => x.id === id)?.length ?? t.length);
+}
+
+/** Next free single-letter pattern name (A, B, … Z, then P27…). */
+export function nextPatternName(t: Track): string {
+  const used = new Set((t.patterns ?? []).map((p) => p.name));
+  for (let i = 0; i < 26; i++) { const n = String.fromCharCode(65 + i); if (!used.has(n)) return n; }
+  return `P${(t.patterns?.length ?? 0) + 1}`;
+}
+
+/** Write every track's live content back into its active pattern — call before
+ *  saving, exporting or bouncing so snapshots reflect the latest edits. */
+export function syncPatterns(p: Project): Project {
+  return { ...p, tracks: p.tracks.map(snapshotActivePattern) };
+}
+
+// ── per-use instrument flow ──────────────────────────────────────────────────
+// A track instance carries its OWN instrument flow for independent params; for
+// .vstai instruments that flow embeds the compiled wasm (~1 MB) directly in the
+// song, so it's fully self-contained. `rehydratePoolFlows` is a load-time safety
+// net that restores wasm/GUI onto any use flow that somehow lost it, copying from
+// the pool template — harmless when the bytes are already present.
+const VSTAI_HEAVY = ['wasmBase64', 'html', 'assembly'] as const;
+
+/** Restore wasm/GUI onto per-use vstai flows from their pool template (after load). */
+function rehydratePoolFlows(p: Project): Project {
+  return {
+    ...p,
+    tracks: p.tracks.map((t) => ({
+      ...t,
+      uses: t.uses.map((u) => {
+        if (!u.flow) return u;
+        const node = u.flow.nodes.find((n: any) => n?.type === 'AiVstFlowNode');
+        if (!node || node.data?.wasmBase64) return u;   // not vstai, or already has bytes
+        const tmpl = p.pool.find((pi) => pi.id === u.poolId)?.flow?.nodes.find((n: any) => n?.type === 'AiVstFlowNode');
+        if (!tmpl?.data?.wasmBase64) return u;
+        const merged = { ...node.data }; for (const k of VSTAI_HEAVY) if (tmpl.data[k] != null) merged[k] = tmpl.data[k];
+        return { ...u, flow: { ...u.flow, nodes: u.flow.nodes.map((n: any) => (n === node ? { ...n, data: merged } : n)) } };
+      }),
+    })),
+  };
+}
+
+/** Backfill fields missing from older saved songs (assets registry, audio/video
+ *  clips, and the pattern list — old songs get one pattern built from their uses). */
 export function normalizeProject(p: Project): Project {
+  p = rehydratePoolFlows(p);   // restore per-use vstai wasm from the pool template
+  bumpNoteIdPast(p);
   return {
     ...p,
     assets: p.assets ?? [],
     videoAssets: p.videoAssets ?? [],
     buses: p.buses ?? [],
     markers: p.markers ?? [],
-    tracks: (p.tracks ?? []).map((t) =>
-      t.type === 'audio' ? { ...t, audioClips: t.audioClips ?? [] }
-        : t.type === 'video' ? { ...t, videoClips: t.videoClips ?? [] }
-          : t),
+    tracks: (p.tracks ?? []).map((t) => {
+      if (t.type === 'audio') return { ...t, audioClips: t.audioClips ?? [] };
+      if (t.type === 'video') return { ...t, videoClips: t.videoClips ?? [] };
+      if (!t.patterns?.length) {
+        const pat: Pattern = {
+          id: uid('pat'), name: 'A', length: Math.max(1, t.length),
+          steps: Object.fromEntries(t.uses.filter((u) => u.steps).map((u) => [u.id, u.steps!])),
+          notes: Object.fromEntries(t.uses.filter((u) => u.notes).map((u) => [u.id, u.notes!])),
+        };
+        return { ...t, patterns: [pat], activePatternId: pat.id };
+      }
+      return t;
+    }),
   };
 }
 

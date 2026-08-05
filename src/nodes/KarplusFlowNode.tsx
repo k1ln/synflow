@@ -10,6 +10,9 @@ export type KarplusFlowNodeProps = {
     frequency: number;
     decay: number;
     tone: number;
+    attack: number;
+    scatter: number;
+    muffle: number;
     style: React.CSSProperties;
     id?: string;
     flowId?: string;
@@ -17,6 +20,9 @@ export type KarplusFlowNodeProps = {
     freqMidiMapping?: MidiMapping | null;
     decayMidiMapping?: MidiMapping | null;
     toneMidiMapping?: MidiMapping | null;
+    attackMidiMapping?: MidiMapping | null;
+    scatterMidiMapping?: MidiMapping | null;
+    muffleMidiMapping?: MidiMapping | null;
   };
 };
 
@@ -38,19 +44,29 @@ const KarplusFlowNode: React.FC<KarplusFlowNodeProps> = ({ data }) => {
   const [freqNorm, setFreqNorm] = useState(normFromFreq(data.frequency ?? 220));
   const [decay, setDecay] = useState(data.decay ?? 0.6);
   const [tone, setTone] = useState(data.tone ?? 0.6);
+  const [attack, setAttack] = useState(data.attack ?? 0.15);
+  const [scatter, setScatter] = useState(data.scatter ?? 0.3);
+  const [muffle, setMuffle] = useState(data.muffle ?? 0.2);
   const [label, setLabel] = useState(data.label ?? "Karplus");
   const [freqMidiMapping, setFreqMidiMapping] = useState<MidiMapping | null>(data.freqMidiMapping ?? null);
   const [decayMidiMapping, setDecayMidiMapping] = useState<MidiMapping | null>(data.decayMidiMapping ?? null);
   const [toneMidiMapping, setToneMidiMapping] = useState<MidiMapping | null>(data.toneMidiMapping ?? null);
+  const [attackMidiMapping, setAttackMidiMapping] = useState<MidiMapping | null>(data.attackMidiMapping ?? null);
+  const [scatterMidiMapping, setScatterMidiMapping] = useState<MidiMapping | null>(data.scatterMidiMapping ?? null);
+  const [muffleMidiMapping, setMuffleMidiMapping] = useState<MidiMapping | null>(data.muffleMidiMapping ?? null);
 
   const nodeId = (data as any).id || "karplus";
   const flowId = (data as any).flowId || "default";
 
   useEffect(() => {
     if (data.onChange instanceof Function) {
-      data.onChange({ ...data, frequency, decay, tone, label, freqMidiMapping, decayMidiMapping, toneMidiMapping });
+      data.onChange({
+        ...data, frequency, decay, tone, attack, scatter, muffle, label,
+        freqMidiMapping, decayMidiMapping, toneMidiMapping,
+        attackMidiMapping, scatterMidiMapping, muffleMidiMapping,
+      });
     }
-  }, [frequency, decay, tone, label, freqMidiMapping, decayMidiMapping, toneMidiMapping]);
+  }, [frequency, decay, tone, attack, scatter, muffle, label, freqMidiMapping, decayMidiMapping, toneMidiMapping, attackMidiMapping, scatterMidiMapping, muffleMidiMapping]);
 
   // Audition: emit the same note-on event the engine plucks on.
   const pluck = () => {
@@ -148,6 +164,77 @@ const KarplusFlowNode: React.FC<KarplusFlowNodeProps> = ({ data }) => {
           />
         </div>
       </div>
+
+      <div className="node-row" style={{ gap: 4, marginTop: 6 }}>
+        <div className="node-field">
+          <span className="node-label">Attack</span>
+          <MidiKnob
+            accentColor={ACCENT}
+            min={0}
+            max={1}
+            value={attack}
+            onChange={(v) => setAttack(Math.min(1, Math.max(0, v)))}
+            midiMapping={attackMidiMapping}
+            onMidiLearnChange={setAttackMidiMapping}
+            midiSensitivity={0.5}
+            label="Attack"
+            persistKey={`karplus:${flowId}:${nodeId}:attack`}
+          />
+          <input
+            type="text"
+            value={Math.round(attack * 1000) / 1000}
+            onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) setAttack(Math.min(1, Math.max(0, v))); }}
+            className="node-input"
+            style={{ width: 50 }}
+          />
+        </div>
+
+        <div className="node-field">
+          <span className="node-label">Scatter</span>
+          <MidiKnob
+            accentColor={ACCENT}
+            min={0}
+            max={1}
+            value={scatter}
+            onChange={(v) => setScatter(Math.min(1, Math.max(0, v)))}
+            midiMapping={scatterMidiMapping}
+            onMidiLearnChange={setScatterMidiMapping}
+            midiSensitivity={0.5}
+            label="Scatter"
+            persistKey={`karplus:${flowId}:${nodeId}:scatter`}
+          />
+          <input
+            type="text"
+            value={Math.round(scatter * 1000) / 1000}
+            onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) setScatter(Math.min(1, Math.max(0, v))); }}
+            className="node-input"
+            style={{ width: 50 }}
+          />
+        </div>
+
+        <div className="node-field">
+          <span className="node-label">Muffle</span>
+          <MidiKnob
+            accentColor={ACCENT}
+            min={0}
+            max={1}
+            value={muffle}
+            onChange={(v) => setMuffle(Math.min(1, Math.max(0, v)))}
+            midiMapping={muffleMidiMapping}
+            onMidiLearnChange={setMuffleMidiMapping}
+            midiSensitivity={0.5}
+            label="Muffle"
+            persistKey={`karplus:${flowId}:${nodeId}:muffle`}
+          />
+          <input
+            type="text"
+            value={Math.round(muffle * 1000) / 1000}
+            onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) setMuffle(Math.min(1, Math.max(0, v))); }}
+            className="node-input"
+            style={{ width: 50 }}
+          />
+        </div>
+      </div>
     </div>
   );
 };
@@ -157,6 +244,9 @@ export const defaultData = {
   frequency: 220,
   decay: 0.6,
   tone: 0.6,
+  attack: 0.15,
+  scatter: 0.3,
+  muffle: 0.2,
 };
 
 export default React.memo(KarplusFlowNode);

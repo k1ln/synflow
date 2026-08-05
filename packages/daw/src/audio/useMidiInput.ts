@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 
 export interface MidiNoteEvent { type: 'on' | 'off'; midi: number; velocity: number /* 0..1 */ }
+export interface MidiCcEvent { cc: number; value: number /* 0..1 */; channel: number }
 
 /**
  * Web MIDI input: subscribes to every connected MIDI input port and forwards
- * note-on/off (with normalized velocity) to `onNote`. `onNote` is kept in a ref
- * so the subscription stays stable while always calling the latest handler.
+ * note-on/off (with normalized velocity) to `onNote` and control-change messages
+ * to `onCc` (for MIDI-learned mappings). Handlers are kept in refs so the
+ * subscription stays stable while always calling the latest ones.
  * Returns the connected device names and whether the browser supports Web MIDI.
  */
-export function useMidiInput(onNote: (e: MidiNoteEvent) => void): { devices: string[]; supported: boolean } {
+export function useMidiInput(onNote: (e: MidiNoteEvent) => void, onCc?: (e: MidiCcEvent) => void): { devices: string[]; supported: boolean } {
   const handler = useRef(onNote); handler.current = onNote;
+  const ccHandler = useRef(onCc); ccHandler.current = onCc;
   const [devices, setDevices] = useState<string[]>([]);
   const supported = typeof navigator !== 'undefined' && 'requestMIDIAccess' in navigator;
 
@@ -24,6 +27,7 @@ export function useMidiInput(onNote: (e: MidiNoteEvent) => void): { devices: str
       // note-on with velocity 0 is the conventional note-off
       if (cmd === 0x90 && data2 > 0) handler.current({ type: 'on', midi: data1, velocity: data2 / 127 });
       else if (cmd === 0x80 || (cmd === 0x90 && data2 === 0)) handler.current({ type: 'off', midi: data1, velocity: 0 });
+      else if (cmd === 0xb0) ccHandler.current?.({ cc: data1, value: data2 / 127, channel: status & 0x0f });
     };
 
     const wire = () => {

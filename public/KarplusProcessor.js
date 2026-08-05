@@ -1,14 +1,17 @@
 // Karplus–Strong plucked string — thin AudioWorklet shell around the Rust/WASM
 // DSP core (src/wasm/karplus → public/karplus.wasm). A note-on (port message)
-// plucks; `frequency` (a-rate), `decay`/`tone` (k-rate) and an optional audio
-// exciter input drive the WASM delay-line loop.
+// plucks; `frequency` (a-rate), `decay`/`tone`/`attack`/`scatter`/`muffle`
+// (k-rate) and an optional audio exciter input drive the WASM delay-line loop.
 
 class KarplusProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() {
     return [
-      { name: 'frequency', defaultValue: 220, minValue: 10, maxValue: 12000, automationRate: 'a-rate' },
-      { name: 'decay',     defaultValue: 0.6, minValue: 0,  maxValue: 1,    automationRate: 'k-rate' },
-      { name: 'tone',      defaultValue: 0.6, minValue: 0,  maxValue: 1,    automationRate: 'k-rate' },
+      { name: 'frequency', defaultValue: 220,  minValue: 10, maxValue: 12000, automationRate: 'a-rate' },
+      { name: 'decay',     defaultValue: 0.6,  minValue: 0,  maxValue: 1,    automationRate: 'k-rate' },
+      { name: 'tone',      defaultValue: 0.6,  minValue: 0,  maxValue: 1,    automationRate: 'k-rate' },
+      { name: 'attack',    defaultValue: 0.15, minValue: 0,  maxValue: 1,    automationRate: 'k-rate' },
+      { name: 'scatter',   defaultValue: 0.3,  minValue: 0,  maxValue: 1,    automationRate: 'k-rate' },
+      { name: 'muffle',    defaultValue: 0.2,  minValue: 0,  maxValue: 1,    automationRate: 'k-rate' },
     ];
   }
 
@@ -53,6 +56,9 @@ class KarplusProcessor extends AudioWorkletProcessor {
       this.pFreq, freq.length,
       params.decay[0],
       params.tone[0],
+      params.attack[0],
+      params.scatter[0],
+      params.muffle[0],
       this.pIn, inCh ? 1 : 0,
       n, sampleRate,
       this.pOut,

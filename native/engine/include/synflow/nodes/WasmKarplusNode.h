@@ -48,6 +48,9 @@ public:
         if (name == "frequency") frequency_ = static_cast<float>(v);
         else if (name == "decay") decay_ = static_cast<float>(v);
         else if (name == "tone") tone_ = static_cast<float>(v);
+        else if (name == "attack") attack_ = static_cast<float>(v);
+        else if (name == "scatter") scatter_ = static_cast<float>(v);
+        else if (name == "muffle") muffle_ = static_cast<float>(v);
     }
 
     // note-on: schedule a pluck consumed at the start of the next block
@@ -82,14 +85,15 @@ private:
     // wasm's buffer base, then copies the segment to the right output offset).
     void renderSeg(int pos, int n) {
         if (n <= 0) return;
-        wasmtime_val_t args[10] = {
+        wasmtime_val_t args[13] = {
             valI32(state_), valI32(pFreq_), valI32(1),
             valF32(decay_), valF32(tone_),
+            valF32(attack_), valF32(scatter_), valF32(muffle_),
             valI32(pIn_), valI32(0),            // has_in = 0 (pure source)
             valI32(n), valF32(sr_),
             valI32(pOut_),
         };
-        mod_->call(f_process_, args, 10, nullptr, 0);
+        mod_->call(f_process_, args, 13, nullptr, 0);
         uint8_t* d = mod_->memData();
         std::memcpy(out[0].data() + pos, d + pOut_, sizeof(float) * static_cast<size_t>(n));
     }
@@ -99,6 +103,7 @@ private:
     wasmtime_func_t f_alloc_{}, f_new_{}, f_pluck_{}, f_process_{};
     int32_t pFreq_ = 0, pIn_ = 0, pOut_ = 0, state_ = 0;
     float sr_ = 48000.0f, frequency_ = 220.0f, decay_ = 0.6f, tone_ = 0.6f;
+    float attack_ = 0.15f, scatter_ = 0.3f, muffle_ = 0.2f;
     bool pendingPluck_ = false;
     float pluckVel_ = 1.0f;
 };

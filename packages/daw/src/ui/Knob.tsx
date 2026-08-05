@@ -57,10 +57,10 @@ export function Knob({
     <div className="knob-wrap">
       <div
         className="knob" onPointerDown={onDown} title="Drag to adjust"
-        style={{ width: size, height: size, touchAction: 'none', borderColor: color, boxShadow: `0 0 9px 1px color-mix(in srgb, ${color} 30%, transparent), inset 0 2px 4px rgba(0,0,0,.5)` }}
+        style={{ width: size, height: size, touchAction: 'none', borderColor: color }}
       >
         <div className="knob-rot" style={{ transform: `rotate(${angle}deg)` }}>
-          <div className="knob-ptr" style={{ height: size * 0.3, background: color, boxShadow: `0 0 5px ${color}` }} />
+          <div className="knob-ptr" style={{ height: size * 0.3, background: color }} />
         </div>
       </div>
       {editing ? (

@@ -1,9 +1,9 @@
 /* ============================================================================
    MOTHSCILLA — Design Tokens
-   A cutting-edge modular DAW for the web. Dark-glass surfaces, phosphor-green
-   accents, glowing signal paths. Visual language extracted from the Synflow
-   node-graph workstation (github.com/k1ln/synflow) and fused with a Bitwig-
-   style arrangement/mixer/device layout.
+   A professional modular DAW for the web. FLAT design: vivid, luminous accent
+   colors on graphite surfaces — but zero shadows and zero glow. Color carries
+   meaning; depth comes from borders and surface steps, never from blur.
+   Layout language: Bitwig-style arrangement/mixer/device panels.
 
    Load order in any HTML file:
      <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -29,8 +29,8 @@
   --grid-size:      22px;
 
   /* ── BORDERS / HAIRLINES ──────────────────────────────────────────────── */
-  --border-subtle:  rgba(80, 95, 130, 0.28);
-  --border-default: rgba(80, 95, 130, 0.50);  /* node border                */
+  --border-subtle:  rgba(160, 170, 190, 0.14);
+  --border-default: rgba(160, 170, 190, 0.26);  /* node border              */
   --border-strong:  #2a2a2a;                   /* panel dividers (Synflow)   */
   --hairline:       #333333;                   /* toolbar divider            */
 
@@ -41,44 +41,44 @@
   --ink-3:     #6b7488;   /* faint / disabled (--node-ink-faint) */
   --ink-on-accent: #0b0f16;  /* text on a filled accent surface */
 
-  /* ── PRIMARY ACCENT — PHOSPHOR GREEN ──────────────────────────────────────
-     The oscilloscope-trace green. Moths drawn to light. This is Mothscilla's
-     signature; it carries focus rings, active states, brand glow.          */
-  --accent:        #6ee7a8;   /* default module accent (--node-accent)      */
-  --accent-bright: #4ade80;   /* hover / valid connection                   */
-  --accent-deep:   #00b347;   /* gradient bottom / pressed                  */
-  --accent-neon:   #00ff88;   /* pure glow source                           */
-  --accent-glow-soft: rgba(0, 255, 136, 0.08);
-  --accent-glow:      rgba(0, 255, 120, 0.28);
-  --accent-glow-hot:  rgba(0, 255, 110, 0.60);
+  /* ── PRIMARY ACCENT — STEEL BLUE ──────────────────────────────────────────
+     One calm, desaturated accent carries focus rings and active states.
+     Restrained on purpose: color means "look here", nothing shouts.        */
+  --accent:        #4da8ff;   /* default module accent (--node-accent)      */
+  --accent-bright: #79c0ff;   /* hover / valid connection                   */
+  --accent-deep:   #2f7fd6;   /* pressed                                    */
+  --accent-neon:   #79c0ff;   /* (legacy alias — flat theme, no neon)       */
+  --accent-glow-soft: transparent;
+  --accent-glow:      transparent;
+  --accent-glow-hot:  transparent;
 
   /* ── CATEGORY ACCENTS ─────────────────────────────────────────────────────
      Every track / module / device type carries a hue. Knob rings, titles,
      port handles and clip blocks inherit it via --node-accent.             */
-  --cat-source:  #4ade80;   /* oscillators, instruments, audio sources (green) */
-  --cat-gain:    #4aa3ff;   /* gain, level, utility (blue)                     */
-  --cat-mod:     #f5b73c;   /* modulation, envelopes, event-shift (amber)      */
-  --cat-fx:      #c850c0;   /* effects, filters, spatial (magenta)             */
-  --cat-midi:    #ff8c42;   /* MIDI, triggers, sequencing (orange)             */
-  --cat-master:  #eef1f8;   /* master bus / output (white)                     */
+  --cat-source:  #34d399;   /* oscillators, instruments, audio sources (emerald) */
+  --cat-gain:    #38bdf8;   /* gain, level, utility (sky)                        */
+  --cat-mod:     #fbbf24;   /* modulation, envelopes, event-shift (amber)        */
+  --cat-fx:      #c084fc;   /* effects, filters, spatial (violet)                */
+  --cat-midi:    #fb923c;   /* MIDI, triggers, sequencing (orange)               */
+  --cat-master:  #f1f5f9;   /* master bus / output (white)                       */
 
   /* Port-handle colors (the little circles on modules) */
-  --port-a: #ff8c42;  /* orange  */
-  --port-b: #4aa3ff;  /* blue    */
-  --port-c: #4ade80;  /* green   */
-  --port-d: #c850c0;  /* magenta */
+  --port-a: #fb923c;  /* orange  */
+  --port-b: #38bdf8;  /* sky     */
+  --port-c: #34d399;  /* emerald */
+  --port-d: #c084fc;  /* violet  */
   --port-e: #9ca3af;  /* gray (unassigned) */
 
   /* ── SEMANTIC STATE ───────────────────────────────────────────────────── */
-  --ok:       #18d864;   --ok-deep:   #00b347;
-  --danger:   #e23b3b;   --danger-br: #ff5a5a;   --danger-bg: rgba(120,30,30,0.35);
-  --warn:     #f5b73c;
-  --info:     #4aa3ff;
-  --rec:      #ff3b3b;   /* record-arm / transport record */
+  --ok:       #34d399;   --ok-deep:   #22a877;
+  --danger:   #f87171;   --danger-br: #fca5a5;   --danger-bg: rgba(150,45,45,0.30);
+  --warn:     #fbbf24;
+  --info:     #38bdf8;
+  --rec:      #ff5252;   /* record-arm / transport record */
 
   /* ── SIGNAL EDGE (connection cables) ──────────────────────────────────── */
-  --edge:        #ffffff;
-  --edge-glow:   drop-shadow(0 0 2px rgba(255,255,255,0.6)) drop-shadow(0 0 4px rgba(255,255,255,0.3));
+  --edge:        #d7dce6;
+  --edge-glow:   none;
   --edge-width:  1.5px;
 
   /* ── RADII ────────────────────────────────────────────────────────────── */
@@ -90,13 +90,15 @@
   --r-full: 999px;
 
   /* ── SHADOWS & GLOW ───────────────────────────────────────────────────── */
-  --shadow-node:  0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px var(--accent-glow-soft);
-  --shadow-pop:   0 4px 14px rgba(0,0,0,0.5);
-  --shadow-modal: 0 4px 20px rgba(0,0,0,0.7);
-  --glow-accent:  0 0 9px 3px var(--accent-glow);
-  --glow-accent-press: 0 0 7px 2px var(--accent-glow-hot);
-  --glow-focus:   0 0 0 2px rgba(0,255,136,0.30), 0 0 10px rgba(0,255,136,0.25);
-  --inset-top:    inset 0 1px 0 rgba(255,255,255,0.06);
+  /* FLAT THEME: no drop shadows, no glow — depth is borders + surface steps.
+     Focus stays as a crisp 2px ring (an outline, not a glow). */
+  --shadow-node:  none;
+  --shadow-pop:   none;
+  --shadow-modal: none;
+  --glow-accent:  none;
+  --glow-accent-press: none;
+  --glow-focus:   0 0 0 2px rgba(77, 168, 255, 0.5);
+  --inset-top:    none;
 
   /* ── SPACING (4px base) ───────────────────────────────────────────────── */
   --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
@@ -235,7 +237,6 @@
   letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
   color: var(--node-accent, var(--accent));
-  text-shadow: 0 0 10px color-mix(in srgb, var(--node-accent, var(--accent)) 35%, transparent);
 }
 
 /* Tiny control label. */

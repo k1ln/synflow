@@ -213,10 +213,31 @@ export function handleReceiveOutput(
     }
 }
 
+/** Anchor time for a (possibly scheduled) event: `data.when` is an AudioContext
+ *  time sent ahead by a sequencer (see AudioGraphManager.receiveNodeOn). Envelopes
+ *  anchored there start sample-accurately; without it they start "now" as before. */
+function eventAnchorTime(manager: any, data: any): number {
+    const now = manager.audioContext.currentTime;
+    const when = data?.when;
+    return (typeof when === 'number' && when > now) ? when : now;
+}
+
+/** The ADSR envelope's value `dt` seconds after note-on (attack → decay → sustain).
+ *  Used to anchor a scheduled release exactly: at schedule time the param's future
+ *  value can't be read, but for an ADSR it is fully determined by the note-on time. */
+function adsrValueAt(dt: number, attack: number, decay: number, sustainLevel: number, minAbs: number, maxAbs: number): number {
+    if (dt <= 0) return minAbs;
+    if (dt < attack) return minAbs + (maxAbs - minAbs) * (dt / attack);
+    const sustainAbs = minAbs + (maxAbs - minAbs) * sustainLevel;
+    if (dt < attack + decay) return maxAbs + (sustainAbs - maxAbs) * ((dt - attack) / decay);
+    return sustainAbs;
+}
+
 export function handleEdgeADSR(
     manager: any,
     edge: Edge,
-    node: CustomNode
+    node: CustomNode,
+    data?: any
 ) {
     const targetNodeId = edge.target;
     const virtualTarget = manager.virtualNodes.get(targetNodeId);
@@ -230,19 +251,23 @@ export function handleEdgeADSR(
     const baseValue = (typeof rawBase === 'number' ? rawBase : (typeof fallbackBase === 'number' ? fallbackBase : 1));
 
     const attackTime = node.data?.attackTime || 0.1;
-    const sustainTime = node.data?.sustainTime || 0.5;
+    // Decay stage: flows write `decayTime`; older graphs used `sustainTime`.
+    const sustainTime = node.data?.decayTime ?? node.data?.sustainTime ?? 0.5;
     const sustainLevel = node.data?.sustainLevel || 0.7;
     const minPercent = (node.data?.minPercent ?? 0) / 100;
     const maxPercent = (node.data?.maxPercent ?? 100) / 100;
     const minAbs = baseValue * minPercent;
     const maxAbs = baseValue * maxPercent;
-    const now = manager.audioContext.currentTime;
-    audioParam.cancelScheduledValues(now);
+    const t0 = eventAnchorTime(manager, data);
+    // A ramp needs a preceding EVENT to anchor its start time, so always place a
+    // setValueAtTime at t0 (cancelAndHoldAtTime alone doesn't create one when
+    // nothing is in flight, which would make the ramp start at the last event).
     const startVal = audioParam.value > minAbs ? audioParam.value : minAbs;
-    audioParam.setValueAtTime(startVal, now);
-    audioParam.linearRampToValueAtTime(maxAbs, now + attackTime);
+    audioParam.cancelScheduledValues(t0);
+    audioParam.setValueAtTime(startVal, t0);
+    audioParam.linearRampToValueAtTime(maxAbs, t0 + attackTime);
     const sustainAbs = minAbs + (maxAbs - minAbs) * sustainLevel;
-    audioParam.linearRampToValueAtTime(sustainAbs, now + attackTime + sustainTime);
+    audioParam.linearRampToValueAtTime(sustainAbs, t0 + attackTime + sustainTime);
 }
 
 export function handleConnectedEdgesADSRNodeOn(
@@ -265,7 +290,7 @@ export function handleConnectedEdgesADSRNodeOn(
     }
     const sortedEdges = manager.sortEdges(connectedEdges);
     for (const edge of sortedEdges) {
-        handleEdgeADSR(manager, edge, node);
+        handleEdgeADSR(manager, edge, node, data);
     }
 }
 
@@ -293,10 +318,10 @@ export function handleConnectedEdgesAutomationNodeOn(
         if (!(param instanceof AudioParam)) return;
         const configuredBase = virtualTarget?.node?.data?.[targetHandle];
         const baseValue: number = (typeof configuredBase === 'number' && !isNaN(configuredBase)) ? configuredBase : 1;
-        const now = manager.audioContext.currentTime;
-        param.cancelScheduledValues(now);
+        const t0 = eventAnchorTime(manager, data);
+        param.cancelScheduledValues(t0);
         points.forEach((p, idx) => {
-            const t = now + (p.x * lengthSec);
+            const t = t0 + (p.x * lengthSec);
             const percent = maxPercent - p.y * spanPercent;
             const absValue = baseValue * (percent / 100);
             if (idx === 0) {
@@ -316,7 +341,7 @@ export function handleConnectedEdgesAutomationNodeOff(
 ) {
     const connectedEdges = manager.virtualEdges.get(node.id);
     if (!connectedEdges) return;
-    const now = manager.audioContext.currentTime;
+    const t0 = eventAnchorTime(manager, data);
     connectedEdges.forEach((edge: Edge) => {
         const targetNodeId = edge.target;
         const virtualTarget = manager.virtualNodes.get(targetNodeId);
@@ -325,7 +350,7 @@ export function handleConnectedEdgesAutomationNodeOff(
         const targetHandle: string = edge.targetHandle;
         const param: AudioParam | undefined = audioNode[targetHandle];
         if (!(param instanceof AudioParam)) return;
-        param.cancelScheduledValues(now);
+        param.cancelScheduledValues(t0);
     });
 }
 
@@ -358,12 +383,24 @@ export function handleConnectedEdgesADSRNodeOff(
         const fallbackBase = manager.nodesRef.current.find((n: any) => n.id === targetNodeId)?.data?.[paramName];
         const baseValue = (typeof rawBase === 'number' ? rawBase : (typeof fallbackBase === 'number' ? fallbackBase : 1));
         const minPercent = (node.data?.minPercent ?? 0) / 100;
+        const maxPercent = (node.data?.maxPercent ?? 100) / 100;
         const minAbs = baseValue * minPercent;
+        const maxAbs = baseValue * maxPercent;
         const releaseTime = node.data?.releaseTime || 0.3;
-        const now = manager.audioContext.currentTime;
-        audioParam.cancelScheduledValues(now);
-        audioParam.setValueAtTime(audioParam.value, now);
-        audioParam.linearRampToValueAtTime(minAbs, now + releaseTime);
+        const t0 = eventAnchorTime(manager, data);
+        // Anchor the release ramp at t0. For a scheduled release the param's value
+        // AT t0 can't be read now, but it's fully determined by the envelope: use
+        // the note-on time (`data.onWhen`, threaded by the host) to compute it.
+        let anchorVal = audioParam.value;
+        if (typeof data?.when === 'number' && typeof data?.onWhen === 'number') {
+            const attack = node.data?.attackTime || 0.1;
+            const decay = node.data?.decayTime ?? node.data?.sustainTime ?? 0.5;
+            const sustainLevel = node.data?.sustainLevel || 0.7;
+            anchorVal = adsrValueAt(data.when - data.onWhen, attack, decay, sustainLevel, minAbs, maxAbs);
+        }
+        audioParam.cancelScheduledValues(t0);
+        audioParam.setValueAtTime(anchorVal, t0);
+        audioParam.linearRampToValueAtTime(minAbs, t0 + releaseTime);
     });
 }
 

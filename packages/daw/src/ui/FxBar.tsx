@@ -3,6 +3,7 @@ import { Plus, Pencil, X } from 'lucide-react';
 import { EQ_FX_ID, type FxInsert, type EqSettings } from '../model/project';
 import { findEntry, type LibraryEntry } from '../synflow/library';
 import { flowKnobs, flowOptions, knob01, knobReadout, knobValue } from '../synflow/knobs';
+import { isVstaiFlow } from '../synflow/vstai';
 import { eqMagnitudeDb, logFreqs } from '../audio/eqResponse';
 import { Knob } from './Knob';
 import { OptionButtons } from './OptionButtons';
@@ -25,7 +26,7 @@ function EqThumb({ settings, color }: { settings: EqSettings; color: string }) {
 
 /** A horizontal FX chain editor (used at instrument / track / master level).
  *  Each insert is a device card with its Synflow-exported knobs. */
-export function FxBar({ label, color, fx, effects, onAdd, onRemove, onEdit, onKnob, compact }: {
+export function FxBar({ label, color, fx, effects, onAdd, onRemove, onEdit, onKnob, onBrowse, compact }: {
   label: string;
   color?: string;
   fx: FxInsert[];
@@ -34,6 +35,7 @@ export function FxBar({ label, color, fx, effects, onAdd, onRemove, onEdit, onKn
   onRemove: (index: number) => void;
   onEdit: (index: number) => void;
   onKnob?: (index: number, nodeId: string, param: string, value: number | string) => void;
+  onBrowse?: () => void;   // open the detailed plugin browser (library + VibeSynth gallery)
   compact?: boolean;
 }) {
   const [picking, setPicking] = useState(false);
@@ -46,16 +48,19 @@ export function FxBar({ label, color, fx, effects, onAdd, onRemove, onEdit, onKn
         {fx.map((ins, i) => {
           const isEq = ins.fxId === EQ_FX_ID;
           const flow = ins.flow ?? findEntry(ins.fxId)?.flow;
-          const knobs = isEq ? [] : flowKnobs(flow);
-          const options = isEq ? [] : flowOptions(flow);
+          const isVstai = !isEq && isVstaiFlow(flow);          // AI plugin: its own GUI, no DAW knobs
+          const knobs = isEq || isVstai ? [] : flowKnobs(flow);
+          const options = isEq || isVstai ? [] : flowOptions(flow);
           return (
             <div className="fxdev" key={ins.id} style={{ borderColor: `color-mix(in srgb, ${c} 45%, transparent)` }}>
               <div className="fxdev-head">
                 <span className="fxdev-name" style={{ color: c }}>{ins.name}</span>
-                <button className="fxbar-icon" title={isEq ? 'Open EQ' : 'Edit in Synflow'} onClick={() => onEdit(i)}><Pencil size={11} /></button>
+                {isVstai && <span className="fxdev-ai" title="AI plugin (.vstai) — has its own GUI; not editable in Synflow">AI</span>}
+                <button className="fxbar-icon" title={isEq ? 'Open EQ' : isVstai ? 'Open plugin GUI' : 'Edit in Synflow'} onClick={() => onEdit(i)}><Pencil size={11} /></button>
                 <button className="fxbar-icon" title="Remove" onClick={() => onRemove(i)}><X size={11} /></button>
               </div>
               {isEq && ins.eq && <button className="fxdev-eq-btn" onClick={() => onEdit(i)} title="Open EQ"><EqThumb settings={ins.eq} color={c} /></button>}
+              {isVstai && <button className="fxdev-gui-btn" onClick={() => onEdit(i)} title="Open the plugin's own GUI">Open plugin GUI</button>}
               {knobs.length > 0 && (
                 <div className="fxdev-knobs">
                   {knobs.map((k) => (
@@ -79,9 +84,10 @@ export function FxBar({ label, color, fx, effects, onAdd, onRemove, onEdit, onKn
           );
         })}
         <div className="fxbar-add">
-          <button className="fxbar-addbtn" onClick={() => setPicking((p) => !p)} title="Add effect"
+          <button className="fxbar-addbtn" title="Add effect"
+            onClick={() => { if (onBrowse) onBrowse(); else setPicking((p) => !p); }}
             style={{ color: c, background: `color-mix(in srgb, ${c} 12%, transparent)`, borderColor: `color-mix(in srgb, ${c} 45%, transparent)` }}><Plus size={14} /></button>
-          {picking && (
+          {picking && !onBrowse && (
             <div className="fxbar-menu" onMouseLeave={() => setPicking(false)}>
               {effects.length === 0 && <span className="fxbar-none">no effects loaded</span>}
               {effects.map((e) => <button key={e.id} onClick={() => { onAdd(e.id); setPicking(false); }}>{e.name}</button>)}

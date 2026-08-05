@@ -57,6 +57,10 @@ public:
     void editorSetParam(const juce::String& nodeId, const juce::String& key, const juce::var& value);
     // Live note from the editor keyboard: gate the flow's trigger node by id.
     void editorNote(const juce::String& nodeId, bool noteOn, const juce::var& payload);
+    // Play a MIDI note from the webview (on-screen piano / computer keyboard) via
+    // the SAME routing host MIDI uses (pitchNode_ + triggerNode_), so the in-GUI
+    // keyboard is identical to playing from the DAW.
+    void hostNote(int midiNote, bool noteOn, double velocity);
 
 private:
     // A generic host parameter (0..1) the loaded flow binds an exposed knob to.
@@ -70,6 +74,12 @@ private:
 
     static constexpr int kMaxKnobs = 24;
 
+    // Guards the live graph + its derived routing (graph_/triggerNode_/pitchNode_/
+    // pitchParam_/midiMaps_/knobBindings_) against concurrent access: loadFlow and
+    // the editor bridge mutate them on the message thread while processBlock renders
+    // on the audio thread. processBlock try-locks (renders silence on the rare miss);
+    // message-thread writers take the blocking lock for the brief swap.
+    juce::SpinLock graphLock_;
     std::unique_ptr<synflow::AudioGraphManager> graph_;
     juce::String flowJson_, flowName_, controlsJson_;
     std::map<std::string, int> nodeIndexById_; // flow node id -> graph index (for editor edits)

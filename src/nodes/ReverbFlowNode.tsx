@@ -76,7 +76,7 @@ const ReverbFlowNode: React.FC<ReverbFlowNodeProps> = ({ data }) => {
 
   return (
     <div className="flow-node" style={data.style}>
-      <div className="node-title">{label?.toUpperCase() ?? "REVERB"}</div>
+      <div className="node-title">REVERB</div>
 
       <Handle
         type="target"

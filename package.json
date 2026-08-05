@@ -23,7 +23,7 @@
     "dev": "node scripts/dev.js",
     "start": "vite",
     "prebuild": "node scripts/generate-examples-manifest.js",
-    "build": "vite build",
+    "build": "vite build && npm run build --workspace packages/daw",
     "build:plugin-ui": "vite build --config vite.config.plugin.js",
     "test": "vitest run",
     "test:ui": "vitest",

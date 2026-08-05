@@ -9,7 +9,7 @@ vi.stubGlobal('AudioParam', AudioParam);
 import EventBus from '../src/sys/EventBus';
 import { VirtualNode } from '../src/virtualNodes/VirtualNode';
 
-const makeAudioParam = (initial = 0) => ({
+const makeAudioParam = (initial = 0) => Object.assign(new AudioParam(), {
   value: initial,
   setValueAtTime: vi.fn(),
   linearRampToValueAtTime: vi.fn(),
@@ -54,6 +54,29 @@ describe('VirtualNode (base)', () => {
     await new Promise(r => setTimeout(r, 20));
 
     expect(node.data.gain).toBe(0.25);
+  });
+
+  it('ignores non-numeric text sent to an AudioParam instead of corrupting node.data', async () => {
+    const audioNode = makeAudioNode() as any;
+    const node = makeNode({ gain: 1 });
+    new VirtualNode(makeAudioContext(), audioNode, bus, node as any);
+
+    bus.emit('vn-1.params.updateParams', { data: { gain: 'hello' } });
+    await new Promise(r => setTimeout(r, 20));
+
+    expect(node.data.gain).toBe(1);
+    expect(audioNode.gain.value).toBe(1);
+  });
+
+  it('still accepts a numeric string sent to an AudioParam', async () => {
+    const audioNode = makeAudioNode() as any;
+    const node = makeNode({ gain: 1 });
+    new VirtualNode(makeAudioContext(), audioNode, bus, node as any);
+
+    bus.emit('vn-1.params.updateParams', { data: { gain: '0.5' } });
+    await new Promise(r => setTimeout(r, 20));
+
+    expect(node.data.gain).toBe(0.5);
   });
 
   it('connect delegates to audioNode.connect', () => {

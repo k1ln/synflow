@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Sparkles, Trash2, Repeat, Upload, Mic, Square, FolderOpen, Volume2 } from 'lucide-react';
 import type { Project, Track, AudioClip, AudioAsset, PianoNote } from '../model/project';
 import { StepGrid } from './StepGrid';
-import { PianoRoll } from './PianoRoll';
+import { PianoRoll, type RollView } from './PianoRoll';
 import { AudioTrackLane } from './AudioTrackLane';
 import { FxBar } from './FxBar';
 import { AutomationLaneRow } from './AutomationLaneRow';
@@ -10,7 +10,7 @@ import { flowKnobs } from '../synflow/knobs';
 import { findEntry, type LibraryEntry } from '../synflow/library';
 
 /** A parameter a track automation lane can target (volume or a track-FX knob). */
-export interface AutoTarget { key: string; label: string; nodeId: string; param: string; min: number; max: number; fxIndex?: number }
+export interface AutoTarget { key: string; label: string; nodeId: string; param: string; min: number; max: number; fxIndex?: number; scope?: 'instrument' | 'track' | 'master'; useId?: string }
 
 /** seconds → m:ss (or h:mm:ss past an hour) for the clip-length hint. */
 const fmtDur = (s: number) => {
@@ -35,13 +35,18 @@ export interface TrackEditorHandlers {
   onSetKey: (key: import('../model/project').MusicalKey | null) => void;
   onAddChord: (useId: string, midis: number[], start: number, length?: number) => void;
   onAddAutomation: (trackId: string, target: AutoTarget) => void;
+  onAddTimelineAutomation: (trackId: string, target: AutoTarget) => void;
   onPaintAutomation: (trackId: string, laneId: string, step: number, value: number) => void;
   onRemoveAutomation: (trackId: string, laneId: string) => void;
   onPlayNote: (useId: string, midi: number) => void;
   onKeyDown: (useId: string, midi: number) => void;
   onKeyUp: (useId: string, midi: number) => void;
   onAddUse: (poolId: string) => void;
+  onBrowseInstruments: () => void;
+  onTrackFxBrowse: () => void;
+  onUseFxBrowse: (useId: string) => void;
   onCreateUse: () => void;
+  onOpenInstrument: (useId: string) => void;
   onRemoveUse: (useId: string) => void;
   onUseFxAdd: (useId: string, fxId: string) => void;
   onUseFxRemove: (useId: string, index: number) => void;
@@ -54,6 +59,9 @@ export interface TrackEditorHandlers {
   onRename: (name: string) => void;
   onToggleLoop: () => void;
   onSetLength: (length: number) => void;
+  onSetTrackSwing: (trackId: string, swing: number | null) => void;
+  onSwitchPattern: (trackId: string, patternId: string) => void;
+  onAddPattern: (trackId: string, duplicate: boolean) => void;
   onSetVoices: (useId: string, voices: number) => void;
   onTrackVolume: (trackId: string, v: number) => void;
   onImportAudio: (trackId: string) => void;
@@ -63,8 +71,10 @@ export interface TrackEditorHandlers {
   onStopRec: () => void;
   onMoveAudioClip: (trackId: string, clipId: string, start: number) => void;
   onTrimAudioClip: (trackId: string, clipId: string, offset: number, duration: number) => void;
+  onSetAudioClipTE: (trackId: string, clipId: string, patch: Partial<AudioClip>) => void;
   onSplitAudioClip: (trackId: string, clipId: string, atSteps: number) => void;
   onRemoveAudioClip: (trackId: string, clipId: string) => void;
+  onDuplicateAudioClip: (trackId: string, clipId: string) => void;
   onAudioClipGain: (trackId: string, clipId: string, gain: number) => void;
   onNormalizeAudioClip: (trackId: string, clipId: string) => void;
   onFadeAudioClip: (trackId: string, clipId: string, fadeIn: number, fadeOut: number) => void;
@@ -83,10 +93,23 @@ export function TrackEditor({ project, track, effects, currentStep, recTrack, pr
 }) {
   const [picking, setPicking] = useState(false);
   const [autoSel, setAutoSel] = useState('');
+  // Each synth "use" reports its piano roll's px/scroll/length, so the automation
+  // lanes below can size and scroll themselves to stay lined up with the notes.
+  const [rollView, setRollView] = useState<Record<string, RollView>>({});
   const autoTargets: AutoTarget[] = [
-    { key: 'vol', label: 'Volume', nodeId: '__volume__', param: 'volume', min: 0, max: 1 },
+    { key: 'vol', label: 'Volume', nodeId: '__volume__', param: 'volume', min: 0, max: 1, scope: 'track' as const },
+    // track FX params
     ...track.fx.flatMap((ins, fxIndex) =>
-      flowKnobs(ins.flow ?? findEntry(ins.fxId)?.flow).map((k) => ({ key: `${fxIndex}:${k.nodeId}:${k.param}`, label: `${ins.name}: ${k.label}`, nodeId: k.nodeId, param: k.param, min: k.min, max: k.max, fxIndex }))),
+      flowKnobs(ins.flow ?? findEntry(ins.fxId)?.flow).map((k) => ({ key: `t:${fxIndex}:${k.nodeId}:${k.param}`, label: `Track FX · ${ins.name}: ${k.label}`, nodeId: k.nodeId, param: k.param, min: k.min, max: k.max, fxIndex, scope: 'track' as const }))),
+    // per-instrument: its own knobs (incl. .vstai params) + its insert-FX knobs
+    ...track.uses.flatMap((use) => {
+      const pool = project.pool.find((p) => p.id === use.poolId);
+      const iname = pool?.name ?? 'Instrument';
+      const own = flowKnobs(pool?.flow).map((k) => ({ key: `i:${use.id}:${k.nodeId}:${k.param}`, label: `${iname}: ${k.label}`, nodeId: k.nodeId, param: k.param, min: k.min, max: k.max, scope: 'instrument' as const, useId: use.id }));
+      const insFx = use.fx.flatMap((ins, fxIndex) =>
+        flowKnobs(ins.flow ?? findEntry(ins.fxId)?.flow).map((k) => ({ key: `if:${use.id}:${fxIndex}:${k.nodeId}:${k.param}`, label: `${iname} › ${ins.name}: ${k.label}`, nodeId: k.nodeId, param: k.param, min: k.min, max: k.max, fxIndex, scope: 'instrument' as const, useId: use.id })));
+      return [...own, ...insFx];
+    }),
   ];
   const poolName = (id: string) => project.pool.find((p) => p.id === id)?.name ?? '?';
   const addable = project.pool.filter((p) => (track.type === 'drums' ? p.kind === 'drum' : p.kind === 'synth'));
@@ -126,17 +149,31 @@ export function TrackEditor({ project, track, effects, currentStep, recTrack, pr
           </>
         ) : (
           <>
+            {/* Patterns: chips pick which pattern is edited (checkout); + adds, ⧉ duplicates. */}
+            <span className="te-patterns" title="Patterns — each arrangement clip can play a different one (click a clip's letter badge to cycle)">
+              {(track.patterns ?? []).map((p) => (
+                <button key={p.id} className={`te-pat ${p.id === (track.activePatternId ?? track.patterns?.[0]?.id) ? 'on' : ''}`}
+                  onClick={() => h.onSwitchPattern(track.id, p.id)} title={`Edit pattern ${p.name}`}>{p.name}</button>
+              ))}
+              <button className="te-pat add" onClick={() => h.onAddPattern(track.id, false)} title="New empty pattern">+</button>
+              <button className="te-pat add" onClick={() => h.onAddPattern(track.id, true)} title="Duplicate current pattern">⧉</button>
+            </span>
             <button className={`te-loop ${track.loop ? 'on' : ''}`} onClick={h.onToggleLoop} title={track.loop ? 'Looping (click to stop)' : 'Loop this track'}><Repeat size={13} /> loop</button>
             <label className="te-length" title="Pattern length in bars (a multi-bar pattern fills that many fields in the song arrangement)">bars
               <input type="number" min={1} max={64} value={Math.max(1, Math.round(track.length / project.totalSteps))}
                 onChange={(e) => h.onSetLength(Math.max(1, parseInt(e.target.value, 10) || 1) * project.totalSteps)} />
+            </label>
+            <label className="te-length" title="Groove override for THIS track (%): swing delays off-beat 16ths. Empty = follow the song's global swing.">swing
+              <input type="number" min={0} max={100} step={1} value={track.swing != null ? Math.round(track.swing * 100) : ''}
+                placeholder="—"
+                onChange={(e) => h.onSetTrackSwing(track.id, e.target.value === '' ? null : Math.max(0, Math.min(1, (parseInt(e.target.value, 10) || 0) / 100)))} />
             </label>
             <label className="te-length" title="Exact pattern length in steps (for polymeter — not a whole number of bars)">steps
               <input type="number" min={1} max={256} value={track.length} onChange={(e) => h.onSetLength(parseInt(e.target.value, 10) || 1)} />
             </label>
             <button className="te-addbtn" onClick={() => h.onCreateUse()} title={`Create a brand-new ${track.type === 'drums' ? 'drum' : 'synth'} in Synflow and add it here`}><Sparkles size={13} /> new {track.type === 'drums' ? 'drum' : 'synth'}</button>
             <div className="te-add">
-              <button className="te-addbtn" onClick={() => setPicking((p) => !p)}><Plus size={14} /> add {track.type === 'drums' ? 'drum' : 'synth'}</button>
+              <button className="te-addbtn" onClick={() => h.onBrowseInstruments()} title="Browse instruments: project pool, Synflow library and the VibeSynth gallery"><Plus size={14} /> add {track.type === 'drums' ? 'drum' : 'synth'}</button>
               {picking && (
                 <div className="te-menu" onMouseLeave={() => setPicking(false)}>
                   {addable.length === 0 && <span className="te-none">no {track.type === 'drums' ? 'drums' : 'synths'} in pool</span>}
@@ -154,8 +191,10 @@ export function TrackEditor({ project, track, effects, currentStep, recTrack, pr
           previewKey={previewKey} onPlay={(clip) => h.onPlayAudioClip(clip)}
           onMove={(clipId, start) => h.onMoveAudioClip(track.id, clipId, start)}
           onTrim={(clipId, offset, duration) => h.onTrimAudioClip(track.id, clipId, offset, duration)}
+          onSet={(clipId, patch) => h.onSetAudioClipTE(track.id, clipId, patch)}
           onSplit={(clipId, atSteps) => h.onSplitAudioClip(track.id, clipId, atSteps)}
           onRemove={(clipId) => h.onRemoveAudioClip(track.id, clipId)}
+          onDuplicate={(clipId) => h.onDuplicateAudioClip(track.id, clipId)}
           onGain={(clipId, gain) => h.onAudioClipGain(track.id, clipId, gain)}
           onNormalize={(clipId) => h.onNormalizeAudioClip(track.id, clipId)}
           onFade={(clipId, fadeIn, fadeOut) => h.onFadeAudioClip(track.id, clipId, fadeIn, fadeOut)}
@@ -175,7 +214,7 @@ export function TrackEditor({ project, track, effects, currentStep, recTrack, pr
               ) : (
                 <div className="te-synth">
                   <div className="te-synth-head">
-                    <span className="te-synth-name">{poolName(use.poolId)}</span>
+                    <button className="te-synth-name te-open-inst" title="Open this instrument (GUI · knobs · keys) in the Live view" onClick={() => h.onOpenInstrument(use.id)}>{poolName(use.poolId)}</button>
                     <label className="te-voices" title="Polyphony — number of voices">
                       voices
                       <input type="number" min={1} max={16} value={use.voices ?? 1} onChange={(e) => h.onSetVoices(use.id, parseInt(e.target.value, 10) || 1)} />
@@ -189,6 +228,7 @@ export function TrackEditor({ project, track, effects, currentStep, recTrack, pr
                     onTranspose={h.onTranspose} onHumanize={h.onHumanize}
                     musicalKey={project.key} onSetKey={h.onSetKey} onAddChord={h.onAddChord}
                     onKeyDown={h.onKeyDown} onKeyUp={h.onKeyUp}
+                    onViewChange={(v) => setRollView((r) => (r[use.id]?.px === v.px && r[use.id]?.scrollLeft === v.scrollLeft && r[use.id]?.disp === v.disp ? r : { ...r, [use.id]: v }))}
                   />
                 </div>
               )}
@@ -196,7 +236,7 @@ export function TrackEditor({ project, track, effects, currentStep, recTrack, pr
             </div>
             <FxBar
               label="Instrument FX" color="var(--cat-mod)" fx={use.fx} effects={effects} compact
-              onAdd={(fx) => h.onUseFxAdd(use.id, fx)} onRemove={(i) => h.onUseFxRemove(use.id, i)} onEdit={(i) => h.onUseFxEdit(use.id, i)}
+              onAdd={(fx) => h.onUseFxAdd(use.id, fx)} onBrowse={() => h.onUseFxBrowse(use.id)} onRemove={(i) => h.onUseFxRemove(use.id, i)} onEdit={(i) => h.onUseFxEdit(use.id, i)}
               onKnob={(i, nodeId, param, v) => h.onUseFxKnob(use.id, i, nodeId, param, v)}
             />
           </div>
@@ -206,7 +246,7 @@ export function TrackEditor({ project, track, effects, currentStep, recTrack, pr
 
       <FxBar
         label="Track FX" fx={track.fx} effects={effects}
-        onAdd={h.onTrackFxAdd} onRemove={h.onTrackFxRemove} onEdit={h.onTrackFxEdit} onKnob={h.onTrackFxKnob}
+        onAdd={h.onTrackFxAdd} onBrowse={h.onTrackFxBrowse} onRemove={h.onTrackFxRemove} onEdit={h.onTrackFxEdit} onKnob={h.onTrackFxKnob}
       />
 
       {(track.type === 'drums' || track.type === 'synth') && (
@@ -217,15 +257,23 @@ export function TrackEditor({ project, track, effects, currentStep, recTrack, pr
               <option value="">param…</option>
               {autoTargets.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
             </select>
-            <button className="pr-quant" disabled={!autoSel} title="Add automation lane" onClick={() => { const tgt = autoTargets.find((t) => t.key === autoSel); if (tgt) h.onAddAutomation(track.id, tgt); }}>＋ Lane</button>
+            <button className="pr-quant" disabled={!autoSel} title="Add a PATTERN automation lane (steps, loops with the pattern)" onClick={() => { const tgt = autoTargets.find((t) => t.key === autoSel); if (tgt) h.onAddAutomation(track.id, tgt); }}>＋ Lane</button>
+            <button className="pr-quant" disabled={!autoSel} title="Add a SONG automation curve (linear ramps over the whole arrangement — edit it on the Song timeline)" onClick={() => { const tgt = autoTargets.find((t) => t.key === autoSel); if (tgt) h.onAddTimelineAutomation(track.id, tgt); }}>＋ Song curve</button>
           </div>
-          {track.automation.map((lane) => (
+          {track.automation.map((lane) => {
+            // Track-scope lanes (no useId, e.g. Volume) align to the first instrument's
+            // roll — there's one automation section per track even with several uses.
+            const view = rollView[lane.useId ?? track.uses[0]?.id ?? ''];
+            return (
             <div className="te-auto-lane" key={lane.id}>
-              <span className="te-auto-name" title={`${lane.nodeId === '__volume__' ? 'Volume' : lane.param}`}>{lane.nodeId === '__volume__' ? 'Volume' : `${lane.param}`}</span>
-              <AutomationLaneRow values={lane.values} min={lane.min} max={lane.max} onPaint={(step, value) => h.onPaintAutomation(track.id, lane.id, step, value)} />
+              <span className="te-auto-name" title={`${lane.label ?? (lane.nodeId === '__volume__' ? 'Volume' : lane.param)}${lane.points?.length ? ' — song curve (edit on the Song timeline)' : ''}`}>{lane.label ?? (lane.nodeId === '__volume__' ? 'Volume' : `${lane.param}`)}{lane.points?.length ? ' ⟋' : ''}</span>
+              {lane.points?.length
+                ? <span className="te-auto-songnote">song curve — edit on the Song timeline</span>
+                : <AutomationLaneRow values={lane.values} min={lane.min} max={lane.max} view={view} onPaint={(step, value) => h.onPaintAutomation(track.id, lane.id, step, value)} />}
               <button className="te-auto-x" title="Remove lane" onClick={() => h.onRemoveAutomation(track.id, lane.id)}><Trash2 size={12} /></button>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

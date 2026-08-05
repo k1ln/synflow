@@ -20,8 +20,8 @@ import { compileWasmModule } from "../wasmUtils";
  * - frequency  : audio-rate pitch modulation (summed into the frequency param)
  * - output     : audio out
  *
- * Continuous controls (frequency/decay/tone) are AudioParams handled by the base
- * class once this.audioNode points at the worklet.
+ * Continuous controls (frequency/decay/tone/attack/scatter/muffle) are AudioParams
+ * handled by the base class once this.audioNode points at the worklet.
  */
 export class VirtualKarplusNode extends VirtualNode<
   CustomNode & KarplusFlowNodeProps,
@@ -36,7 +36,7 @@ export class VirtualKarplusNode extends VirtualNode<
   private workletReady = false;
   private pendingParamInputs: { source: AudioNode; handle: string }[] = [];
 
-  private initial: { frequency: number; decay: number; tone: number };
+  private initial: { frequency: number; decay: number; tone: number; attack: number; scatter: number; muffle: number };
 
   constructor(
     audioContext: AudioContext,
@@ -49,6 +49,9 @@ export class VirtualKarplusNode extends VirtualNode<
       frequency: typeof d.frequency === "number" ? d.frequency : 220,
       decay: typeof d.decay === "number" ? d.decay : 0.6,
       tone: typeof d.tone === "number" ? d.tone : 0.6,
+      attack: typeof d.attack === "number" ? d.attack : 0.15,
+      scatter: typeof d.scatter === "number" ? d.scatter : 0.3,
+      muffle: typeof d.muffle === "number" ? d.muffle : 0.2,
     };
     if (audioContext) {
       this.inputGain = audioContext.createGain();
@@ -103,6 +106,9 @@ export class VirtualKarplusNode extends VirtualNode<
       if (typeof data.frequency === "number") this.initial.frequency = data.frequency;
       if (typeof data.decay === "number") this.initial.decay = data.decay;
       if (typeof data.tone === "number") this.initial.tone = data.tone;
+      if (typeof data.attack === "number") this.initial.attack = data.attack;
+      if (typeof data.scatter === "number") this.initial.scatter = data.scatter;
+      if (typeof data.muffle === "number") this.initial.muffle = data.muffle;
     }
     if (this.workletReady) this.applyInitialToNode();
   }
@@ -114,6 +120,9 @@ export class VirtualKarplusNode extends VirtualNode<
     set("frequency", this.initial.frequency);
     set("decay", this.initial.decay);
     set("tone", this.initial.tone);
+    set("attack", this.initial.attack);
+    set("scatter", this.initial.scatter);
+    set("muffle", this.initial.muffle);
   }
 
   /** Trigger a pluck (called from the note-on subscription). */

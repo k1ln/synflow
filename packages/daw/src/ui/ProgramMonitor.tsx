@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { X, Film, Diamond, Palette, BarChart3, RotateCcw, SlidersHorizontal } from 'lucide-react';
-import { VIDEO_BLENDS, TITLE_APPEARS, type ClipColor, type ClipTransform, type Easing, type Keyframe, type Project, type SourceLayout, type TitleAppear, type VideoBlend, type VideoClip } from '../model/project';
+import { X, Film, Diamond, Palette, BarChart3, RotateCcw } from 'lucide-react';
+import { VIDEO_BLENDS, TITLE_APPEARS, type ClipColor, type ClipTransform, type Easing, type Keyframe, type Project, type TitleAppear, type VideoBlend, type VideoClip } from '../model/project';
 import { evalTransform, drawVideoLayer, drawTitle, upsertKeyframe } from '../audio/videoTransform';
 import { TITLE_FONTS } from '../fonts';
 
@@ -28,23 +28,8 @@ const PROPS: { key: TKey; label: string; min: number; max: number; step: number 
  * Clip-local time comes from each playing <video>'s currentTime, so transform
  * animation stays smooth between the coarse step ticks. See docs/VIDEO.md.
  */
-export interface CaptureProps {
-  cameraStream: MediaStream | null;
-  screenStream: MediaStream | null;
-  micOn: boolean;
-  cameraLayout: SourceLayout;
-  screenLayout: SourceLayout;
-  setLayout: (key: 'camera' | 'screen', patch: Partial<SourceLayout>) => void;
-  cams: MediaDeviceInfo[];
-  mics: MediaDeviceInfo[];
-  camDeviceId?: string;
-  micDeviceId?: string;
-  selectCam: (id: string) => void;
-  selectMic: (id: string) => void;
-}
-
 export function ProgramMonitor({
-  project, currentStep, isPlaying, getVideoUrl, onClose, onSetClip, canvasRef, capture, dock = false,
+  project, currentStep, isPlaying, getVideoUrl, onClose, onSetClip, canvasRef, dock = false,
 }: {
   project: Project;
   dock?: boolean;
@@ -54,15 +39,12 @@ export function ProgramMonitor({
   onClose: () => void;
   onSetClip: (trackId: string, clipId: string, patch: Partial<VideoClip>) => void;
   canvasRef: React.MutableRefObject<HTMLCanvasElement | null>;
-  capture: CaptureProps;
 }) {
-  const { cameraStream, screenStream, micOn, cameraLayout, screenLayout, setLayout, cams, mics, camDeviceId, micDeviceId, selectCam, selectMic } = capture;
   const secPerStep = 60 / project.bpm / project.stepsPerBeat;
   const t = Math.max(0, currentStep) * secPerStep;
   const [ease, setEase] = useState<Easing>('ease');
   const [showColor, setShowColor] = useState(false);
   const [showScope, setShowScope] = useState(false);
-  const [showSources, setShowSources] = useState(false);
   const histoRef = useRef<HTMLCanvasElement>(null);
 
   const videoTracks = useMemo(() => project.tracks.filter((tr) => tr.type === 'video'), [project.tracks]);
@@ -84,14 +66,10 @@ export function ProgramMonitor({
   const topLocalT = top ? Math.max(0, t - top.clip.start * secPerStep) : 0;     // clip-local seconds at playhead
 
   const vids = useRef<Map<string, HTMLVideoElement>>(new Map());
-  const camVidRef = useRef<HTMLVideoElement | null>(null);
-  const screenVidRef = useRef<HTMLVideoElement | null>(null);
   const layersRef = useRef<{ clip: VideoClip }[]>([]);
   layersRef.current = layers.map((l) => ({ clip: l.clip }));
   const frameRef = useRef({ t: 0, secPerStep: 0.125 });
   frameRef.current = { t, secPerStep };                       // for title localT in the draw loop
-  const layoutRef = useRef({ camera: cameraLayout, screen: screenLayout });
-  layoutRef.current = { camera: cameraLayout, screen: screenLayout }; // live-source rects for the draw loop
 
   // Composite every active layer each animation frame, with its evaluated transform.
   useEffect(() => {
@@ -102,12 +80,6 @@ export function ProgramMonitor({
         const W = cv.width, H = cv.height;
         ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
         ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
-        // Screen capture (background) at its layout rect, aspect-correct.
-        const sv = screenVidRef.current, sL = layoutRef.current.screen;
-        if (sv && sv.videoWidth) {
-          const w = sL.w * W, h = w * (sv.videoHeight / sv.videoWidth);
-          try { ctx.drawImage(sv, sL.x * W, sL.y * H, w, h); } catch { /* not ready */ }
-        }
         for (const l of layersRef.current) {
           if (l.clip.text != null) {                          // title clip → burn-in text
             const localT = Math.max(0, frameRef.current.t - l.clip.start * frameRef.current.secPerStep);
@@ -119,17 +91,6 @@ export function ProgramMonitor({
           const localT = Math.max(0, el.currentTime - (l.clip.offset ?? 0)); // smooth, from the playing video
           drawVideoLayer(ctx, el, W, H, evalTransform(l.clip, localT), l.clip.blend, l.clip.color);
         }
-        // Facecam = rounded overlay at its layout rect, aspect-correct.
-        const cv2 = camVidRef.current, cL = layoutRef.current.camera;
-        if (cv2 && cv2.videoWidth) {
-          const cw = cL.w * W, ch = cw * (cv2.videoHeight / cv2.videoWidth);
-          const x = cL.x * W, y = cL.y * H, r = Math.min(cw, ch) * 0.12;
-          const rr = () => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + cw, y, x + cw, y + ch, r); ctx.arcTo(x + cw, y + ch, x, y + ch, r); ctx.arcTo(x, y + ch, x, y, r); ctx.arcTo(x, y, x + cw, y, r); ctx.closePath(); };
-          ctx.save(); rr(); ctx.clip();
-          try { ctx.drawImage(cv2, x, y, cw, ch); } catch { /* not ready */ }
-          ctx.restore();
-          ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = Math.max(1, W * 0.003); rr(); ctx.stroke();
-        }
         ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
       }
       raf = requestAnimationFrame(draw);
@@ -137,18 +98,6 @@ export function ProgramMonitor({
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
   }, []);
-
-  // Bind live MediaStreams to offscreen <video> elements (decoded for the canvas).
-  useEffect(() => {
-    const v = camVidRef.current; if (!v) return;
-    v.srcObject = cameraStream ?? null;
-    if (cameraStream) void v.play().catch(() => { /* gesture */ });
-  }, [cameraStream]);
-  useEffect(() => {
-    const v = screenVidRef.current; if (!v) return;
-    v.srcObject = screenStream ?? null;
-    if (screenStream) void v.play().catch(() => { /* gesture */ });
-  }, [screenStream]);
 
   // RGB histogram scope: periodically sample the program canvas (downsampled).
   useEffect(() => {
@@ -230,7 +179,6 @@ export function ProgramMonitor({
     <div className={`pgm${dock ? ' pgm-dock' : ''}`}>
       <div className="pgm-head">
         <span className="pgm-title"><Film size={12} /> Program{layers.length > 1 ? ` · ${layers.length} layers` : ''}</span>
-        {(cameraStream || screenStream || micOn) && <button className={`pgm-close ${showSources ? 'on' : ''}`} title="Sources / layout" onClick={() => setShowSources((s) => !s)}><SlidersHorizontal size={13} /></button>}
         <button className={`pgm-close ${showScope ? 'on' : ''}`} title="Histogram scope" onClick={() => setShowScope((s) => !s)}><BarChart3 size={13} /></button>
         <button className="pgm-close" title="Hide preview" onClick={onClose}><X size={13} /></button>
       </div>
@@ -238,10 +186,8 @@ export function ProgramMonitor({
         <div className="pgm-stage">
       <div className="pgm-screen">
         <canvas ref={canvasRef} width={1280} height={720} className="pgm-canvas" />
-        {layers.length === 0 && !cameraStream && !screenStream && <div className="pgm-empty">{assets.length ? 'No video at the playhead' : 'Add a clip, or start the camera / screen'}</div>}
+        {layers.length === 0 && <div className="pgm-empty">{assets.length ? 'No video at the playhead' : 'Add a clip to see it here'}</div>}
         <div style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
-          <video ref={camVidRef} muted playsInline autoPlay />
-          <video ref={screenVidRef} muted playsInline autoPlay />
           {assets.map((a) => {
             const url = getVideoUrl(a.id);
             return (
@@ -257,32 +203,6 @@ export function ProgramMonitor({
       </div>
         </div>
         <div className="pgm-controls">
-          {showSources && (cameraStream || screenStream || micOn) && (
-            <div className="pgm-sources">
-              {screenStream && <SourceRow label="Screen" L={screenLayout} onSet={(p) => setLayout('screen', p)} />}
-              {cameraStream && (
-                <>
-                  <div className="pgm-srow">
-                    <span className="pgm-tlabel">Camera</span>
-                    <select className="pgm-color-sel pgm-fontsel" value={camDeviceId ?? ''} title="Camera device" onChange={(e) => selectCam(e.target.value)}>
-                      {!camDeviceId && <option value="">Default</option>}
-                      {cams.map((d, i) => <option key={d.deviceId} value={d.deviceId}>{d.label || `Camera ${i + 1}`}</option>)}
-                    </select>
-                  </div>
-                  <SourceRow label="Cam layout" L={cameraLayout} onSet={(p) => setLayout('camera', p)} />
-                </>
-              )}
-              {micOn && (
-                <div className="pgm-srow">
-                  <span className="pgm-tlabel">Mic</span>
-                  <select className="pgm-color-sel pgm-fontsel" value={micDeviceId ?? ''} title="Microphone device" onChange={(e) => selectMic(e.target.value)}>
-                    {!micDeviceId && <option value="">Default</option>}
-                    {mics.map((d, i) => <option key={d.deviceId} value={d.deviceId}>{d.label || `Mic ${i + 1}`}</option>)}
-                  </select>
-                </div>
-              )}
-            </div>
-          )}
           {showScope && <canvas ref={histoRef} width={200} height={46} className="pgm-histo" />}
       {top && (
         <div className="pgm-inspector">
@@ -381,35 +301,6 @@ export function ProgramMonitor({
         </div>
       )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-/** One live source's layout controls: size + position sliders + corner presets. */
-function SourceRow({ label, L, onSet }: { label: string; L: SourceLayout; onSet: (p: Partial<SourceLayout>) => void }) {
-  const corner = (x: number, y: number) => onSet({ x, y });
-  return (
-    <div className="pgm-src-block">
-      <div className="pgm-srow">
-        <span className="pgm-tlabel">{label}</span>
-        <label className="pgm-ctrl" title="Size">Size
-          <input type="range" min={0.1} max={1} step={0.01} value={L.w} onChange={(e) => onSet({ w: parseFloat(e.target.value) })} />
-        </label>
-        <div className="pgm-corners" title="Snap to a corner">
-          <button onClick={() => corner(0.02, 0.03)}>◰</button>
-          <button onClick={() => corner(1 - L.w - 0.02, 0.03)}>◳</button>
-          <button onClick={() => corner(0.02, 0.97 - L.w)}>◱</button>
-          <button onClick={() => corner(1 - L.w - 0.02, 0.97 - L.w)}>◲</button>
-        </div>
-      </div>
-      <div className="pgm-srow">
-        <label className="pgm-ctrl" title="Horizontal position">X
-          <input type="range" min={0} max={1} step={0.01} value={L.x} onChange={(e) => onSet({ x: parseFloat(e.target.value) })} />
-        </label>
-        <label className="pgm-ctrl" title="Vertical position">Y
-          <input type="range" min={0} max={1} step={0.01} value={L.y} onChange={(e) => onSet({ y: parseFloat(e.target.value) })} />
-        </label>
       </div>
     </div>
   );

@@ -13,7 +13,10 @@ export interface LibraryEntry {
 }
 
 // Eagerly bundle every flow file in packages/daw/flows/**.
-const files = import.meta.glob('../../flows/**/*.json', { eager: true }) as Record<string, { default: any } | any>;
+// `import.meta.glob` is Vite-only; guard it so the module also imports under plain
+// Node (tests) — there it just yields an empty catalogue.
+const _glob = (import.meta as unknown as { glob?: (p: string, o: unknown) => Record<string, unknown> }).glob;
+const files = (typeof _glob === 'function' ? _glob('../../flows/**/*.json', { eager: true }) : {}) as Record<string, { default: any } | any>;
 
 function build(): LibraryEntry[] {
   const out: LibraryEntry[] = [];

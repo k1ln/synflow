@@ -641,7 +641,12 @@ export class AudioGraphManager {
                     console.warn('[connect] failed node->node', { sourceId, targetId, e });
                 }
             } else if (targetParamHandle === "destination-input") {
-                if (targetNodeForParams instanceof AudioContext && sourceNode instanceof AudioNode) {
+                // The master-out virtual node's "audioNode" IS the context itself.
+                // (instanceof AudioContext misses OfflineAudioContext — both extend
+                // BaseAudioContext — which silently disconnected offline bounces.)
+                const isContext = targetNodeForParams === (this.audioContext as unknown)
+                    || (typeof BaseAudioContext !== 'undefined' && targetNodeForParams instanceof BaseAudioContext);
+                if (isContext && sourceNode instanceof AudioNode) {
                     try {
                         sourceNode.connect(this.outputNode);
                         this.addMapConnections(sourceId, targetId);
@@ -879,6 +884,49 @@ export class AudioGraphManager {
         this.eventBus.emit(`${nodeId}.params.updateParams`, { nodeid: nodeId, data: { [key]: value } });
     }
 
+    /** Sample-accurate param set: schedules the value on the target AudioParam at
+     *  AudioContext time `when` (e.g. a note's pitch, set ahead by a sequencer).
+     *  `smooth` > 0 uses setTargetAtTime with that time constant instead of a step.
+     *  Falls back to a control-rate setParam (now) when no AudioParam is found. */
+    public setParamAtTime(nodeId: string, key: string, value: number | string, when: number, smooth = 0): boolean {
+        const param = this.getAudioParam(nodeId, key);
+        if (param && typeof value === 'number' && Number.isFinite(value)) {
+            let v = value;
+            if (key === 'frequency') v = Math.max(0.0001, Math.min(24000, v));
+            if (key === 'Q') v = Math.max(0.0001, Math.min(1000, v));
+            const t = Math.max(this.audioContext.currentTime, when);
+            try {
+                if (smooth > 0) param.setTargetAtTime(v, t, smooth);
+                else param.setValueAtTime(v, t);
+            } catch { return false; }
+            // Keep the model in sync so a graph rebuild starts from the same value.
+            const n: any = (this.nodesRef.current || []).find((x: any) => x.id === nodeId);
+            if (n?.data && key in n.data) n.data[key] = v;
+            return true;
+        }
+        this.setParam(nodeId, key, value);
+        return false;
+    }
+
+    /** Post a raw message to a worklet-backed node's processor port (e.g. a
+     *  .vstai GUI's sample upload). No-op if the node has no port. */
+    public postToNode(nodeId: string, message: unknown, transfer?: Transferable[]): boolean {
+        const v: any = this.virtualNodes.get(nodeId);
+        const port: MessagePort | undefined = v?.audioNode?.port;
+        if (!port) return false;
+        try { transfer?.length ? port.postMessage(message, transfer) : port.postMessage(message); } catch { return false; }
+        return true;
+    }
+
+    /** Linear-ramp a node's AudioParam to `value` at time `when` (ramps from the
+     *  previous scheduled event — pair with setParamAtTime for exact segments). */
+    public rampParamTo(nodeId: string, key: string, value: number, when: number): boolean {
+        const param = this.getAudioParam(nodeId, key);
+        if (!param || !Number.isFinite(value)) return false;
+        try { param.linearRampToValueAtTime(value, Math.max(this.audioContext.currentTime, when)); } catch { return false; }
+        return true;
+    }
+
     /** Audio-rate automation: connect a host-owned signal to a node's AudioParam. */
     public connectToParam(source: AudioNode, nodeId: string, key: string): boolean {
         const param = this.getAudioParam(nodeId, key);
@@ -916,12 +964,49 @@ export class AudioGraphManager {
     // A node reacts to `${id}.${handle}.receiveNodeOn/Off`; source/trigger nodes
     // (Button, Mouse, Midi) react to `${id}.${handle}.sendNodeOn/Off`.
 
-    /** Drive a node as if an upstream edge fired it (e.g. an ADSR/Input main-input). */
+    // Node types whose On/Off handlers anchor scheduling at `payload.when` (an
+    // AudioContext time sent ahead by a sequencer) — events for these are emitted
+    // immediately and executed sample-accurately on the audio clock. Other types
+    // get the event delivered by timer at ~`when` (the pre-existing behaviour) so
+    // they never fire early. Extend this set as node classes learn `when`.
+    private static readonly WHEN_CAPABLE = new Set(['ADSRFlowNode', 'AutomationFlowNode', 'AiVstFlowNode']);
+
+    private nodeHonorsWhen(nodeId: string): boolean {
+        const idType = this.getNodeTypeFromId(nodeId);
+        if (idType && AudioGraphManager.WHEN_CAPABLE.has(idType)) return true;
+        // Id-suffix parsing only works for the `name.Type` convention; flows that give
+        // a node a plain id (e.g. .vstai's AiVstFlowNode) still declare their real
+        // type on the node itself, so fall back to that before giving up.
+        const declaredType = this.nodesRef.current.find((n: any) => n.id === nodeId)?.type;
+        return !!declaredType && AudioGraphManager.WHEN_CAPABLE.has(declaredType);
+    }
+
+    private isOfflineContext(): boolean {
+        return typeof OfflineAudioContext !== 'undefined' && this.audioContext instanceof OfflineAudioContext;
+    }
+
+    /** Emit now for when-capable nodes; otherwise defer delivery until ~when
+     *  (timers don't track an OfflineAudioContext, so offline always emits now). */
+    private dispatchNodeEvent(channel: string, payload: Record<string, any>): void {
+        const when = typeof payload?.when === 'number' ? payload.when : undefined;
+        const deliver = () => this.eventBus.emit(channel, payload);
+        if (when !== undefined && !this.isOfflineContext()) {
+            const nodeId = channel.slice(0, channel.indexOf('.'));
+            if (!this.nodeHonorsWhen(nodeId)) {
+                const delayMs = (when - this.audioContext.currentTime) * 1000;
+                if (delayMs > 1) { setTimeout(deliver, delayMs); return; }
+            }
+        }
+        deliver();
+    }
+
+    /** Drive a node as if an upstream edge fired it (e.g. an ADSR/Input main-input).
+     *  `payload.when` (AudioContext seconds) schedules the event sample-accurately. */
     public receiveNodeOn(nodeId: string, handle = 'main-input', payload: Record<string, any> = {}): void {
-        this.eventBus.emit(`${nodeId}.${handle}.receiveNodeOn`, { nodeid: nodeId, ...payload });
+        this.dispatchNodeEvent(`${nodeId}.${handle}.receiveNodeOn`, { nodeid: nodeId, ...payload });
     }
     public receiveNodeOff(nodeId: string, handle = 'main-input', payload: Record<string, any> = {}): void {
-        this.eventBus.emit(`${nodeId}.${handle}.receiveNodeOff`, { nodeid: nodeId, ...payload });
+        this.dispatchNodeEvent(`${nodeId}.${handle}.receiveNodeOff`, { nodeid: nodeId, ...payload });
     }
     /** Fire a source/trigger node's own output (Button/Mouse/Midi style). */
     public sendNodeOn(nodeId: string, handle = 'main-input', payload: Record<string, any> = {}): void {

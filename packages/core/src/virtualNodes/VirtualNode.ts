@@ -36,11 +36,6 @@ export class VirtualNode<U extends { id: string; data?: any }, T extends AudioNo
 
             if (audioNode) {
                 Object.keys(data.data).forEach((key) => {
-                    //TODO i think i dont want this. 
-                    if (key in this.node.data) {
-                        this.node.data[key] = data.data[key];
-                        updatedKeys[key] = data.data[key];
-                    }
                     let target: any = undefined;
 
                     if (key in audioNode) {
@@ -51,10 +46,31 @@ export class VirtualNode<U extends { id: string; data?: any }, T extends AudioNo
                     ) {
                         target = audioNode.parameters.get(key);
                     }
+
+                    let incoming = data.data[key];
+
+                    // AudioParams only ever hold finite numbers. Coerce numeric
+                    // strings, but reject anything else *before* touching
+                    // node.data or the param — otherwise a stray string (e.g.
+                    // from a text-producing node wired into a numeric param)
+                    // permanently corrupts the model even though the AudioParam
+                    // write itself fails.
+                    if (target !== undefined && target instanceof AudioParam) {
+                        const coerced = typeof incoming === 'number' ? incoming : Number(incoming);
+                        if (typeof coerced !== 'number' || !Number.isFinite(coerced)) {
+                            console.warn('[VirtualNode] ignoring non-numeric value for AudioParam', key, incoming);
+                            return;
+                        }
+                        incoming = coerced;
+                    }
+
+                    //TODO i think i dont want this.
+                    if (key in this.node.data) {
+                        this.node.data[key] = incoming;
+                        updatedKeys[key] = incoming;
+                    }
+
                     if (target !== undefined) {
-                        let incoming = data.data[key];
-                        const potentialNumber = incoming * 1;
-                        if (typeof potentialNumber == "number" && !isNaN(potentialNumber)) { incoming = data.data[key] * 1; }
                         if (target instanceof AudioParam) {
                             if (typeof incoming === 'number' && Number.isFinite(incoming)) {
                                 let v = incoming * 1;
@@ -100,16 +116,6 @@ export class VirtualNode<U extends { id: string; data?: any }, T extends AudioNo
                                         this._lastParamValue[key] = v;
                                     } catch (e) {
                                         console.warn('[VirtualNode] automation set failed', key, v, e);
-                                    }
-                                }
-                            } else if (typeof incoming == "string") {
-                                if (audioNode instanceof AudioWorkletNode) {
-                                    audioNode.port.postMessage({ type: "set" + key, value: incoming });
-                                } else {
-                                    try {
-                                        target.value = incoming;
-                                    } catch (e) {
-                                        console.warn('[VirtualNode] AudioParam string set failed', key, incoming, e);
                                     }
                                 }
                             }

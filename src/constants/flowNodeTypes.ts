@@ -58,6 +58,7 @@ import UnisonBeginFlowNode from '../nodes/UnisonBeginFlowNode';
 import UnisonEndFlowNode from '../nodes/UnisonEndFlowNode';
 import CommandInFlowNode from '../nodes/CommandInFlowNode';
 import CommandOutFlowNode from '../nodes/CommandOutFlowNode';
+import AiVstFlowNode from '../nodes/AiVstFlowNode';
 
 export const nodeTypes = {
   MasterOutFlowNode,
@@ -120,6 +121,7 @@ export const nodeTypes = {
   UnisonEndFlowNode,
   CommandInFlowNode,
   CommandOutFlowNode,
+  AiVstFlowNode,
 };
 
 export const orderedNodeTypes = Object.fromEntries(

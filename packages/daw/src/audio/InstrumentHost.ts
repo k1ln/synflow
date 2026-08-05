@@ -23,8 +23,11 @@ export class InstrumentHost {
   private pitchTargets: Array<{ nodeId: string; param: string }> = [];
   private commandName: string | null = null;
   private triggerNodeId: string | null = null;
+  // When the last scheduled trigger fires (AudioContext seconds) — threaded into
+  // release as `onWhen` so the engine can anchor a future release exactly.
+  private lastTriggerWhen: number | null = null;
 
-  constructor(ctx: BaseAudioContext, private flow: Flow, destination?: AudioNode) {
+  constructor(private ctx: BaseAudioContext, private flow: Flow, destination?: AudioNode) {
     this.bus = new EventBus();
     // Insert a velocity VCA between the engine output and the real destination.
     const vca = ctx.createGain();
@@ -59,26 +62,70 @@ export class InstrumentHost {
   /** Whether this instrument can be triggered at all. */
   get playable(): boolean { return this.triggers.length > 0 || this.commandName !== null || this.triggerNodeId !== null; }
 
-  /** Note/step ON — sets velocity + pitch (if given) then injects receiveNodeOn into the trigger node(s). */
-  trigger(payload: Record<string, any> = {}): void {
-    if (this.vca && payload.velocity != null) this.vca.gain.value = Math.max(0, Math.min(1, payload.velocity));
-    if (payload.frequency != null) {
-      for (const p of this.pitchTargets) this.engine.setParam(p.nodeId, p.param, payload.frequency);
+  /** Note/step ON — sets velocity + pitch (if given) then injects receiveNodeOn into
+   *  the trigger node(s). `when` (AudioContext seconds) schedules everything sample-
+   *  accurately on the audio clock; omitted = immediately (live keys/MIDI input). */
+  trigger(payload: Record<string, any> = {}, when?: number): void {
+    if (this.vca && payload.velocity != null) {
+      const v = Math.max(0, Math.min(1, payload.velocity));
+      if (when != null) this.vca.gain.setValueAtTime(v, Math.max(when, this.ctx.currentTime));
+      else this.vca.gain.value = v;
     }
-    if (this.triggers.length) { for (const t of this.triggers) this.engine.receiveNodeOn(t.nodeId, t.handle, payload); return; }
-    if (this.commandName) { this.engine.command(this.commandName, payload); return; }
-    if (this.triggerNodeId) this.engine.sendNodeOn(this.triggerNodeId, 'main-input', payload);
+    if (payload.frequency != null) {
+      for (const p of this.pitchTargets) {
+        if (when != null) this.engine.setParamAtTime(p.nodeId, p.param, payload.frequency, when);
+        else this.engine.setParam(p.nodeId, p.param, payload.frequency);
+      }
+    }
+    this.lastTriggerWhen = when ?? null;
+    const pl = when != null ? { ...payload, when } : payload;
+    if (this.triggers.length) { for (const t of this.triggers) this.engine.receiveNodeOn(t.nodeId, t.handle, pl); return; }
+    // Command/button paths don't schedule yet — defer delivery until ~when so a
+    // scheduled call never fires early (same net behaviour as before).
+    this.deferUntil(when, () => {
+      if (this.commandName) { this.engine.command(this.commandName, pl); return; }
+      if (this.triggerNodeId) this.engine.sendNodeOn(this.triggerNodeId, 'main-input', pl);
+    });
   }
-  /** Note/step OFF — injects receiveNodeOff so envelopes release. */
-  release(payload: Record<string, any> = {}): void {
-    if (this.triggers.length) { for (const t of this.triggers) this.engine.receiveNodeOff(t.nodeId, t.handle, payload); return; }
-    if (this.commandName) { this.engine.commandOff(this.commandName, payload); return; }
-    if (this.triggerNodeId) this.engine.sendNodeOff(this.triggerNodeId, 'main-input', payload);
+  /** Note/step OFF — injects receiveNodeOff so envelopes release (at `when` if given). */
+  release(payload: Record<string, any> = {}, when?: number): void {
+    const pl = when != null
+      ? (this.lastTriggerWhen != null ? { ...payload, when, onWhen: this.lastTriggerWhen } : { ...payload, when })
+      : payload;
+    if (this.triggers.length) { for (const t of this.triggers) this.engine.receiveNodeOff(t.nodeId, t.handle, pl); return; }
+    this.deferUntil(when, () => {
+      if (this.commandName) { this.engine.commandOff(this.commandName, pl); return; }
+      if (this.triggerNodeId) this.engine.sendNodeOff(this.triggerNodeId, 'main-input', pl);
+    });
   }
-  noteOn(payload: Record<string, any> = {}): void { this.trigger(payload); }
-  noteOff(payload: Record<string, any> = {}): void { this.release(payload); }
+
+  /** Run `fn` at ~AudioContext time `when` (immediately if past/absent/offline). */
+  private deferUntil(when: number | undefined, fn: () => void): void {
+    const offline = typeof OfflineAudioContext !== 'undefined' && this.ctx instanceof OfflineAudioContext;
+    const delayMs = when != null && !offline ? (when - this.ctx.currentTime) * 1000 : 0;
+    if (delayMs > 1) setTimeout(fn, delayMs);
+    else fn();
+  }
+  noteOn(payload: Record<string, any> = {}): void { this.trigger(payload, payload.when); }
+  noteOff(payload: Record<string, any> = {}): void { this.release(payload, payload.when); }
 
   setParam(nodeId: string, key: string, value: number | string): void { this.engine.setParam(nodeId, key, value); }
+  /** Automation: set a param at AudioContext time `when` (control-rate fallback when
+   *  the target isn't an AudioParam, e.g. .vstai worklet params). */
+  setParamAt(nodeId: string, key: string, value: number, when: number): void {
+    if (this.engine.setParamAtTime) this.engine.setParamAtTime(nodeId, key, value, when, 0.008);
+    else this.engine.setParam(nodeId, key, value);
+  }
+  /** Automation: exact linear segment v0@t0 → v1@t1 on a param (AudioParam only;
+   *  otherwise steps to v0 then v1). */
+  setParamSegment(nodeId: string, key: string, v0: number, t0: number, v1: number, t1: number): void {
+    if (this.engine.setParamAtTime && this.engine.rampParamTo) {
+      this.engine.setParamAtTime(nodeId, key, v0, t0);
+      this.engine.rampParamTo(nodeId, key, v1, t1);
+    } else { this.engine.setParam(nodeId, key, v1); }
+  }
+  /** Post a raw message to a node's worklet port (e.g. .vstai sample upload). */
+  postToNode(nodeId: string, msg: unknown): void { this.engine.postToNode?.(nodeId, msg); }
   listParams(nodeId: string) { return this.engine.listParams(nodeId); }
 
   dispose(): void { this.engine.dispose(); try { this.vca?.disconnect(); } catch { /* noop */ } this.vca = null; }

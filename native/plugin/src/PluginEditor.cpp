@@ -1,12 +1,42 @@
 #include "PluginEditor.h"
 
+#include <thread>
+
 #include "BinaryData.h"
 #if SYNFLOW_HAS_EDITOR
 #include "EditorBinaryData.h"
 #endif
 
+// Plugin version, injected by CMake (-DSYNFLOW_VERSION, auto-bumped by build-all.sh).
+// Stringify so the unquoted x.y.z define becomes a C string literal. Fallback keeps
+// other targets (render test) building.
+#ifndef SYNFLOW_VERSION_STRING
+#define SYNFLOW_VERSION_STRING 0.0.0
+#endif
+#define SYNFLOW_STR2(x) #x
+#define SYNFLOW_STR(x) SYNFLOW_STR2(x)
+
 #if JUCE_WEB_BROWSER
 using Options = juce::WebBrowserComponent::Options;
+
+// The public VibePlugin gallery (GitHub Pages): an index of AI-generated .vstai
+// plugins + the .vstai documents themselves. We fetch it in C++ because the JUCE
+// webview's resource-provider origin can't reliably issue cross-origin fetches (the
+// web app fetches the same URLs directly). Sends CORS *, so no proxy is needed.
+static constexpr const char* kGalleryBase = "https://k1ln.github.io/VibePlugin/gallery";
+
+// Blocking HTTP GET -> body (empty on any non-2xx / failure). Call OFF the message thread.
+static juce::String fetchUrlBody(const juce::String& url, int timeoutMs) {
+    int status = 0;
+    auto opts = juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
+                    .withConnectionTimeoutMs(timeoutMs)
+                    .withStatusCode(&status);
+    if (auto in = juce::URL(url).createInputStream(opts)) {
+        const juce::String body = in->readEntireStreamAsString();
+        if (status >= 200 && status < 300) return body;
+    }
+    return {};
+}
 
 SynflowAudioProcessorEditor::SynflowAudioProcessorEditor(SynflowAudioProcessor& p)
     : juce::AudioProcessorEditor(&p),
@@ -17,6 +47,7 @@ SynflowAudioProcessorEditor::SynflowAudioProcessorEditor(SynflowAudioProcessor& 
                .withInitialisationData("flowName", proc_.currentFlowName())
                .withInitialisationData("flowJson", proc_.currentFlowJson())
                .withInitialisationData("controls", proc_.exposedControlsJson())
+               .withInitialisationData("version", SYNFLOW_STR(SYNFLOW_VERSION_STRING))
                .withEventListener("setParam", [this](juce::var payload) {
                    const int slot = static_cast<int>(payload.getProperty("slot", -1));
                    const double v = static_cast<double>(payload.getProperty("value", 0.0));
@@ -39,6 +70,51 @@ SynflowAudioProcessorEditor::SynflowAudioProcessorEditor(SynflowAudioProcessor& 
                })
                .withEventListener("noteOff", [this](juce::var p) {
                    proc_.editorNote(p.getProperty("nodeId", "").toString(), false, p.getProperty("payload", juce::var()));
+               })
+               // On-screen piano / computer keyboard (play panel + editor): play a
+               // MIDI note through the same routing the DAW's MIDI uses.
+               .withEventListener("playNote", [this](juce::var p) {
+                   proc_.hostNote(static_cast<int>(p.getProperty("note", 60)), true,
+                                  static_cast<double>(p.getProperty("velocity", 1.0)));
+               })
+               .withEventListener("stopNote", [this](juce::var p) {
+                   proc_.hostNote(static_cast<int>(p.getProperty("note", 60)), false, 0.0);
+               })
+               // Gallery browser (AiVstFlowNode): fetch the VibePlugin catalogue and
+               // download a chosen .vstai, returning JSON to the webview to embed in
+               // the node. Runs on a worker thread; completes on the message thread.
+               .withNativeFunction("galleryIndex", [this](const juce::Array<juce::var>&,
+                                                          juce::WebBrowserComponent::NativeFunctionCompletion complete) {
+                   juce::Component::SafePointer<SynflowAudioProcessorEditor> sp(this);
+                   std::thread([sp, complete = std::move(complete)]() mutable {
+                       const juce::String body = fetchUrlBody(juce::String(kGalleryBase) + "/data/index.json", 15000);
+                       juce::MessageManager::callAsync([sp, complete = std::move(complete), body]() mutable {
+                           if (sp == nullptr) return;
+                           auto* o = new juce::DynamicObject();
+                           if (body.isNotEmpty()) { o->setProperty("ok", true); o->setProperty("items", juce::JSON::parse(body)); }
+                           else { o->setProperty("ok", false); o->setProperty("message", "Could not reach the gallery."); }
+                           complete(juce::var(o));
+                       });
+                   }).detach();
+               })
+               .withNativeFunction("galleryLoad", [this](const juce::Array<juce::var>& args,
+                                                         juce::WebBrowserComponent::NativeFunctionCompletion complete) {
+                   const juce::String slug = args.size() > 0 ? args[0].toString().trim() : juce::String();
+                   juce::Component::SafePointer<SynflowAudioProcessorEditor> sp(this);
+                   std::thread([sp, slug, complete = std::move(complete)]() mutable {
+                       juce::String body;
+                       if (slug.isNotEmpty())
+                           body = fetchUrlBody(juce::String(kGalleryBase) + "/data/"
+                                               + juce::URL::addEscapeChars(slug, false) + ".vstai", 20000);
+                       juce::MessageManager::callAsync([sp, complete = std::move(complete), body]() mutable {
+                           if (sp == nullptr) return;
+                           auto* o = new juce::DynamicObject();
+                           o->setProperty("ok", body.isNotEmpty());
+                           if (body.isNotEmpty()) o->setProperty("json", body);
+                           else o->setProperty("message", "Download failed.");
+                           complete(juce::var(o));
+                       });
+                   }).detach();
                })) {
     addAndMakeVisible(web_);
     web_.goToURL(juce::WebBrowserComponent::getResourceProviderRoot());

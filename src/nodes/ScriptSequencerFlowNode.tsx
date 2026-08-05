@@ -1462,6 +1462,7 @@ const ScriptSequencerFlowNode: React.FC<ScriptSequencerFlowNodeProps> = ({
 {`outputs are referenced as #N (e.g. #0)
 send #N v ; on #N [v] ; off #N ; pulse #N ms
 ramp #N a..b dur ; array #N [v,...] dur [swing white|pink amt]
+  per-element duration: array #N [@C3 120, @C4 50]  (ms each)
 set $v expr ; goto N | loop | repeat N | wait N
 multi-action line:  on #0 ; ramp #1 0..1 1t`}
         </pre>
@@ -1692,7 +1693,12 @@ const ScriptSequencerHelpModal: React.FC<{ onClose: () => void }> = ({
                   Schedule values evenly across <code>dur</code>. With a
                   1 s tick and 5 values: one every 200 ms. Optional swing
                   jitters timing using white or pink noise (
-                  <code>amt</code> is fraction of step time).
+                  <code>amt</code> is fraction of step time). Any element
+                  may carry its own hold time by following it with a
+                  number — bare (ms) or with a unit:{' '}
+                  <code>array #0 [@C3 120, @C4 50]</code> holds C3 for
+                  120 ms then C4 for 50 ms. Elements without one fall
+                  back to the shared step.
                 </td>
               </tr>
               <tr>

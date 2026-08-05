@@ -311,6 +311,7 @@ function userSample(x: f32, i: i32): f32 {
       const { base64 } = await compileWorkletToWasm(assemblyScript);
       (data as any).assemblyScript = assemblyScript;
       (data as any).wasmBase64 = base64;
+      (data as any)._wasmSrc = assemblyScript; // matches compileDirtyWorklets staleness check
       const shim = generateWorkletShim(base64);
       data.processorCode = shim;
       setProcessorCode(shim);
