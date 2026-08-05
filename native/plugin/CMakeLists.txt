@@ -70,9 +70,12 @@ if(SYNFLOW_CLAP)
     message(STATUS "Synflow: CLAP format enabled")
 endif()
 
-# Embed the default flow + the wasm DSP modules (the SAME public/*.wasm the
-# browser runs) -> BinaryData::default_flow_json / karplus_wasm / ladder_wasm /
-# noise_wasm.
+# Embed the default flow + the wasm DSP modules -> BinaryData::default_flow_json /
+# karplus_wasm / ladder_wasm / noise_wasm / etc. karplus/ladder/noise/svf/envgen/
+# freqshifter/fm/wavetable/granular/hardsync are the SAME public/*.wasm the
+# browser runs (Rust-authored); gain/ringmod are AssemblyScript, compiled from
+# native/wasm-src/*.ts via `node native/wasm-src/build.mjs` — the first tranche
+# of the C++ node -> AS/wasm migration (see native/wasm-src/README.md).
 juce_add_binary_data(SynflowResources SOURCES
     resources/default_flow.json
     resources/karplus.wasm
@@ -85,6 +88,8 @@ juce_add_binary_data(SynflowResources SOURCES
     resources/wavetable.wasm
     resources/granular.wasm
     resources/hardsync.wasm
+    resources/gain.wasm
+    resources/ringmod.wasm
     webui/index.html)
 
 # Edit-mode editor bundle (the Synflow editor, built via `npm run build:plugin-ui`)

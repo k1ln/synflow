@@ -1,11 +1,14 @@
 #include "WasmNodeFactory.h"
 
 #include <cstdint>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "BinaryData.h"
 #include "nodes/ReverbNode.h"
 #include "nodes/SampleNode.h"
+#include "synflow/nodes/GenericWasmNode.h"
 #include "synflow/nodes/WasmKarplusNode.h"
 #include "synflow/nodes/WasmLadderNode.h"
 #include "synflow/nodes/WasmEnvGenNode.h"
@@ -49,6 +52,20 @@ NodeFactoryFn makeShellFactory() {
             return std::make_unique<WasmGranularNode>(bytes(BinaryData::granular_wasm, BinaryData::granular_wasmSize));
         if (type == "AudioWorkletOscillatorFlowNode")
             return std::make_unique<WasmHardSyncNode>(bytes(BinaryData::hardsync_wasm, BinaryData::hardsync_wasmSize));
+        // Bucket B, AssemblyScript-authored (native/wasm-src/*.ts, ABI v2): the
+        // DSP lives entirely in the wasm module; this is just port-count +
+        // named-param-id wiring metadata. First tranche of the C++->AS migration
+        // — see [[native-plugin-port]] memory for the remaining node list.
+        if (type == "GainFlowNode")
+            return std::make_unique<GenericWasmNode>(
+                bytes(BinaryData::gain_wasm, BinaryData::gain_wasmSize), 2, 1,
+                std::vector<std::pair<std::string, int>>{{"gain", 0}},   // param 0 = gain
+                std::vector<std::pair<std::string, int>>{{"gain", 1}});  // handle "gain" -> port 1
+        if (type == "RingModFlowNode")
+            return std::make_unique<GenericWasmNode>(
+                bytes(BinaryData::ringmod_wasm, BinaryData::ringmod_wasmSize), 2, 1,
+                std::vector<std::pair<std::string, int>>{},
+                std::vector<std::pair<std::string, int>>{{"a", 0}, {"b", 1}});
         if (type == "ReverbFlowNode")
             return std::make_unique<ReverbNode>();
         if (type == "SampleFlowNode" || type == "AudioBufferSourceFlowNode")
