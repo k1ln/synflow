@@ -1,0 +1,14 @@
+{
+  "name": "Brass",
+  "nodes": [
+    { "id": "br.BrassFlowNode", "type": "BrassFlowNode", "position": { "x": 0, "y": 80 },
+      "data": { "label": "Brass", "frequency": 220, "tension": 0.5, "slide": 0.5, "attack": 0.05, "release": 0.12, "vibratoRate": 0.4, "vibratoGain": 0.15, "isTrigger": true, "isPitch": true, "pitchParam": "frequency", "id": "br.BrassFlowNode",
+        "knobs": [ { "param": "tension", "label": "Tension", "min": 0, "max": 1, "default": 0.5 }, { "param": "vibratoGain", "label": "Vibrato", "min": 0, "max": 1, "default": 0.15 } ] } },
+    { "id": "vca.GainFlowNode", "type": "GainFlowNode", "position": { "x": 320, "y": 80 }, "data": { "label": "Level", "gain": 0.8, "id": "vca.GainFlowNode" } },
+    { "id": "master.MasterOutFlowNode", "type": "MasterOutFlowNode", "position": { "x": 560, "y": 80 }, "data": { "label": "Master", "id": "master.MasterOutFlowNode" } }
+  ],
+  "edges": [
+    { "id": "e-br-vca", "source": "br.BrassFlowNode", "target": "vca.GainFlowNode", "sourceHandle": "output", "targetHandle": "main-input" },
+    { "id": "e-vca-m", "source": "vca.GainFlowNode", "target": "master.MasterOutFlowNode", "sourceHandle": "output", "targetHandle": "destination-input" }
+  ]
+}

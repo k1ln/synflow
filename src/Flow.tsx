@@ -86,6 +86,7 @@ const CONNECTION_LINE_STYLE = { stroke: '#ffffff', strokeWidth: 1.5 };
 // can't wire a MIDI/Button/Sequencer trigger into them.
 const TRIGGER_EXCITED_NODE_TYPES = new Set<string>([
   'KarplusFlowNode',
+  'BrassFlowNode',
   'FMFlowNode',
   'WavetableFlowNode',
   'EnvGenFlowNode',
@@ -1837,6 +1838,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
     'ChannelSplitterFlowNode',
     'NoiseFlowNode',
     'KarplusFlowNode',
+    'BrassFlowNode',
     'FMFlowNode',
     'WavetableFlowNode',
     'EnvGenFlowNode',

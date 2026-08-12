@@ -6,6 +6,7 @@ import BiquadFilterFlowNode from '../nodes/BiquadFilterFlowNode';
 import SvfDriveFilterFlowNode from '../nodes/SvfDriveFilterFlowNode';
 import LadderFilterFlowNode from '../nodes/LadderFilterFlowNode';
 import KarplusFlowNode from '../nodes/KarplusFlowNode';
+import BrassFlowNode from '../nodes/BrassFlowNode';
 import FMFlowNode from '../nodes/FMFlowNode';
 import WavetableFlowNode from '../nodes/WavetableFlowNode';
 import GranularFlowNode from '../nodes/GranularFlowNode';
@@ -69,6 +70,7 @@ export const nodeTypes = {
   SvfDriveFilterFlowNode,
   LadderFilterFlowNode,
   KarplusFlowNode,
+  BrassFlowNode,
   FMFlowNode,
   WavetableFlowNode,
   GranularFlowNode,

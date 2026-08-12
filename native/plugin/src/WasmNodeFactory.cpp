@@ -10,6 +10,7 @@
 #include "nodes/SampleNode.h"
 #include "synflow/nodes/GenericWasmNode.h"
 #include "synflow/nodes/WasmKarplusNode.h"
+#include "synflow/nodes/WasmBrassNode.h"
 #include "synflow/nodes/WasmLadderNode.h"
 #include "synflow/nodes/WasmEnvGenNode.h"
 #include "synflow/nodes/WasmFMNode.h"
@@ -34,6 +35,8 @@ NodeFactoryFn makeShellFactory() {
     return [](const std::string& type) -> std::unique_ptr<INode> {
         if (type == "KarplusFlowNode")
             return std::make_unique<WasmKarplusNode>(bytes(BinaryData::karplus_wasm, BinaryData::karplus_wasmSize));
+        if (type == "BrassFlowNode")
+            return std::make_unique<WasmBrassNode>(bytes(BinaryData::brass_wasm, BinaryData::brass_wasmSize));
         if (type == "LadderFilterFlowNode")
             return std::make_unique<WasmLadderNode>(bytes(BinaryData::ladder_wasm, BinaryData::ladder_wasmSize));
         if (type == "NoiseFlowNode")

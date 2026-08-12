@@ -39,6 +39,16 @@ export type KarplusFlowNodeProps = NodeProps<{
   muffle?: number;
   [key: string]: any;
 }>;
+export type BrassFlowNodeProps = NodeProps<{
+  frequency?: number;
+  tension?: number;
+  slide?: number;
+  attack?: number;
+  release?: number;
+  vibratoRate?: number;
+  vibratoGain?: number;
+  [key: string]: any;
+}>;
 export type FMFlowNodeProps = NodeProps<{
   frequency?: number;
   algorithm?: number;

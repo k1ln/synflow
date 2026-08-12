@@ -1,12 +1,13 @@
 {
-  "generated": "2026-08-05T09:35:45.489Z",
-  "version": "3c820a811303d264",
+  "generated": "2026-08-06T09:32:17.256Z",
+  "version": "d5e03cf49d56b995",
   "examples": [
     "Hard-Synth",
     "PolyOrgan",
     "cymball_example",
     "first-steps",
     "instruments/bagpipe",
+    "instruments/brass",
     "instruments/fm-bass",
     "instruments/fm-epiano",
     "instruments/granular-texture",

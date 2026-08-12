@@ -32,6 +32,7 @@ import VirtualBiquadFilterNode from "./virtualNodes/VirtualBiquadFilterNode";
 import VirtualSvfDriveFilterNode from "./virtualNodes/VirtualSvfDriveFilterNode";
 import VirtualLadderFilterNode from "./virtualNodes/VirtualLadderFilterNode";
 import VirtualKarplusNode from "./virtualNodes/VirtualKarplusNode";
+import VirtualBrassNode from "./virtualNodes/VirtualBrassNode";
 import VirtualFMNode from "./virtualNodes/VirtualFMNode";
 import VirtualWavetableNode from "./virtualNodes/VirtualWavetableNode";
 import VirtualGranularNode from "./virtualNodes/VirtualGranularNode";
@@ -230,6 +231,16 @@ export async function addVirtualNode(manager: any, node: CustomNode, parentNode:
             );
             virtualKarplusNode.render(nodeData);
             manager.virtualNodes.set(node.id, virtualKarplusNode);
+            break;
+        }
+        case "BrassFlowNode": {
+            const virtualBrassNode = new VirtualBrassNode(
+                manager.audioContext,
+                manager.eventBus,
+                node
+            );
+            virtualBrassNode.render(nodeData);
+            manager.virtualNodes.set(node.id, virtualBrassNode);
             break;
         }
         case "FMFlowNode": {

@@ -66,6 +66,11 @@ const CRATES = [
     out:  'public/envgen.wasm',
     bin:  'envgen',
   },
+  {
+    dir:  'src/wasm/brass',
+    out:  'public/brass.wasm',
+    bin:  'brass',
+  },
 ];
 
 const ANSI = { reset:'\x1b[0m', green:'\x1b[32m', yellow:'\x1b[33m', red:'\x1b[31m', gray:'\x1b[90m' };
