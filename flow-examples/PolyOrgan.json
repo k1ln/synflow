@@ -8301,5 +8301,8 @@
       "targetHandle": "destination-input",
       "id": "xy-edge__04123e4f-4f4f-4989-8ea9-2150d3a23a5e.ReverbFlowNodeoutput-7634f30a-98d1-4bea-97da-0ed4f30226b0.MasterOutFlowNodedestination-input"
     }
-  ]
+  ],
+  "name": "PolyOrgan",
+  "folder_path": "examples",
+  "updated_at": "2026-08-12T15:59:57.645Z"
 }

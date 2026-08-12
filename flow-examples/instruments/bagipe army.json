@@ -1,0 +1,1789 @@
+{
+  "name": "bagipe army",
+  "nodes": [
+    {
+      "id": "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode",
+      "type": "FlowNode",
+      "position": {
+        "x": 1199.794097326562,
+        "y": 383.17980397554567
+      },
+      "data": {
+        "label": "Flow",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid rgba(80, 95, 130, 0.50)",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "rgba(18, 19, 36, 0.52)",
+          "backdropFilter": "blur(6px)",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.12), inset 0 3px 12px rgba(148,163,184,0.22)",
+          "borderTop": "3px solid #94a3b8",
+          "--node-accent": "#94a3b8",
+          "glowColor": "#00ff88"
+        },
+        "db": {
+          "db": {},
+          "dbName": "FlowSynthDB",
+          "storeName": "flows",
+          "uuid": "7d568385-33a3-4994-b6d4-aefaed065527"
+        },
+        "id": "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode",
+        "selectedNode": "voice bagpipe",
+        "selectedNodeFolderPath": "examples/instruments",
+        "outputArr": [
+          0
+        ],
+        "inputArr": [
+          0,
+          1
+        ]
+      },
+      "zIndex": 62,
+      "measured": {
+        "width": 132,
+        "height": 73
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "fc97be7f-662e-4d6a-8170-19742dc20beb.MidiFileFlowNode",
+      "type": "MidiFileFlowNode",
+      "position": {
+        "x": 582.5988096362323,
+        "y": 264.04151533781635
+      },
+      "data": {
+        "label": "MIDI File",
+        "midiFile": {
+          "name": "Scotland the Brave - Bagpipe Theme.mid",
+          "ticksPerBeat": 384,
+          "tracks": [
+            {
+              "name": "8-Bit Sawtooth",
+              "notes": [
+                {
+                  "note": 58,
+                  "velocity": 50,
+                  "startTick": 0,
+                  "durationTicks": 384,
+                  "channel": 0
+                },
+                {
+                  "note": 58,
+                  "velocity": 50,
+                  "startTick": 384,
+                  "durationTicks": 288,
+                  "channel": 0
+                },
+                {
+                  "note": 58,
+                  "velocity": 50,
+                  "startTick": 672,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 62,
+                  "velocity": 50,
+                  "startTick": 768,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 58,
+                  "velocity": 50,
+                  "startTick": 960,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 62,
+                  "velocity": 50,
+                  "startTick": 1152,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 65,
+                  "velocity": 50,
+                  "startTick": 1344,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 70,
+                  "velocity": 50,
+                  "startTick": 1536,
+                  "durationTicks": 288,
+                  "channel": 0
+                },
+                {
+                  "note": 68,
+                  "velocity": 50,
+                  "startTick": 1824,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 70,
+                  "velocity": 50,
+                  "startTick": 1920,
+                  "durationTicks": 288,
+                  "channel": 0
+                },
+                {
+                  "note": 68,
+                  "velocity": 50,
+                  "startTick": 2208,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 70,
+                  "velocity": 50,
+                  "startTick": 2304,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 65,
+                  "velocity": 50,
+                  "startTick": 2496,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 62,
+                  "velocity": 50,
+                  "startTick": 2688,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 58,
+                  "velocity": 50,
+                  "startTick": 2880,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 63,
+                  "velocity": 50,
+                  "startTick": 3072,
+                  "durationTicks": 384,
+                  "channel": 0
+                },
+                {
+                  "note": 67,
+                  "velocity": 50,
+                  "startTick": 3456,
+                  "durationTicks": 288,
+                  "channel": 0
+                },
+                {
+                  "note": 63,
+                  "velocity": 50,
+                  "startTick": 3744,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 62,
+                  "velocity": 50,
+                  "startTick": 3840,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 65,
+                  "velocity": 50,
+                  "startTick": 4032,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 62,
+                  "velocity": 50,
+                  "startTick": 4224,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 58,
+                  "velocity": 50,
+                  "startTick": 4416,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 60,
+                  "velocity": 50,
+                  "startTick": 4608,
+                  "durationTicks": 384,
+                  "channel": 0
+                },
+                {
+                  "note": 65,
+                  "velocity": 50,
+                  "startTick": 4992,
+                  "durationTicks": 288,
+                  "channel": 0
+                },
+                {
+                  "note": 67,
+                  "velocity": 50,
+                  "startTick": 5280,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 65,
+                  "velocity": 50,
+                  "startTick": 5376,
+                  "durationTicks": 288,
+                  "channel": 0
+                },
+                {
+                  "note": 67,
+                  "velocity": 50,
+                  "startTick": 5664,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 65,
+                  "velocity": 50,
+                  "startTick": 5760,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 63,
+                  "velocity": 50,
+                  "startTick": 5856,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 62,
+                  "velocity": 50,
+                  "startTick": 5952,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 60,
+                  "velocity": 50,
+                  "startTick": 6048,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 58,
+                  "velocity": 50,
+                  "startTick": 6144,
+                  "durationTicks": 384,
+                  "channel": 0
+                },
+                {
+                  "note": 58,
+                  "velocity": 50,
+                  "startTick": 6528,
+                  "durationTicks": 288,
+                  "channel": 0
+                },
+                {
+                  "note": 58,
+                  "velocity": 50,
+                  "startTick": 6816,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 62,
+                  "velocity": 50,
+                  "startTick": 6912,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 58,
+                  "velocity": 50,
+                  "startTick": 7104,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 62,
+                  "velocity": 50,
+                  "startTick": 7296,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 65,
+                  "velocity": 50,
+                  "startTick": 7488,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 70,
+                  "velocity": 50,
+                  "startTick": 7680,
+                  "durationTicks": 288,
+                  "channel": 0
+                },
+                {
+                  "note": 68,
+                  "velocity": 50,
+                  "startTick": 7968,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 70,
+                  "velocity": 50,
+                  "startTick": 8064,
+                  "durationTicks": 288,
+                  "channel": 0
+                },
+                {
+                  "note": 68,
+                  "velocity": 50,
+                  "startTick": 8352,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 70,
+                  "velocity": 50,
+                  "startTick": 8448,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 65,
+                  "velocity": 50,
+                  "startTick": 8640,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 62,
+                  "velocity": 50,
+                  "startTick": 8832,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 65,
+                  "velocity": 50,
+                  "startTick": 9024,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 63,
+                  "velocity": 50,
+                  "startTick": 9216,
+                  "durationTicks": 384,
+                  "channel": 0
+                },
+                {
+                  "note": 67,
+                  "velocity": 50,
+                  "startTick": 9600,
+                  "durationTicks": 288,
+                  "channel": 0
+                },
+                {
+                  "note": 63,
+                  "velocity": 50,
+                  "startTick": 9888,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 62,
+                  "velocity": 50,
+                  "startTick": 9984,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 65,
+                  "velocity": 50,
+                  "startTick": 10176,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 62,
+                  "velocity": 50,
+                  "startTick": 10368,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 58,
+                  "velocity": 50,
+                  "startTick": 10560,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 60,
+                  "velocity": 50,
+                  "startTick": 10752,
+                  "durationTicks": 384,
+                  "channel": 0
+                },
+                {
+                  "note": 58,
+                  "velocity": 50,
+                  "startTick": 11136,
+                  "durationTicks": 288,
+                  "channel": 0
+                },
+                {
+                  "note": 60,
+                  "velocity": 50,
+                  "startTick": 11424,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 58,
+                  "velocity": 50,
+                  "startTick": 11520,
+                  "durationTicks": 768,
+                  "channel": 0
+                },
+                {
+                  "note": 70,
+                  "velocity": 50,
+                  "startTick": 12288,
+                  "durationTicks": 288,
+                  "channel": 0
+                },
+                {
+                  "note": 68,
+                  "velocity": 50,
+                  "startTick": 12576,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 70,
+                  "velocity": 50,
+                  "startTick": 12672,
+                  "durationTicks": 288,
+                  "channel": 0
+                },
+                {
+                  "note": 68,
+                  "velocity": 50,
+                  "startTick": 12960,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 70,
+                  "velocity": 50,
+                  "startTick": 13056,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 65,
+                  "velocity": 50,
+                  "startTick": 13248,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 62,
+                  "velocity": 50,
+                  "startTick": 13440,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 65,
+                  "velocity": 50,
+                  "startTick": 13632,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 70,
+                  "velocity": 50,
+                  "startTick": 13824,
+                  "durationTicks": 288,
+                  "channel": 0
+                },
+                {
+                  "note": 68,
+                  "velocity": 50,
+                  "startTick": 14112,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 70,
+                  "velocity": 50,
+                  "startTick": 14208,
+                  "durationTicks": 288,
+                  "channel": 0
+                },
+                {
+                  "note": 68,
+                  "velocity": 50,
+                  "startTick": 14496,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 70,
+                  "velocity": 50,
+                  "startTick": 14592,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 65,
+                  "velocity": 50,
+                  "startTick": 14784,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 62,
+                  "velocity": 50,
+                  "startTick": 14976,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 65,
+                  "velocity": 50,
+                  "startTick": 15168,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 63,
+                  "velocity": 50,
+                  "startTick": 15360,
+                  "durationTicks": 384,
+                  "channel": 0
+                },
+                {
+                  "note": 67,
+                  "velocity": 50,
+                  "startTick": 15744,
+                  "durationTicks": 288,
+                  "channel": 0
+                },
+                {
+                  "note": 63,
+                  "velocity": 50,
+                  "startTick": 16032,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 62,
+                  "velocity": 50,
+                  "startTick": 16128,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 65,
+                  "velocity": 50,
+                  "startTick": 16320,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 62,
+                  "velocity": 50,
+                  "startTick": 16512,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 58,
+                  "velocity": 50,
+                  "startTick": 16704,
+                  "durationTicks": 192,
+                  "channel": 0
+                },
+                {
+                  "note": 60,
+                  "velocity": 50,
+                  "startTick": 16896,
+                  "durationTicks": 384,
+                  "channel": 0
+                },
+                {
+                  "note": 58,
+                  "velocity": 50,
+                  "startTick": 17280,
+                  "durationTicks": 288,
+                  "channel": 0
+                },
+                {
+                  "note": 60,
+                  "velocity": 50,
+                  "startTick": 17568,
+                  "durationTicks": 96,
+                  "channel": 0
+                },
+                {
+                  "note": 58,
+                  "velocity": 50,
+                  "startTick": 17664,
+                  "durationTicks": 192,
+                  "channel": 0
+                }
+              ]
+            }
+          ],
+          "totalTicks": 17856,
+          "totalBars": 12,
+          "tempoChanges": [
+            {
+              "tick": 0,
+              "bpm": 110
+            }
+          ]
+        },
+        "currentBar": 0,
+        "currentTick": 0,
+        "isPlaying": true,
+        "loop": true,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid rgba(80, 95, 130, 0.50)",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "rgba(18, 19, 36, 0.52)",
+          "backdropFilter": "blur(6px)",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.12), inset 0 3px 12px rgba(192,132,252,0.22)",
+          "width": "250px",
+          "borderTop": "3px solid #c084fc",
+          "--node-accent": "#c084fc",
+          "glowColor": "#00ff88"
+        },
+        "id": "fc97be7f-662e-4d6a-8170-19742dc20beb.MidiFileFlowNode",
+        "subdivision": 1,
+        "transpose": 12,
+        "singleVoiceMode": false
+      },
+      "zIndex": 63,
+      "measured": {
+        "width": 272,
+        "height": 382
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "915e98aa-2c8b-49db-aa09-ea7cea62738b.UnisonEndFlowNode",
+      "type": "UnisonEndFlowNode",
+      "position": {
+        "x": 1387.0586328056584,
+        "y": 385.74712630618586
+      },
+      "data": {
+        "label": "Unison End",
+        "amount": 4,
+        "detuneSpread": 20,
+        "volumeSpread": 15,
+        "avgDelayMs": 10,
+        "maxDelayMs": 50,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid rgba(80, 95, 130, 0.50)",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "rgba(18, 19, 36, 0.52)",
+          "backdropFilter": "blur(6px)",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(167,139,250,0.12), inset 0 3px 12px rgba(96,165,250,0.22)",
+          "glowColor": "#a78bfa",
+          "borderTop": "3px solid #60a5fa",
+          "--node-accent": "#60a5fa"
+        },
+        "id": "915e98aa-2c8b-49db-aa09-ea7cea62738b.UnisonEndFlowNode"
+      },
+      "zIndex": 64,
+      "measured": {
+        "width": 91,
+        "height": 42
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "01b0ae18-0093-4293-a430-85e125b87456.ClockFlowNode",
+      "type": "ClockFlowNode",
+      "position": {
+        "x": 356.9340051669584,
+        "y": 338.1728002540175
+      },
+      "data": {
+        "label": "",
+        "bpm": 61,
+        "isEmitting": false,
+        "eventBus": {
+          "events": {
+            "params.updateParams": [
+              null,
+              null
+            ],
+            "orchestrator.openEditor": [
+              null
+            ],
+            "FlowNode.fc97be7f-662e-4d6a-8170-19742dc20beb.MidiFileFlowNode.params.updateParams": [
+              null
+            ],
+            "ab88d7d1-226d-47af-aaa7-4bf6a373c41b.UnisonBeginFlowNode.params.updateParams": [
+              null
+            ],
+            "ab88d7d1-226d-47af-aaa7-4bf6a373c41b.UnisonBeginFlowNode.event-input.receiveNodeOn": [
+              null
+            ],
+            "ab88d7d1-226d-47af-aaa7-4bf6a373c41b.UnisonBeginFlowNode.event-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.1995e343-55e7-4e77-b36f-13c38445eb56.OscillatorFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.1995e343-55e7-4e77-b36f-13c38445eb56.OscillatorFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.1995e343-55e7-4e77-b36f-13c38445eb56.OscillatorFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.1d277d13-96b4-475e-88d6-7e08ffc16c14.ADSRFlowNode.params.updateParams": [
+              null,
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.1d277d13-96b4-475e-88d6-7e08ffc16c14.ADSRFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.1d277d13-96b4-475e-88d6-7e08ffc16c14.ADSRFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.1d277d13-96b4-475e-88d6-7e08ffc16c14.ADSRFlowNode.attack-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.1d277d13-96b4-475e-88d6-7e08ffc16c14.ADSRFlowNode.sustainTime-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.1d277d13-96b4-475e-88d6-7e08ffc16c14.ADSRFlowNode.sustainLevel-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.1d277d13-96b4-475e-88d6-7e08ffc16c14.ADSRFlowNode.release-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.1d277d13-96b4-475e-88d6-7e08ffc16c14.ADSRFlowNode.minPercent-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.1d277d13-96b4-475e-88d6-7e08ffc16c14.ADSRFlowNode.maxPercent-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.b744d77c-32cc-4afb-9b21-c15b2cb4ab6a.GainFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.b17f214d-c903-4821-ae7b-acc28b5c19f1.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.b17f214d-c903-4821-ae7b-acc28b5c19f1.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.b17f214d-c903-4821-ae7b-acc28b5c19f1.ButtonFlowNode.updateParams.midiLearn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.b17f214d-c903-4821-ae7b-acc28b5c19f1.ButtonFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.b17f214d-c903-4821-ae7b-acc28b5c19f1.ButtonFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.602f94a0-1973-4638-b9b4-972c9b899eaf.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.602f94a0-1973-4638-b9b4-972c9b899eaf.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.602f94a0-1973-4638-b9b4-972c9b899eaf.ButtonFlowNode.updateParams.midiLearn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.602f94a0-1973-4638-b9b4-972c9b899eaf.ButtonFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.602f94a0-1973-4638-b9b4-972c9b899eaf.ButtonFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.fbcd0d8e-284f-4f8c-8bf8-c844f745db78.OutputNode.params.updateParams": [
+              null,
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.fbcd0d8e-284f-4f8c-8bf8-c844f745db78.OutputNode.input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.fbcd0d8e-284f-4f8c-8bf8-c844f745db78.OutputNode.input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.24aa9517-ab60-4153-8daa-832e66a04da1.ConstantFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.24aa9517-ab60-4153-8daa-832e66a04da1.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.24aa9517-ab60-4153-8daa-832e66a04da1.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.c2367a7c-f63b-4c03-b6c0-46dcff25b388.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.c2367a7c-f63b-4c03-b6c0-46dcff25b388.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.c2367a7c-f63b-4c03-b6c0-46dcff25b388.ButtonFlowNode.updateParams.midiLearn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.c2367a7c-f63b-4c03-b6c0-46dcff25b388.ButtonFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.c2367a7c-f63b-4c03-b6c0-46dcff25b388.ButtonFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.de232fd7-f9f7-47d8-9eb6-39b8e7ead138.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.de232fd7-f9f7-47d8-9eb6-39b8e7ead138.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.de232fd7-f9f7-47d8-9eb6-39b8e7ead138.ButtonFlowNode.updateParams.midiLearn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.de232fd7-f9f7-47d8-9eb6-39b8e7ead138.ButtonFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.de232fd7-f9f7-47d8-9eb6-39b8e7ead138.ButtonFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.52861610-cd88-4368-ac4e-bb06480de90e.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.52861610-cd88-4368-ac4e-bb06480de90e.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.52861610-cd88-4368-ac4e-bb06480de90e.ButtonFlowNode.updateParams.midiLearn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.52861610-cd88-4368-ac4e-bb06480de90e.ButtonFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.52861610-cd88-4368-ac4e-bb06480de90e.ButtonFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.c2d4f50a-59cf-460e-aaf5-86c13978ed2f.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.c2d4f50a-59cf-460e-aaf5-86c13978ed2f.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.c2d4f50a-59cf-460e-aaf5-86c13978ed2f.ButtonFlowNode.updateParams.midiLearn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.c2d4f50a-59cf-460e-aaf5-86c13978ed2f.ButtonFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.c2d4f50a-59cf-460e-aaf5-86c13978ed2f.ButtonFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.eb940b67-9d3d-457a-8638-68fd4b202214.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.eb940b67-9d3d-457a-8638-68fd4b202214.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.eb940b67-9d3d-457a-8638-68fd4b202214.ButtonFlowNode.updateParams.midiLearn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.eb940b67-9d3d-457a-8638-68fd4b202214.ButtonFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.eb940b67-9d3d-457a-8638-68fd4b202214.ButtonFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.87a047fb-436f-41c1-833e-8e3ba320ac62.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.87a047fb-436f-41c1-833e-8e3ba320ac62.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.87a047fb-436f-41c1-833e-8e3ba320ac62.ButtonFlowNode.updateParams.midiLearn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.87a047fb-436f-41c1-833e-8e3ba320ac62.ButtonFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.87a047fb-436f-41c1-833e-8e3ba320ac62.ButtonFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.437234b1-56c3-4533-80c2-732466393153.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.437234b1-56c3-4533-80c2-732466393153.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.437234b1-56c3-4533-80c2-732466393153.ButtonFlowNode.updateParams.midiLearn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.437234b1-56c3-4533-80c2-732466393153.ButtonFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.437234b1-56c3-4533-80c2-732466393153.ButtonFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.bdfdf7e0-efc5-4106-9b7f-17f8fab247d5.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.bdfdf7e0-efc5-4106-9b7f-17f8fab247d5.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.bdfdf7e0-efc5-4106-9b7f-17f8fab247d5.ButtonFlowNode.updateParams.midiLearn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.bdfdf7e0-efc5-4106-9b7f-17f8fab247d5.ButtonFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.bdfdf7e0-efc5-4106-9b7f-17f8fab247d5.ButtonFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.f915102b-acfe-46ba-acc2-371784dfd04a.ConstantFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.f915102b-acfe-46ba-acc2-371784dfd04a.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.f915102b-acfe-46ba-acc2-371784dfd04a.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.ef6124d7-8f5e-4db9-be91-2774812a8a3e.ConstantFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.ef6124d7-8f5e-4db9-be91-2774812a8a3e.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.ef6124d7-8f5e-4db9-be91-2774812a8a3e.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.6fcc7ebd-e5e0-414c-a8fe-f6930395dfb0.ConstantFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.6fcc7ebd-e5e0-414c-a8fe-f6930395dfb0.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.6fcc7ebd-e5e0-414c-a8fe-f6930395dfb0.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.f3fc27b0-7c73-4fe1-98d8-21f0253e9032.ConstantFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.f3fc27b0-7c73-4fe1-98d8-21f0253e9032.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.f3fc27b0-7c73-4fe1-98d8-21f0253e9032.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.5cf992de-875e-4eb0-a20b-5d02a26e3ca8.ConstantFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.5cf992de-875e-4eb0-a20b-5d02a26e3ca8.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.5cf992de-875e-4eb0-a20b-5d02a26e3ca8.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.2c57c940-e5ba-4bb4-81bf-4690839f1d3a.ConstantFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.2c57c940-e5ba-4bb4-81bf-4690839f1d3a.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.2c57c940-e5ba-4bb4-81bf-4690839f1d3a.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.5b5b7f0b-8b4c-4ec1-b6a0-cf8663c5f10d.ConstantFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.5b5b7f0b-8b4c-4ec1-b6a0-cf8663c5f10d.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.5b5b7f0b-8b4c-4ec1-b6a0-cf8663c5f10d.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.8276c286-5780-42a8-a8d0-473439ae6586.ConstantFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.8276c286-5780-42a8-a8d0-473439ae6586.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.8276c286-5780-42a8-a8d0-473439ae6586.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.f27937e0-cd87-41bd-ae03-ae8874f1a46a.ConstantFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.f27937e0-cd87-41bd-ae03-ae8874f1a46a.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.f27937e0-cd87-41bd-ae03-ae8874f1a46a.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.7a811f01-9ec7-4d21-94d9-8ec16f956a58.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.7a811f01-9ec7-4d21-94d9-8ec16f956a58.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.7a811f01-9ec7-4d21-94d9-8ec16f956a58.ButtonFlowNode.updateParams.midiLearn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.7a811f01-9ec7-4d21-94d9-8ec16f956a58.ButtonFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.7a811f01-9ec7-4d21-94d9-8ec16f956a58.ButtonFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.36ab8b77-3ec8-47e7-bf3b-5113e660fe12.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.36ab8b77-3ec8-47e7-bf3b-5113e660fe12.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.36ab8b77-3ec8-47e7-bf3b-5113e660fe12.ButtonFlowNode.updateParams.midiLearn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.36ab8b77-3ec8-47e7-bf3b-5113e660fe12.ButtonFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.36ab8b77-3ec8-47e7-bf3b-5113e660fe12.ButtonFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.32336798-3a4d-499c-a6aa-534080716b1c.ConstantFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.32336798-3a4d-499c-a6aa-534080716b1c.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.32336798-3a4d-499c-a6aa-534080716b1c.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.1f82ece3-4a50-4ebd-aeae-dc2480048109.ConstantFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.1f82ece3-4a50-4ebd-aeae-dc2480048109.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.1f82ece3-4a50-4ebd-aeae-dc2480048109.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode.params.updateParams": [
+              null,
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode.input-0.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.85b38c6e-45b5-4b83-9779-2089fdf07035.FunctionFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.4bb4b241-dac5-4bc7-990d-7982fccde2fa.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.4bb4b241-dac5-4bc7-990d-7982fccde2fa.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.4bb4b241-dac5-4bc7-990d-7982fccde2fa.ButtonFlowNode.updateParams.midiLearn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.4bb4b241-dac5-4bc7-990d-7982fccde2fa.ButtonFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.4bb4b241-dac5-4bc7-990d-7982fccde2fa.ButtonFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.3082511a-9119-41b8-80e2-ee8d8bcab7d1.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.3082511a-9119-41b8-80e2-ee8d8bcab7d1.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.3082511a-9119-41b8-80e2-ee8d8bcab7d1.ButtonFlowNode.updateParams.midiLearn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.3082511a-9119-41b8-80e2-ee8d8bcab7d1.ButtonFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.3082511a-9119-41b8-80e2-ee8d8bcab7d1.ButtonFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.c7466101-473e-43db-b195-e98b286bbee6.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.c7466101-473e-43db-b195-e98b286bbee6.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.c7466101-473e-43db-b195-e98b286bbee6.ButtonFlowNode.updateParams.midiLearn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.c7466101-473e-43db-b195-e98b286bbee6.ButtonFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.c7466101-473e-43db-b195-e98b286bbee6.ButtonFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.95cacad9-e066-4790-84bb-30316d04d313.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.95cacad9-e066-4790-84bb-30316d04d313.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.95cacad9-e066-4790-84bb-30316d04d313.ButtonFlowNode.updateParams.midiLearn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.95cacad9-e066-4790-84bb-30316d04d313.ButtonFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.95cacad9-e066-4790-84bb-30316d04d313.ButtonFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.3ba81fc0-d4ef-469a-a76f-2ba6e2c7c8e9.ButtonFlowNode.updateParams.params": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.3ba81fc0-d4ef-469a-a76f-2ba6e2c7c8e9.ButtonFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.3ba81fc0-d4ef-469a-a76f-2ba6e2c7c8e9.ButtonFlowNode.updateParams.midiLearn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.3ba81fc0-d4ef-469a-a76f-2ba6e2c7c8e9.ButtonFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.3ba81fc0-d4ef-469a-a76f-2ba6e2c7c8e9.ButtonFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.97234042-1ff4-4427-b658-bb05660905ef.ConstantFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.97234042-1ff4-4427-b658-bb05660905ef.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.97234042-1ff4-4427-b658-bb05660905ef.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.f605076a-806a-4cb0-aac8-56d6d42ba0b6.ConstantFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.f605076a-806a-4cb0-aac8-56d6d42ba0b6.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.f605076a-806a-4cb0-aac8-56d6d42ba0b6.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.52d51404-6fef-4138-b884-9cbe9656916a.ConstantFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.52d51404-6fef-4138-b884-9cbe9656916a.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.52d51404-6fef-4138-b884-9cbe9656916a.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.59ea8db3-80d5-404b-a9fc-ff9b563d82d7.ConstantFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.59ea8db3-80d5-404b-a9fc-ff9b563d82d7.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.59ea8db3-80d5-404b-a9fc-ff9b563d82d7.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.af77b014-b8d7-43c3-b32b-038032331b93.ConstantFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.af77b014-b8d7-43c3-b32b-038032331b93.ConstantFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.af77b014-b8d7-43c3-b32b-038032331b93.ConstantFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.flowNode.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.output-0.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.989fa2b7-93bf-4fb3-948e-9ed436d8c2b9.FlowNode.output-0.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.2a9a17bb-ce8c-4d0a-9666-1fca9404ff70.BiquadFilterFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.f86642d3-8410-4432-8ec2-7ac6abd0aa9b.FunctionFlowNode.params.updateParams": [
+              null,
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.f86642d3-8410-4432-8ec2-7ac6abd0aa9b.FunctionFlowNode.input-0.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.f86642d3-8410-4432-8ec2-7ac6abd0aa9b.FunctionFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.f86642d3-8410-4432-8ec2-7ac6abd0aa9b.FunctionFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.f86642d3-8410-4432-8ec2-7ac6abd0aa9b.FunctionFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.f86642d3-8410-4432-8ec2-7ac6abd0aa9b.FunctionFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.3b8e3565-a883-40b2-9404-9f52a580996e.LogFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.3b8e3565-a883-40b2-9404-9f52a580996e.LogFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.afd6c500-c494-495f-b120-8ea078ee62a0.FunctionFlowNode.params.updateParams": [
+              null,
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.afd6c500-c494-495f-b120-8ea078ee62a0.FunctionFlowNode.input-0.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.afd6c500-c494-495f-b120-8ea078ee62a0.FunctionFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.afd6c500-c494-495f-b120-8ea078ee62a0.FunctionFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.afd6c500-c494-495f-b120-8ea078ee62a0.FunctionFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.afd6c500-c494-495f-b120-8ea078ee62a0.FunctionFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.2e7c2674-9204-4ae7-be36-5c72b8e779d6.OscillatorFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.2e7c2674-9204-4ae7-be36-5c72b8e779d6.OscillatorFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.2e7c2674-9204-4ae7-be36-5c72b8e779d6.OscillatorFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.09c4ba3a-64fe-48bf-9b88-89aa32c589dc.OscillatorFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.09c4ba3a-64fe-48bf-9b88-89aa32c589dc.OscillatorFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.09c4ba3a-64fe-48bf-9b88-89aa32c589dc.OscillatorFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.f25da49e-259f-4d54-b4a9-bbde33b6a9d2.OscillatorFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.f25da49e-259f-4d54-b4a9-bbde33b6a9d2.OscillatorFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.f25da49e-259f-4d54-b4a9-bbde33b6a9d2.OscillatorFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.504c239f-6607-4d82-99d8-098b4f44b8c1.GainFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.ff3f5300-8b86-44d8-858f-a89a20e49826.BiquadFilterFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.2c1821c2-0dfc-4cf1-8632-876e2e1cbe02.BiquadFilterFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.851e5a26-9270-42e7-b20a-b6ccbaa86a91.GainFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.28f6b501-57fc-4768-9456-b3c831869f0a.GainFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.255b105e-b4f8-4c27-8bb1-fdd86b888a7e.NoiseFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.255b105e-b4f8-4c27-8bb1-fdd86b888a7e.NoiseFlowNode.noiseType.change": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.e6890517-c6b7-4ba8-9bda-c0f7c5863b56.GainFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.8c90d6bf-5000-4b73-ad48-fe46649bb729.DistortionFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.baf1e5d0-18cd-4019-881a-4827ec3f61d5.OscillatorFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.baf1e5d0-18cd-4019-881a-4827ec3f61d5.OscillatorFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.baf1e5d0-18cd-4019-881a-4827ec3f61d5.OscillatorFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.df828ecf-ed02-47e1-8c7f-cf02eb280fa4.GainFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.7e4be751-6cac-4126-8c8c-8c0cd2a7fdae.ReverbFlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.82367ddd-b0a3-4c35-8269-6d8f75e27569.AutomationFlowNode.params.updateParams": [
+              null,
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.82367ddd-b0a3-4c35-8269-6d8f75e27569.AutomationFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.82367ddd-b0a3-4c35-8269-6d8f75e27569.AutomationFlowNode.main-input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.82367ddd-b0a3-4c35-8269-6d8f75e27569.AutomationFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.82367ddd-b0a3-4c35-8269-6d8f75e27569.AutomationFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.28c3bfe4-9d9a-4013-b291-99a396f29ad5.InputNode.params.updateParams": [
+              null,
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.28c3bfe4-9d9a-4013-b291-99a396f29ad5.InputNodeinput-0.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.28c3bfe4-9d9a-4013-b291-99a396f29ad5.InputNodeinput-0.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.02de3df4-f162-431a-b718-b79009cd34b7.OutputNode.params.updateParams": [
+              null,
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.02de3df4-f162-431a-b718-b79009cd34b7.OutputNode.input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.02de3df4-f162-431a-b718-b79009cd34b7.OutputNode.input.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.params.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.flowNode.updateParams": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.output-0.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.output-0.receiveNodeOff": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.input-0.receiveNodeOn": [
+              null
+            ],
+            "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode.input-0.receiveNodeOff": [
+              null
+            ],
+            "fc97be7f-662e-4d6a-8170-19742dc20beb.MidiFileFlowNode.params.updateParams": [
+              null,
+              null
+            ],
+            "fc97be7f-662e-4d6a-8170-19742dc20beb.MidiFileFlowNode.clock.receiveNodeOn": [
+              null
+            ],
+            "fc97be7f-662e-4d6a-8170-19742dc20beb.MidiFileFlowNode.clock.receivenodeOn": [
+              null
+            ],
+            "fc97be7f-662e-4d6a-8170-19742dc20beb.MidiFileFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "fc97be7f-662e-4d6a-8170-19742dc20beb.MidiFileFlowNode.main-input.receivenodeOn": [
+              null
+            ],
+            "fc97be7f-662e-4d6a-8170-19742dc20beb.MidiFileFlowNode.reset.receiveNodeOn": [
+              null
+            ],
+            "fc97be7f-662e-4d6a-8170-19742dc20beb.MidiFileFlowNode.reset.receivenodeOn": [
+              null
+            ],
+            "fc97be7f-662e-4d6a-8170-19742dc20beb.MidiFileFlowNode.main-output.sendNodeOn": [
+              null
+            ],
+            "fc97be7f-662e-4d6a-8170-19742dc20beb.MidiFileFlowNode.main-output.sendNodeOff": [
+              null
+            ],
+            "fc97be7f-662e-4d6a-8170-19742dc20beb.MidiFileFlowNode.tempo-output.sendNodeOn": [
+              null
+            ],
+            "915e98aa-2c8b-49db-aa09-ea7cea62738b.UnisonEndFlowNode.params.updateParams": [
+              null
+            ],
+            "01b0ae18-0093-4293-a430-85e125b87456.ClockFlowNode.params.updateParams": [
+              null,
+              null
+            ],
+            "01b0ae18-0093-4293-a430-85e125b87456.ClockFlowNode.main-input.receiveNodeOn": [
+              null
+            ],
+            "01b0ae18-0093-4293-a430-85e125b87456.ClockFlowNode.main-input.sendNodeOn": [
+              null
+            ],
+            "01b0ae18-0093-4293-a430-85e125b87456.ClockFlowNode.main-input.sendNodeOff": [
+              null
+            ],
+            "01b0ae18-0093-4293-a430-85e125b87456.ClockFlowNode.bpm-input.receiveNodeOn": [
+              null
+            ],
+            "01b0ae18-0093-4293-a430-85e125b87456.ClockFlowNode.bpm-input.receivenodeOn": [
+              null
+            ],
+            "ab88d7d1-226d-47af-aaa7-4bf6a373c41b.UnisonBeginFlowNode.voice-event.receiveNodeOn": [
+              null
+            ],
+            "ab88d7d1-226d-47af-aaa7-4bf6a373c41b.UnisonBeginFlowNode.voice-event.receiveNodeOff": [
+              null
+            ]
+          },
+          "id": "c12209e3-3aa3-40c9-aa72-9d238f03db04"
+        },
+        "style": {
+          "padding": "5px",
+          "border": "1px solid rgba(80, 95, 130, 0.50)",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "rgba(18, 19, 36, 0.52)",
+          "backdropFilter": "blur(6px)",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.12), inset 0 3px 12px rgba(250,204,21,0.22)",
+          "borderTop": "3px solid #facc15",
+          "--node-accent": "#facc15",
+          "glowColor": "#00ff88"
+        },
+        "id": "01b0ae18-0093-4293-a430-85e125b87456.ClockFlowNode",
+        "sendOff": false,
+        "sendOffBeforeNextOn": false
+      },
+      "zIndex": 66,
+      "measured": {
+        "width": 126,
+        "height": 129
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode",
+      "type": "UnisonBeginFlowNode",
+      "position": {
+        "x": 959.9831704360971,
+        "y": 310.8521275012184
+      },
+      "data": {
+        "label": "Unison Begin",
+        "numberOfVoices": 50,
+        "msTimeStartDeviation": 300,
+        "msTimeEndDeviation": 300,
+        "detuneCentsDeviation": 2000,
+        "gainDeviation": 10,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid rgba(80, 95, 130, 0.50)",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "rgba(18, 19, 36, 0.52)",
+          "backdropFilter": "blur(6px)",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#a78bfa",
+          "borderTop": "3px solid #60a5fa",
+          "--node-accent": "#60a5fa"
+        },
+        "id": "1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode",
+        "detuneFreqDeviation": 10
+      },
+      "zIndex": 67,
+      "measured": {
+        "width": 175,
+        "height": 215
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "ef88eec1-0043-427a-af7e-ccbd122ae3cf.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 1526.1676548153364,
+        "y": 344.91846317445675
+      },
+      "data": {
+        "label": "",
+        "gain": 0.29629834162075364,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid rgba(80, 95, 130, 0.50)",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "rgba(18, 19, 36, 0.52)",
+          "backdropFilter": "blur(6px)",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.12), inset 0 3px 12px rgba(96,165,250,0.22)",
+          "borderTop": "3px solid #60a5fa",
+          "--node-accent": "#60a5fa",
+          "glowColor": "#00ff88"
+        },
+        "id": "ef88eec1-0043-427a-af7e-ccbd122ae3cf.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 72,
+      "measured": {
+        "width": 80,
+        "height": 114
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "8fff659c-08b1-440c-9e56-4875d9a6662a.MasterOutFlowNode",
+      "type": "MasterOutFlowNode",
+      "position": {
+        "x": 1858.459291081935,
+        "y": 379.19903927647147
+      },
+      "data": {
+        "label": "",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid rgba(80, 95, 130, 0.50)",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "rgba(18, 19, 36, 0.52)",
+          "backdropFilter": "blur(6px)",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.12), inset 0 3px 12px rgba(248,113,113,0.22)",
+          "borderTop": "3px solid #f87171",
+          "--node-accent": "#f87171",
+          "glowColor": "#00ff88"
+        },
+        "id": "8fff659c-08b1-440c-9e56-4875d9a6662a.MasterOutFlowNode"
+      },
+      "zIndex": 73,
+      "measured": {
+        "width": 92,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "fdb63408-f448-4f0d-9e37-ce62ea5f4548.ReverbFlowNode",
+      "type": "ReverbFlowNode",
+      "position": {
+        "x": 1672.427405085405,
+        "y": 333.2316252483844
+      },
+      "data": {
+        "label": "",
+        "id": "fdb63408-f448-4f0d-9e37-ce62ea5f4548.ReverbFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid rgba(80, 95, 130, 0.50)",
+          "borderRadius": "7px",
+          "textAlign": "center",
+          "background": "rgba(18, 19, 36, 0.52)",
+          "backdropFilter": "blur(6px)",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.12), inset 0 3px 12px rgba(96,165,250,0.22)",
+          "glowColor": "#00ff88",
+          "borderTop": "3px solid #60a5fa",
+          "--node-accent": "#60a5fa"
+        },
+        "seconds": 2.7685033779393384,
+        "decay": 10.457277068413717,
+        "reverse": false,
+        "formula": "(Math.random() * 2 - 1) * Math.pow(1 - n / length, decay)",
+        "secondsKnobValue": 0.1596306955640242,
+        "decayKnobValue": 0.40193567260579693,
+        "secondsMidiMapping": null,
+        "decayMidiMapping": null
+      },
+      "zIndex": 75,
+      "measured": {
+        "width": 117,
+        "height": 254
+      },
+      "dragging": false,
+      "selected": false
+    }
+  ],
+  "edges": [
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode",
+      "sourceHandle": "output-0",
+      "target": "915e98aa-2c8b-49db-aa09-ea7cea62738b.UnisonEndFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNodeoutput-0-915e98aa-2c8b-49db-aa09-ea7cea62738b.UnisonEndFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "01b0ae18-0093-4293-a430-85e125b87456.ClockFlowNode",
+      "sourceHandle": "main-output",
+      "target": "fc97be7f-662e-4d6a-8170-19742dc20beb.MidiFileFlowNode",
+      "targetHandle": "clock",
+      "id": "xy-edge__01b0ae18-0093-4293-a430-85e125b87456.ClockFlowNodemain-output-fc97be7f-662e-4d6a-8170-19742dc20beb.MidiFileFlowNodeclock"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "fc97be7f-662e-4d6a-8170-19742dc20beb.MidiFileFlowNode",
+      "sourceHandle": "main-output",
+      "target": "1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode",
+      "targetHandle": "unison-input",
+      "id": "xy-edge__fc97be7f-662e-4d6a-8170-19742dc20beb.MidiFileFlowNodemain-output-1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNodeunison-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode",
+      "sourceHandle": "unison-output",
+      "target": "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode",
+      "targetHandle": "input-0",
+      "id": "xy-edge__1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNodeunison-output-dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNodeinput-0"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode",
+      "sourceHandle": "output-0",
+      "target": "915e98aa-2c8b-49db-aa09-ea7cea62738b.UnisonEndFlowNode",
+      "targetHandle": "unison-input",
+      "id": "xy-edge__dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNodeoutput-0-915e98aa-2c8b-49db-aa09-ea7cea62738b.UnisonEndFlowNodeunison-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode",
+      "sourceHandle": "unison-output",
+      "target": "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode",
+      "targetHandle": "input-0",
+      "id": "xy-edge__1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNodeunison-output-1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-9.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-8.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-7.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-6.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-5.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-4.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-3.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-2.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-1.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-0.dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNodeinput-0"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode",
+      "sourceHandle": "output-0",
+      "target": "915e98aa-2c8b-49db-aa09-ea7cea62738b.UnisonEndFlowNode",
+      "targetHandle": "unison-input",
+      "id": "xy-edge__1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-9.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-8.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-7.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-6.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-5.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-4.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-3.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-2.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-1.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode.1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode-0.dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNodeoutput-0-915e98aa-2c8b-49db-aa09-ea7cea62738b.UnisonEndFlowNodeunison-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "915e98aa-2c8b-49db-aa09-ea7cea62738b.UnisonEndFlowNode",
+      "sourceHandle": "unison-output",
+      "target": "ef88eec1-0043-427a-af7e-ccbd122ae3cf.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__915e98aa-2c8b-49db-aa09-ea7cea62738b.UnisonEndFlowNodeunison-output-ef88eec1-0043-427a-af7e-ccbd122ae3cf.GainFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNode",
+      "sourceHandle": "detune-output",
+      "target": "dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNode",
+      "targetHandle": "input-1",
+      "id": "xy-edge__1571863a-3804-4660-8147-8917efde0b87.UnisonBeginFlowNodedetune-output-dcc97e54-ab2a-4259-abc7-598ebb157bd2.FlowNodeinput-1"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "ef88eec1-0043-427a-af7e-ccbd122ae3cf.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "fdb63408-f448-4f0d-9e37-ce62ea5f4548.ReverbFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__ef88eec1-0043-427a-af7e-ccbd122ae3cf.GainFlowNodeoutput-fdb63408-f448-4f0d-9e37-ce62ea5f4548.ReverbFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "fdb63408-f448-4f0d-9e37-ce62ea5f4548.ReverbFlowNode",
+      "sourceHandle": "output",
+      "target": "8fff659c-08b1-440c-9e56-4875d9a6662a.MasterOutFlowNode",
+      "targetHandle": "destination-input",
+      "id": "xy-edge__fdb63408-f448-4f0d-9e37-ce62ea5f4548.ReverbFlowNodeoutput-8fff659c-08b1-440c-9e56-4875d9a6662a.MasterOutFlowNodedestination-input"
+    }
+  ],
+  "folder_path": "examples/instruments",
+  "updated_at": "2026-06-02T18:35:32.577Z"
+}

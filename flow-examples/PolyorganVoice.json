@@ -1,0 +1,1760 @@
+{
+  "name": "PolyorganVoice",
+  "nodes": [
+    {
+      "id": "ba44549b-4bf9-457d-8c88-cee470c7fabc.ADSRFlowNode",
+      "type": "ADSRFlowNode",
+      "position": {
+        "x": -473.75748150265406,
+        "y": 322.49328889491824
+      },
+      "data": {
+        "label": "ADSRFlowNode Node",
+        "attackTime": 0.021,
+        "decayTime": 0.2,
+        "sustainLevel": 0.998,
+        "releaseTime": 0.03,
+        "maxTime": 10,
+        "style": {
+          "padding": "10px",
+          "border": "1px solid #ddd",
+          "borderRadius": "5px",
+          "width": "200px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "glowColor": "#00ff88",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)"
+        },
+        "id": "ba44549b-4bf9-457d-8c88-cee470c7fabc.ADSRFlowNode",
+        "sustainTime": 0.035,
+        "minPercent": 0,
+        "maxPercent": 100,
+        "lengthSec": 0.89
+      },
+      "measured": {
+        "width": 222,
+        "height": 235
+      },
+      "dragging": false,
+      "zIndex": 168,
+      "selected": false
+    },
+    {
+      "id": "76228a58-872c-4ef8-843d-28ce6998d0a3.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": -493.33868676920935,
+        "y": 637.6826601091591
+      },
+      "data": {
+        "label": "Oscillator",
+        "frequency": 43.653528929125486,
+        "detune": 0,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "76228a58-872c-4ef8-843d-28ce6998d0a3.OscillatorFlowNode",
+        "knobValue": 11.299645398075633,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 169,
+      "measured": {
+        "width": 72,
+        "height": 220
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "908e21d1-cc44-4b81-9598-3e8949701b00.FlowEventFreqShifterFlowNode",
+      "type": "FlowEventFreqShifterFlowNode",
+      "position": {
+        "x": -671.3744223995562,
+        "y": 683.0230628067877
+      },
+      "data": {
+        "label": "",
+        "id": "908e21d1-cc44-4b81-9598-3e8949701b00.FlowEventFreqShifterFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "shift": -24,
+        "shiftMidiMapping": null
+      },
+      "zIndex": 170,
+      "measured": {
+        "width": 102,
+        "height": 152
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "fb5a6355-e355-4c1a-8950-c7963178715d.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": -377.25553939550844,
+        "y": 717.1338915720876
+      },
+      "data": {
+        "label": "",
+        "gain": 0.39358098144200115,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "fb5a6355-e355-4c1a-8950-c7963178715d.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 171,
+      "measured": {
+        "width": 74,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "22d2ae65-3464-479e-b3d1-49b120aa9c1c.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 1296.4714186382685,
+        "y": 895.9669143288351
+      },
+      "data": {
+        "label": "",
+        "gain": 0.9936828330473524,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "22d2ae65-3464-479e-b3d1-49b120aa9c1c.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 172,
+      "measured": {
+        "width": 74,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "6f51f4e8-0c8e-4f3b-aa56-994361ed3c0a.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": -104.9823634748335,
+        "y": 635.8128922572379
+      },
+      "data": {
+        "label": "Oscillator",
+        "frequency": 87.30705785825097,
+        "detune": 0.6752760256958357,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "6f51f4e8-0c8e-4f3b-aa56-994361ed3c0a.OscillatorFlowNode",
+        "knobValue": 21.333978586875006,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 173,
+      "measured": {
+        "width": 72,
+        "height": 220
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "5108086d-5790-4df0-b5c5-d491ac0f8552.FlowEventFreqShifterFlowNode",
+      "type": "FlowEventFreqShifterFlowNode",
+      "position": {
+        "x": -248.1611292959518,
+        "y": 681.8109736305123
+      },
+      "data": {
+        "label": "",
+        "id": "5108086d-5790-4df0-b5c5-d491ac0f8552.FlowEventFreqShifterFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "shift": -12,
+        "shiftMidiMapping": null
+      },
+      "zIndex": 174,
+      "measured": {
+        "width": 102,
+        "height": 152
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "8a5ed59a-9251-4472-92b3-2b39a98e2779.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 11.100783898867405,
+        "y": 715.2641237201664
+      },
+      "data": {
+        "label": "",
+        "gain": 0.7692290229147563,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "8a5ed59a-9251-4472-92b3-2b39a98e2779.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 175,
+      "measured": {
+        "width": 74,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "141be7cf-4da4-4b8a-a8ea-3aac8c4a056c.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 300.0653167278075,
+        "y": 615.2371049373072
+      },
+      "data": {
+        "label": "Oscillator",
+        "frequency": 174.61411571650194,
+        "detune": 0.6991653270242805,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "141be7cf-4da4-4b8a-a8ea-3aac8c4a056c.OscillatorFlowNode",
+        "knobValue": 31.36831177567438,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 176,
+      "measured": {
+        "width": 72,
+        "height": 220
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "af412cc1-7212-4c28-a063-4812e206ff9e.FlowEventFreqShifterFlowNode",
+      "type": "FlowEventFreqShifterFlowNode",
+      "position": {
+        "x": 158.4230274242529,
+        "y": 676.5999514862183
+      },
+      "data": {
+        "label": "",
+        "id": "af412cc1-7212-4c28-a063-4812e206ff9e.FlowEventFreqShifterFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "shift": 0,
+        "shiftMidiMapping": null
+      },
+      "zIndex": 177,
+      "measured": {
+        "width": 102,
+        "height": 152
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "56a6f7c0-1d02-4875-b618-27820b69c1ef.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 417.6849406190722,
+        "y": 702.370718988054
+      },
+      "data": {
+        "label": "",
+        "gain": 1.0090654462833957,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "56a6f7c0-1d02-4875-b618-27820b69c1ef.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 178,
+      "measured": {
+        "width": 74,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "302d6395-aac8-4529-999f-d14f20f0499e.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 696.1040226100017,
+        "y": 624.1226727083316
+      },
+      "data": {
+        "label": "Oscillator",
+        "frequency": 261.6255653005986,
+        "detune": 0,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "302d6395-aac8-4529-999f-d14f20f0499e.OscillatorFlowNode",
+        "knobValue": 37.22167280247401,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 179,
+      "measured": {
+        "width": 72,
+        "height": 220
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "4a4bf47d-fcfb-40d9-a1a4-447099eb2fc4.FlowEventFreqShifterFlowNode",
+      "type": "FlowEventFreqShifterFlowNode",
+      "position": {
+        "x": 546.7793507186287,
+        "y": 671.6572305991697
+      },
+      "data": {
+        "label": "",
+        "id": "4a4bf47d-fcfb-40d9-a1a4-447099eb2fc4.FlowEventFreqShifterFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "shift": 7,
+        "shiftMidiMapping": null
+      },
+      "zIndex": 180,
+      "measured": {
+        "width": 102,
+        "height": 152
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "1cc98621-acf5-4979-9b20-b1b840ce5c0e.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 821.4060290890845,
+        "y": 688.2091389956234
+      },
+      "data": {
+        "label": "",
+        "gain": 0.5069639073043887,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "1cc98621-acf5-4979-9b20-b1b840ce5c0e.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 181,
+      "measured": {
+        "width": 74,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "d447037c-2fe1-4a98-931f-91490d5afd16.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 1117.3209752786906,
+        "y": 612.8649775214832
+      },
+      "data": {
+        "label": "Oscillator",
+        "frequency": 349.2282314330039,
+        "detune": 2.3331530774304023,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "d447037c-2fe1-4a98-931f-91490d5afd16.OscillatorFlowNode",
+        "knobValue": 41.40264496447375,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 182,
+      "measured": {
+        "width": 72,
+        "height": 220
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "6fb06f9a-bbc1-401a-b441-016fd3db3560.FlowEventFreqShifterFlowNode",
+      "type": "FlowEventFreqShifterFlowNode",
+      "position": {
+        "x": 974.1422094575723,
+        "y": 658.8630588947575
+      },
+      "data": {
+        "label": "",
+        "id": "6fb06f9a-bbc1-401a-b441-016fd3db3560.FlowEventFreqShifterFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "shift": 12,
+        "shiftMidiMapping": null
+      },
+      "zIndex": 183,
+      "measured": {
+        "width": 102,
+        "height": 152
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "9b96f415-b729-4d9f-ac2d-8f8ffa9bfb1c.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 1233.4041226523916,
+        "y": 692.3162089844117
+      },
+      "data": {
+        "label": "",
+        "gain": 0.7180626024802135,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "9b96f415-b729-4d9f-ac2d-8f8ffa9bfb1c.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 184,
+      "measured": {
+        "width": 74,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "a591f615-360c-43d8-b4b0-203985d7baa0.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 1505.6772985730665,
+        "y": 610.9952096695619
+      },
+      "data": {
+        "label": "Oscillator",
+        "frequency": 523.2511306011972,
+        "detune": 0,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "a591f615-360c-43d8-b4b0-203985d7baa0.OscillatorFlowNode",
+        "knobValue": 47.25600599127338,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 185,
+      "measured": {
+        "width": 72,
+        "height": 220
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "665a08f6-7dca-4c4f-997b-25bed061e878.FlowEventFreqShifterFlowNode",
+      "type": "FlowEventFreqShifterFlowNode",
+      "position": {
+        "x": 1362.4985327519482,
+        "y": 656.9932910428363
+      },
+      "data": {
+        "label": "",
+        "id": "665a08f6-7dca-4c4f-997b-25bed061e878.FlowEventFreqShifterFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "shift": 19,
+        "shiftMidiMapping": null
+      },
+      "zIndex": 186,
+      "measured": {
+        "width": 102,
+        "height": 152
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "76a784be-2132-47ae-a670-2727777d0bac.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 1621.7604459467673,
+        "y": 690.4464411324903
+      },
+      "data": {
+        "label": "",
+        "gain": 0.4525719659143982,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "76a784be-2132-47ae-a670-2727777d0bac.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 187,
+      "measured": {
+        "width": 74,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "34fd7fc5-0962-40c1-b683-ecd4b7abd8f0.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 1910.7249787757075,
+        "y": 590.4194223496313
+      },
+      "data": {
+        "label": "Oscillator",
+        "frequency": 698.4564628660078,
+        "detune": 0,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "34fd7fc5-0962-40c1-b683-ecd4b7abd8f0.OscillatorFlowNode",
+        "knobValue": 51.43697815327313,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 188,
+      "measured": {
+        "width": 72,
+        "height": 220
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "f827dbc4-fb73-4383-bba2-1b4d6fd92e44.FlowEventFreqShifterFlowNode",
+      "type": "FlowEventFreqShifterFlowNode",
+      "position": {
+        "x": 1763.821260066986,
+        "y": 642.5747674395008
+      },
+      "data": {
+        "label": "",
+        "id": "f827dbc4-fb73-4383-bba2-1b4d6fd92e44.FlowEventFreqShifterFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "shift": 24,
+        "shiftMidiMapping": null
+      },
+      "zIndex": 189,
+      "measured": {
+        "width": 102,
+        "height": 152
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "8a16db64-9db3-4091-8b3a-323a2a323863.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 2028.344602666972,
+        "y": 677.553036400378
+      },
+      "data": {
+        "label": "",
+        "gain": 0.40107855051450486,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "8a16db64-9db3-4091-8b3a-323a2a323863.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 190,
+      "measured": {
+        "width": 74,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "f0357830-e6c3-4c40-b922-ba1a85fa42aa.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 2306.7636846579016,
+        "y": 599.3049901206556
+      },
+      "data": {
+        "label": "Oscillator",
+        "frequency": 880,
+        "detune": 0,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "f0357830-e6c3-4c40-b922-ba1a85fa42aa.OscillatorFlowNode",
+        "knobValue": 54.781755882872915,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 191,
+      "measured": {
+        "width": 72,
+        "height": 220
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "aa39b0d1-7929-44e2-b426-2c3bc4bb243f.FlowEventFreqShifterFlowNode",
+      "type": "FlowEventFreqShifterFlowNode",
+      "position": {
+        "x": 2157.4390127665283,
+        "y": 646.8395480114937
+      },
+      "data": {
+        "label": "",
+        "id": "aa39b0d1-7929-44e2-b426-2c3bc4bb243f.FlowEventFreqShifterFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "shift": 28,
+        "shiftMidiMapping": null
+      },
+      "zIndex": 192,
+      "measured": {
+        "width": 102,
+        "height": 152
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "17a4544b-46c3-432b-9c1b-e076646ab3d7.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 2432.0656911369842,
+        "y": 663.3914564079474
+      },
+      "data": {
+        "label": "",
+        "gain": 0.35670500396843335,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "17a4544b-46c3-432b-9c1b-e076646ab3d7.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 193,
+      "measured": {
+        "width": 74,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "a42f06af-25ea-4d43-96d1-f43f60d94c5c.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 2740.5671826826047,
+        "y": 618.7092274476819
+      },
+      "data": {
+        "label": "Oscillator",
+        "frequency": 1046.5022612023947,
+        "detune": 0,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "a42f06af-25ea-4d43-96d1-f43f60d94c5c.OscillatorFlowNode",
+        "knobValue": 57.290339180072756,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 194,
+      "measured": {
+        "width": 72,
+        "height": 220
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "c49a795f-49f4-4e5b-ba3a-a3573ee99969.FlowEventFreqShifterFlowNode",
+      "type": "FlowEventFreqShifterFlowNode",
+      "position": {
+        "x": 2532.3802411938777,
+        "y": 639.4779976485337
+      },
+      "data": {
+        "label": "",
+        "id": "c49a795f-49f4-4e5b-ba3a-a3573ee99969.FlowEventFreqShifterFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "shift": 31,
+        "shiftMidiMapping": null
+      },
+      "zIndex": 195,
+      "measured": {
+        "width": 102,
+        "height": 152
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "574e4cb5-fa6d-4e23-b5c6-2cd61d088693.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 2851.9143409320586,
+        "y": 668.2080476475678
+      },
+      "data": {
+        "label": "",
+        "gain": 0.2432112737816505,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "574e4cb5-fa6d-4e23-b5c6-2cd61d088693.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 196,
+      "measured": {
+        "width": 74,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "50945a2b-9335-43c4-b916-5163e94ac636.OscillatorFlowNode",
+      "type": "OscillatorFlowNode",
+      "position": {
+        "x": 3130.3334229229886,
+        "y": 589.9600013678453
+      },
+      "data": {
+        "label": "Oscillator",
+        "frequency": 1396.9129257320155,
+        "detune": 0,
+        "type": "sine",
+        "frequencyType": "hz",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "width": "60px",
+          "glowColor": "#00ff88"
+        },
+        "id": "50945a2b-9335-43c4-b916-5163e94ac636.OscillatorFlowNode",
+        "knobValue": 61.4713113420725,
+        "freqMidiMapping": null,
+        "detuneMidiMapping": null
+      },
+      "zIndex": 197,
+      "measured": {
+        "width": 72,
+        "height": 220
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "d3c85458-64e9-485d-8e7b-7ee14a1462f2.FlowEventFreqShifterFlowNode",
+      "type": "FlowEventFreqShifterFlowNode",
+      "position": {
+        "x": 2981.0087510316152,
+        "y": 637.4945592586834
+      },
+      "data": {
+        "label": "",
+        "id": "d3c85458-64e9-485d-8e7b-7ee14a1462f2.FlowEventFreqShifterFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "shift": 36,
+        "shiftMidiMapping": null
+      },
+      "zIndex": 198,
+      "measured": {
+        "width": 102,
+        "height": 152
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "257bee0b-115c-4e2a-a060-da215d45a5ce.GainFlowNode",
+      "type": "GainFlowNode",
+      "position": {
+        "x": 3255.635429402071,
+        "y": 654.0464676551371
+      },
+      "data": {
+        "label": "",
+        "gain": 0.2115459619603016,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "257bee0b-115c-4e2a-a060-da215d45a5ce.GainFlowNode",
+        "gainMidiMapping": null
+      },
+      "zIndex": 199,
+      "measured": {
+        "width": 74,
+        "height": 93
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "3efe2146-30f1-4fb9-bbac-2c1a7ed73060.OnOffButtonFlowNode",
+      "type": "OnOffButtonFlowNode",
+      "position": {
+        "x": 1148.3480738166727,
+        "y": 312.91254409690845
+      },
+      "data": {
+        "label": "Gate",
+        "isOn": true,
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "maxHeight": 70,
+          "glowColor": "#00ff88"
+        },
+        "id": "3efe2146-30f1-4fb9-bbac-2c1a7ed73060.OnOffButtonFlowNode"
+      },
+      "zIndex": 200,
+      "measured": {
+        "width": 90,
+        "height": 54
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "513fe3f4-0286-4d85-9d02-8a3f3fe211ba.InputNode",
+      "type": "InputNode",
+      "position": {
+        "x": -855.3301201591953,
+        "y": 496.83738766832687
+      },
+      "data": {
+        "label": "",
+        "index": 0,
+        "value": "",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "513fe3f4-0286-4d85-9d02-8a3f3fe211ba.InputNode"
+      },
+      "zIndex": 201,
+      "measured": {
+        "width": 84,
+        "height": 74
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "8e957ac2-def9-4d65-a561-4543964af1d3.OutputNode",
+      "type": "OutputNode",
+      "position": {
+        "x": 1769.6116770792264,
+        "y": 949.5018764666625
+      },
+      "data": {
+        "label": "",
+        "index": 0,
+        "value": "",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "8e957ac2-def9-4d65-a561-4543964af1d3.OutputNode"
+      },
+      "zIndex": 202,
+      "measured": {
+        "width": 84,
+        "height": 74
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "e85908ce-3fff-45bc-8d16-5b08b65cedf2.InputNode",
+      "type": "InputNode",
+      "position": {
+        "x": 665.7943693061673,
+        "y": 301.8255983778424
+      },
+      "data": {
+        "label": "",
+        "index": 1,
+        "value": "",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        },
+        "id": "e85908ce-3fff-45bc-8d16-5b08b65cedf2.InputNode"
+      },
+      "zIndex": 203,
+      "measured": {
+        "width": 84,
+        "height": 74
+      },
+      "dragging": false,
+      "selected": false
+    },
+    {
+      "id": "500f3ae2-0529-417b-a473-f99bed61f8aa.LogFlowNode",
+      "type": "LogFlowNode",
+      "position": {
+        "x": 1390.3982943333756,
+        "y": 347.0879991874768
+      },
+      "data": {
+        "label": "FREQ LOG",
+        "id": "500f3ae2-0529-417b-a473-f99bed61f8aa.LogFlowNode",
+        "style": {
+          "padding": "5px",
+          "border": "1px solid #2a3139",
+          "borderRadius": "5px",
+          "textAlign": "center",
+          "background": "#1f1f1f",
+          "color": "#eee",
+          "boxShadow": "0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)",
+          "glowColor": "#00ff88"
+        }
+      },
+      "zIndex": 206,
+      "measured": {
+        "width": 248,
+        "height": 61
+      },
+      "dragging": false,
+      "selected": false
+    }
+  ],
+  "edges": [
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "3efe2146-30f1-4fb9-bbac-2c1a7ed73060.OnOffButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "908e21d1-cc44-4b81-9598-3e8949701b00.FlowEventFreqShifterFlowNode",
+      "targetHandle": "trigger-input",
+      "id": "c4163aa1-1ade-44a2-ba56-5426390d2aac.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "3efe2146-30f1-4fb9-bbac-2c1a7ed73060.OnOffButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "5108086d-5790-4df0-b5c5-d491ac0f8552.FlowEventFreqShifterFlowNode",
+      "targetHandle": "trigger-input",
+      "id": "279a7119-b4e6-4882-aaaf-72f06dfdec41.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "3efe2146-30f1-4fb9-bbac-2c1a7ed73060.OnOffButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "af412cc1-7212-4c28-a063-4812e206ff9e.FlowEventFreqShifterFlowNode",
+      "targetHandle": "trigger-input",
+      "id": "35b03a91-ddad-416e-bcae-7ca347dd48ef.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "3efe2146-30f1-4fb9-bbac-2c1a7ed73060.OnOffButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "4a4bf47d-fcfb-40d9-a1a4-447099eb2fc4.FlowEventFreqShifterFlowNode",
+      "targetHandle": "trigger-input",
+      "id": "6011c515-74ef-4e88-9b3d-01240e91f7dd.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "3efe2146-30f1-4fb9-bbac-2c1a7ed73060.OnOffButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "6fb06f9a-bbc1-401a-b441-016fd3db3560.FlowEventFreqShifterFlowNode",
+      "targetHandle": "trigger-input",
+      "id": "f26b19fd-1b78-4e10-a914-700f56c90cff.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "3efe2146-30f1-4fb9-bbac-2c1a7ed73060.OnOffButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "665a08f6-7dca-4c4f-997b-25bed061e878.FlowEventFreqShifterFlowNode",
+      "targetHandle": "trigger-input",
+      "id": "c6701c4d-810a-459a-b002-32c20b191764.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "3efe2146-30f1-4fb9-bbac-2c1a7ed73060.OnOffButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "f827dbc4-fb73-4383-bba2-1b4d6fd92e44.FlowEventFreqShifterFlowNode",
+      "targetHandle": "trigger-input",
+      "id": "0153ee1c-fbc3-4210-98c1-0806d3e36d9d.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "3efe2146-30f1-4fb9-bbac-2c1a7ed73060.OnOffButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "aa39b0d1-7929-44e2-b426-2c3bc4bb243f.FlowEventFreqShifterFlowNode",
+      "targetHandle": "trigger-input",
+      "id": "e2a2039f-9314-4efb-830d-a89fbfbe71a8.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "3efe2146-30f1-4fb9-bbac-2c1a7ed73060.OnOffButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "c49a795f-49f4-4e5b-ba3a-a3573ee99969.FlowEventFreqShifterFlowNode",
+      "targetHandle": "trigger-input",
+      "id": "32c22535-e0d5-4f47-8914-c10e12dba2ce.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "3efe2146-30f1-4fb9-bbac-2c1a7ed73060.OnOffButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "d3c85458-64e9-485d-8e7b-7ee14a1462f2.FlowEventFreqShifterFlowNode",
+      "targetHandle": "trigger-input",
+      "id": "d136e129-60b4-44fb-8dc4-347584e20143.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "908e21d1-cc44-4b81-9598-3e8949701b00.FlowEventFreqShifterFlowNode",
+      "sourceHandle": "flow-output",
+      "target": "76228a58-872c-4ef8-843d-28ce6998d0a3.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "b4fe1da0-01b2-4129-bc9e-7fcdd65c4e26.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "76228a58-872c-4ef8-843d-28ce6998d0a3.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "fb5a6355-e355-4c1a-8950-c7963178715d.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "ebf77810-c0ac-4f83-b2ce-cc9a5985eea5.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "fb5a6355-e355-4c1a-8950-c7963178715d.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "22d2ae65-3464-479e-b3d1-49b120aa9c1c.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "5caf7b1b-666d-42b6-a25b-1336f0e4b276.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "5108086d-5790-4df0-b5c5-d491ac0f8552.FlowEventFreqShifterFlowNode",
+      "sourceHandle": "flow-output",
+      "target": "6f51f4e8-0c8e-4f3b-aa56-994361ed3c0a.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "fd882c4f-3f0b-4704-a19a-65c8cc2f0b4f.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "6f51f4e8-0c8e-4f3b-aa56-994361ed3c0a.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "8a5ed59a-9251-4472-92b3-2b39a98e2779.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "71ea98f0-3b87-4e27-be33-f85efb675a98.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "8a5ed59a-9251-4472-92b3-2b39a98e2779.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "22d2ae65-3464-479e-b3d1-49b120aa9c1c.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "ba781846-6874-487a-ab16-2614a44ffc32.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "af412cc1-7212-4c28-a063-4812e206ff9e.FlowEventFreqShifterFlowNode",
+      "sourceHandle": "flow-output",
+      "target": "141be7cf-4da4-4b8a-a8ea-3aac8c4a056c.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "6dfe0092-6fa3-45b1-a4b2-112fe47c398d.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "141be7cf-4da4-4b8a-a8ea-3aac8c4a056c.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "56a6f7c0-1d02-4875-b618-27820b69c1ef.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "b2be8251-1543-48eb-bfa5-2da4eef95b0c.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "56a6f7c0-1d02-4875-b618-27820b69c1ef.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "22d2ae65-3464-479e-b3d1-49b120aa9c1c.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "75ccb802-b5e4-4592-ba84-415f78888ae7.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "4a4bf47d-fcfb-40d9-a1a4-447099eb2fc4.FlowEventFreqShifterFlowNode",
+      "sourceHandle": "flow-output",
+      "target": "302d6395-aac8-4529-999f-d14f20f0499e.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "3f13e2af-3566-4578-8fb6-adcd366acf5a.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "302d6395-aac8-4529-999f-d14f20f0499e.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "1cc98621-acf5-4979-9b20-b1b840ce5c0e.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "cd22a7a7-af25-4706-94e5-63625f4ae816.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "1cc98621-acf5-4979-9b20-b1b840ce5c0e.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "22d2ae65-3464-479e-b3d1-49b120aa9c1c.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "d8ae3ba8-2230-4aa1-beec-5f0523c8045f.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "6fb06f9a-bbc1-401a-b441-016fd3db3560.FlowEventFreqShifterFlowNode",
+      "sourceHandle": "flow-output",
+      "target": "d447037c-2fe1-4a98-931f-91490d5afd16.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "51b2fc62-06bc-40e8-8075-0eb13ea3b868.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "d447037c-2fe1-4a98-931f-91490d5afd16.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "9b96f415-b729-4d9f-ac2d-8f8ffa9bfb1c.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "7f380d38-fd72-4f6b-a4f2-e9ff44a36fa7.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "9b96f415-b729-4d9f-ac2d-8f8ffa9bfb1c.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "22d2ae65-3464-479e-b3d1-49b120aa9c1c.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "34fb274b-ff14-4784-9982-1c9b83d7ef5e.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "665a08f6-7dca-4c4f-997b-25bed061e878.FlowEventFreqShifterFlowNode",
+      "sourceHandle": "flow-output",
+      "target": "a591f615-360c-43d8-b4b0-203985d7baa0.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "749cab60-78dc-45ae-aa50-9a17fda9c9fd.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "a591f615-360c-43d8-b4b0-203985d7baa0.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "76a784be-2132-47ae-a670-2727777d0bac.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "2d0a6d28-e6f9-4ed1-bfee-2b5e34adc8d7.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "76a784be-2132-47ae-a670-2727777d0bac.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "22d2ae65-3464-479e-b3d1-49b120aa9c1c.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "20bd2904-93d1-4530-84c0-44a643b57f63.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "f827dbc4-fb73-4383-bba2-1b4d6fd92e44.FlowEventFreqShifterFlowNode",
+      "sourceHandle": "flow-output",
+      "target": "34fd7fc5-0962-40c1-b683-ecd4b7abd8f0.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "f938448e-dd6f-4f79-8c9f-8da56de92afc.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "34fd7fc5-0962-40c1-b683-ecd4b7abd8f0.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "8a16db64-9db3-4091-8b3a-323a2a323863.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "7c2e896b-a0e2-4159-8683-fc1693834837.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "8a16db64-9db3-4091-8b3a-323a2a323863.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "22d2ae65-3464-479e-b3d1-49b120aa9c1c.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "72ab1db3-669f-4f33-b5a6-b36e4e1816f8.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "aa39b0d1-7929-44e2-b426-2c3bc4bb243f.FlowEventFreqShifterFlowNode",
+      "sourceHandle": "flow-output",
+      "target": "f0357830-e6c3-4c40-b922-ba1a85fa42aa.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "c8bac89e-edb8-42d0-a62c-e3b5e61474ad.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "f0357830-e6c3-4c40-b922-ba1a85fa42aa.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "17a4544b-46c3-432b-9c1b-e076646ab3d7.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "27fcc63b-a1b5-4fb5-b196-131fcf8aba36.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "17a4544b-46c3-432b-9c1b-e076646ab3d7.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "22d2ae65-3464-479e-b3d1-49b120aa9c1c.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "9911da05-6207-4927-8b7a-7d780210e09c.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "c49a795f-49f4-4e5b-ba3a-a3573ee99969.FlowEventFreqShifterFlowNode",
+      "sourceHandle": "flow-output",
+      "target": "a42f06af-25ea-4d43-96d1-f43f60d94c5c.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "f721b490-e297-4f49-bc10-5994ae39c727.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "a42f06af-25ea-4d43-96d1-f43f60d94c5c.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "574e4cb5-fa6d-4e23-b5c6-2cd61d088693.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "217b9ccc-fcad-4901-92ae-468f386ec3b1.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "574e4cb5-fa6d-4e23-b5c6-2cd61d088693.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "22d2ae65-3464-479e-b3d1-49b120aa9c1c.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "f14d3017-2ec7-442e-946f-a5b8707e980d.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "d3c85458-64e9-485d-8e7b-7ee14a1462f2.FlowEventFreqShifterFlowNode",
+      "sourceHandle": "flow-output",
+      "target": "50945a2b-9335-43c4-b916-5163e94ac636.OscillatorFlowNode",
+      "targetHandle": "frequency",
+      "id": "f704e79a-8d8a-43d1-ba1e-a84ead467960.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "50945a2b-9335-43c4-b916-5163e94ac636.OscillatorFlowNode",
+      "sourceHandle": "output",
+      "target": "257bee0b-115c-4e2a-a060-da215d45a5ce.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "177c3d29-cbc7-450c-b5ff-76feaded80e2.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "257bee0b-115c-4e2a-a060-da215d45a5ce.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "22d2ae65-3464-479e-b3d1-49b120aa9c1c.GainFlowNode",
+      "targetHandle": "main-input",
+      "id": "9f2c0069-1378-46d4-a778-b6e262b69627.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "ba44549b-4bf9-457d-8c88-cee470c7fabc.ADSRFlowNode",
+      "sourceHandle": "output",
+      "target": "22d2ae65-3464-479e-b3d1-49b120aa9c1c.GainFlowNode",
+      "targetHandle": "gain",
+      "id": "1aefd60f-776f-4a90-9786-99968d8d37b2.edge",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "513fe3f4-0286-4d85-9d02-8a3f3fe211ba.InputNode",
+      "sourceHandle": "output-0",
+      "target": "ba44549b-4bf9-457d-8c88-cee470c7fabc.ADSRFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__513fe3f4-0286-4d85-9d02-8a3f3fe211ba.InputNodeoutput-0-ba44549b-4bf9-457d-8c88-cee470c7fabc.ADSRFlowNodemain-input"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "22d2ae65-3464-479e-b3d1-49b120aa9c1c.GainFlowNode",
+      "sourceHandle": "output",
+      "target": "8e957ac2-def9-4d65-a561-4543964af1d3.OutputNode",
+      "targetHandle": "input",
+      "id": "xy-edge__22d2ae65-3464-479e-b3d1-49b120aa9c1c.GainFlowNodeoutput-8e957ac2-def9-4d65-a561-4543964af1d3.OutputNodeinput"
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round",
+        "filter": "drop-shadow(0 0 2px rgba(255,255,255,0.8)) drop-shadow(0 0 4px rgba(255,255,255,0.5))"
+      },
+      "source": "e85908ce-3fff-45bc-8d16-5b08b65cedf2.InputNode",
+      "sourceHandle": "output-1",
+      "target": "3efe2146-30f1-4fb9-bbac-2c1a7ed73060.OnOffButtonFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__e85908ce-3fff-45bc-8d16-5b08b65cedf2.InputNodeoutput-1-3efe2146-30f1-4fb9-bbac-2c1a7ed73060.OnOffButtonFlowNodemain-input",
+      "selected": false
+    },
+    {
+      "style": {
+        "strokeWidth": 1.5,
+        "strokeLinecap": "round"
+      },
+      "source": "3efe2146-30f1-4fb9-bbac-2c1a7ed73060.OnOffButtonFlowNode",
+      "sourceHandle": "output",
+      "target": "500f3ae2-0529-417b-a473-f99bed61f8aa.LogFlowNode",
+      "targetHandle": "main-input",
+      "id": "xy-edge__3efe2146-30f1-4fb9-bbac-2c1a7ed73060.OnOffButtonFlowNodeoutput-500f3ae2-0529-417b-a473-f99bed61f8aa.LogFlowNodemain-input"
+    }
+  ],
+  "folder_path": "examples",
+  "updated_at": "2026-02-03T23:21:23.411Z"
+}
