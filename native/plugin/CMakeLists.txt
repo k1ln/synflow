@@ -71,7 +71,7 @@ if(SYNFLOW_CLAP)
 endif()
 
 # Embed the default flow + the wasm DSP modules -> BinaryData::default_flow_json /
-# karplus_wasm / ladder_wasm / noise_wasm / etc. karplus/ladder/noise/svf/envgen/
+# karplus_wasm / ladder_wasm / noise_wasm / etc. karplus/brass/ladder/noise/svf/envgen/
 # freqshifter/fm/wavetable/granular/hardsync are the SAME public/*.wasm the
 # browser runs (Rust-authored); gain/ringmod are AssemblyScript, compiled from
 # native/wasm-src/*.ts via `node native/wasm-src/build.mjs` — the first tranche
@@ -79,6 +79,7 @@ endif()
 juce_add_binary_data(SynflowResources SOURCES
     resources/default_flow.json
     resources/karplus.wasm
+    resources/brass.wasm
     resources/ladder.wasm
     resources/noise.wasm
     resources/svf.wasm

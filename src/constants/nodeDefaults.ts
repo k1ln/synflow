@@ -20,6 +20,7 @@ import * as BiquadFilterFlowNode from '../nodes/BiquadFilterFlowNode';
 import * as SvfDriveFilterFlowNode from '../nodes/SvfDriveFilterFlowNode';
 import * as LadderFilterFlowNode from '../nodes/LadderFilterFlowNode';
 import * as KarplusFlowNode from '../nodes/KarplusFlowNode';
+import * as BrassFlowNode from '../nodes/BrassFlowNode';
 import * as FMFlowNode from '../nodes/FMFlowNode';
 import * as WavetableFlowNode from '../nodes/WavetableFlowNode';
 import * as GranularFlowNode from '../nodes/GranularFlowNode';
@@ -66,6 +67,7 @@ export const nodeDefaults: Record<string, Record<string, any>> = {
   SvfDriveFilterFlowNode: SvfDriveFilterFlowNode.defaultData,
   LadderFilterFlowNode: LadderFilterFlowNode.defaultData,
   KarplusFlowNode: KarplusFlowNode.defaultData,
+  BrassFlowNode: BrassFlowNode.defaultData,
   FMFlowNode: FMFlowNode.defaultData,
   WavetableFlowNode: WavetableFlowNode.defaultData,
   GranularFlowNode: GranularFlowNode.defaultData,
