@@ -12,18 +12,22 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const EXAMPLES_DIR = path.join(__dirname, '../public/flow-examples');
-const OUTPUT_FILE = path.join(EXAMPLES_DIR, 'manifest.json');
+const ROOT_DIR = path.join(__dirname, '../public/flow-examples');
+
+// Top-level subfolders that are their own independent bundle (seeded to their
+// own sibling folder under flows/ on disk, e.g. flows/drums/) rather than
+// being nested content inside the main "examples" bundle (flows/examples/).
+const INDEPENDENT_BUNDLES = ['drums'];
 
 function getAllJsonFiles(dir, baseDir = dir) {
   const files = [];
-  
+
   const items = fs.readdirSync(dir);
-  
+
   for (const item of items) {
     const fullPath = path.join(dir, item);
     const stat = fs.statSync(fullPath);
-    
+
     if (stat.isDirectory()) {
       // Recursively scan subdirectories
       files.push(...getAllJsonFiles(fullPath, baseDir));
@@ -35,17 +39,15 @@ function getAllJsonFiles(dir, baseDir = dir) {
       files.push(flowPath);
     }
   }
-  
+
   return files;
 }
 
-try {
-  if (!fs.existsSync(EXAMPLES_DIR)) {
-    console.error('Examples directory not found:', EXAMPLES_DIR);
-    process.exit(1);
-  }
-  
-  const flowExamples = getAllJsonFiles(EXAMPLES_DIR).sort();
+function generateManifestFor(dir, label, excludeTopLevel = []) {
+  const outputFile = path.join(dir, 'manifest.json');
+  const flowExamples = getAllJsonFiles(dir)
+    .filter((flowPath) => !excludeTopLevel.includes(flowPath.split('/')[0]))
+    .sort();
 
   // Content version: an md5 of every example file's bytes. Changes only when an
   // example's content actually changes, so the app can detect "the bundled
@@ -53,7 +55,7 @@ try {
   const h = crypto.createHash('md5');
   for (const name of flowExamples) {
     h.update(name);
-    h.update(fs.readFileSync(path.join(EXAMPLES_DIR, `${name}.json`)));
+    h.update(fs.readFileSync(path.join(dir, `${name}.json`)));
   }
   const version = h.digest('hex').slice(0, 16);
 
@@ -63,12 +65,26 @@ try {
     examples: flowExamples
   };
 
-  fs.writeFileSync(OUTPUT_FILE, JSON.stringify(manifest, null, 2));
-  console.log(`  version: ${version}`);
-  
-  console.log(`✓ Generated manifest with ${flowExamples.length} examples:`);
+  fs.writeFileSync(outputFile, JSON.stringify(manifest, null, 2));
+  console.log(`✓ Generated ${label} manifest (version ${version}) with ${flowExamples.length} examples:`);
   flowExamples.forEach(example => console.log(`  - ${example}`));
-  console.log(`\nManifest written to: ${OUTPUT_FILE}`);
+  console.log(`  written to: ${outputFile}`);
+}
+
+try {
+  if (!fs.existsSync(ROOT_DIR)) {
+    console.error('Examples directory not found:', ROOT_DIR);
+    process.exit(1);
+  }
+
+  for (const bundle of INDEPENDENT_BUNDLES) {
+    const bundleDir = path.join(ROOT_DIR, bundle);
+    if (fs.existsSync(bundleDir)) generateManifestFor(bundleDir, bundle);
+  }
+
+  // Main "examples" bundle: everything at ROOT_DIR except the independent
+  // bundle subfolders (they get their own manifest above).
+  generateManifestFor(ROOT_DIR, 'examples', INDEPENDENT_BUNDLES);
 } catch (error) {
   console.error('Error generating manifest:', error);
   process.exit(1);

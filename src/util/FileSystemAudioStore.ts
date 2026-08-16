@@ -110,8 +110,9 @@ export async function selectAndPrepareRoot(): Promise<FileSystemDirectoryHandle 
     await root.getDirectoryHandle('sampling', { create: true });
     await root.getDirectoryHandle('flows', { create: true });
     await root.getDirectoryHandle('scripts', { create: true });
-    // Create examples folder inside flows and populate with example flows
+    // Create examples/drums folders inside flows and populate with bundled flows
     await ensureBundledExamples(root);
+    await ensureBundledDrums(root);
     await saveRootHandle(root);
     return root;
   } catch (e) {
@@ -121,29 +122,35 @@ export async function selectAndPrepareRoot(): Promise<FileSystemDirectoryHandle 
 }
 
 /**
- * Seed (and refresh) the bundled example flows into flows/examples/ on disk.
+ * Seed (and refresh) a bundled set of read-only flows into flows/<folderName>/
+ * on disk.
  *
- * Version-aware: the manifest carries a content `version` (md5 of all example
- * files). We record the seeded version in flows/examples/.version. When the
- * bundled version differs (i.e. an example changed or was added in the app
- * code), we re-copy ALL examples so the on-disk copies — which the editor loads
+ * Version-aware: the manifest carries a content `version` (md5 of all bundled
+ * files). We record the seeded version in flows/<folderName>/.version. When
+ * the bundled version differs (i.e. a flow changed or was added in the app
+ * code), we re-copy everything so the on-disk copies — which the editor loads
  * as the source of truth — stay current (new presets appear, custom UIs/knobs
  * update). When the version matches, this is a cheap no-op.
  *
- * Only the bundled `examples/` subfolder is touched; the user's own saved flows
- * are never modified. Returns the number of files (re)written.
+ * Only the bundled `<folderName>/` subfolder is touched; the user's own saved
+ * flows are never modified. Returns the number of files (re)written.
  */
-export async function ensureBundledExamples(root: FileSystemDirectoryHandle): Promise<number> {
+async function ensureBundledFolder(
+  root: FileSystemDirectoryHandle,
+  folderName: string,
+  manifestUrl: string,
+  fetchBase: string,
+): Promise<number> {
   try {
     const flowsDir = await root.getDirectoryHandle('flows', { create: true });
-    const examplesDir = await flowsDir.getDirectoryHandle('examples', { create: true });
+    const bundleDir = await flowsDir.getDirectoryHandle(folderName, { create: true });
 
     let manifest: { version?: string; examples?: string[] } = {};
     try {
-      const resp = await fetch('/flow-examples/manifest.json', { cache: 'no-store' });
+      const resp = await fetch(manifestUrl, { cache: 'no-store' });
       if (resp.ok) manifest = await resp.json();
     } catch (e) {
-      console.warn('[FS Examples] Failed to load manifest:', e);
+      console.warn(`[FS Examples] Failed to load ${folderName} manifest:`, e);
       return 0;
     }
     const bundledVersion = manifest.version || '';
@@ -152,7 +159,7 @@ export async function ensureBundledExamples(root: FileSystemDirectoryHandle): Pr
     // Read the version we last seeded to disk.
     let diskVersion = '';
     try {
-      const vf = await examplesDir.getFileHandle('.version');
+      const vf = await bundleDir.getFileHandle('.version');
       diskVersion = (await (await vf.getFile()).text()).trim();
     } catch { /* no marker yet */ }
 
@@ -166,10 +173,10 @@ export async function ensureBundledExamples(root: FileSystemDirectoryHandle): Pr
         const fileName = pathParts[pathParts.length - 1];
         const subDirs = pathParts.slice(0, -1);
 
-        let targetDir = examplesDir;
+        let targetDir = bundleDir;
         for (const subDir of subDirs) targetDir = await targetDir.getDirectoryHandle(subDir, { create: true });
 
-        const response = await fetch(`/flow-examples/${flowName}.json`, { cache: 'no-store' });
+        const response = await fetch(`${fetchBase}/${flowName}.json`, { cache: 'no-store' });
         if (!response.ok) { console.warn(`[FS Examples] fetch ${flowName} → ${response.status}`); continue; }
 
         const flowData = await response.json();
@@ -191,18 +198,26 @@ export async function ensureBundledExamples(root: FileSystemDirectoryHandle): Pr
 
     // Record the seeded version.
     try {
-      const vf = await examplesDir.getFileHandle('.version', { create: true });
+      const vf = await bundleDir.getFileHandle('.version', { create: true });
       const vw = await vf.createWritable();
       await vw.write(bundledVersion);
       await vw.close();
     } catch { /* noop */ }
 
-    if (written) console.info(`[FS Examples] (re)seeded ${written} example(s) → version ${bundledVersion}`);
+    if (written) console.info(`[FS Examples] (re)seeded ${written} ${folderName} flow(s) → version ${bundledVersion}`);
     return written;
   } catch (e) {
-    console.warn('[FS Examples] ensureBundledExamples failed:', e);
+    console.warn(`[FS Examples] ensureBundledFolder(${folderName}) failed:`, e);
     return 0;
   }
+}
+
+export async function ensureBundledExamples(root: FileSystemDirectoryHandle): Promise<number> {
+  return ensureBundledFolder(root, 'examples', '/flow-examples/manifest.json', '/flow-examples');
+}
+
+export async function ensureBundledDrums(root: FileSystemDirectoryHandle): Promise<number> {
+  return ensureBundledFolder(root, 'drums', '/flow-examples/drums/manifest.json', '/flow-examples/drums');
 }
 
 export async function ensureSubdirs(root: FileSystemDirectoryHandle) {
