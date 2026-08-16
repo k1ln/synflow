@@ -174,7 +174,9 @@ export async function ensureBundledExamples(root: FileSystemDirectoryHandle): Pr
 
         const flowData = await response.json();
         flowData.name = flowData.name || fileName;
-        flowData.folder_path = subDirs.length > 0 ? `examples/${subDirs.join('/')}` : 'examples';
+        // Never persist folder_path — `targetDir` already puts the file in the
+        // right place, and a baked-in path breaks copying/moving the file.
+        delete flowData.folder_path;
         flowData.updated_at = new Date().toISOString();
 
         const fileHandle = await targetDir.getFileHandle(`${fileName}.json`, { create: true });
@@ -462,7 +464,13 @@ export interface FlowData {
   nodes: any[];
   edges: any[];
   updated_at?: string;
-  folder_path?: string; // relative folder path inside flows directory ("" for root)
+  /**
+   * Relative folder path inside the flows directory ("" for root).
+   * In-memory / IndexedDB only — it is derived from where the file actually
+   * sits on disk and is never written into the JSON, so flows stay portable
+   * between folders.
+   */
+  folder_path?: string;
   customUi?: string;     // optional custom HTML faceplate for the Live/DAW instrument UI
 }
 
@@ -489,11 +497,13 @@ export async function saveFlowToDisk(root: FileSystemDirectoryHandle, flowData: 
     const fileHandle = await flowsDir.getFileHandle(filename, { create: true });
     const writable = await fileHandle.createWritable();
     
+    // `folder_path` is deliberately NOT persisted: the directory the file sits
+    // in is the only source of truth, so a flow can be freely copied or moved
+    // between folders in Finder and still show up where it actually lives.
     const content = JSON.stringify({
       name: flowData.name,
       nodes: flowData.nodes,
       edges: flowData.edges,
-      folder_path: flowData.folder_path || '',
       updated_at: flowData.updated_at || new Date().toISOString(),
       ...(flowData.customUi ? { customUi: flowData.customUi } : {}),
     }, null, 2);
@@ -519,7 +529,9 @@ export async function loadFlowFromDisk(root: FileSystemDirectoryHandle, flowName
     const file = await fileHandle.getFile();
     const text = await file.text();
     const data = JSON.parse(text);
-    
+    // Location on disk wins over anything stale left inside the file.
+    data.folder_path = folderPath;
+
     return data as FlowData;
   } catch (e) {
     console.warn('[FS Flow] load failed', flowName, e);
@@ -542,7 +554,10 @@ export async function listFlowsOnDisk(root: FileSystemDirectoryHandle): Promise<
           if (!data.name || typeof data.name !== 'string') {
             data.name = entry.name.replace(/\.json$/i, '');
           }
-          if(typeof data.folder_path !== 'string') data.folder_path = prefix;
+          // The location on disk is authoritative: a flow copied/moved between
+          // folders still carries the old folder_path in its JSON, which would
+          // otherwise hide the new folder from the explorer entirely.
+          data.folder_path = prefix;
           out.push(data as FlowData);
         } catch(e){ console.warn('[FS Flow] read failed', entry.name, e); }
       } else if(entry.kind === 'directory') {
