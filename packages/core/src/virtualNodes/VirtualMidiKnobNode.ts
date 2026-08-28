@@ -14,7 +14,14 @@ export type MidiKnobNodeProps = {
     curve?: CurveType;
     value?: number;
     midiMapping?: MidiKnobMapping;
+    snapEnabled?: boolean;
+    snapStep?: number;
   };
+};
+
+const snapToGrid = (v: number, step: number) => {
+  if (!(step > 0) || !isFinite(v)) return v;
+  return parseFloat((Math.round(v / step) * step).toFixed(6));
 };
 
 export default class VirtualMidiKnobNode extends VirtualNode<CustomNode & MidiKnobNodeProps, undefined> {
@@ -23,6 +30,8 @@ export default class VirtualMidiKnobNode extends VirtualNode<CustomNode & MidiKn
   private max: number = 1;
   private curve: CurveType = 'linear';
   private midiMapping: MidiKnobMapping = null;
+  private snapEnabled: boolean = false;
+  private snapStep: number = 0.25;
   private unsubscribeMidi: (() => void) | null = null;
   private handleConnectedEdges: (node: CustomNode, data: any, eventType: string) => void;
   private _lastSnapshot: { value:number; min:number; max:number; curve:CurveType; midiMapping:MidiKnobMapping } | null = null;
@@ -37,6 +46,9 @@ export default class VirtualMidiKnobNode extends VirtualNode<CustomNode & MidiKn
     this.max = typeof d.max === 'number' ? d.max : 1;
     this.curve = (d.curve || 'linear') as CurveType;
     this.midiMapping = d.midiMapping ?? null;
+    this.snapEnabled = !!d.snapEnabled;
+    this.snapStep = typeof d.snapStep === 'number' && d.snapStep > 0 ? d.snapStep : 0.25;
+    if (this.snapEnabled) this.value = snapToGrid(this.value, this.snapStep);
 
     this.subscribeAll();
     void this.setupMidi();
@@ -64,7 +76,10 @@ export default class VirtualMidiKnobNode extends VirtualNode<CustomNode & MidiKn
     if (typeof d.value === 'number' && d.value !== this.value){ this.value = d.value; changed = true; }
     if (typeof d.curve === 'string' && d.curve !== this.curve){ this.curve = d.curve as CurveType; changed = true; }
     if ('midiMapping' in d && d.midiMapping !== this.midiMapping){ this.midiMapping = d.midiMapping; changed = true; }
+    if (typeof d.snapEnabled === 'boolean' && d.snapEnabled !== this.snapEnabled){ this.snapEnabled = d.snapEnabled; changed = true; }
+    if (typeof d.snapStep === 'number' && d.snapStep > 0 && d.snapStep !== this.snapStep){ this.snapStep = d.snapStep; changed = true; }
     if (changed){
+      if (this.snapEnabled) this.value = snapToGrid(this.value, this.snapStep);
       this.render(this.value, this.min, this.max, this.curve, this.midiMapping);
     }
   }
@@ -104,7 +119,8 @@ export default class VirtualMidiKnobNode extends VirtualNode<CustomNode & MidiKn
       if (!this.midiMapping) return;
       if (channel !== this.midiMapping.channel) return;
       if (data1 !== this.midiMapping.number) return;
-      const newVal = this.mapCcToValue(data2);
+      let newVal = this.mapCcToValue(data2) as number;
+      if (this.snapEnabled) newVal = snapToGrid(newVal, this.snapStep);
       this.value = newVal;
       // Push live param update for UI sync
       this.eventBus.emit(this.node.id + '.params.updateParams', { nodeid: this.node.id, data: { value: newVal } });

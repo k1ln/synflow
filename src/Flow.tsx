@@ -754,6 +754,26 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
 
+  // Bundled patches like Hard-Synth pull in other flows through FlowNode nodes
+  // (e.g. "keyboard", "kick"). On synflow.org the bundled examples are
+  // downloaded to disk/DB asynchronously after the editor mounts, so if the
+  // current flow was opened before that finished, its FlowNode children came up
+  // empty (no sound). Call this once the bundled download is done to re-open the
+  // current flow so the now-present sub-flows resolve. No-op when the open flow
+  // has no sub-flows.
+  const reopenCurrentFlowForSubFlows = useCallback(async () => {
+    try {
+      const hasSubFlows = (nodesRef.current || []).some((n) => n?.type === 'FlowNode');
+      if (!hasSubFlows) return;
+      const { name, folder } = readCurrentFlowPointer();
+      if (!name) return;
+      console.info('[Flow Sync] Re-opening', name, 'to resolve sub-flows after bundled download');
+      await openFlowFromIndexedDB(name, folder);
+    } catch (e) {
+      console.warn('[Flow Sync] sub-flow re-open failed', e);
+    }
+  }, [openFlowFromIndexedDB]);
+
   // Expose "export portable flow" (inline sub-flows + embed samples) so the
   // current flow can be saved as a single self-contained JSON for external hosts.
   useEffect(() => {
@@ -1096,12 +1116,18 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
           });
           setLocalFlowMeta(meta);
           setFolderPaths(Array.from(folderSet.values()).sort());
+
+          // Bundled examples just finished downloading — if that actually
+          // brought in new flows, re-open the current one so any FlowNode
+          // sub-flows it references (Hard-Synth pulls in "keyboard" and "kick")
+          // now resolve and produce sound.
+          if (diskSyncResult.synced > 0) await reopenCurrentFlowForSubFlows();
         } catch (e) {
           console.warn('[Flow Sync] Error syncing from disk on init', e);
         }
       })();
     }
-  }, [fsRootHandle, refreshRecordings, db]);
+  }, [fsRootHandle, refreshRecordings, db, reopenCurrentFlowForSubFlows]);
 
   const chooseFsFolder = useCallback(async () => {
     const handle = await selectAndPrepareRoot();
@@ -1153,6 +1179,11 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
         });
         setLocalFlowMeta(meta);
         setFolderPaths(Array.from(folderSet.values()).sort());
+
+        // Bundled examples were (re)seeded by selectAndPrepareRoot above — if the
+        // sync brought in new flows, re-open the current one so its FlowNode
+        // sub-flows resolve against the now-present copies.
+        if (diskSyncResult.synced > 0) await reopenCurrentFlowForSubFlows();
       } catch (e) {
         console.warn('[Flow Sync] Error syncing from disk', e);
       }
@@ -1162,7 +1193,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
     } else {
       showToast('Folder selection cancelled', 'error');
     }
-  }, [refreshRecordings, showToast, db]);
+  }, [refreshRecordings, showToast, db, reopenCurrentFlowForSubFlows]);
   // Expose toggle for TopBar button
   useEffect(() => { (window as any).flowSynth.toggleRecordingsPanel = () => { setRecordingsPanelOpen(o => !o); if (!recordingsPanelOpen) void refreshRecordings(); }; }, [recordingsPanelOpen, refreshRecordings]);
   // Recording ready events now handled internally by VirtualRecordingNode (legacy listener removed)

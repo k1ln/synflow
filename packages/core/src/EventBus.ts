@@ -6,9 +6,59 @@ class EventBus {
   private id: string;
   //private eventLoggingEnabled: boolean = true;
   //private eventLog: Array<{ eventName: string; data?: any; timestamp: number }> = [];
+
+  // Deferred dispatch queue. Handlers still never run synchronously inside
+  // emit() — that is what prevents the React "Maximum update depth exceeded"
+  // recursion when a handler re-emits — but instead of one setTimeout(0) per
+  // callback (clamped to 1-4ms, competing with rendering, throttled to >=1s in
+  // background tabs) we drain a FIFO queue on a single microtask. A cascade of
+  // N chained nodes then resolves in one microtask turn with sub-millisecond
+  // latency instead of N timer hops, which matters for tight event sources
+  // like an incoming MIDI clock.
+  private queue: Array<{ cb: EventCallback; data: any; name: string }> = [];
+  private flushScheduled = false;
+  private draining = false;
+  private static readonly MAX_DISPATCHES_PER_FLUSH = 100000;
+
   constructor() {
     this.events = {};
     this.id = crypto.randomUUID();
+  }
+
+  private scheduleFlush(): void {
+    if (this.flushScheduled || this.draining) return;
+    this.flushScheduled = true;
+    const flush = () => this.flushQueue();
+    if (typeof queueMicrotask === 'function') queueMicrotask(flush);
+    else Promise.resolve().then(flush);
+  }
+
+  private flushQueue(): void {
+    this.flushScheduled = false;
+    if (this.draining) return;
+    this.draining = true;
+    let guard = 0;
+    try {
+      // Re-check length each iteration so events emitted by handlers during
+      // the drain are delivered in this same turn, in FIFO order.
+      while (this.queue.length) {
+        if (++guard > EventBus.MAX_DISPATCHES_PER_FLUSH) {
+          console.error(
+            `[EventBus] flush exceeded ${EventBus.MAX_DISPATCHES_PER_FLUSH} dispatches — dropping ${this.queue.length} queued events (runaway emit loop?)`
+          );
+          this.queue.length = 0;
+          break;
+        }
+        const job = this.queue.shift()!;
+        try {
+          job.cb(job.data);
+        } catch (error) {
+          console.error(`Error occurred in event handler for ${job.name}:`, error);
+        }
+      }
+    } finally {
+      this.draining = false;
+    }
   }
   /**
    * Get the singleton instance of EventBus.
@@ -94,31 +144,19 @@ class EventBus {
    * @param data - Optional data to pass to the event callbacks.
    */
   emit(eventName: string, data?: any): void {
-    if(eventName.indexOf("GUI")>=0){
-      // before EventBus emitting GUI event
-    }
-    if (!this.events[eventName]) return;
+    const subs = this.events[eventName];
+    if (!subs || subs.length === 0) return;
     if (data && typeof data === 'object') {
       data.eventName = eventName;
     } else {
       data = { eventName };
     }
-    if(eventName.indexOf("GUI")>=0){
-      // After EventBus emitting GUI event
+    // Snapshot the subscriber list into the queue so subscribe()/unsubscribe()
+    // called from a handler during the drain can't corrupt this dispatch.
+    for (let i = 0; i < subs.length; i++) {
+      this.queue.push({ cb: subs[i], data, name: eventName });
     }
-    // Call subscribers asynchronously to avoid deep synchronous re-entrancy
-    // which can cause "Maximum update depth exceeded" in React when handlers
-    // synchronously emit events that trigger each other.
-    this.events[eventName].forEach((callback) => {
-      // Use setTimeout(,0) to break the sync call-stack; handlers still run soon after.
-      setTimeout(() => {
-        try {
-          callback(data);
-        } catch (error) {
-          console.error(`Error occurred in event handler for ${eventName}:`, error);
-        }
-      }, 0);
-    });
+    this.scheduleFlush();
   }
   /**
    * Clear all subscriptions for a specific event or all events.

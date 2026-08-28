@@ -21,11 +21,23 @@ export type MidiKnobFlowNodeProps = {
     value?: number;
     midiMapping?: MidiKnobMapping;
     controlsOpen?: boolean; // persisted open/closed state for advanced controls
+    snapEnabled?: boolean;  // quantize output value to a grid
+    snapStep?: number;      // grid step size in value units
     onChange?: (data: any) => void;
   };
 };
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+// Selectable grid step sizes for value quantization.
+export const SNAP_STEPS = [1, 0.5, 0.25, 0.1, 0.05, 0.01];
+
+const snapToGrid = (v: number, step: number) => {
+  if (!(step > 0) || !isFinite(v)) return v;
+  const snapped = Math.round(v / step) * step;
+  // Kill float noise like 0.30000000000000004
+  return parseFloat(snapped.toFixed(6));
+};
 
 const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
   const eventBus = useMemo(() => EventBus.getInstance(), []);
@@ -41,6 +53,8 @@ const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
     const [value, setValue] = useState<number>(typeof data.value === 'number' ? data.value : 0);
     const [midiMapping, setMidiMapping] = useState<MidiKnobMapping>(data.midiMapping ?? null);
     const [controlsOpen, setControlsOpen] = useState<boolean>(data.controlsOpen ?? false);
+    const [snapEnabled, setSnapEnabled] = useState<boolean>(data.snapEnabled ?? false);
+    const [snapStep, setSnapStep] = useState<number>(typeof data.snapStep === 'number' && data.snapStep > 0 ? data.snapStep : 0.25);
 
     // Prevent infinite loops: only emit when local state changes actually differ from last emitted snapshot
     const lastEmittedRef = useRef<{label:string;min:number;max:number;curve:CurveType;value:number;midiMapping:MidiKnobMapping}|null>(null);
@@ -52,7 +66,7 @@ const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
       return false;
     };
     useEffect(() => {
-    const snapshot = { label, min, max, curve, value, midiMapping, controlsOpen };
+    const snapshot = { label, min, max, curve, value, midiMapping, controlsOpen, snapEnabled, snapStep };
       if (!lastEmittedRef.current || shallowChanged(snapshot, lastEmittedRef.current)) {
         const payload = { nodeid: id, data: snapshot };
         eventBus.emit(id + '.params.updateParams', payload);
@@ -60,7 +74,13 @@ const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
         data.onChange?.(snapshot);
         lastEmittedRef.current = snapshot;
       }
-    }, [label, min, max, curve, value, midiMapping, controlsOpen]);
+    }, [label, min, max, curve, value, midiMapping, controlsOpen, snapEnabled, snapStep]);
+
+    // When the grid is enabled or its step changes, re-quantize the current value.
+    useEffect(() => {
+      if (!snapEnabled) return;
+      setValue(v => snapToGrid(v, snapStep));
+    }, [snapEnabled, snapStep]);
 
     // Knob mapping helpers: normalized [0..1] to value and back
     const toValue = (t: number) => {
@@ -114,9 +134,10 @@ const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
 
     const onKnobChange = useCallback((kv: number) => {
       const t = (kv - knobMin) / (knobMax - knobMin);
-      const v = toValue(t);
+      let v = toValue(t);
+      if (snapEnabled) v = snapToGrid(v, snapStep);
       setValue(v);
-    }, [knobMin, knobMax, toValue]);
+    }, [knobMin, knobMax, toValue, snapEnabled, snapStep]);
 
     // MIDI learn UX: right-click to toggle learn
     const onContextMenu: React.MouseEventHandler<HTMLDivElement> = (e) => {
@@ -244,6 +265,31 @@ const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
                 <option value="linear">linear</option>
                 <option value="logarithmic">logarithmic</option>
                 <option value="exponential">exponential</option>
+              </select>
+            </div>
+            <div className="node-field" style={{ gap: 1, marginBottom: 0 }}>
+              <label className="node-label" style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                <input
+                  type="checkbox"
+                  checked={snapEnabled}
+                  onChange={(e)=> setSnapEnabled(e.target.checked)}
+                  className="nodrag"
+                  style={{ width: 11, height: 11 }}
+                  title="Quantize the output value to a grid"
+                />
+                Grid
+              </label>
+              <select
+                value={String(snapStep)}
+                onChange={(e)=> setSnapStep(parseFloat(e.target.value))}
+                className="node-select"
+                style={{ width: 62 }}
+                disabled={!snapEnabled}
+                title="Grid step size"
+              >
+                {SNAP_STEPS.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
               </select>
             </div>
           </div>
