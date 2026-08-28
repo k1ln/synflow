@@ -151,6 +151,17 @@ let ctx: AudioContext;
 // Manual saves via Ctrl+S / Cmd+S or explicit save buttons still work.
 const AUTO_SAVE_ENABLED = false;
 
+// First run: when a visitor has never opened a flow, seed this bundled example
+// so the editor opens on something rich instead of an empty canvas. Picked a
+// non-trivial patch on purpose — it has a built-in clock (isEmitting) driving
+// an ADSR + filter + reverb + wavetable-oscillator chain, so it makes sound on
+// its own the moment the user hits play, no keyboard/MIDI needed. Only ever
+// done once (WELCOMED_KEY): if the user later clears the canvas on purpose, we
+// respect that and stay blank.
+const DEFAULT_EXAMPLE_NAME = 'Hard-Synth';
+const DEFAULT_EXAMPLE_FOLDER = 'examples';
+const WELCOMED_KEY = 'synflow:welcomed';
+
 function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEngineFactory } = {}) {
   /**
    * Manages the current instance of the AudioGraphManager or remains undefined if not initialized.
@@ -544,6 +555,25 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
     await openFlow(flowName, folderPathOverride, handle);
   }, [openFlow]);
 
+  // Copy the bundled default example into IndexedDB so openFlow can load it the
+  // same way it loads any user flow. No-op if it's already there (e.g. a
+  // returning user who synced the bundled examples from disk).
+  const seedDefaultExampleFlow = useCallback(async () => {
+    const dbKey = makeFlowDbKey(DEFAULT_EXAMPLE_NAME, DEFAULT_EXAMPLE_FOLDER);
+    const existing = await db.get(dbKey);
+    if (existing && existing.length) return;
+    const resp = await fetch(`/flow-examples/${DEFAULT_EXAMPLE_NAME}.json`, { cache: 'no-store' });
+    if (!resp.ok) throw new Error(`fetch default example → ${resp.status}`);
+    const flow = await resp.json();
+    await db.put(dbKey, {
+      nodes: flow.nodes || [],
+      edges: flow.edges || [],
+      folder_path: DEFAULT_EXAMPLE_FOLDER,
+      updated_at: new Date().toISOString(),
+      ...(typeof flow.customUi === 'string' ? { customUi: flow.customUi } : {}),
+    });
+  }, [db]);
+
 
 
   useEffect(() => {
@@ -555,6 +585,20 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
         if (storedFlow) {
           setIsFlowLoading(true);
           await openFlowFromIndexedDB(storedFlow, storedFolder);
+        } else if (!localStorage.getItem(WELCOMED_KEY)) {
+          // Brand-new visitor with nothing opened yet: seed a rich example so
+          // the canvas isn't blank on first launch. Marked done afterwards so a
+          // deliberately-cleared canvas stays cleared on later reloads.
+          try {
+            setIsFlowLoading(true);
+            await seedDefaultExampleFlow();
+            await openFlowFromIndexedDB(DEFAULT_EXAMPLE_NAME, DEFAULT_EXAMPLE_FOLDER);
+          } catch (e) {
+            console.warn('[Flow] Failed to open default example', e);
+            setIsFlowLoading(false);
+          } finally {
+            try { localStorage.setItem(WELCOMED_KEY, '1'); } catch { /* noop */ }
+          }
         } else {
           // Ensure spinner is off if nothing to open
           setIsFlowLoading(false);
@@ -593,7 +637,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
       setLocalFlowMeta(meta);
       setFolderPaths(Array.from(folderSet.values()).sort());
     })();
-  }, [db, openFlowFromIndexedDB]);
+  }, [db, openFlowFromIndexedDB, seedDefaultExampleFlow]);
 
   const [openDialogFlows, setOpenDialogFlows] = useState(false);
   const [openDialogNodes, setOpenDialogNodes] = useState(false);
