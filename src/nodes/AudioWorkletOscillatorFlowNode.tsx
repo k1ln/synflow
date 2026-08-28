@@ -89,7 +89,10 @@ const AudioWorkletOscillatorFlowNode: React.FC<AudioWorkletOscillatorFlowNodePro
   }
 
   function knobToFrequencyDetune(knobValue: number) {
-    return knobValue / 100 * (frequency * 0.1);
+    // Knob travels -100..100; map straight to cents so the range is
+    // frequency-independent and actually wide (±1200 cents = ±1 octave,
+    // matching the worklet's detune param clamp).
+    return knobValue * 12;
   }
 
   // UI

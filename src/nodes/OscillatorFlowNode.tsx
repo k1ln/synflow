@@ -89,6 +89,29 @@ const WavetablePainter: React.FC<{
     onChange(next);
   };
 
+  // Build a musically-useful random wavetable: a sum of a few harmonics with
+  // random (decaying) amplitudes and phases, normalized to [-1, 1].
+  const randomWavetable = () => {
+    const numH = 2 + Math.floor(Math.random() * 7); // 2..8 harmonics
+    const harmonics = Array.from({ length: numH }, (_, h) => ({
+      amp: (Math.random() * 2 - 1) / (h + 1),
+      phase: Math.random() * Math.PI * 2,
+    }));
+    const next = new Array(WAVETABLE_SIZE);
+    let peak = 0;
+    for (let i = 0; i < WAVETABLE_SIZE; i++) {
+      const t = (i / WAVETABLE_SIZE) * Math.PI * 2;
+      let v = 0;
+      for (let h = 0; h < numH; h++) {
+        v += harmonics[h].amp * Math.sin((h + 1) * t + harmonics[h].phase);
+      }
+      next[i] = v;
+      peak = Math.max(peak, Math.abs(v));
+    }
+    if (peak > 0) for (let i = 0; i < WAVETABLE_SIZE; i++) next[i] /= peak;
+    onChange(next);
+  };
+
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
   const [popupPos, setPopupPos] = useState({ x: 0, y: 0 });
@@ -125,10 +148,16 @@ const WavetablePainter: React.FC<{
         onMouseUp={(e) => { e.stopPropagation(); painting.current = false; }}
         onMouseLeave={() => { painting.current = false; }}
       />
-      <button
-        style={{ fontSize: 10, padding: '2px 10px', background: '#222', color: '#aaa', border: '1px solid #444', borderRadius: 3, cursor: 'pointer' }}
-        onClick={() => onChange(Array(WAVETABLE_SIZE).fill(0))}
-      >clear</button>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <button
+          style={{ fontSize: 10, padding: '2px 10px', background: '#222', color: '#aaa', border: '1px solid #444', borderRadius: 3, cursor: 'pointer' }}
+          onClick={() => onChange(Array(WAVETABLE_SIZE).fill(0))}
+        >clear</button>
+        <button
+          style={{ fontSize: 10, padding: '2px 10px', background: '#222', color: '#c084fc', border: '1px solid #7c3aed', borderRadius: 3, cursor: 'pointer' }}
+          onClick={randomWavetable}
+        >⚄ random</button>
+      </div>
     </div>,
     document.body
   ) : null;

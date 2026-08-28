@@ -822,13 +822,6 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
     return () => { window.removeEventListener('click', close); window.removeEventListener('keydown', onEsc); };
   }, [ctxMenu]);
 
-  const updateNodes = (node: any) => {
-    setNodes((nds) =>
-      nds.map((n) =>
-        n.id === node.id ? { ...n, data: { ...n.data, ...node.data } } : n
-      )
-    );
-  }
   const audioGraphManagerRef = useRef<IFlowEngine | null>(null);
   const eventManagerRef = useRef<EventManager | null>(null);
   eventManagerRef.current = EventManager.getInstance();
@@ -1391,18 +1384,20 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
         }));
       }
       setSelectedEdge(undefined); // Clear the selected edge when the flow is blurred
-      if (!selectedNode) return;
-      const currentNode = nodes.find((node) => node.id === selectedNode.id);
-      if (!currentNode) return;
-      const existingStyle: any = currentNode.data.style || {};
-      const glow = existingStyle.glowColor || '#00ff88';
-      currentNode.data.style = { ...existingStyle, boxShadow: makeGlow(glow, 'normal') };
-      updateNodes(currentNode);
+      // Sweep every node and downgrade any that still carries the "strong"
+      // selection glow, so nothing is left highlighted after clicking away.
+      setNodes((nds) => nds.map((n) => {
+        const st = (n.data?.style as any) || {};
+        const bs = (st.boxShadow as string) || '';
+        if (!/14px 3px/.test(bs)) return n;
+        const glow = (st.glowColor as string) || '#00ff88';
+        return { ...n, data: { ...n.data, style: { ...st, boxShadow: makeGlow(glow, 'normal') } } };
+      }));
       setSelectedNode(undefined); // Clear the selected node when the flow is blurred
       setSelectedNodeType("");
-      // Perform any action you want when the flow is blurred here	
+      // Perform any action you want when the flow is blurred here
     },
-    [nodes, selectedNode, updateNodes, setSelectedNode]
+    [selectedEdge, setNodes, setEdges, setSelectedNode]
   );
 
   const onNodeDelete =
@@ -1469,20 +1464,16 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
     (_: React.MouseEvent, edge: Edge) => {
       // Downgrade previous selected edge glow
       const prevSelected = selectedEdge;
-      // If a node is currently selected, downgrade its glow before clearing selection
-      if (selectedNode) {
-        const glowColor = (selectedNode.data?.style?.glowColor as string) || '#00ff88';
-        const normalShadow = '0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)';
-        const downgradedNode = {
-          ...selectedNode,
-          data: {
-            ...selectedNode.data,
-            style: { ...selectedNode.data.style, boxShadow: normalShadow }
-          }
-        };
-        updateNodes(downgradedNode);
-        setSelectedNode(undefined);
-      }
+      // Downgrade any node still carrying the "strong" selection glow before
+      // moving selection to the edge.
+      setNodes((nds) => nds.map((n) => {
+        const st = (n.data?.style as any) || {};
+        const bs = (st.boxShadow as string) || '';
+        if (!/14px 3px/.test(bs)) return n;
+        const glow = (st.glowColor as string) || '#00ff88';
+        return { ...n, data: { ...n.data, style: { ...st, boxShadow: makeGlow(glow, 'normal') } } };
+      }));
+      setSelectedNode(undefined);
       setEdges((eds) => eds.map(ed => {
         if (prevSelected && ed.id === prevSelected) {
           const stroke = (ed.style as any)?.stroke || '#ffffff';
@@ -1499,7 +1490,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
       setEdgeColor(col);
       setSelectedNodeType("");
     },
-    [selectedEdge, selectedNode, updateNodes]
+    [selectedEdge, setNodes, setEdges, setSelectedNode]
   );
 
   const onNodeClick = useCallback(
@@ -1525,23 +1516,24 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
       if (selectedNode?.id === node.id) {
         return;
       }
-      // Downgrade glow on previously selected node before selecting new one
-      if (selectedNode) {
-        const prevGlow = (selectedNode.data?.style?.glowColor as string)
-          || '#00ff88';
-        const prevNode = {
-          ...selectedNode,
-          data: {
-            ...selectedNode.data,
-            style: {
-              ...selectedNode.data.style,
-              boxShadow: makeGlow(prevGlow, 'normal')
-            }
-          }
-        };
-        updateNodes(prevNode);
-      }
       const glow = (node.data?.style?.glowColor as string) || '#00ff88';
+      const strongGlow = makeGlow(glow, 'strong');
+      // Apply the strong glow to the clicked node and, in the same pass,
+      // self-heal any other node still carrying a "strong" selection glow.
+      // Relying on the `selectedNode` snapshot alone leaves stale glows behind
+      // whenever it desyncs from the node that actually holds the glow.
+      setNodes((nds) => nds.map((n) => {
+        const st = (n.data?.style as any) || {};
+        if (n.id === node.id) {
+          return { ...n, data: { ...n.data, style: { ...st, glowColor: glow, boxShadow: strongGlow } } };
+        }
+        const bs = (st.boxShadow as string) || '';
+        if (/14px 3px/.test(bs)) {
+          const g = (st.glowColor as string) || '#00ff88';
+          return { ...n, data: { ...n.data, style: { ...st, boxShadow: makeGlow(g, 'normal') } } };
+        }
+        return n;
+      }));
       const updatedNode = {
         ...node,
         data: {
@@ -1549,11 +1541,10 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
           style: {
             ...node.data.style,
             glowColor: glow,
-            boxShadow: makeGlow(glow, 'strong')
+            boxShadow: strongGlow
           },
         },
       };
-      updateNodes(updatedNode);
       setSelectedNode(updatedNode);
       setSelectedNodeType(node.type || "");
       setNodeGlowColor(glow);
@@ -1564,7 +1555,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
         || '#eeeeee';
       setNodeFontColor(font);
     },
-    [setSelectedNode, updateNodes, selectedEdge, setEdges, selectedNode]
+    [setSelectedNode, setNodes, selectedEdge, setEdges, selectedNode]
   );
 
   const deleteNode = (nodeId: string) => {
