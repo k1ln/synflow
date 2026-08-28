@@ -353,6 +353,12 @@ export class VirtualClockNode extends VirtualNode<CustomNode & ClockNodeProps, u
     }
 
     stop() {
+        this.clearTimers();
+        this.isEmitting = false;
+        this.syncState();
+    }
+
+    private clearTimers() {
         if (this.timeout) {
             clearTimeout(this.timeout);
             this.timeout = null;
@@ -365,8 +371,6 @@ export class VirtualClockNode extends VirtualNode<CustomNode & ClockNodeProps, u
             clearTimeout(this.offTimeout);
             this.offTimeout = null;
         }
-        this.isEmitting = false;
-        this.syncState();
     }
 
     private syncState() {
@@ -378,8 +382,12 @@ export class VirtualClockNode extends VirtualNode<CustomNode & ClockNodeProps, u
 
     // Optionally, call this to clean up when node is removed
     dispose() {
-        // Disposing VirtualClockNode
-        this.stop();
+        // Teardown only — this fires when the audio context/graph is torn down
+        // (e.g. global Stop), not from a user toggling the node off. Just cancel
+        // timers; don't touch isEmitting or emit params.updateParams, or a Stop
+        // would silently persist the clock as OFF and the next Start wouldn't
+        // resume it even though the user never turned it off.
+        this.clearTimers();
     }
 }
 
