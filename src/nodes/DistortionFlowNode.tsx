@@ -1,9 +1,9 @@
 ﻿import React, { useEffect, useRef, useState } from "react";
 import { Handle, Position } from "@xyflow/react";
-import MidiKnob, { MidiMapping } from "../components/MidiKnob";
-import { OptionSelect } from "../components/OptionSelect";
+import { MidiKnob, type MidiMapping } from '../components';
+import { OptionSelect } from "../components";
 import "./AudioNode.css";
-import { makeDistortionCurve } from "../utils/styleUtils";
+import { makeDistortionCurve } from "../utils";
 
 export type DistortionFlowNodeProps = {
   data: {

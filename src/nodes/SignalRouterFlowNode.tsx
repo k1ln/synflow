@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Handle, Position } from "@xyflow/react";
-import EventBus from "../sys/EventBus";
+import { EventBus } from "../sys";
 
 export type SignalRouterNodeProps = {
   data: {

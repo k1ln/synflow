@@ -10,7 +10,7 @@ import {
   Position,
   useNodeId,
 } from "@xyflow/react";
-import EventBus from "../sys/EventBus";
+import { EventBus } from "../sys";
 import "./AudioNode.css";
 
 type EQBand = {

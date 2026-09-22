@@ -3,8 +3,8 @@ import { Handle, Position } from "@xyflow/react";
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import "./AudioNode.css";
-import EventBus from "../sys/EventBus";
-import { loadRootHandle, verifyPermission, saveWorkletScriptToDisk, listWorkletScriptsFromDisk, deleteWorkletScriptFromDisk } from '../util/FileSystemAudioStore';
+import { EventBus } from "../sys";
+import { loadRootHandle, verifyPermission, saveWorkletScriptToDisk, listWorkletScriptsFromDisk, deleteWorkletScriptFromDisk } from '../util';
 
 export type AudioWorkletFlowNodeProps = {
   data: {

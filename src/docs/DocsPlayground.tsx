@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { X, BookOpen } from 'lucide-react';
-import docs, { DocItem } from '../docs/registry';
+import docs, { DocItem } from './registry';
 
 export interface DocsPlaygroundProps {
   onClose: () => void;

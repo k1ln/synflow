@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Handle, Position, useUpdateNodeInternals } from "@xyflow/react";
-import EventBus from "../sys/EventBus";
+import { EventBus } from "../sys";
 
 export type BlockingSwitchFlowNodeProps = {
     data: {

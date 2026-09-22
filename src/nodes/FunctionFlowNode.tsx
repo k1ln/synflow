@@ -3,9 +3,9 @@ import { Handle, Position } from "@xyflow/react";
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
-import EventBus from "../sys/EventBus";
+import { EventBus } from "../sys";
 import "./AudioNode.css";
-import { baseNodeStyle } from "../utils/styleUtils";
+import { baseNodeStyle } from "../utils";
 
 export type FunctionNodeProps = {
   data: {

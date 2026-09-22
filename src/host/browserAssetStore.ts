@@ -4,7 +4,7 @@ import {
   verifyPermission,
   loadSampleFromDisk,
   writeAudioBlob,
-} from '../util/FileSystemAudioStore';
+} from '../util';
 
 // Browser audio asset store backed by the File System Access API.
 // Preserves the sample-load / recording-save behavior the engine used to inline.

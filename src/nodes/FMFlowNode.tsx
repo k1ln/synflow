@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Handle, Position } from "@xyflow/react";
-import MidiKnob, { MidiMapping } from "../components/MidiKnob";
-import { OptionSelect } from "../components/OptionSelect";
-import { NumberField } from "../components/NumberField";
-import EventBus from "../sys/EventBus";
+import { MidiKnob, type MidiMapping } from '../components';
+import { OptionSelect } from "../components";
+import { NumberField } from "../components";
+import { EventBus } from "../sys";
 import "./AudioNode.css";
 
 const ALGO_NAMES = ["Sine", "2-op", "3-stack", "4-stack", "E.Piano", "3x2", "1→3", "6-stack FB", "Organ"];

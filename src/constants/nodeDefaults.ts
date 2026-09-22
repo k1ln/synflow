@@ -12,51 +12,7 @@
 // bespoke nodes that merge their own local style still carry the full base via
 // `baseNodeStyle` from utils/styleUtils.
 
-import * as OscillatorFlowNode from '../nodes/OscillatorFlowNode';
-import * as AudioWorkletOscillatorFlowNode from '../nodes/AudioWorkletOscillatorFlowNode';
-import * as GainFlowNode from '../nodes/GainFlowNode';
-import * as DelayFlowNode from '../nodes/DelayFlowNode';
-import * as BiquadFilterFlowNode from '../nodes/BiquadFilterFlowNode';
-import * as SvfDriveFilterFlowNode from '../nodes/SvfDriveFilterFlowNode';
-import * as LadderFilterFlowNode from '../nodes/LadderFilterFlowNode';
-import * as KarplusFlowNode from '../nodes/KarplusFlowNode';
-import * as BrassFlowNode from '../nodes/BrassFlowNode';
-import * as FMFlowNode from '../nodes/FMFlowNode';
-import * as WavetableFlowNode from '../nodes/WavetableFlowNode';
-import * as GranularFlowNode from '../nodes/GranularFlowNode';
-import * as EnvGenFlowNode from '../nodes/EnvGenFlowNode';
-import * as RingModFlowNode from '../nodes/RingModFlowNode';
-import * as ChorusFlowNode from '../nodes/ChorusFlowNode';
-import * as DynamicCompressorFlowNode from '../nodes/DynamicCompressorFlowNode';
-import * as IIRFilterFlowNode from '../nodes/IIRFilterFlowNode';
-import * as DistortionFlowNode from '../nodes/DistortionFlowNode';
-import * as AudioWorkletFlowNode from '../nodes/AudioWorkletFlowNode';
-import * as AutomationFlowNode from '../nodes/AutomationFlowNode';
-import * as ADSRFlowNode from '../nodes/ADSRFlowNode';
-import * as ButtonFlowNode from '../nodes/ButtonFlowNode';
-import * as MidiButtonFlowNode from '../nodes/MidiButtonFlowNode';
-import * as OnOffButtonFlowNode from '../nodes/OnOffButtonFlowNode';
-import * as ClockFlowNode from '../nodes/ClockFlowNode';
-import * as SpeedDividerFlowNode from '../nodes/SpeedDividerFlowNode';
-import * as FrequencyFlowNode from '../nodes/FrequencyFlowNode';
-import * as ConstantFlowNode from '../nodes/ConstantFlowNode';
-import * as SwitchFlowNode from '../nodes/SwitchFlowNode';
-import * as BlockingSwitchFlowNode from '../nodes/BlockingSwitchFlowNode';
-import * as FlowNode from '../nodes/FlowNode';
-import * as FunctionFlowNode from '../nodes/FunctionFlowNode';
-import * as ScriptSequencerFlowNode from '../nodes/ScriptSequencerFlowNode';
-import * as InputNode from '../nodes/InputNode';
-import * as OutputNode from '../nodes/OutputNode';
-import * as SampleFlowNode from '../nodes/SampleFlowNode';
-import * as MouseTriggerButton from '../nodes/MouseTriggerButton';
-import * as WebRTCInputFlowNode from '../nodes/WebRTCInputFlowNode';
-import * as WebRTCOutputFlowNode from '../nodes/WebRTCOutputFlowNode';
-import * as AnalyzerNodeGPT from '../nodes/AnalyzerNodeGPT';
-import * as OscilloscopeFlowNode from '../nodes/OscilloscopeFlowNode';
-import * as MidiFileFlowNode from '../nodes/MidiFileFlowNode';
-import * as UnisonBeginFlowNode from '../nodes/UnisonBeginFlowNode';
-import * as UnisonEndFlowNode from '../nodes/UnisonEndFlowNode';
-import * as AiVstFlowNode from '../nodes/AiVstFlowNode';
+import { OscillatorFlowNodeModule as OscillatorFlowNode, AudioWorkletOscillatorFlowNodeModule as AudioWorkletOscillatorFlowNode, GainFlowNodeModule as GainFlowNode, DelayFlowNodeModule as DelayFlowNode, BiquadFilterFlowNodeModule as BiquadFilterFlowNode, SvfDriveFilterFlowNodeModule as SvfDriveFilterFlowNode, LadderFilterFlowNodeModule as LadderFilterFlowNode, KarplusFlowNodeModule as KarplusFlowNode, BrassFlowNodeModule as BrassFlowNode, FMFlowNodeModule as FMFlowNode, WavetableFlowNodeModule as WavetableFlowNode, GranularFlowNodeModule as GranularFlowNode, EnvGenFlowNodeModule as EnvGenFlowNode, RingModFlowNodeModule as RingModFlowNode, ChorusFlowNodeModule as ChorusFlowNode, DynamicCompressorFlowNodeModule as DynamicCompressorFlowNode, IIRFilterFlowNodeModule as IIRFilterFlowNode, DistortionFlowNodeModule as DistortionFlowNode, AudioWorkletFlowNodeModule as AudioWorkletFlowNode, AutomationFlowNodeModule as AutomationFlowNode, ADSRFlowNodeModule as ADSRFlowNode, ButtonFlowNodeModule as ButtonFlowNode, MidiButtonFlowNodeModule as MidiButtonFlowNode, OnOffButtonFlowNodeModule as OnOffButtonFlowNode, ClockFlowNodeModule as ClockFlowNode, SpeedDividerFlowNodeModule as SpeedDividerFlowNode, FrequencyFlowNodeModule as FrequencyFlowNode, ConstantFlowNodeModule as ConstantFlowNode, SwitchFlowNodeModule as SwitchFlowNode, BlockingSwitchFlowNodeModule as BlockingSwitchFlowNode, FlowNodeModule as FlowNode, FunctionFlowNodeModule as FunctionFlowNode, ScriptSequencerFlowNodeModule as ScriptSequencerFlowNode, InputNodeModule as InputNode, OutputNodeModule as OutputNode, SampleFlowNodeModule as SampleFlowNode, MouseTriggerButtonModule as MouseTriggerButton, WebRTCInputFlowNodeModule as WebRTCInputFlowNode, WebRTCOutputFlowNodeModule as WebRTCOutputFlowNode, AnalyzerNodeGPTModule as AnalyzerNodeGPT, OscilloscopeFlowNodeModule as OscilloscopeFlowNode, MidiFileFlowNodeModule as MidiFileFlowNode, UnisonBeginFlowNodeModule as UnisonBeginFlowNode, UnisonEndFlowNodeModule as UnisonEndFlowNode, AiVstFlowNodeModule as AiVstFlowNode } from '../nodes';
 
 export const nodeDefaults: Record<string, Record<string, any>> = {
   OscillatorFlowNode: OscillatorFlowNode.defaultData,

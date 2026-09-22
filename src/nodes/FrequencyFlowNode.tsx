@@ -7,7 +7,7 @@ import {
   Handle,
   Position,
 } from "@xyflow/react";
-import MidiKnob from "../components/MidiKnob";
+import { MidiKnob } from '../components';
 
 type FrequencyType = "midi" | "hz" | "lfo";
 

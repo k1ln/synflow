@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import EventBus from '../sys/EventBus';
+import { EventBus } from '../sys';
 import './AudioNode.css';
 
 interface SessionConfig {

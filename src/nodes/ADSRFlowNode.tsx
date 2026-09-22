@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Handle, Position } from "@xyflow/react";
 
 import "./AudioNode.css";
-import MidiKnob from "../components/MidiKnob";
+import { MidiKnob } from '../components';
 
 export type ADSRFlowNodeProps = {
   data: {

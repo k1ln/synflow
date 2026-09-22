@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import EventBus from '../sys/EventBus';
-import MidiKnob from '../components/MidiKnob';
+import { EventBus } from '../sys';
+import { MidiKnob } from '../components';
 
 export type CurveType = 'linear' | 'logarithmic' | 'exponential';
 const render = 0;

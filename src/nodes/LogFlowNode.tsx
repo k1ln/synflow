@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
-import EventBus from '../sys/EventBus';
+import { EventBus } from '../sys';
 
 // Simple log node: shows last N events received on main-input.
 // Data fields persisted: label, maxEntries

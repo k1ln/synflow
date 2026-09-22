@@ -1,6 +1,6 @@
 import type { FlowLoader } from '@synflow/core';
-import { loadRootHandle, loadFlowFromDisk, makeFlowDbKey } from '../util/FileSystemAudioStore';
-import { SimpleIndexedDB } from '../util/SimpleIndexedDB';
+import { loadRootHandle, loadFlowFromDisk, makeFlowDbKey } from '../util';
+import { SimpleIndexedDB } from '../util';
 
 // Browser sub-flow loader: disk (File System Access API) first, IndexedDB fallback.
 // Preserves the behavior that used to live in AudioGraphManager.loadFlowByName.

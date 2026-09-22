@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import EventBus from '../sys/EventBus';
-import { CustomNumberInput } from '../util/CustomNumberInput';
+import { EventBus } from '../sys';
+import { CustomNumberInput } from '../util';
 
 export interface MidiNote {
   note: number;        // MIDI note number (0-127)

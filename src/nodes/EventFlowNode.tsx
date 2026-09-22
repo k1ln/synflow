@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Handle, Position } from "@xyflow/react";
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
-import EventBus from "../sys/EventBus";
+import { EventBus } from "../sys";
 
 export type EventNodeProps = {
   data: {

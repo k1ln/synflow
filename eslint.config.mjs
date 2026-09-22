@@ -201,15 +201,15 @@ export default tseslint.config(
   //   `npm run lint` must be wired into CI for this to mean anything — see
   //   .github/workflows/ci.yml.
   //
-  //   host/ additionally gets real entry-point enforcement (not just a
-  //   direction rule): every consumer allowed to depend on 'host' at all must
-  //   go through src/host/index.ts, never a sibling file directly — that's
-  //   the one module fully proven out as "true" modulith, with a real public
-  //   API rather than just a folder. compileWorklet/workletWasmShim/
-  //   compileFlowWorklets/exportPortableFlow are excepted: they're
-  //   intentionally dynamic-`import()`ed at their call sites to stay in their
-  //   own lazy chunk, and routing them through the barrel would merge those
-  //   chunks back together.
+  //   Every module with a real public API (src/<module>/index.ts) also gets
+  //   entry-point enforcement: any consumer allowed to depend on it at all
+  //   must import through that barrel, never reach a sibling file directly —
+  //   BARREL_EXCEPTIONS lists, per module, the files allowed to stay
+  //   deep-importable anyway (almost always because they're intentionally
+  //   dynamic-`import()`ed at their call site to stay in their own lazy
+  //   chunk — routing them through the barrel would merge those chunks back
+  //   together and undo the split). plugin-ui and audioWorklets have no
+  //   entry here because nothing imports from them to begin with.
   //
   //   Everything lives in ONE generator so every file gets exactly one
   //   `no-restricted-imports` config: two separate blocks both setting that
@@ -243,7 +243,22 @@ export default tseslint.config(
       sys: 'src/sys', virtualNodes: 'src/virtualNodes', util: 'src/util', types: 'src/types',
       audioWorklets: 'src/audioWorklets',
     };
-    const HOST_ENTRY_POINT_EXCEPTIONS = ['index', 'compileWorklet', 'workletWasmShim', 'compileFlowWorklets', 'exportPortableFlow'];
+    // Modules with a real barrel (src/<module>/index.ts) — every other module
+    // allowed to depend on one of these must import through it. Listed files
+    // (besides 'index' itself) are deep-import exceptions for that module.
+    const BARREL_EXCEPTIONS = {
+      host: ['compileWorklet', 'workletWasmShim', 'compileFlowWorklets', 'exportPortableFlow'],
+      util: ['pitchDetection'],
+      types: [],
+      virtualNodes: [],
+      sys: [],
+      utils: [],
+      components: [],
+      constants: [],
+      docs: [],
+      ui: [],
+      nodes: [],
+    };
     const sourceBlocks = [
       { ownType: 'entry', filesGlob: 'index.tsx', allowed: MODULE_GRAPH.entry },
       { ownType: 'app', filesGlob: 'src/Flow.tsx', allowed: MODULE_GRAPH.app },
@@ -265,10 +280,13 @@ export default tseslint.config(
             message: `This module isn't allowed to depend on that one — see MODULE_GRAPH in eslint.config.mjs (section 8).`,
           }]
         : [];
-      if (ownType !== 'host' && allowed.includes('host')) {
+      for (const target of allowed) {
+        if (target === ownType || !(target in BARREL_EXCEPTIONS)) continue;
+        const targetDir = FOLDER[target].replace('src/', '');
+        const exceptions = BARREL_EXCEPTIONS[target];
         patterns.push({
-          group: ['**/host/*', ...HOST_ENTRY_POINT_EXCEPTIONS.map((f) => `!**/host/${f}`)],
-          message: 'Import from the host barrel (\'../host\') instead of reaching into a sibling file directly — see src/host/index.ts.',
+          group: [`**/${targetDir}/*`, `!**/${targetDir}/index`, ...exceptions.map((f) => `!**/${targetDir}/${f}`)],
+          message: `Import from the ${target} barrel ('../${target}') instead of reaching into a sibling file directly — see src/${target}/index.ts.`,
         });
       }
       if (patterns.length === 0) return null;

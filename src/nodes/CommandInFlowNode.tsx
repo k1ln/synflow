@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Handle, Position } from "@xyflow/react";
-import EventBus from "../sys/EventBus";
+import { EventBus } from "../sys";
 
 export type CommandInFlowNodeProps = {
   id?: string;

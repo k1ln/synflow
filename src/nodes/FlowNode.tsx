@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Handle, Position, useUpdateNodeInternals } from "@xyflow/react";
-import { SimpleIndexedDB } from "../util/SimpleIndexedDB";
-import EventBus from "../sys/EventBus";
+import { SimpleIndexedDB } from "../util";
+import { EventBus } from "../sys";
 import { Knob } from 'react-rotary-knob-react19';
-import ExplorerDialog from '../components/ExplorerDialog';
-import { saveFlowToDisk, deleteFlowFromDisk, FlowData, loadRootHandle, loadFlowFromDisk, listFlowsOnDisk, makeFlowDbKey} from '../util/FileSystemAudioStore';
+import { ExplorerDialog } from '../components';
+import { saveFlowToDisk, deleteFlowFromDisk, FlowData, loadRootHandle, loadFlowFromDisk, listFlowsOnDisk, makeFlowDbKey} from '../util';
 
 export type FlowNodeProps = {
     id: string;

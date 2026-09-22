@@ -9,9 +9,9 @@ import {
   Position,
   useNodeId,
 } from "@xyflow/react";
-import EventBus from "../sys/EventBus";
+import { EventBus } from "../sys";
 import "./AudioNode.css";
-import { baseNodeStyle } from "../utils/styleUtils";
+import { baseNodeStyle } from "../utils";
 
 type Mode = "bars" | "scope";
 type Preset = "aurora" | "ember" | "mono";

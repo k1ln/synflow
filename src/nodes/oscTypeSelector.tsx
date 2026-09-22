@@ -1,6 +1,6 @@
 import React from "react";
-import { OptionSelect } from "../components/OptionSelect";
-import { WAVEFORM_OPTIONS_CUSTOM } from "../components/nodeSymbols";
+import { OptionSelect } from "../components";
+import { WAVEFORM_OPTIONS_CUSTOM } from "../components";
 
 type OscillatorType = "sine" | "square" | "sawtooth" | "triangle" | "custom";
 

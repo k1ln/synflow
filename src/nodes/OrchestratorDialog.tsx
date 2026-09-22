@@ -7,7 +7,7 @@ import {
   MusicNote,
   GridGranularityType,
   GRANULARITY_DIVISOR
-} from '../types/OrchestratorTypes';
+} from '../types';
 import './OrchestratorDialog.css';
 
 interface OrchestratorDialogProps {

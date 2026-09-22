@@ -1,8 +1,8 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import EventBus from '../sys/EventBus';
-import MidiKnob from '../components/MidiKnob';
-import { ArpeggiatorMode } from '../virtualNodes/VirtualArpeggiatorNode';
+import { EventBus } from '../sys';
+import { MidiKnob } from '../components';
+import { ArpeggiatorMode } from '../virtualNodes';
 import './AudioNode.css';
 
 export interface ArpeggiatorFlowNodeData {

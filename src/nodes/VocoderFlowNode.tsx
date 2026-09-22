@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Handle, Position, useNodeId } from "@xyflow/react";
-import MidiKnob, { MidiMapping } from "../components/MidiKnob";
-import EventBus from "../sys/EventBus";
+import { MidiKnob, type MidiMapping } from '../components';
+import { EventBus } from "../sys";
 import "./AudioNode.css";
 
 export type VocoderFlowNodeProps = {

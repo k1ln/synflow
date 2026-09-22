@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import EventBus from '../sys/EventBus';
+import { EventBus } from '../sys';
 
 /**
  * MidiFlowNote: listens to Web MIDI and emits note-on frequencies (A4=440) via its output handle.

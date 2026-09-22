@@ -13,17 +13,14 @@ import { Connection, Edge, Node } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './Flow.css';
  
-import NodePaletteDialog, { NODE_CATEGORY_COLORS } from './components/NodePaletteDialog';
+import { NodePaletteDialog, NODE_CATEGORY_COLORS, ExplorerDialog, type ExplorerFlowItem } from './components';
 import { useEffect } from 'react';
-import type { IFlowEngine, FlowEngineFactory } from './sys/IFlowEngine';
-import { createDefaultEngine } from './sys/IFlowEngine';
-import EventBus from './sys/EventBus';
-import ExplorerDialog, { ExplorerFlowItem } from './components/ExplorerDialog';
+import type { IFlowEngine, FlowEngineFactory } from './sys';
+import { createDefaultEngine, EventBus, EventManager } from './sys';
 import { v4 as uuidv4 } from 'uuid';
-import { SimpleIndexedDB } from './util/SimpleIndexedDB';
+import { SimpleIndexedDB } from './util';
 import * as Dialog from '@radix-ui/react-dialog';
-import { measureMicLatency, autoMeasureLatency } from './utils/latencyTest';
-import EventManager from './sys/EventManager';
+import { measureMicLatency, autoMeasureLatency } from './utils';
 // File System Audio storage utilities
 import {
   loadRootHandle as loadAudioRootHandle,
@@ -41,26 +38,19 @@ import {
   listAllSubdirectories,
   loadFlowFromDisk,
   makeFlowDbKey,
-} from './util/FileSystemAudioStore';
-import ImpressumDialog from './components/ImpressumDialog';
-import DatenschutzDialog from './components/DatenschutzDialog';
-import TopBar from './components/TopBar';
-import './sys/exposeFlowSynth';
-import MiniPlayer from './components/MiniPlayer';
-import AudioExplorer from './components/AudioExplorer';
-import OrchestratorDialog from './nodes/OrchestratorDialog';
-import DocsPlayground from './docs/DocsPlayground';
+} from './util';
+import { ImpressumDialog, DatenschutzDialog, TopBar, MiniPlayer, AudioExplorer, InstrumentLiveUI, CustomUiEditor } from './components';
+import { OrchestratorDialog } from './nodes';
+import DocsPlayground from './docs';
 import { DawEditorBridge, isDawEditMode, isPluginWebview, HostInterfacePanel, flowKnobs, flowKind } from './host';
-import { InstrumentLiveUI } from './components/InstrumentLiveUI';
-import { CustomUiEditor } from './components/CustomUiEditor';
 import {
   hexToRgb,
   makeGlow,
   makeEdgeGlowFilter,
   normalizeNodeStylesForTheme,
-} from './utils/styleUtils';
-import { nodeTypes } from './constants/flowNodeTypes';
-import { nodeDefaults } from './constants/nodeDefaults';
+} from './utils';
+import { nodeTypes } from './constants';
+import { nodeDefaults } from './constants';
 
 const timeout = Date.now();
 

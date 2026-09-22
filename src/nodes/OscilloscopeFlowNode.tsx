@@ -10,10 +10,10 @@ import {
   Position,
   useNodeId,
 } from "@xyflow/react";
-import EventBus from "../sys/EventBus";
-import MidiKnob from "../components/MidiKnob";
+import { EventBus } from "../sys";
+import { MidiKnob } from '../components';
 import "./AudioNode.css";
-import { baseNodeStyle } from "../utils/styleUtils";
+import { baseNodeStyle } from "../utils";
 
 type OscilloscopePayload = {
   wave: number[];

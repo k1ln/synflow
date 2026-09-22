@@ -4,8 +4,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 
-import { SynflowEditor } from '../ui/SynflowEditor';
-import { createNativeEngine } from '../sys/NativeFlowEngine';
+import { SynflowEditor } from '../ui';
+import { createNativeEngine } from '../sys';
 
 // Floating toggle back to the plugin's play panel (served at the resource root).
 function BackToPlay() {

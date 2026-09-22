@@ -11,12 +11,12 @@ import {
   useUpdateNodeInternals
 } from '@xyflow/react';
 import { createPortal } from 'react-dom';
-import EventBus from '../sys/EventBus';
-import MidiKnob from '../components/MidiKnob';
+import { EventBus } from '../sys';
+import { MidiKnob } from '../components';
 import { frequencyToNote } from '../util/pitchDetection';
-import { detectOnsets as detectOnsetsEssentia } from '../util/onsetDetection';
+import { detectOnsets as detectOnsetsEssentia } from '../util';
 import './AudioNode.css';
-import { baseNodeStyle } from '../utils/styleUtils';
+import { baseNodeStyle } from '../utils';
 
 export type AudioBufferSegment = {
   id: string;

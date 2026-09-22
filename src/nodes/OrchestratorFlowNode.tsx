@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
-import { OrchestratorData, DEFAULT_ORCHESTRATOR_DATA } from '../types/OrchestratorTypes';
-import EventBus from '../sys/EventBus';
+import { OrchestratorData, DEFAULT_ORCHESTRATOR_DATA } from '../types';
+import { EventBus } from '../sys';
 
 export interface OrchestratorFlowNodeProps {
   data: {

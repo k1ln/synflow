@@ -23,9 +23,9 @@ import {
   ViewPlugin
 } from '@codemirror/view';
 import { StreamLanguage } from '@codemirror/language';
-import EventBus from '../sys/EventBus';
+import { EventBus } from '../sys';
 import './AudioNode.css';
-import { baseNodeStyle } from '../utils/styleUtils';
+import { baseNodeStyle } from '../utils';
 import './ScriptSequencerFlowNode.css';
 
 export interface FavoriteItem {

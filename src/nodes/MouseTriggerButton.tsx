@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import EventBus from '../sys/EventBus';
+import { EventBus } from '../sys';
 import './AudioNode.css';
-import { baseNodeStyle } from '../utils/styleUtils';
+import { baseNodeStyle } from '../utils';
 
 export interface MouseTriggerButtonProps {
   data: {

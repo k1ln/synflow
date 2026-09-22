@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { NODE_CATEGORY_COLORS } from '../components/NodePaletteDialog';
+import { NODE_CATEGORY_COLORS } from '../components';
 
 export const DARK_NODE_BG = 'rgba(18, 19, 36, 0.52)';
 

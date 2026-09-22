@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useState } from "react";
 import { Handle, Position } from "@xyflow/react";
-import MidiKnob, { MidiMapping } from "../components/MidiKnob";
-import { NumberField } from "../components/NumberField";
+import { MidiKnob, type MidiMapping } from '../components';
+import { NumberField } from "../components";
 import "./AudioNode.css";
 
 const DEFAULT_FORMULA = "(Math.random() * 2 - 1) * Math.pow(1 - n / length, decay)";

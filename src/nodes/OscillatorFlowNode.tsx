@@ -1,11 +1,11 @@
 ﻿import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import { Handle, Position } from "@xyflow/react";
-import EventBus from "../sys/EventBus";
-import MidiKnob, { MidiMapping } from "../components/MidiKnob";
-import { OptionSelect } from "../components/OptionSelect";
-import { NumberField } from "../components/NumberField";
-import { WAVEFORM_OPTIONS_CUSTOM } from "../components/nodeSymbols";
+import { EventBus } from "../sys";
+import { MidiKnob, type MidiMapping } from '../components';
+import { OptionSelect } from "../components";
+import { NumberField } from "../components";
+import { WAVEFORM_OPTIONS_CUSTOM } from "../components";
 import "./AudioNode.css";
 type FrequencyType = "midi" | "hz" | "lfo";
 type CustomMode = "pulse" | "wavetable";

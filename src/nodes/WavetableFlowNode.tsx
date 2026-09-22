@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Handle, Position } from "@xyflow/react";
-import MidiKnob, { MidiMapping } from "../components/MidiKnob";
-import { OptionSelect } from "../components/OptionSelect";
-import EventBus from "../sys/EventBus";
+import { MidiKnob, type MidiMapping } from '../components';
+import { OptionSelect } from "../components";
+import { EventBus } from "../sys";
 import "./AudioNode.css";
 
 const ACCENT = "#38bdf8"; // wavetable cyan

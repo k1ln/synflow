@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect } from "react";
 import { Handle, Position } from "@xyflow/react";
-import MidiKnob, { MidiMapping } from "../components/MidiKnob";
+import { MidiKnob, type MidiMapping } from '../components';
 import "./AudioNode.css";
 
 export type AudioSignalFreqShifterFlowNodeProps = {

@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import EventBus from '../sys/EventBus';
+import { EventBus } from '../sys';
 import './AudioNode.css';
-import MidiKnob from '../components/MidiKnob';
+import { MidiKnob } from '../components';
 
 export type AutomationPoint = { x: number; y: number }; // x:0..1 time, y:0..1 vertical (0=top,1=bottom)
 

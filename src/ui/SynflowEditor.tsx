@@ -12,10 +12,9 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { setHostAdapters, type ButtonInput } from '@synflow/core';
 
 import Flow from '../Flow';
-import EventManager from '../sys/EventManager';
-import MidiManager from '../components/MidiManager';
+import { EventManager, type FlowEngineFactory } from '../sys';
+import { MidiManager } from '../components';
 import { browserFlowLoader, browserAssetStore } from '../host';
-import type { FlowEngineFactory } from '../sys/IFlowEngine';
 
 // Wire browser host capabilities into the headless @synflow/core engine, once.
 // Delegates to the *current* EventManager so it survives resetInstance().

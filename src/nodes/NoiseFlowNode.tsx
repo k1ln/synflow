@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import EventBus from '../sys/EventBus';
-import { OptionSelect } from '../components/OptionSelect';
-import { NOISE_OPTIONS } from '../components/nodeSymbols';
+import { EventBus } from '../sys';
+import { OptionSelect } from '../components';
+import { NOISE_OPTIONS } from '../components';
 import './AudioNode.css';
 
 export type NoiseKind = 'white' | 'pink' | 'brown' | 'blue' | 'violet' | 'gray' | 'velvet' | 'green' | 'infrared' | 'binary' | 'crackle';

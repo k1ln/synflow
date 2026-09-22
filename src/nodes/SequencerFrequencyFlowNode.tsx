@@ -1,8 +1,8 @@
 ﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
-import EventBus from '../sys/EventBus';
+import { EventBus } from '../sys';
 import './AudioNode.css';
-import MidiKnob from '../components/MidiKnob';
+import { MidiKnob } from '../components';
 
 type FrequencyType = "midi" | "hz" | "lfo";
 

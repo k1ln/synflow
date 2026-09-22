@@ -6,7 +6,7 @@ import React, {
   useCallback
 } from 'react';
 import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
-import EventBus from '../sys/EventBus';
+import { EventBus } from '../sys';
 import './AudioNode.css';
 
 export interface SequencerFlowNodeData {

@@ -1,9 +1,9 @@
 ﻿import React, { useState, useEffect } from "react";
 import { Handle, Position } from "@xyflow/react";
-import MidiKnob, { MidiMapping } from "../components/MidiKnob";
-import { OptionSelect } from "../components/OptionSelect";
-import { NumberField } from "../components/NumberField";
-import { BIQUAD_FILTER_OPTIONS } from "../components/nodeSymbols";
+import { MidiKnob, type MidiMapping } from '../components';
+import { OptionSelect } from "../components";
+import { NumberField } from "../components";
+import { BIQUAD_FILTER_OPTIONS } from "../components";
 import "./AudioNode.css";
 
 export type BiquadFilterFlowNodeProps = {

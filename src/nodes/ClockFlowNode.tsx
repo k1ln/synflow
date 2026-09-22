@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Handle, Position } from "@xyflow/react";
 import { Power, ChevronRight } from "lucide-react";
-import EventBus from "../sys/EventBus";
-import {CustomNumberInput} from "../util/CustomNumberInput";
-import { baseNodeStyle } from "../utils/styleUtils";
+import { EventBus } from "../sys";
+import {CustomNumberInput} from "../util";
+import { baseNodeStyle } from "../utils";
 
 export type ClockNodeProps = {
   id: string;
