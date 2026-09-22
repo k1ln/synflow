@@ -73,7 +73,6 @@ export function normalizeNodeStylesForTheme(arr: any[] | undefined): any[] {
     if (!style.color) style.color = '#eeeeee';
     const catColor = NODE_CATEGORY_COLORS[n.type as string];
     if (catColor) {
-      const rgb = hexToRgb(catColor) || { r: 255, g: 255, b: 255 };
       style.borderTop = `3px solid ${catColor}`;
       const outerGlow = makeGlow(style.glowColor || '#00ff88', 'normal');
       style.boxShadow = outerGlow;

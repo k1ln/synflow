@@ -44,17 +44,12 @@ import { OrchestratorDialog } from './nodes';
 import DocsPlayground from './docs';
 import { DawEditorBridge, isDawEditMode, isPluginWebview, HostInterfacePanel, flowKnobs, flowKind } from './host';
 import {
-  hexToRgb,
   makeGlow,
   makeEdgeGlowFilter,
   normalizeNodeStylesForTheme,
 } from './utils';
 import { nodeTypes } from './constants';
 import { nodeDefaults } from './constants';
-
-const timeout = Date.now();
-
-const initialNodes = [];
 
 // ReactFlow takes style *objects* it applies to its own SVG elements, so these
 // can't be CSS classes — hoisted here to keep them out of the JSX.
@@ -130,11 +125,6 @@ const currentFlow = readCurrentFlowPointer().name;
 
 let ctx: AudioContext;
 
-// Feature flag to control debounced auto-save behavior for flows/components.
-// Set to false to fully disable automatic saving on node/edge changes.
-// Manual saves via Ctrl+S / Cmd+S or explicit save buttons still work.
-const AUTO_SAVE_ENABLED = false;
-
 // First run: when a visitor has never opened a flow, seed this bundled example
 // so the editor opens on something rich instead of an empty canvas. Picked a
 // non-trivial patch on purpose — it has a built-in clock (isEmitting) driving
@@ -171,7 +161,6 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
    */
   // Persist AudioGraphManager instance across renders using a ref
   const managerRef = useRef<IFlowEngine | undefined>(undefined);
-  let manager = managerRef.current;
   // Audio output latency mode, selectable in the top bar and persisted across
   // reloads. `latencyHint` can only be set when the AudioContext is created, so
   // the ref lets init() always read the latest value, and changing it while
@@ -285,11 +274,16 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
   const [customUi, setCustomUi] = useState<string>('');
   const customUiRef = useRef('');
   customUiRef.current = customUi;
-  const [flowItems, setFlowItems] = useState<string[]>([]);
+  // Getter never read — kept write-only (setFlowItems has many call sites
+  // updating it) rather than removed, since it's unclear whether that's
+  // dead state or a UI regression (something meant to display this list
+  // lost its wiring). Flagged for review rather than guessed at.
+  const [_flowItems, setFlowItems] = useState<string[]>([]);
   const [folderPaths, setFolderPaths] = useState<string[]>([]); // all known folders (local)
   const [currentFlowFolder, setCurrentFlowFolder] = useState<string>(''); // folder of currently open flow
   const [localFlowMeta, setLocalFlowMeta] = useState<ExplorerFlowItem[]>([]); // detailed local flow list with folder_path
-  const [nodeItems, setNodeItems] = useState<string[]>([]);
+  // Same write-only situation as _flowItems above.
+  const [_nodeItems, setNodeItems] = useState<string[]>([]);
   const [flowNameInput, setFlowNameInput] = useState(currentFlow || '');
   const [showDocsPlayground, setShowDocsPlayground] = useState(false);
   const strippEverythingButData = (flow: any) => {
@@ -667,10 +661,8 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
   }, [db, openFlowFromIndexedDB, seedDefaultExampleFlow]);
 
   const [openDialogFlows, setOpenDialogFlows] = useState(false);
-  const [openDialogNodes, setOpenDialogNodes] = useState(false);
   const [nodeCount, setNodeCount] = useState(nodes.length);
 
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   // New Add Node palette dialog state
   const [nodePaletteOpen, setNodePaletteOpen] = useState(false);
   // Audio playing state (for TopBar play button visual)
@@ -920,12 +912,11 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
   const [selectedEdge, setSelectedEdge] = useState<string | undefined>(undefined);
   const [selectedNode, setSelectedNode] = useState<any | undefined>(undefined);
   const [selectedNodeType, setSelectedNodeType] = useState<string>("");
-  const [editState, setEditState] = useState<"flow" | "node">("flow");
   // UI color pickers for selected node/edge glow/color
   const [nodeGlowColor, setNodeGlowColor] = useState<string>('#00ff88');
   const [nodeBgColor, setNodeBgColor] = useState<string>('#1f1f1f');
   // Font color per node disabled
-  const [nodeFontColor, setNodeFontColor] = useState<string>('#eeeeee');
+  const [_nodeFontColor, setNodeFontColor] = useState<string>('#eeeeee');
   const [edgeColor, setEdgeColor] = useState<string>('#00ff88');
   //fix this with EventBus node Updates.
 
@@ -940,8 +931,6 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
   const [saveDialogIsNewFlow, setSaveDialogIsNewFlow] = useState(false);
   const [impressumOpen, setImpressumOpen] = useState(false);
   const [datenschutzOpen, setDatenschutzOpen] = useState(false);
-  // Control the File menu (Radix Dialog) open state so we can close it before opening other dialogs
-  const [fileMenuOpen, setFileMenuOpen] = useState(false);
 
   // --- Recordings Panel & Storage (File System + fallback IndexedDB) ---------
   const recordingsDbRef = useRef<SimpleIndexedDB>(new SimpleIndexedDB('FlowSynthDB', 'recordings')); // retained ONLY for migration & fallback
@@ -1229,23 +1218,15 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
   // moved below auth state declarations
 
   // --- Remote (Server) Flow Management -------------------------------------
-  const [serverFlows, setServerFlows] = useState<any[]>([]); // my flows
-  const [publicFlows, setPublicFlows] = useState<any[]>([]);
-  const [serverFilter, setServerFilter] = useState('');
-  const [createServerName, setCreateServerName] = useState('');
-  const [isRemoteSaving, setIsRemoteSaving] = useState(false);
-  const [showServerPanel, setShowServerPanel] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [syncLog, setSyncLog] = useState<string[]>([]);
-  
-  
-
-  // Helper: build component source code (serializes current nodes/edges) when we have none stored yet.
-  const buildComponentCode = useCallback((name: string, n: any[], e: any[]) => {
-    const safeName = (name || 'Component').replace(/[^A-Za-z0-9_]/g, '_');
-    const serialized = JSON.stringify({ nodes: strippEverythingButData(n), edges: strippEverythingButData(e) }, null, 2);
-    return `// FlowSynth auto-generated component for ${name}\n// Edit the transform() function to customize behavior.\n// The embeddedGraph object contains the node & edge structure.\nexport const embeddedGraph = ${serialized};\n\nexport function transform(input){\n  // TODO: implement processing logic\n  return input;\n}\n\nexport default { name: '${safeName}', embeddedGraph, transform };`;
-  }, [nodes, edges]);
+  // serverFlows/publicFlows are read (see explorerMyFlows/explorerPublicFlows
+  // below) but nothing ever calls their setters — dormant "published flows"
+  // feature, same as FlowNode.tsx's copy of this same state shape (see the
+  // comment on refreshRemoteFlows there). serverFilter/createServerName/
+  // isRemoteSaving/showServerPanel/syncing/syncLog and buildComponentCode
+  // below had zero references anywhere at all (not even a setter call) —
+  // deleted rather than kept as unused scaffolding.
+  const [serverFlows, _setServerFlows] = useState<any[]>([]); // my flows
+  const [publicFlows, _setPublicFlows] = useState<any[]>([]);
 
   // Native plugin webview: push the editor graph to the C++ engine. The web app
   // re-syncs the engine inside init(), but init() builds a Web Audio graph gated on
@@ -1398,8 +1379,6 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
 
   // Manual Save State
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
-  // Debounced auto-save timer id
-  const autoSaveTimerRef = useRef<number | null>(null);
 
   const handleSaveDialogConfirm = async () => {
     const name = saveDialogName.trim();
@@ -1660,10 +1639,6 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
     [setSelectedNode, setNodes, selectedEdge, setEdges, selectedNode]
   );
 
-  const deleteNode = (nodeId: string) => {
-    setNodes((nds) => nds.filter((node) => node.id !== nodeId));
-  };
-
   const init = () => {
     //console.log("Initializing AudioGraphManager...");
     if (ctx !== undefined) {
@@ -1690,7 +1665,6 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
     }
     const engine = engineFactory(ctx, nodesRef, edgesRef);
     managerRef.current = engine;
-    manager = engine;
     void engine.initialize();
     audioGraphManagerRef.current = engine;
     setIsPlaying(true);
@@ -1830,7 +1804,6 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
     if (!copy) {
       const catColor = NODE_CATEGORY_COLORS[type];
       if (catColor) {
-        const rgb = hexToRgb(catColor) || { r: 255, g: 255, b: 255 };
         styleObj.borderTop = `3px solid ${catColor}`;
         const outerGlow = makeGlow(styleObj.glowColor || '#00ff88', 'normal');
         styleObj.boxShadow = outerGlow;
@@ -1993,19 +1966,6 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
     [setEdges, connectionAllowed, showToast, pushHistory]
   );
 
-  const cssButton: React.CSSProperties = {
-    color: '#fff',
-    display: 'block',
-    padding: '4px 6px',
-    width: '130px',
-    fontSize: '11px',
-    lineHeight: 1.1,
-    textAlign: 'left' as React.CSSProperties['textAlign'],
-    background: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-  };
-
   const onCopyCapture = useCallback(
     (event: ClipboardEvent) => {
       // Don't intercept when focus is inside a text input or contenteditable.
@@ -2164,16 +2124,6 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
       window.removeEventListener("paste", onPasteCapture);
     };
   }, [onPasteCapture]);
-
-  function saveFlowToIndexedDB(name: string) {
-    if (!name) return;
-    const dbKey = makeFlowDbKey(name, currentFlowFolder);
-    void db.put(dbKey, { nodes, edges, folder_path: currentFlowFolder });
-    writeCurrentFlowName(name);
-    writeCurrentFlowFolder(currentFlowFolder);
-    setFlowNameInput(name);
-    setFlowItems((prev) => prev.includes(name) ? prev : [...prev, name]);
-  }
 
   const renameCurrentFlow = useCallback((newName: string) => {
     const trimmed = newName.trim();
