@@ -5,13 +5,13 @@
     "@uiw/react-codemirror": "^4.23.10",
     "@vitejs/plugin-react": "^4.3.4",
     "@xyflow/react": "^12.5.4",
+    "assemblyscript": "^0.28.19",
     "codemirror": "^6.0.1",
     "essentia.js": "^0.1.3",
     "lucide-react": "^0.544.0",
     "radix-ui": "^1.4.1",
     "react": "^19.1.0",
-    "react-rotary-knob-react19": "^4.0.0",
-    "assemblyscript": "^0.28.19"
+    "react-rotary-knob-react19": "^4.0.0"
   },
   "name": "flowsynth",
   "version": "0.4.7",
@@ -29,6 +29,7 @@
     "test:ui": "vitest",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "lint:modulith": "eslint 'src/**/*.{ts,tsx}' index.tsx",
     "version:bump": "node scripts/version-bump.js"
   },
   "author": "",

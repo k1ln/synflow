@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Wand2, Save, RotateCcw } from 'lucide-react';
-import { type ExposedKnob } from '../host/flowKnobs';
+import { type ExposedKnob } from '../host';
 import { CustomInstrumentUI } from './CustomInstrumentUI';
 
 /** Build starter HTML from a flow's exposed knobs: a labeled slider + readout per

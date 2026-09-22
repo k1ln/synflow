@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      # Scoped to the editor source (src/ + index.tsx) rather than the full
+      # `npm run lint`, which sweeps up tests/backend/scripts/native/ and has
+      # ~19k pre-existing findings never previously gated in CI. This is the
+      # part that actually matters here: it's what enforces the modulith
+      # boundaries in eslint.config.mjs (section 8) on every push/PR.
+      - run: npm run lint:modulith
+
+      - run: npm run build
+
+      - run: npm test

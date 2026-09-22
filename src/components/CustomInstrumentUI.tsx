@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { type ExposedKnob, knobReadout } from '../host/flowKnobs';
+import { type ExposedKnob, knobReadout } from '../host';
 
 /**
  * Renders a flow's custom HTML faceplate inside a Shadow DOM (so the author's CSS

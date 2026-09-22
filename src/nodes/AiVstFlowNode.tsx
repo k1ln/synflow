@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import EventBus from '../sys/EventBus';
-import { fetchGalleryIndex, downloadVstai, galleryShotUrl, type GalleryItem } from '../host/vstaiGallery';
+import { fetchGalleryIndex, downloadVstai, galleryShotUrl, type GalleryItem } from '../host';
 import './AudioNode.css';
 
 // AiVstFlowNode — loads a VibePlugin ".vstai" (an "AI VST": DSP written by Claude,

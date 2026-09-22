@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, LayoutDashboard, GripVertical } from 'lucide-react';
-import { flowKnobs, flowOptions, knob01, knobValue, knobReadout, flowKind, type ExposedKnob, type ExposedOption } from '../host/flowKnobs';
+import { flowKnobs, flowOptions, knob01, knobValue, knobReadout, flowKind, type ExposedKnob, type ExposedOption } from '../host';
 import { Knob } from './Knob';
 import { CustomInstrumentUI } from './CustomInstrumentUI';
 import './InstrumentLiveUI.css';

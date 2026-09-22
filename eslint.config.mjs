@@ -181,4 +181,103 @@ export default tseslint.config(
       'no-console': 'off',
     },
   },
+
+  // ── 8. Modulith boundaries ─────────────────────────────────────────────────
+  //   Turns the editor's folder layout into an enforced module graph. MODULE_GRAPH
+  //   below is the whole spec: for each top-level src/* folder, the *only* other
+  //   folders it's allowed to import from — exactly the edges that exist in the
+  //   real codebase today (derived by grepping cross-folder imports; see the
+  //   "carve out mothscilla" / "true modulith" conversation this came from).
+  //   Anything not listed — in particular a new cycle — fails the build instead
+  //   of just looking wrong in review.
+  //
+  //   (eslint-plugin-boundaries was tried first and dropped: several real bugs/
+  //   quirks in its v7 element-matching surfaced even after working around each
+  //   one — including one where every element silently matched nothing, so the
+  //   rule looked configured but enforced zero policies. Better a plainer
+  //   mechanism whose semantics are fully trusted than a fancier one that might
+  //   silently be a no-op. no-restricted-imports has no such ambiguity.)
+  //
+  //   `npm run lint` must be wired into CI for this to mean anything — see
+  //   .github/workflows/ci.yml.
+  //
+  //   host/ additionally gets real entry-point enforcement (not just a
+  //   direction rule): every consumer allowed to depend on 'host' at all must
+  //   go through src/host/index.ts, never a sibling file directly — that's
+  //   the one module fully proven out as "true" modulith, with a real public
+  //   API rather than just a folder. compileWorklet/workletWasmShim/
+  //   compileFlowWorklets/exportPortableFlow are excepted: they're
+  //   intentionally dynamic-`import()`ed at their call sites to stay in their
+  //   own lazy chunk, and routing them through the barrel would merge those
+  //   chunks back together.
+  //
+  //   Everything lives in ONE generator so every file gets exactly one
+  //   `no-restricted-imports` config: two separate blocks both setting that
+  //   rule for overlapping files don't merge in flat config — the later block
+  //   just replaces the earlier one's value outright, silently dropping it.
+  ...(() => {
+    const MODULE_GRAPH = {
+      entry: ['ui'],
+      app: ['components', 'constants', 'docs', 'host', 'nodes', 'sys', 'util', 'utils'],
+      ui: ['components', 'host', 'sys'],
+      'plugin-ui': ['sys', 'ui'],
+      nodes: ['components', 'host', 'sys', 'types', 'util', 'utils', 'virtualNodes'],
+      constants: ['nodes'],
+      docs: ['nodes'],
+      components: ['host', 'util'],
+      utils: ['components'],
+      host: ['util'],
+      sys: [],
+      virtualNodes: [],
+      util: [],
+      types: [],
+      audioWorklets: [],
+    };
+    // Only folders (not the two single-file roots, app/Flow.tsx and
+    // entry/index.tsx) are meaningful import *targets* to restrict — nothing
+    // but their one intended consumer has a reason to reach into a root file.
+    const ALL_TARGETS = Object.keys(MODULE_GRAPH).filter((t) => t !== 'app' && t !== 'entry');
+    const FOLDER = {
+      ui: 'src/ui', 'plugin-ui': 'src/plugin-ui', nodes: 'src/nodes', constants: 'src/constants',
+      docs: 'src/docs', components: 'src/components', utils: 'src/utils', host: 'src/host',
+      sys: 'src/sys', virtualNodes: 'src/virtualNodes', util: 'src/util', types: 'src/types',
+      audioWorklets: 'src/audioWorklets',
+    };
+    const HOST_ENTRY_POINT_EXCEPTIONS = ['index', 'compileWorklet', 'workletWasmShim', 'compileFlowWorklets', 'exportPortableFlow'];
+    const sourceBlocks = [
+      { ownType: 'entry', filesGlob: 'index.tsx', allowed: MODULE_GRAPH.entry },
+      { ownType: 'app', filesGlob: 'src/Flow.tsx', allowed: MODULE_GRAPH.app },
+      ...Object.entries(FOLDER).map(([type, dir]) => ({
+        ownType: type,
+        filesGlob: `${dir}/*.{ts,tsx}`,
+        allowed: MODULE_GRAPH[type],
+      })),
+    ];
+    return sourceBlocks.map(({ ownType, filesGlob, allowed }) => {
+      // Compare by type, not by path prefix — 'src/util' is a literal prefix
+      // of 'src/utils', so a startsWith-based self-exclusion would wrongly
+      // treat 'util' as "self" while generating the 'utils' block and let it
+      // silently bypass the very rule meant to forbid utils -> util.
+      const forbidden = ALL_TARGETS.filter((t) => t !== ownType && !allowed.includes(t));
+      const patterns = forbidden.length
+        ? [{
+            group: forbidden.map((t) => `**/${FOLDER[t].replace('src/', '')}/*`),
+            message: `This module isn't allowed to depend on that one — see MODULE_GRAPH in eslint.config.mjs (section 8).`,
+          }]
+        : [];
+      if (ownType !== 'host' && allowed.includes('host')) {
+        patterns.push({
+          group: ['**/host/*', ...HOST_ENTRY_POINT_EXCEPTIONS.map((f) => `!**/host/${f}`)],
+          message: 'Import from the host barrel (\'../host\') instead of reaching into a sibling file directly — see src/host/index.ts.',
+        });
+      }
+      if (patterns.length === 0) return null;
+      return {
+        files: [filesGlob],
+        rules: {
+          'no-restricted-imports': ['error', { patterns }],
+        },
+      };
+    }).filter(Boolean);
+  })(),
 );

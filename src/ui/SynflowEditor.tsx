@@ -14,8 +14,7 @@ import { setHostAdapters, type ButtonInput } from '@synflow/core';
 import Flow from '../Flow';
 import EventManager from '../sys/EventManager';
 import MidiManager from '../components/MidiManager';
-import { browserFlowLoader } from '../host/browserFlowLoader';
-import { browserAssetStore } from '../host/browserAssetStore';
+import { browserFlowLoader, browserAssetStore } from '../host';
 import type { FlowEngineFactory } from '../sys/IFlowEngine';
 
 // Wire browser host capabilities into the headless @synflow/core engine, once.

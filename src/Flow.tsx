@@ -13,20 +13,16 @@ import { Connection, Edge, Node } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './Flow.css';
  
-import { Handle, Position } from '@xyflow/react';
 import NodePaletteDialog, { NODE_CATEGORY_COLORS } from './components/NodePaletteDialog';
 import { useEffect } from 'react';
 import type { IFlowEngine, FlowEngineFactory } from './sys/IFlowEngine';
 import { createDefaultEngine } from './sys/IFlowEngine';
-import { applyNodeChanges } from '@xyflow/react';
 import EventBus from './sys/EventBus';
-import { OpenDialog } from './util/OpenDialog';
 import ExplorerDialog, { ExplorerFlowItem } from './components/ExplorerDialog';
 import { v4 as uuidv4 } from 'uuid';
 import { SimpleIndexedDB } from './util/SimpleIndexedDB';
 import * as Dialog from '@radix-ui/react-dialog';
 import { measureMicLatency, autoMeasureLatency } from './utils/latencyTest';
-import SignalRouterFlowNode from './nodes/SignalRouterFlowNode';
 import EventManager from './sys/EventManager';
 // File System Audio storage utilities
 import {
@@ -53,19 +49,17 @@ import './sys/exposeFlowSynth';
 import MiniPlayer from './components/MiniPlayer';
 import AudioExplorer from './components/AudioExplorer';
 import OrchestratorDialog from './nodes/OrchestratorDialog';
-import DocsPlayground from './components/DocsPlayground';
-import { DawEditorBridge, isDawEditMode, isPluginWebview } from './host/dawEditorBridge';
-import { HostInterfacePanel } from './host/hostInterface';
+import DocsPlayground from './docs/DocsPlayground';
+import { DawEditorBridge, isDawEditMode, isPluginWebview, HostInterfacePanel, flowKnobs, flowKind } from './host';
 import { InstrumentLiveUI } from './components/InstrumentLiveUI';
 import { CustomUiEditor } from './components/CustomUiEditor';
-import { flowKnobs, flowKind } from './host/flowKnobs';
 import {
   hexToRgb,
   makeGlow,
   makeEdgeGlowFilter,
   normalizeNodeStylesForTheme,
 } from './utils/styleUtils';
-import { nodeTypes, orderedNodeTypes } from './constants/flowNodeTypes';
+import { nodeTypes } from './constants/flowNodeTypes';
 import { nodeDefaults } from './constants/nodeDefaults';
 
 const timeout = Date.now();
@@ -1286,11 +1280,11 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
       engine = engineFactory(null as any, nodesRef, edgesRef);
       managerRef.current = engine;
       audioGraphManagerRef.current = engine;
-      engine.initialize();
+      await engine.initialize();
     } else {
       engine.resync?.();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [engineFactory]);
 
   const saveFlow = useCallback(async () => {
@@ -1801,7 +1795,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
       window.removeEventListener('keyup', ku, true);
       window.removeEventListener('blur', releaseAll, true);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   
@@ -2694,7 +2688,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && saveDialogName.trim()) {
                   e.preventDefault();
-                  handleSaveDialogConfirm();
+                  void handleSaveDialogConfirm();
                 }
               }}
               placeholder="Flow name"
@@ -2710,7 +2704,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && saveDialogName.trim()) {
                   e.preventDefault();
-                  handleSaveDialogConfirm();
+                  void handleSaveDialogConfirm();
                 }
               }}
               placeholder="Root"
