@@ -32,7 +32,7 @@ type SortBy = 'name' | 'date' | 'type';
 const AudioExplorer: React.FC<AudioExplorerProps> = ({
   isOpen,
   onClose,
-  recordings,
+  recordings: _recordings,
   allFolderAudio = {},
   uploadedAudio,
   onPlay,

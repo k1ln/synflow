@@ -47,7 +47,7 @@ interface ExplorerDialogProps {
   Left: Local Flows
   Right: Remote (Mine + Public grouped by owner email)
 */
-export const ExplorerDialog: React.FC<ExplorerDialogProps> = ({ open, localFlows, folders = [], myFlows = [], publicFlows = [], loading, onRefresh, onOpenLocal, onOpenRemote, onClose, title = 'Open Flow', backgroundColor = '#111', headerBackgroundColor = '#181818', localLabel = 'Local Flows', myLabel = 'My Flows', publicLabel = 'All Published by Users', onTogglePublish, usePortal = false, fullScreen = false, onDeleteLocal, onDeleteRemote, onCreateFolder, onRenameFolder, onMoveFlow, onRenameFlow }) => {
+export const ExplorerDialog: React.FC<ExplorerDialogProps> = ({ open, localFlows, folders = [], myFlows = [], publicFlows = [], loading, onRefresh, onOpenLocal, onOpenRemote, onClose, title = 'Open Flow', backgroundColor = '#111', headerBackgroundColor = '#181818', localLabel: _localLabel = 'Local Flows', myLabel = 'My Flows', publicLabel = 'All Published by Users', onTogglePublish, usePortal = false, fullScreen = false, onDeleteLocal, onDeleteRemote, onCreateFolder, onRenameFolder, onMoveFlow, onRenameFlow }) => {
   const [filterLocal, setFilterLocal] = useState('');
   const [filterRemote, setFilterRemote] = useState('');
   // Start with all public owners collapsed so only owner names show initially

@@ -278,9 +278,9 @@ export class AudioGraphManager {
         return _handleReceiveOutput(this, node, data, eventType);
     }
 
-    handleReceiveNodeOn(node: Node, data: any) { /* handled by virtual nodes */ }
+    handleReceiveNodeOn(_node: Node, _data: any) { /* handled by virtual nodes */ }
 
-    handleReceiveNodeOff(node: Node, data: any) { /* handled by virtual nodes */ }
+    handleReceiveNodeOff(_node: Node, _data: any) { /* handled by virtual nodes */ }
 
     handleEdgeADSR(edge: Edge, node: CustomNode) {
         return _handleEdgeADSR(this, edge, node);
@@ -630,7 +630,7 @@ export class AudioGraphManager {
                             (targetVirtual as VirtualOscilloscopeNode).ensureLoop();
                             targetInputNode = (targetVirtual as VirtualOscilloscopeNode).audioNode as AudioNode;
                         }
-                    } catch (e) { /* noop */ }
+                    } catch (_e) { /* noop */ }
                     const inputNode = targetInputNode ?? (targetNodeForParams as AudioNode);
                     if (!inputNode) throw new Error('Target input node unavailable');
                     sourceNode.connect(inputNode);

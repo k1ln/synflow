@@ -81,7 +81,7 @@ class VirtualOscilloscopeNode extends VirtualNode<CustomNode> {
           this.audioNode = this.tapGain;
           this.tapGain.gain.value = 1;
         }
-      } catch (e) {
+      } catch (_e) {
         // ignore
       }
     }
@@ -89,7 +89,7 @@ class VirtualOscilloscopeNode extends VirtualNode<CustomNode> {
       try {
         this.tapGain.connect(this.analyser);
         this.analyserConnected = true;
-      } catch (e) {
+      } catch (_e) {
         // Ignore errors here; connection may already exist or audio context issues
       }
     }
@@ -141,13 +141,13 @@ class VirtualOscilloscopeNode extends VirtualNode<CustomNode> {
         // Only disconnect the analyser input — keep `tapGain` itself intact so
         // any sources connected to it are preserved across graph rewirings.
         this.tapGain.disconnect(this.analyser as any);
-      } catch (e) {
+      } catch (_e) {
         // If targeted disconnect fails, attempt a safe full disconnect of analyser
-        try { this.analyser.disconnect(); } catch (e) { /* noop */ }
+        try { this.analyser.disconnect(); } catch (_e) { /* noop */ }
       }
       this.analyserConnected = false;
     }
-    try { this.analyser.disconnect(); } catch (e) { /* noop */ }
+    try { this.analyser.disconnect(); } catch (_e) { /* noop */ }
     // Do NOT call super.disconnect() here — that would disconnect `tapGain`
     // from its upstream sources and lose the connections we want to preserve.
   }
@@ -156,20 +156,20 @@ class VirtualOscilloscopeNode extends VirtualNode<CustomNode> {
   dispose() {
     // Stop RAF
     if (this.raf) {
-      try { window.cancelAnimationFrame(this.raf); } catch (e) { /* noop */ }
+      try { window.cancelAnimationFrame(this.raf); } catch (_e) { /* noop */ }
       this.raf = undefined;
     }
     // Disconnect analyser and tapGain completely
-    try { this.analyser.disconnect(); } catch (e) { /* noop */ }
+    try { this.analyser.disconnect(); } catch (_e) { /* noop */ }
     if (this.tapGain) {
-      try { this.tapGain.disconnect(); } catch (e) { /* noop */ }
+      try { this.tapGain.disconnect(); } catch (_e) { /* noop */ }
       this.tapGain = undefined;
     }
     this.analyserConnected = false;
     // Unsubscribe any event listeners for this node
-    try { this.eventBus.unsubscribeAllByNodeId(this.node.id); } catch (e) { /* noop */ }
+    try { this.eventBus.unsubscribeAllByNodeId(this.node.id); } catch (_e) { /* noop */ }
     // Finally disconnect any remaining audio connections via base class
-    try { super.disconnect(); } catch (e) { /* noop */ }
+    try { super.disconnect(); } catch (_e) { /* noop */ }
     this.audioNode = undefined as any;
   }
 }

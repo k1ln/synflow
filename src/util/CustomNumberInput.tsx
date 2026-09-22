@@ -7,7 +7,7 @@ export const CustomNumberInput: React.FC<{
   max?: number;
   step?: number;
   onChange: (val: number) => void;
-}> = ({ style, value, min = 1, max = 300, step = 1, onChange }) => {
+}> = ({ style: _style, value, min = 1, max = 300, step = 1, onChange }) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const valueRef = useRef(value);
@@ -28,7 +28,7 @@ export const CustomNumberInput: React.FC<{
     onChange(next);
   };
 
-  const handleArrow = (delta: number) => {
+  const handleArrow = (_delta: number) => {
     deltaRef.current = deltaRef.current <= 0
       ? Math.min(deltaRef.current, -1)
       : Math.max(deltaRef.current, 1);

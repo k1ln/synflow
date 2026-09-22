@@ -174,7 +174,7 @@ const OrchestratorDialog: React.FC<OrchestratorDialogProps> = ({
     row: OrchestratorRow,
     rowIdx: number,
     width: number,
-    height: number
+    _height: number
   ) => {
     const rowHeight = 50;
     const rowY = 30 + rowIdx * rowHeight;
@@ -801,7 +801,7 @@ const OrchestratorDialog: React.FC<OrchestratorDialogProps> = ({
             <button onClick={() => handleAddRow('event')} style={{ background: '#90ee90' }}>+ Event Row</button>
             <button onClick={() => handleAddRow('pianoroll')} style={{ background: '#dda0dd' }}>+ Piano Roll</button>
             <div className="row-list">
-              {data.rows.map((row, idx) => (
+              {data.rows.map((row, _idx) => (
                 <div key={row.id} className="row-item">
                   <span>{row.label} ({row.type})</span>
                   <button onClick={() => handleDeleteRow(row.id)}>×</button>

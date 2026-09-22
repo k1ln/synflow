@@ -52,7 +52,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ audioSrc, title, onClose }) => 
       setCurrentTime(0);
     };
 
-    const handleError = (e: Event) => {
+    const handleError = (_e: Event) => {
       console.error('[MiniPlayer] Audio playback error:', audio.error);
       onCloseRef.current();
     };

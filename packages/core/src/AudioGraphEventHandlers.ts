@@ -272,7 +272,7 @@ export function handleConnectedEdgesADSRNodeOn(
     manager: any,
     node: CustomNode,
     data: any,
-    eventType: string
+    _eventType: string
 ) {
     let connectedEdges = manager.virtualEdges.get(node.id);
     if (!connectedEdges || connectedEdges.length === 0) {
@@ -296,7 +296,7 @@ export function handleConnectedEdgesAutomationNodeOn(
     manager: any,
     node: CustomNode,
     data: any,
-    eventType: string = 'receiveNodeOn'
+    _eventType: string = 'receiveNodeOn'
 ) {
     const connectedEdges = manager.virtualEdges.get(node.id);
     if (!connectedEdges) return;
@@ -335,7 +335,7 @@ export function handleConnectedEdgesAutomationNodeOff(
     manager: any,
     node: CustomNode,
     data: any,
-    eventType: string = 'receiveNodeOff'
+    _eventType: string = 'receiveNodeOff'
 ) {
     const connectedEdges = manager.virtualEdges.get(node.id);
     if (!connectedEdges) return;
@@ -356,7 +356,7 @@ export function handleConnectedEdgesADSRNodeOff(
     manager: any,
     node: CustomNode,
     data: any,
-    eventType: string
+    _eventType: string
 ) {
     let connectedEdges = manager.virtualEdges.get(node.id);
     if (!connectedEdges || connectedEdges.length === 0) {
@@ -577,10 +577,10 @@ export function handleButtonUpdateParam(
 ) {
     if (key === "assignedKey") {
         (node as ButtonNodeProps).data.assignedKey = data.value;
-        manager.eventManager.addButtonDownCallback(data.value, node.id, (data) => {
+        manager.eventManager.addButtonDownCallback(data.value, node.id, (_data) => {
             manager.eventBus.emit(node.id + ".main-input.sendNodeOn", { nodeid: node.id });
         });
-        manager.eventManager.addButtonUpCallback(data.value, node.id, (data) => {
+        manager.eventManager.addButtonUpCallback(data.value, node.id, (_data) => {
             manager.eventBus.emit(node.id + ".main-input.sendNodeOff", { nodeid: node.id });
         });
     }

@@ -30,7 +30,7 @@ export class VirtualButtonNode extends VirtualNode<CustomNode & ButtonNodeProps,
         void this.setupMidi();
     }
 
-    render(assignedKey: string | null = null) {
+    render(_assignedKey: string | null = null) {
         this.eventManager?.removeButtonDownCallback(
             this.oldButton!,
             this.node.id
@@ -42,14 +42,14 @@ export class VirtualButtonNode extends VirtualNode<CustomNode & ButtonNodeProps,
         this.eventManager?.addButtonDownCallback(
             this.node.data.assignedKey!,
             this.node.id,
-            (data) => {
+            (_data) => {
                 this.eventBus.emit(this.node.id + ".main-input.sendNodeOn", { nodeid: this.node.id });
             }
         );
         this.eventManager?.addButtonUpCallback(
             this.node.data.assignedKey!,
             this.node.id,
-            (data) => {
+            (_data) => {
                 this.eventBus.emit(this.node.id + ".main-input.sendNodeOff", { nodeid: this.node.id });
             }
         );
@@ -177,7 +177,7 @@ export class VirtualButtonNode extends VirtualNode<CustomNode & ButtonNodeProps,
                     }
                 }
             });
-        } catch (e) { /* ignore */ }
+        } catch (_e) { /* ignore */ }
     }
 
     private startMidiLearn() {

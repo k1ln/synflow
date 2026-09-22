@@ -63,7 +63,7 @@ export class VirtualClockNode extends VirtualNode<CustomNode & ClockNodeProps, u
         }
     };
 
-    render(bpm: number = 120) {
+    render(_bpm: number = 120) {
         this.eventBus.unsubscribeAll(`${this.node.id}.main-input.receiveNodeOn`);
         this.eventBus.subscribe(`${this.node.id}.main-input.receiveNodeOn`, this.handleReceiveNodeOn);
         this.eventBus.unsubscribeAll(`${this.node.id}.main-input.sendNodeOn`);

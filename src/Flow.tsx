@@ -1056,7 +1056,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
       const all = await recordingsDbRef.current.get('*');
       setRecordings(all || []);
       setAllFolderAudio({});
-    } catch (e) {
+    } catch (_e) {
       // Store might not exist - that's ok, just use empty array
       setRecordings([]);
       setAllFolderAudio({});

@@ -98,7 +98,7 @@ export function HostInterfacePanel({ nodes, setNodes, active, onClose }: {
   const title = d.label || sel.type || sel.id;
 
   const row: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 7, margin: '5px 0' };
-  const chk = (on: boolean) => ({ accentColor: C.accent, width: 14, height: 14 } as React.CSSProperties);
+  const chk = (_on: boolean) => ({ accentColor: C.accent, width: 14, height: 14 } as React.CSSProperties);
   const numInput: React.CSSProperties = { width: 52, background: '#0a0d14', border: `1px solid ${C.border}`, color: C.ink, borderRadius: 4, padding: '2px 4px', fontSize: 11 };
   const head: React.CSSProperties = { fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: C.dim, margin: '11px 0 4px' };
 

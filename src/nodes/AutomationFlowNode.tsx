@@ -320,7 +320,7 @@ const AutomationFlowNode: React.FC<AutomationFlowNodeProps> = ({ data }) => {
                 const raw = e.target.value.trim();
                 if (/^-?\d+$/.test(raw)) {
                   const v = parseInt(raw,10);
-                  if(!Number.isNaN(v)) setMinVal(m=> Math.min(v, maxVal-1));
+                  if(!Number.isNaN(v)) setMinVal(_m=> Math.min(v, maxVal-1));
                 }
               }}
               onKeyDown={(e)=>{
@@ -348,7 +348,7 @@ const AutomationFlowNode: React.FC<AutomationFlowNodeProps> = ({ data }) => {
                 const raw = e.target.value.trim();
                 if (/^-?\d+$/.test(raw)) {
                   const v = parseInt(raw,10);
-                  if(!Number.isNaN(v)) setMaxVal(x=> Math.max(v, minVal+1));
+                  if(!Number.isNaN(v)) setMaxVal(_x=> Math.max(v, minVal+1));
                 }
               }}
               onKeyDown={(e)=>{

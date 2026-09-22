@@ -60,10 +60,10 @@ export default class VirtualMidiKnobNode extends VirtualNode<CustomNode & MidiKn
     // Triggered from upstream nodes: emit current value
     this.eventBus.subscribe(this.node.id + '.main-input.receiveNodeOn', this.handleReceiveNodeOn);
     // MIDI learn request from UI
-    this.eventBus.subscribe(this.node.id + '.updateParams.midiLearn', (data:any)=>{ this.startMidiLearn(); });
+    this.eventBus.subscribe(this.node.id + '.updateParams.midiLearn', (_data:any)=>{ this.startMidiLearn(); });
   }
 
-  private handleReceiveNodeOn = (data:any)=>{
+  private handleReceiveNodeOn = (_data:any)=>{
     this.handleConnectedEdges(this.node, { value: this.value }, 'receiveNodeOn');
   };
 

@@ -10,7 +10,7 @@ export type InputNodeProps = {
   };
 };
 
-const InputNode: React.FC<InputNodeProps> = ({ id, data }) => {
+const InputNode: React.FC<InputNodeProps> = ({ id: _id, data }) => {
   const [index, setIndex] = React.useState<number>(data.index ?? 0);
   const externalIndexRef = useRef<number | null>(
     typeof data.index === "number" ? data.index : null,

@@ -102,13 +102,13 @@ export class VirtualOscillatorNode extends VirtualNode<CustomNode & OscillatorFl
         });
     }
     
-    handleReceiveNodeOnOscillator(node: ExtendedOscillatorNode, data: any) {
+    handleReceiveNodeOnOscillator(node: ExtendedOscillatorNode, _data: any) {
         if (node.playbackState !== "started") {
             // Custom logic for starting oscillator if needed
         }
     }
 
-    handleReceiveNodeOffOscillator(node: ExtendedOscillatorNode, data: any) {
+    handleReceiveNodeOffOscillator(node: ExtendedOscillatorNode, _data: any) {
         node.stop();
         node.playbackState = "stopped";
     }
@@ -126,14 +126,14 @@ export class VirtualOscillatorNode extends VirtualNode<CustomNode & OscillatorFl
             try {
                 this.audioNode.stop();
                 this.audioNode.playbackState = "stopped";
-            } catch (e) {
+            } catch (_e) {
                 // Oscillator may already be stopped
             }
         }
         // Disconnect old oscillator from the audio graph
         try {
             (this.audioNode as any)?.disconnect?.();
-        } catch (e) {
+        } catch (_e) {
             // Node may not be connected
         }
         

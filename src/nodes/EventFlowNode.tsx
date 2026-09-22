@@ -28,7 +28,7 @@ const EventFlowNode: React.FC<EventNodeProps> = ({ data }) => {
       const names = eventBus.listEvents() || [];
       // Only show receive/send node events and global app events
       setAvailable(names);
-    } catch (e) {
+    } catch (_e) {
       setAvailable([]);
     }
   };

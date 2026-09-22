@@ -14,7 +14,7 @@ export class SimpleIndexedDB {
         if (this.db) return;
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, 2);
-            request.onupgradeneeded = (event) => {
+            request.onupgradeneeded = (_event) => {
                 const db = request.result;
                 // Check if the store exists, if not, create it.
                 if (!db.objectStoreNames.contains(this.storeName)) {

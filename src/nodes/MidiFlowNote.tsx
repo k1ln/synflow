@@ -170,7 +170,7 @@ const MidiFlowNote: React.FC<{ data: MidiFlowNoteData }> = ({ data }) => {
         }
         setDevices(names.sort());
         setDeviceName(inputs[0]?.name || inputs[0]?.id || '');
-        midi.onstatechange = (e: any) => {
+        midi.onstatechange = (_e: any) => {
           // Re-scan on device change
           inputs = [];
           const newNames: string[] = [];

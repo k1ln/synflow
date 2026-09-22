@@ -59,7 +59,7 @@ export interface TopBarProps {
 
 // Icon-only button with tooltip
 const IconBtn: React.FC<{ title: string; onClick?: () => void; disabled?: boolean; bgColor?: string; playing?: boolean; children: React.ReactNode }>
-  = ({ title, onClick, disabled, bgColor, playing, children }) => (
+  = ({ title, onClick, disabled, bgColor: _bgColor, playing, children }) => (
     <button
       title={title}
       onClick={onClick}
@@ -99,14 +99,14 @@ export const TopBar: React.FC<TopBarProps> = ({
   currentItemType, 
   currentItemName, 
   onRenameCurrent,
-  showCurrentRow,
+  showCurrentRow: _showCurrentRow,
   nodeGlowColor, 
   nodeBgColor, 
   nodeFontColor, 
   edgeColor, 
   onNodeGlowColorChange, 
   onNodeBgColorChange, 
-  onNodeFontColorChange, 
+  onNodeFontColorChange: _onNodeFontColorChange,
   onEdgeColorChange,
   audioFolderName,
   audioFolderMissing,

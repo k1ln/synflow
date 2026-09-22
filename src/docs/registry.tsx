@@ -463,7 +463,7 @@ const DistortionPreview: React.FC<{
   formula?: string;
 }> = ({
   label = 'Distortion',
-  drive = 1,
+  drive: _drive = 1,
   preset = 'Soft Clip',
   formula = 'Math.tanh(x*3)',
 }) => (

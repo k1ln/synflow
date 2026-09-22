@@ -14,7 +14,7 @@ export class VirtualSwitchNode extends VirtualNode<CustomNode & SwitchFlowNodePr
     private handleSendNodeOnSwitch?: (data: { activeOutput: number }) => void;
     private handleSendNodeOffSwitch?: (data: { activeOutput: number }) => void;
 
-    constructor(eventBus: EventBus, node: CustomNode & SwitchFlowNodeProps, numOutputs: number = 2, activeOutput: number = 0) {
+    constructor(eventBus: EventBus, node: CustomNode & SwitchFlowNodeProps, _numOutputs: number = 2, _activeOutput: number = 0) {
         super(undefined, undefined as any, eventBus, node);
         this.numOutputs = Math.max(1, node.data.numOutputs);
         this.activeOutput = Math.min(Math.max(0, node.data.activeOutput), this.numOutputs - 1);

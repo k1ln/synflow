@@ -222,7 +222,7 @@ function parseMidiFile(buffer: ArrayBuffer, fileName: string): ParsedMidiFile {
     }
 
     // Close any notes that weren't properly ended
-    activeNotes.forEach((activeNote, key) => {
+    activeNotes.forEach((activeNote, _key) => {
       notes.push({
         note: activeNote.note,
         velocity: activeNote.velocity,

@@ -165,7 +165,7 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
                 if (diskFlow) {
                     record = diskFlow;
                 }
-            } catch (e) {
+            } catch (_e) {
                 console.warn('[FlowNode] Disk load failed for', selectedNode);
             }
         }

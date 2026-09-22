@@ -463,7 +463,7 @@ type WaveformSelectorProps = {
 const WaveformSelector: React.FC<WaveformSelectorProps> = ({
   audioBuffer,
   duration,
-  nodeId,
+  nodeId: _nodeId,
   onClose,
   onAddPart
 }) => {
@@ -2498,7 +2498,7 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
     setPlayingSegmentId(null);
   };
 
-  const stopSegment = (segment: AudioBufferSegment) => {
+  const stopSegment = (_segment: AudioBufferSegment) => {
     stopAllSegments();
     // Note: Don't emit event to virtual node for GUI preview stop
   };
@@ -2596,7 +2596,7 @@ const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
       {/* No global options; configure per-part below */}
 
       <div style={segmentListStyle}>
-        {segments.map((seg, idx) => {
+        {segments.map((seg, _idx) => {
           const isExpanded = expandedSegments.has(seg.id);
           const isPlaying = playingSegmentId === seg.id;
           return (

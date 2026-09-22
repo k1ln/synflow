@@ -206,7 +206,7 @@ registerProcessor('RecorderProcessor', RecorderProcessor);
         // Optional backend upload if authenticated
         
       }
-    } catch (e) {
+    } catch (_e) {
       this.eventBus.emit(this.node.id + '.status.update', { error: 'wav_failed' });
     }
   }

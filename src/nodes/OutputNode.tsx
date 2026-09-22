@@ -10,7 +10,7 @@ export type OutputNodeProps = {
   };
 };
 
-const OutputNode: React.FC<OutputNodeProps> = ({ id, data }) => {
+const OutputNode: React.FC<OutputNodeProps> = ({ id: _id, data }) => {
   const [index, setIndex] = React.useState<number>(
     Math.max(0, data.index ?? 0),
   );

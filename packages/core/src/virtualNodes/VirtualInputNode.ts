@@ -49,7 +49,7 @@ export class VirtualInputNode extends VirtualNode<CustomNode & InputNodeProps, u
 
     
 
-    handleUpdateParams = (params: any) => {
+    handleUpdateParams = (_params: any) => {
         this.eventBus.unsubscribeAllByNodeId(this.node.id);
         this.subscribeAllEvents();
     };
