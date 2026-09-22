@@ -1,6 +1,5 @@
 // @ts-nocheck
-import { SynNode as Node, SynEdge as Edge } from "./types";
-import { ADSRFlowNodeProps } from "./nodeData";
+import { SynEdge as Edge } from "./types";
 import { ButtonNodeProps } from "./nodeData";
 import { webAudioApiFlowNodes, CustomNode } from "./AudioGraphTypes";
 

@@ -3,10 +3,7 @@ import { SynNode as Node, SynEdge as Edge } from "./types";
 import EventBus from "./EventBus";
 import type { EngineOptions } from "./env";
 import { getInput, getFlowLoader } from "./hostBindings";
-import { VirtualAudioWorkletNode } from "./virtualNodes/VirtualAudioWorkletNode";
-import VirtualOscilloscopeNode from "./virtualNodes/VirtualOscilloscopeNode";
-import VirtualAudioWorkletOscillatorNode from "./virtualNodes/VirtualAudioWorkletOscillatorNode";
-import VirtualClockNode from "./virtualNodes/VirtualClockNode";
+import { VirtualAudioWorkletNode, VirtualOscilloscopeNode, VirtualAudioWorkletOscillatorNode, VirtualClockNode } from "./virtualNodes";
 
 import {
     DataBaseNode,
@@ -472,11 +469,11 @@ export class AudioGraphManager {
     }
 
     public addConnection(edge: Edge) {
-        let originalEdge = edge;
+        const originalEdge = edge;
         let sourceId = edge.source;
-        let targetId = edge.target;
+        const targetId = edge.target;
         let sourceHandle = edge.sourceHandle as string | undefined;
-        let targetHandle = edge.targetHandle as string | undefined;
+        const targetHandle = edge.targetHandle as string | undefined;
 
         const FLOWNODE_SEG = /^FlowNode(-\d+)?$/;
         const isCustom = (id: string | undefined) =>
@@ -914,7 +911,10 @@ export class AudioGraphManager {
         const v: any = this.virtualNodes.get(nodeId);
         const port: MessagePort | undefined = v?.audioNode?.port;
         if (!port) return false;
-        try { transfer?.length ? port.postMessage(message, transfer) : port.postMessage(message); } catch { return false; }
+        try {
+            if (transfer?.length) port.postMessage(message, transfer);
+            else port.postMessage(message);
+        } catch { return false; }
         return true;
     }
 

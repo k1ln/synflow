@@ -298,4 +298,24 @@ export default tseslint.config(
       };
     }).filter(Boolean);
   })(),
+
+  // ── 9. Same discipline, one level down: @synflow/core's own virtualNodes/ ──
+  //   packages/core is already barrel-enforced from the editor's side (src/
+  //   only ever imports '@synflow/core', never packages/core/src/* directly).
+  //   Internally it has the identical anti-pattern section 8 just fixed in
+  //   src/nodes/: VirtualNodeFactory.ts had 63 deep imports of individual
+  //   packages/core/src/virtualNodes/Virtual*.ts files. Same fix, same
+  //   reasoning — see packages/core/src/virtualNodes/index.ts.
+  {
+    files: ['packages/core/src/*.ts'],
+    ignores: ['packages/core/src/virtualNodes/**'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['**/virtualNodes/*', '!**/virtualNodes/index'],
+          message: 'Import from the virtualNodes barrel (\'./virtualNodes\') instead of reaching into a sibling file directly — see packages/core/src/virtualNodes/index.ts.',
+        }],
+      }],
+    },
+  },
 );

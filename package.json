@@ -29,7 +29,7 @@
     "test:ui": "vitest",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "lint:modulith": "eslint 'src/**/*.{ts,tsx}' index.tsx",
+    "lint:modulith": "eslint 'src/**/*.{ts,tsx}' index.tsx 'packages/core/src/**/*.ts'",
     "version:bump": "node scripts/version-bump.js"
   },
   "author": "",
