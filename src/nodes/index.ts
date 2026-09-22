@@ -6,11 +6,11 @@
 // namespace is exported too, as `XModule`, for the one real consumer
 // (constants/nodeDefaults.ts) that needs `.defaultData` per node type.
 //
-// A handful of files in this folder are dead code (not referenced anywhere,
-// even internally): AudioBufferSourceFlowNode, AudioContextFlowNode,
-// ChannelMergerFlowNode, ChannelSplitterFlowNode, ConvolverFlowNode,
-// FrequencyShifterFlowNode, SignalRouterFlowNode, TimelineNode,
-// oscTypeSelector — left out of the public surface.
+// A handful of files that used to live in this folder were dead code (not
+// referenced anywhere, even internally) and have been deleted: AudioBuffer-
+// SourceFlowNode, AudioContextFlowNode, ChannelMergerFlowNode,
+// ChannelSplitterFlowNode, ConvolverFlowNode, FrequencyShifterFlowNode,
+// SignalRouterFlowNode, TimelineNode, oscTypeSelector.
 
 export { default as ADSRFlowNode } from './ADSRFlowNode';
 export * as ADSRFlowNodeModule from './ADSRFlowNode';

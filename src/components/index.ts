@@ -1,7 +1,8 @@
 // Public API of the components module — see src/host/index.ts for the
-// pattern. CustomInstrumentUI, FlowExplorer, Knob, ObfuscatedText and
-// legalConfig aren't consumed outside this module yet, so they stay internal
-// until something needs them.
+// pattern. CustomInstrumentUI, Knob, ObfuscatedText and legalConfig aren't
+// consumed outside this module yet, so they stay internal until something
+// needs them. FlowExplorer.tsx used to be here too but had zero consumers
+// anywhere (not even internally) and has been deleted.
 //
 // MidiManager/MidiKnob/ImpressumDialog/DatenschutzDialog/MiniPlayer/
 // AudioExplorer only have a default export, so they need an explicit named

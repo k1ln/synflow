@@ -1,6 +1,7 @@
 // Public API of the util module — see src/host/index.ts for the pattern.
-// NodeDropdown.tsx and OpenDialog.tsx aren't consumed outside this module
-// yet, so they stay internal until something needs them.
+// NodeDropdown.tsx and OpenDialog.tsx used to live here as "internal, not
+// consumed outside this module yet" — but had zero consumers anywhere, not
+// even internally, so they've been deleted rather than kept around unused.
 //
 // pitchDetection.ts is deliberately NOT re-exported: SampleFlowNode.tsx is
 // its only consumer and dynamically `import()`s it for `detectPitch` to keep
