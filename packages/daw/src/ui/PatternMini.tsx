@@ -18,11 +18,13 @@ export function PatternMini({ track, patternId, barSteps, clipSlots, width, heig
   color?: string;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const buf = Math.min(MAX_BUF_W, Math.max(1, Math.round(width)));
+  const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
+  const buf = Math.min(MAX_BUF_W, Math.max(1, Math.round(width * dpr)));
+  const bufH = Math.max(1, Math.round(height * dpr));
   useEffect(() => {
     const c = ref.current; if (!c) return;
     const g = c.getContext('2d'); if (!g) return;
-    g.clearRect(0, 0, buf, height);
+    g.clearRect(0, 0, buf, bufH);
     const len = patternLengthOf(track, patternId);
     const clipSteps = Math.max(1, Math.round(clipSlots * barSteps)); // pattern steps the clip spans
     const draw = Math.min(clipSteps, MAX_STEPS);
@@ -31,12 +33,12 @@ export function PatternMini({ track, patternId, barSteps, clipSlots, width, heig
     if (track.type === 'drums') {
       const rows = track.uses.map((u) => ({ u, steps: patternContent(track, patternId, u.id).steps })).filter((r) => r.steps && r.steps.length);
       if (!rows.length) return;
-      const rh = height / rows.length;
+      const rh = bufH / rows.length;
       rows.forEach(({ steps: st }, r) => {
         const steps = st!;
-        const y = r * rh + rh * 0.2, ch = Math.max(1, rh * 0.6);
+        const y = Math.round(r * rh + rh * 0.2), ch = Math.max(1, Math.round(rh * 0.6));
         for (let k = 0; k < draw; k++) {
-          if (steps[k % len]) g.fillRect((k / clipSteps) * buf + Math.min(cw * 0.12, 1), y, Math.max(1, cw * 0.76), ch);
+          if (steps[k % len]) { const x0 = Math.round((k / clipSteps) * buf + Math.min(cw * 0.12, dpr)); g.fillRect(x0, y, Math.max(1, Math.round(cw * 0.76)), ch); }
         }
       });
     } else {
@@ -45,19 +47,19 @@ export function PatternMini({ track, patternId, barSteps, clipSlots, width, heig
       let lo = Infinity, hi = -Infinity;
       for (const n of notes) { lo = Math.min(lo, n.midi); hi = Math.max(hi, n.midi); }
       const span = Math.max(1, hi - lo);
-      const pad = 2, nh = 2;
+      const pad = 2 * dpr, nh = 2 * dpr;
       const reps = Math.ceil(draw / len);
       for (let rp = 0; rp < reps; rp++) {
         for (const n of notes) {
           const k = rp * len + n.start;
           if (k >= clipSteps) continue;
-          const x = (k / clipSteps) * buf;
-          const w = Math.max(1, (Math.min(n.length, clipSteps - k) / clipSteps) * buf);
-          const y = pad + (1 - (n.midi - lo) / span) * (height - 2 * pad - nh);
+          const x = Math.round((k / clipSteps) * buf);
+          const w = Math.max(1, Math.round((Math.min(n.length, clipSteps - k) / clipSteps) * buf));
+          const y = Math.round(pad + (1 - (n.midi - lo) / span) * (bufH - 2 * pad - nh));
           g.fillRect(x, y, w, nh);
         }
       }
     }
-  }, [track, patternId, barSteps, clipSlots, buf, height, color]);
-  return <canvas ref={ref} width={buf} height={height} style={{ display: 'block', width, height }} />;
+  }, [track, patternId, barSteps, clipSlots, buf, bufH, dpr, color]);
+  return <canvas ref={ref} width={buf} height={bufH} style={{ display: 'block', width, height, imageRendering: 'pixelated' }} />;
 }

@@ -230,7 +230,7 @@ const OscilloscopeFlowNode: React.FC<OscilloscopeFlowNodeProps> = ({
       const startIndex = Math.floor(triggerIndex + panSamples);
 
       // Outer glow layer (lightsaber style)
-      ctx.shadowBlur = glowIntensity * 1.2;
+      ctx.shadowBlur = 0;
       ctx.shadowColor = waveColor;
       ctx.strokeStyle = waveColor + "26"; // 15% opacity
       ctx.lineWidth = lineWidth + 2;
@@ -239,21 +239,21 @@ const OscilloscopeFlowNode: React.FC<OscilloscopeFlowNodeProps> = ({
       drawWavePath(ctx, buffer, w, centerY, amplitude, samplesPerPixel, startIndex);
 
       // Mid glow layer
-      ctx.shadowBlur = glowIntensity;
+      ctx.shadowBlur = 0;
       ctx.shadowColor = waveColor;
       ctx.strokeStyle = waveColor + "40"; // 25% opacity
       ctx.lineWidth = lineWidth + 1;
       drawWavePath(ctx, buffer, w, centerY, amplitude, samplesPerPixel, startIndex);
 
       // Main bright line
-      ctx.shadowBlur = glowIntensity * 0.6;
+      ctx.shadowBlur = 0;
       ctx.shadowColor = waveColor;
       ctx.strokeStyle = waveColor;
       ctx.lineWidth = lineWidth * 0.8;
       drawWavePath(ctx, buffer, w, centerY, amplitude, samplesPerPixel, startIndex);
 
       // Bright white core (always white for shine)
-      ctx.shadowBlur = 4;
+      ctx.shadowBlur = 0;
       ctx.shadowColor = "#ffffff";
       ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = Math.max(0.5, lineWidth * 0.2);

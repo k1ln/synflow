@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Synflow · Flow Gallery</title>
+  <meta name="description" content="Public Synflow flows: browse patches, preview the node graph and open them in the editor.">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body class="gal">
+  <header class="nav">
+    <div class="wrap" style="max-width:none">
+      <a class="logo" href="../" style="text-decoration:none">SYNFLOW</a>
+      <a class="link" href="../#features">FEATURES</a>
+      <a class="link on" href="./">GALLERY</a>
+      <a class="btn primary small" href="https://synflow.org">OPEN EDITOR</a>
+    </div>
+  </header>
+
+  <main class="split">
+    <section class="list-pane">
+      <input id="search" class="search" type="search" placeholder="Search flows…" autofocus>
+      <div id="chips" class="chips"></div>
+      <div id="list" class="list"></div>
+      <p id="empty" class="note" hidden></p>
+    </section>
+    <section class="detail-pane" id="detail"><p class="empty">Pick a flow on the left to preview its graph.</p></section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

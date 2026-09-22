@@ -41,7 +41,7 @@
   font-family: 'Inter', 'Segoe UI', Calibri, system-ui, sans-serif;
   color: var(--node-ink);
   border: 1px solid rgba(80, 95, 130, 0.5);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 0 8px 2px rgba(0, 255, 136, 0.08);
+  box-shadow: none;
 }
 
 /* Self-contained node shell — for nodes that render their own root box
@@ -52,10 +52,10 @@
   border: 1px solid rgba(80, 95, 130, 0.5);
   border-radius: var(--node-radius);
   background: rgba(18, 19, 36, 0.55);
-  backdrop-filter: blur(6px);
+  backdrop-filter: none;
   color: var(--node-ink);
   text-align: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 0 8px 2px rgba(0, 255, 136, 0.06);
+  box-shadow: none;
 }
 
 /* Canonical node shell. This is the single source of truth for the base look
@@ -70,9 +70,9 @@
   border-radius: 7px;
   text-align: center;
   background: rgba(18, 19, 36, 0.52);
-  backdrop-filter: blur(6px);
+  backdrop-filter: none;
   color: #eee;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 0 8px 2px rgba(0, 255, 136, 0.08);
+  box-shadow: none;
 }
 
 /* Crisp text rendering + sensible defaults for everything inside a node. */
@@ -97,7 +97,6 @@
   padding-bottom: 5px;
   border-bottom: 1px solid color-mix(in srgb, var(--node-accent, #556) 28%, transparent);
   user-select: none;
-  text-shadow: 0 0 10px color-mix(in srgb, var(--node-accent, #556) 35%, transparent);
 }
 
 .node-sub {
@@ -261,7 +260,7 @@
   color: #0b0f16 !important;
   background: var(--node-accent, #6ee7a8) !important;
   border-color: var(--node-accent, #6ee7a8) !important;
-  box-shadow: 0 0 8px 1px color-mix(in srgb, var(--node-accent, #6ee7a8) 45%, transparent),
+  box-shadow: 0 0 0 color-mix(in srgb, var(--node-accent, #6ee7a8) 45%, transparent),
               inset 0 1px 0 rgba(255, 255, 255, 0.25);
   font-weight: 700;
 }
@@ -334,8 +333,7 @@
 .react-flow__node button:focus-visible {
   outline: none !important;
   border-color: var(--node-accent, #aaa) !important;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--node-accent, #555) 30%, transparent),
-              0 0 10px color-mix(in srgb, var(--node-accent, #555) 25%, transparent) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--node-accent, #555) 30%, transparent) !important;
 }
 
 .react-flow__node button:hover {
@@ -382,14 +380,14 @@
   height: 16px !important;
   background: #eef1f8;
   border-width: 2px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 0 5px 1px rgba(238, 241, 248, 0.25);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 0 0 2px rgba(238, 241, 248, 0.5);
 }
 
 .react-flow__handle:hover {
   width: 17px !important;
   height: 17px !important;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4),
-              0 0 8px 2px color-mix(in srgb, var(--node-accent, #6ee7a8) 70%, transparent);
+              0 0 0 2px color-mix(in srgb, var(--node-accent, #6ee7a8) 70%, transparent);
 }
 .react-flow__handle[data-handleid="main-input"]:hover {
   width: 20px !important;
@@ -401,18 +399,18 @@
    a hovered INVALID target shows a muted red so it's clearly rejected. */
 .react-flow__handle.connectingfrom {
   background: var(--node-accent, #6ee7a8) !important;
-  box-shadow: 0 0 9px 2px color-mix(in srgb, var(--node-accent, #6ee7a8) 70%, transparent);
+  box-shadow: 0 0 0 color-mix(in srgb, var(--node-accent, #6ee7a8) 70%, transparent);
 }
 .react-flow__handle.connExtraClass,
 .react-flow__handle-connecting { background: var(--node-accent, #6ee7a8); }
 .react-flow__handle.valid,
 .react-flow__handle-valid {
   background: #4ade80 !important;
-  box-shadow: 0 0 9px 2px rgba(74, 222, 128, 0.65);
+  box-shadow: 0 0 0 rgba(74, 222, 128, 0.65);
 }
 .react-flow__handle.connectingto:not(.valid):not(.connectingfrom) {
   background: #6b3a3a !important;
-  box-shadow: 0 0 7px 1px rgba(180, 70, 70, 0.5);
+  box-shadow: 0 0 0 rgba(180, 70, 70, 0.5);
 }
 
 /* ── Legacy / specific class names (preserved) ───────────────────────────── */
@@ -462,7 +460,7 @@
 .cm-editor,
 .cm-scroller {
   background: rgba(10, 10, 18, 0.45) !important;
-  backdrop-filter: blur(2px);
+  backdrop-filter: none;
   text-align: left !important;
 }
 
@@ -478,7 +476,7 @@
 .node-state-btn-play {
   background: linear-gradient(180deg, #18d864, #00b347) !important;
   border-color: #2bff7e !important;
-  box-shadow: 0 0 10px 3px rgba(0, 200, 80, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 0 0 rgba(0, 200, 80, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
   color: #062b14 !important;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
 }
@@ -487,7 +485,7 @@
 .node-state-btn-stop {
   background: linear-gradient(180deg, #e23b3b, #b01717) !important;
   border-color: #ff5a5a !important;
-  box-shadow: 0 0 10px 3px rgba(200, 30, 30, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 0 0 rgba(200, 30, 30, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
   color: #fff !important;
 }
 
@@ -527,3 +525,16 @@
     padding: 8px 12px;
   }
 }
+
+/* ── Ultra-sharp nodes: solid fills, no blur, no bloom, hairline borders ───── */
+.audio-node, .flow-node-shell, .flow-node {
+  background-color: rgb(18, 19, 36);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.react-flow__node { -webkit-font-smoothing: auto; filter: none !important; transform-style: flat; }
+.react-flow__node *, .react-flow__edge-path, .react-flow__connection-path { text-shadow: none !important; }
+.react-flow__edge-path, .react-flow__connection-path { filter: none !important; shape-rendering: geometricPrecision; }
+.react-flow__handle, .react-flow__node .node-port { box-shadow: none !important; }
+.node-title { text-shadow: none; }
+canvas { image-rendering: -webkit-optimize-contrast; }

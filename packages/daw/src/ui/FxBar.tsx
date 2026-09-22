@@ -19,9 +19,9 @@ function EqThumb({ settings, color }: { settings: EqSettings; color: string }) {
     const freqs = logFreqs(w); const mags = eqMagnitudeDb(settings.on ? settings.bands : [], freqs, 48000, settings.outDb);
     g.beginPath();
     for (let i = 0; i < w; i++) { const y = h / 2 - (Math.max(-DBR, Math.min(DBR, mags[i])) / DBR) * (h / 2 - 2); i ? g.lineTo(i, y) : g.moveTo(i, y); }
-    g.strokeStyle = color; g.lineWidth = 1.5; g.stroke();
+    g.strokeStyle = color; g.lineWidth = 3; g.stroke();
   }, [settings, color]);
-  return <canvas ref={ref} width={132} height={42} className="fxdev-eq" />;
+  return <canvas ref={ref} width={264} height={84} className="fxdev-eq" style={{ width: 132, height: 42 }} />;
 }
 
 /** A horizontal FX chain editor (used at instrument / track / master level).

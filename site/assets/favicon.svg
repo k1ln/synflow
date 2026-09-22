@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="FlowSynth icon">
+  <rect width="64" height="64" rx="10" fill="#000" />
+  <rect x="6" y="12" width="24" height="18" rx="3" fill="#9ca3af" />
+  <rect x="36" y="34" width="24" height="18" rx="3" fill="#9ca3af" />
+  <path d="M30 26 L36 42" stroke="#fff" stroke-width="4" stroke-linecap="round" />
+</svg>

@@ -20,9 +20,9 @@
   --bg-elevated:    #1c1d24;   /* menus, popovers, dialogs (Synflow #1a1a1a)*/
   --bg-inset:       #0d0e13;   /* sunken wells, timeline lanes              */
 
-  --glass-module:   rgba(18, 19, 36, 0.55);  /* dark-glass node / device box */
-  --glass-field:    rgba(8, 10, 20, 0.55);   /* input / readout well         */
-  --glass-blur:     blur(6px);
+  --glass-module:   rgb(18, 19, 36);  /* dark-glass node / device box */
+  --glass-field:    rgb(8, 10, 20);   /* input / readout well         */
+  --glass-blur:     none;
 
   /* dot-grid canvas texture (use as background-image on the void) */
   --grid-dot:       rgba(255, 255, 255, 0.05);

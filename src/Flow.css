@@ -34,7 +34,7 @@ body {
     border-radius: 50%;
     background: #1a1a1a;
     border: 1px solid #444;
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 4px 10px rgba(0,0,0,0.4);
+    box-shadow: none;
 }
 
 .topbar-spinner {
@@ -74,16 +74,16 @@ body {
 }
 .topbar-btn:hover:not(:disabled) {
     background: transparent !important;
-    box-shadow: 0 0 9px 3px rgba(0,255,120,0.28);
+    box-shadow: 0 0 0 rgba(0,255,120,0.28);
 }
 .topbar-btn:active:not(:disabled) {
     transform: translateY(1px) scale(.97);
     background: transparent !important;
-    box-shadow: 0 0 7px 2px rgba(0,255,120,0.45);
+    box-shadow: 0 0 0 rgba(0,255,120,0.45);
 }
 .topbar-btn.playing {
     background: transparent !important;
-    box-shadow: 0 0 16px 5px rgba(0,255,110,0.60);
+    box-shadow: 0 0 0 rgba(0,255,110,0.60);
     color: #00ffaa !important;
 }
 .topbar-btn.playing:hover:not(:disabled) {
@@ -105,7 +105,7 @@ body {
     stroke-width: 1.5px;
     paint-order: stroke;
     /* Default white-ish glow; inline style.filter, if set, will override. */
-    filter: var(--edge-filter, drop-shadow(0 0 2px rgba(255,255,255,0.6)) drop-shadow(0 0 4px rgba(255,255,255,0.3)));
+    filter: none;
 }
 
 /* Selected edges: keep a subtle default; inline styles from React will intensify */
@@ -334,7 +334,7 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.25);
     cursor: pointer;
 }
-.flow-ctxmenu-swatch:hover { transform: scale(1.18); box-shadow: 0 0 7px 1px currentColor; }
+.flow-ctxmenu-swatch:hover { transform: scale(1.18); box-shadow: 0 0 0 currentColor; }
 
 .flow-canvas-col,
 .flow-orch-col {
@@ -362,3 +362,7 @@ body {
         height: 24px;
     }
 }
+
+/* No accidental text selection on labels; keep it in real text fields. */
+.react-flow, .react-flow * { -webkit-user-select: none; user-select: none; }
+.react-flow input, .react-flow textarea, .react-flow select, .react-flow [contenteditable="true"], .react-flow .selectable, .react-flow .selectable * { -webkit-user-select: text; user-select: text; }

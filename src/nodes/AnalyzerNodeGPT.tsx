@@ -193,7 +193,7 @@ const AnalyzerNodeGPT: React.FC<AnalyzerNodeGPTProps> = ({
             h - 4 - (r + 1) * ledH - r * gapY;
           const level = r / rows;
           const on = r < lit;
-          ctx.shadowBlur = on ? 5 : 0;
+          ctx.shadowBlur = 0;
           ctx.shadowColor = on
             ? pickColor(level)
             : "transparent";

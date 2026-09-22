@@ -1,0 +1,782 @@
+[
+ {
+  "slug": "kick",
+  "name": "Kick",
+  "description": "A punchy kick drum: four oscillators with pitch and amp envelopes. Usable as a sub-flow.",
+  "author": "",
+  "tags": [
+   "drums"
+  ],
+  "nodes": 13,
+  "edges": 18,
+  "nodeTypes": [
+   {
+    "type": "Gain",
+    "count": 5
+   },
+   {
+    "type": "Oscillator",
+    "count": 4
+   },
+   {
+    "type": "ADSR",
+    "count": 2
+   },
+   {
+    "type": "Input",
+    "count": 1
+   },
+   {
+    "type": "Output",
+    "count": 1
+   }
+  ],
+  "hasCustomUi": false,
+  "dependencies": [],
+  "makesSound": false,
+  "needsMic": false,
+  "needsMidi": false,
+  "categories": [
+   "io",
+   "mod",
+   "source",
+   "gain"
+  ],
+  "publishedAt": 1790008118454
+ },
+ {
+  "slug": "bagpipe",
+  "name": "Bagpipe",
+  "description": "Five oscillators, filters and distortion, playing a MIDI file.",
+  "author": "",
+  "tags": [
+   "instrument",
+   "midi"
+  ],
+  "nodes": 27,
+  "edges": 33,
+  "nodeTypes": [
+   {
+    "type": "Gain",
+    "count": 6
+   },
+   {
+    "type": "Oscillator",
+    "count": 5
+   },
+   {
+    "type": "BiquadFilter",
+    "count": 3
+   },
+   {
+    "type": "ADSR",
+    "count": 2
+   },
+   {
+    "type": "Function",
+    "count": 2
+   },
+   {
+    "type": "MasterOut",
+    "count": 1
+   },
+   {
+    "type": "Node",
+    "count": 1
+   },
+   {
+    "type": "Log",
+    "count": 1
+   }
+  ],
+  "hasCustomUi": false,
+  "dependencies": [
+   "keyboard"
+  ],
+  "makesSound": true,
+  "needsMic": false,
+  "needsMidi": true,
+  "categories": [
+   "source",
+   "mod",
+   "gain",
+   "io",
+   "ctl",
+   "fx"
+  ],
+  "publishedAt": 1790008118420
+ },
+ {
+  "slug": "trumpet",
+  "name": "Trumpet",
+  "description": "A brassy trumpet: two oscillators plus breath noise through two filters.",
+  "author": "",
+  "tags": [
+   "instrument"
+  ],
+  "nodes": 16,
+  "edges": 18,
+  "nodeTypes": [
+   {
+    "type": "Gain",
+    "count": 6
+   },
+   {
+    "type": "Oscillator",
+    "count": 2
+   },
+   {
+    "type": "BiquadFilter",
+    "count": 2
+   },
+   {
+    "type": "ADSR",
+    "count": 2
+   },
+   {
+    "type": "MasterOut",
+    "count": 1
+   },
+   {
+    "type": "Button",
+    "count": 1
+   },
+   {
+    "type": "Constant",
+    "count": 1
+   },
+   {
+    "type": "Noise",
+    "count": 1
+   }
+  ],
+  "hasCustomUi": false,
+  "dependencies": [],
+  "makesSound": true,
+  "needsMic": false,
+  "needsMidi": false,
+  "categories": [
+   "io",
+   "ctl",
+   "gain",
+   "source",
+   "fx",
+   "mod"
+  ],
+  "publishedAt": 1790008118389
+ },
+ {
+  "slug": "piano",
+  "name": "Piano",
+  "description": "A piano voice from five oscillators, three envelopes and a filter.",
+  "author": "",
+  "tags": [
+   "instrument"
+  ],
+  "nodes": 25,
+  "edges": 34,
+  "nodeTypes": [
+   {
+    "type": "Gain",
+    "count": 9
+   },
+   {
+    "type": "Oscillator",
+    "count": 5
+   },
+   {
+    "type": "Function",
+    "count": 4
+   },
+   {
+    "type": "ADSR",
+    "count": 3
+   },
+   {
+    "type": "MasterOut",
+    "count": 1
+   },
+   {
+    "type": "Button",
+    "count": 1
+   },
+   {
+    "type": "Constant",
+    "count": 1
+   },
+   {
+    "type": "BiquadFilter",
+    "count": 1
+   }
+  ],
+  "hasCustomUi": false,
+  "dependencies": [],
+  "makesSound": true,
+  "needsMic": false,
+  "needsMidi": false,
+  "categories": [
+   "io",
+   "ctl",
+   "gain",
+   "source",
+   "fx",
+   "mod"
+  ],
+  "publishedAt": 1790008118357
+ },
+ {
+  "slug": "mic-record",
+  "name": "Mic Record",
+  "description": "Record from the microphone and play it back.",
+  "author": "",
+  "tags": [
+   "starter",
+   "voice"
+  ],
+  "nodes": 4,
+  "edges": 4,
+  "nodeTypes": [
+   {
+    "type": "Mic",
+    "count": 1
+   },
+   {
+    "type": "Recording",
+    "count": 1
+   },
+   {
+    "type": "MasterOut",
+    "count": 1
+   },
+   {
+    "type": "Gain",
+    "count": 1
+   }
+  ],
+  "hasCustomUi": false,
+  "dependencies": [],
+  "makesSound": true,
+  "needsMic": true,
+  "needsMidi": false,
+  "categories": [
+   "source",
+   "io",
+   "gain"
+  ],
+  "publishedAt": 1790008118327
+ },
+ {
+  "slug": "vocoder",
+  "name": "Vocoder",
+  "description": "Microphone through a vocoder with a noise carrier. Needs mic access.",
+  "author": "",
+  "tags": [
+   "fx",
+   "voice"
+  ],
+  "nodes": 6,
+  "edges": 5,
+  "nodeTypes": [
+   {
+    "type": "Gain",
+    "count": 2
+   },
+   {
+    "type": "Mic",
+    "count": 1
+   },
+   {
+    "type": "Vocoder",
+    "count": 1
+   },
+   {
+    "type": "MasterOut",
+    "count": 1
+   },
+   {
+    "type": "Noise",
+    "count": 1
+   }
+  ],
+  "hasCustomUi": false,
+  "dependencies": [],
+  "makesSound": true,
+  "needsMic": true,
+  "needsMidi": false,
+  "categories": [
+   "source",
+   "fx",
+   "io",
+   "gain"
+  ],
+  "publishedAt": 1790008118297
+ },
+ {
+  "slug": "orgel-plus",
+  "name": "Orgel Plus",
+  "description": "A MIDI-file-driven organ with a clock, blocking switch and reverb.",
+  "author": "",
+  "tags": [
+   "synth",
+   "midi"
+  ],
+  "nodes": 31,
+  "edges": 70,
+  "nodeTypes": [
+   {
+    "type": "Node",
+    "count": 21
+   },
+   {
+    "type": "Log",
+    "count": 3
+   },
+   {
+    "type": "BlockingSwitch",
+    "count": 1
+   },
+   {
+    "type": "Button",
+    "count": 1
+   },
+   {
+    "type": "MasterOut",
+    "count": 1
+   },
+   {
+    "type": "Gain",
+    "count": 1
+   },
+   {
+    "type": "Reverb",
+    "count": 1
+   },
+   {
+    "type": "MidiFile",
+    "count": 1
+   }
+  ],
+  "hasCustomUi": false,
+  "dependencies": [
+   "keyboard",
+   "PolyorganVoice"
+  ],
+  "makesSound": true,
+  "needsMic": false,
+  "needsMidi": true,
+  "categories": [
+   "ctl",
+   "io",
+   "gain",
+   "fx",
+   "source",
+   "mod"
+  ],
+  "publishedAt": 1790008118265
+ },
+ {
+  "slug": "poly-organ",
+  "name": "Poly Organ",
+  "description": "A polyphonic organ built from 50 oscillators with per-note frequency shifting.",
+  "author": "",
+  "tags": [
+   "synth",
+   "poly"
+  ],
+  "nodes": 171,
+  "edges": 224,
+  "nodeTypes": [
+   {
+    "type": "Gain",
+    "count": 56
+   },
+   {
+    "type": "Oscillator",
+    "count": 50
+   },
+   {
+    "type": "FlowEventFreqShifter",
+    "count": 50
+   },
+   {
+    "type": "ADSR",
+    "count": 5
+   },
+   {
+    "type": "OnOffButton",
+    "count": 5
+   },
+   {
+    "type": "BlockingSwitch",
+    "count": 1
+   },
+   {
+    "type": "Button",
+    "count": 1
+   },
+   {
+    "type": "MasterOut",
+    "count": 1
+   }
+  ],
+  "hasCustomUi": false,
+  "dependencies": [
+   "keyboard"
+  ],
+  "makesSound": true,
+  "needsMic": false,
+  "needsMidi": false,
+  "categories": [
+   "mod",
+   "ctl",
+   "io",
+   "source",
+   "gain",
+   "fx"
+  ],
+  "publishedAt": 1790008118234
+ },
+ {
+  "slug": "cymbal",
+  "name": "Cymbal",
+  "description": "A metallic cymbal from six detuned oscillators, a filter and a delay, triggered by mouse.",
+  "author": "",
+  "tags": [
+   "drums",
+   "sfx",
+   "interactive"
+  ],
+  "nodes": 20,
+  "edges": 21,
+  "nodeTypes": [
+   {
+    "type": "Gain",
+    "count": 8
+   },
+   {
+    "type": "Oscillator",
+    "count": 6
+   },
+   {
+    "type": "ADSR",
+    "count": 1
+   },
+   {
+    "type": "MouseTriggerButton",
+    "count": 1
+   },
+   {
+    "type": "Button",
+    "count": 1
+   },
+   {
+    "type": "MasterOut",
+    "count": 1
+   },
+   {
+    "type": "BiquadFilter",
+    "count": 1
+   },
+   {
+    "type": "Delay",
+    "count": 1
+   }
+  ],
+  "hasCustomUi": false,
+  "dependencies": [],
+  "makesSound": true,
+  "needsMic": false,
+  "needsMidi": false,
+  "categories": [
+   "mod",
+   "ctl",
+   "io",
+   "source",
+   "gain",
+   "fx"
+  ],
+  "publishedAt": 1790008118207
+ },
+ {
+  "slug": "lasers",
+  "name": "Lasers",
+  "description": "Click-triggered sci-fi zaps: six oscillators with a swept band-pass filter.",
+  "author": "",
+  "tags": [
+   "sfx",
+   "interactive"
+  ],
+  "nodes": 19,
+  "edges": 22,
+  "nodeTypes": [
+   {
+    "type": "Gain",
+    "count": 8
+   },
+   {
+    "type": "Oscillator",
+    "count": 6
+   },
+   {
+    "type": "ADSR",
+    "count": 1
+   },
+   {
+    "type": "BiquadFilter",
+    "count": 1
+   },
+   {
+    "type": "MouseTriggerButton",
+    "count": 1
+   },
+   {
+    "type": "Button",
+    "count": 1
+   },
+   {
+    "type": "MasterOut",
+    "count": 1
+   }
+  ],
+  "hasCustomUi": false,
+  "dependencies": [],
+  "makesSound": true,
+  "needsMic": false,
+  "needsMidi": false,
+  "categories": [
+   "source",
+   "gain",
+   "mod",
+   "fx",
+   "ctl",
+   "io"
+  ],
+  "publishedAt": 1790008118180
+ },
+ {
+  "slug": "mantis-style",
+  "name": "Mantis Style",
+  "description": "Detuned oscillators, noise and ring modulation through an SVF drive filter, chorus and reverb.",
+  "author": "",
+  "tags": [
+   "synth",
+   "midi",
+   "fx"
+  ],
+  "nodes": 16,
+  "edges": 23,
+  "nodeTypes": [
+   {
+    "type": "Oscillator",
+    "count": 4
+   },
+   {
+    "type": "Gain",
+    "count": 4
+   },
+   {
+    "type": "MidiFlowNote",
+    "count": 1
+   },
+   {
+    "type": "Noise",
+    "count": 1
+   },
+   {
+    "type": "RingMod",
+    "count": 1
+   },
+   {
+    "type": "SvfDriveFilter",
+    "count": 1
+   },
+   {
+    "type": "ADSR",
+    "count": 1
+   },
+   {
+    "type": "Chorus",
+    "count": 1
+   }
+  ],
+  "hasCustomUi": false,
+  "dependencies": [],
+  "makesSound": true,
+  "needsMic": false,
+  "needsMidi": true,
+  "categories": [
+   "ctl",
+   "source",
+   "fx",
+   "gain",
+   "mod",
+   "io"
+  ],
+  "publishedAt": 1790008118155
+ },
+ {
+  "slug": "arpeggiator",
+  "name": "Arpeggiator",
+  "description": "Clock into an arpeggiator that plays an oscillator through an ADSR envelope.",
+  "author": "",
+  "tags": [
+   "starter",
+   "sequencer"
+  ],
+  "nodes": 6,
+  "edges": 6,
+  "nodeTypes": [
+   {
+    "type": "Clock",
+    "count": 1
+   },
+   {
+    "type": "Frequency",
+    "count": 1
+   },
+   {
+    "type": "Arpeggiator",
+    "count": 1
+   },
+   {
+    "type": "Oscillator",
+    "count": 1
+   },
+   {
+    "type": "ADSR",
+    "count": 1
+   },
+   {
+    "type": "MasterOut",
+    "count": 1
+   }
+  ],
+  "hasCustomUi": false,
+  "dependencies": [],
+  "makesSound": true,
+  "needsMic": false,
+  "needsMidi": false,
+  "categories": [
+   "mod",
+   "source",
+   "io"
+  ],
+  "publishedAt": 1790008118130
+ },
+ {
+  "slug": "hard-synth",
+  "name": "Hard Synth",
+  "description": "A hard-sync oscillator synth with a filter, reverb, a bundled keyboard and a kick pattern on a clock.",
+  "author": "",
+  "tags": [
+   "synth",
+   "drums",
+   "sequencer"
+  ],
+  "nodes": 18,
+  "edges": 21,
+  "nodeTypes": [
+   {
+    "type": "Gain",
+    "count": 4
+   },
+   {
+    "type": "BiquadFilter",
+    "count": 2
+   },
+   {
+    "type": "Node",
+    "count": 2
+   },
+   {
+    "type": "MasterOut",
+    "count": 1
+   },
+   {
+    "type": "Oscillator",
+    "count": 1
+   },
+   {
+    "type": "AudioWorkletOscillator",
+    "count": 1
+   },
+   {
+    "type": "ADSR",
+    "count": 1
+   },
+   {
+    "type": "Function",
+    "count": 1
+   }
+  ],
+  "hasCustomUi": false,
+  "dependencies": [
+   "keyboard",
+   "kick"
+  ],
+  "makesSound": true,
+  "needsMic": false,
+  "needsMidi": true,
+  "categories": [
+   "io",
+   "source",
+   "gain",
+   "mod",
+   "fx",
+   "ctl"
+  ],
+  "publishedAt": 1790008118104
+ },
+ {
+  "slug": "first-steps",
+  "name": "First Steps",
+  "description": "The smallest playable patch: a MIDI note drives an ADSR envelope into an oscillator. Start here.",
+  "author": "",
+  "tags": [
+   "starter",
+   "midi",
+   "synth"
+  ],
+  "nodes": 6,
+  "edges": 7,
+  "nodeTypes": [
+   {
+    "type": "MidiFlowNote",
+    "count": 1
+   },
+   {
+    "type": "ADSR",
+    "count": 1
+   },
+   {
+    "type": "Oscillator",
+    "count": 1
+   },
+   {
+    "type": "Gain",
+    "count": 1
+   },
+   {
+    "type": "MasterOut",
+    "count": 1
+   },
+   {
+    "type": "Log",
+    "count": 1
+   }
+  ],
+  "hasCustomUi": false,
+  "dependencies": [],
+  "makesSound": true,
+  "needsMic": false,
+  "needsMidi": true,
+  "categories": [
+   "ctl",
+   "mod",
+   "source",
+   "gain",
+   "io"
+  ],
+  "publishedAt": 1790008118076
+ }
+]

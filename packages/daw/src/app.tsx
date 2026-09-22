@@ -10,11 +10,15 @@ import { Mixer, FxChain, type ResolvedFx } from './audio/Mixer';
 import { AudioAssets } from './audio/AudioAssets';
 import type { Peaks } from './audio/waveform';
 import { AudioClipPlayer } from './audio/AudioClipPlayer';
-import { pickAudioFile } from './audio/decodeAudioFile';
+import { pickAudioFile, mimeOf, arrayBufferToBase64, base64ToArrayBuffer } from './audio/decodeAudioFile';
 import { pickVideoFile, probeVideo, extractAudioFromVideo } from './audio/video';
 import { encodeWav } from './audio/wav';
 import { splitClipAt } from './audio/clipSplit';
 import { Recorder } from './audio/Recorder';
+import { RecordingMonitor } from './ui/RecordingMonitor';
+import { loadRecOpts, saveRecOpts, type RecordOpts } from './ui/RecordControl';
+import { loadScreenRecOpts, saveScreenRecOpts, type ScreenRecordOpts } from './ui/ScreenRecordControl';
+import { remuxForSeeking } from './audio/remux';
 import { useMidiInput, type MidiNoteEvent, type MidiCcEvent } from './audio/useMidiInput';
 import { bounceProjectToWav } from './audio/bounce';
 import { bounceProjectStream } from './audio/bounceStream';
@@ -33,6 +37,7 @@ import { LIBRARY, findEntry, cloneFlow, registerEntries, type LibraryEntry } fro
 import { fsSupported, restoreFolder, seedLibrary, readAllFlows, writeFlow, pickFolder, saveProject, loadProject, listSongs, songSlug, createBounceWritable, createExportWritable, listAllAssets, listAudioFiles, writeVideoFile, readVideoFile, loadSettings, saveSettings, DEFAULT_SETTINGS, type DawSettings } from './synflow/flowStore';
 import { ExportDialog } from './ui/ExportDialog';
 import { ProgramMonitor } from './ui/ProgramMonitor';
+import { VideoViewSplit } from './ui/VideoViewSplit';
 import { loadTitleFonts } from './fonts';
 import { TopBar, type ViewId } from './ui/TopBar';
 import { Pool } from './ui/Pool';
@@ -54,9 +59,10 @@ import { AddPluginDialog, type PluginPick } from './ui/AddPluginDialog';
 import { makeVstaiFlow, isVstaiFlow, vstaiHtmlOf } from './synflow/vstai';
 import { VstaiGui } from './ui/VstaiGui';
 
-type ImportInfo = { name: string; phase: 'reading' | 'decoding'; read: number; total: number; startedAt: number };
+type ImportInfo = { name: string; phase: 'reading' | 'decoding' | 'processing'; read: number; total: number; startedAt: number };
 
 /** Compact pan readout: "C", "L42", "R42". */
+const volDb = (v: number) => (v <= 0.001 ? '-∞ dB' : `${(20 * Math.log10(v)).toFixed(1)} dB`);
 const panLabel = (p: number): string => { const v = Math.round(p * 100); return v === 0 ? 'C' : v < 0 ? `L${-v}` : `R${v}`; };
 
 /** h:mm:ss (drops the hours field below an hour). */
@@ -81,13 +87,13 @@ function ImportOverlay({ info }: { info: ImportInfo }) {
   return (
     <div className="syn-overlay import-overlay">
       <div className="import-card">
-        <div className="import-title">Importing audio…</div>
+        <div className="import-title">{info.phase === 'processing' ? 'Processing recording…' : 'Importing audio…'}</div>
         {info.name && <div className="import-name">{info.name}</div>}
         <div className={`import-bar ${pct == null ? 'indeterminate' : ''}`}>
           <div className="import-bar-fill" style={pct == null ? undefined : { width: `${pct}%` }} />
         </div>
         <div className="import-meta">
-          <span>{info.phase === 'reading' ? (pct != null ? `${pct}% · ${fmtMB(info.read)} / ${fmtMB(info.total)}` : 'Reading…') : 'Decoding…'}</span>
+          <span>{info.phase === 'reading' ? (pct != null ? `${pct}% · ${fmtMB(info.read)} / ${fmtMB(info.total)}` : 'Reading…') : info.phase === 'processing' ? 'Fixing seek support…' : 'Decoding…'}</span>
           <span>{fmtElapsed(elapsed)} elapsed</span>
         </div>
       </div>
@@ -100,7 +106,7 @@ export function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(-1);
   const [view, setView] = useState<ViewId>('song');
-  const [browserOpen, setBrowserOpen] = useState(true);
+  const [browserOpen, setBrowserOpen] = useState(false);
   const [settings, setSettings] = useState<DawSettings>(DEFAULT_SETTINGS);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [armed, setArmed] = useState(false);
@@ -215,15 +221,16 @@ export function App() {
         const last = localStorage.getItem('mothscilla:lastSong');
         if (last) { const raw = await loadProject(handle, last); if (raw && !cancelled) { const proj = normalizeProject(raw); setProject(proj); resetHistory(proj); setSelTrack(proj.tracks[0]?.id ?? ''); } }
       } else {
-        // No folder yet (or File System Access unsupported) — fall back to whatever
-        // settings were last saved locally, same convention as the song fallback below.
+        // No adopted folder (unsupported browser, or the user is on "built-in
+        // only") — restore whatever was last saved to localStorage regardless,
+        // so a Chromium user who picked "built-in only" doesn't lose their song
+        // (video/audio/etc.) just because they get re-offered the folder dialog
+        // on every load. The dialog (if the browser supports it) can still stack
+        // on top — it doesn't wipe what's already open.
         try { const raw = localStorage.getItem('mothscilla:settings'); if (raw) { const s = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) }; if (!cancelled) { setSettings(s); setBrowserOpen(!s.poolCollapsed); } } } catch { /* ignore */ }
-        if (fsSupported) {
-          setStorageSetup(true);
-        } else {
-          const local = localStorage.getItem('mothscilla:localSong');
-          if (local) { try { const proj = normalizeProject(JSON.parse(local)); if (!cancelled) { setProject(proj); resetHistory(proj); setSelTrack(proj.tracks[0]?.id ?? ''); } } catch { /* ignore */ } }
-        }
+        const local = localStorage.getItem('mothscilla:localSong');
+        if (local) { try { const proj = normalizeProject(JSON.parse(local)); if (!cancelled) { setProject(proj); resetHistory(proj); setSelTrack(proj.tracks[0]?.id ?? ''); } } catch { /* ignore */ } }
+        if (fsSupported) setStorageSetup(true);
       }
       // Crash recovery: offer the autosave when it's newer than the last explicit save.
       if (!cancelled) {
@@ -426,11 +433,13 @@ export function App() {
         if (k === 'x') return act('cutClip');
         if (k === 'v') return act('pasteClip');
         if (k === 'd') return act('duplicateClip');
+        if (k === 'a') return act('selectAllClips');
         return;
       }
       if (k === ' ') return act('togglePlay');
       if (k === 'home') return act('rewind');
-      if (k === 'delete' || k === 'backspace') return act('deleteClip');
+      if (k === 'delete' || k === 'backspace') return act(e.shiftKey ? 'rippleDeleteClip' : 'deleteClip');
+      if (k === 'escape') { keyActionsRef.current.clearClipSel?.(); return; }
       if (k === 's' && !e.altKey) { e.preventDefault(); splitAtPlayheadRef.current(); }
     };
     window.addEventListener('keydown', onKey);
@@ -466,6 +475,7 @@ export function App() {
   const ensureAudio = useCallback(async () => {
     if (ctxRef.current) return;
     const ctx = new AudioContext(); ctxRef.current = ctx;
+    { const out = loadRecOpts().outputId; if (out) void (ctx as AudioContext & { setSinkId?: (id: string) => Promise<void> }).setSinkId?.(out).catch(() => {}); }
     mixerRef.current = new Mixer(ctx);
     metronomeRef.current = new Metronome(ctx);
     metronomeRef.current.enabled = metronome;
@@ -640,7 +650,7 @@ export function App() {
     const proj = projectRef.current;
     schedulerRef.current!.totalSteps = songModeRef.current ? songLengthSteps(proj) : patternLoopLength(proj.tracks);
     syncSchedulerLoop();
-    transportRef.current!.start(seekRef.current); schedulerRef.current!.start(seekRef.current);
+    transportRef.current!.start(seekRef.current); schedulerRef.current!.start(Math.round(seekRef.current));
     primeAudioClips(seekRef.current);
     setIsPlaying(true);
   }, [ensureAudio]);
@@ -668,13 +678,18 @@ export function App() {
   useEffect(() => { if (view === 'song') setSongMode(true); }, [view]);
 
   // Move the playhead (and where playback begins) to an absolute step; live-seeks if playing.
+  // Kept fractional (not rounded to a whole step) so scrub-dragging the ruler moves
+  // the playhead/preview continuously instead of snapping once per step crossed —
+  // clip `start` positions are already fractional-step throughout the data model.
+  // The step *scheduler* still needs a whole step index (it triggers pattern rows
+  // by array index), so only its input gets rounded.
   const seekTo = (step: number) => {
     const total = songModeRef.current ? songLengthSteps(projectRef.current) : patternLoopLength(projectRef.current.tracks);
-    const s = Math.max(0, Math.min(Math.max(1, total) - 1, Math.round(step)));
+    const s = Math.max(0, Math.min(Math.max(1, total) - 1, step));
     seekRef.current = s;
     setCurrentStep(s);
     if (isPlaying) {
-      schedulerRef.current?.seek(s);
+      schedulerRef.current?.seek(Math.round(s));
       for (const p of audioPlayersRef.current.values()) p.stopAll(); // drop clips from the old position
       primeAudioClips(s);                                            // and start whatever the new spot is inside
     }
@@ -780,6 +795,11 @@ export function App() {
           if (blob) videoBlobsRef.current.set(assetId, blob);
           return blob;
         }
+        if (va?.source.kind === 'embedded') {
+          const blob = new Blob([base64ToArrayBuffer(va.source.base64)], { type: va.source.mime });
+          videoBlobsRef.current.set(assetId, blob);
+          return blob;
+        }
         return null;
       };
       const { blob, ext } = await exportVideo(proj, ensureAssets(), opts, getVideoBlob, (f, phase) => { setExportProgress(f); setExportPhase(phase); });
@@ -818,6 +838,9 @@ export function App() {
         if (va.source.kind === 'disk' && folderRef.current) {
           const blob = await readVideoFile(folderRef.current, va.source.fileName);
           if (blob && !cancelled) { videoBlobsRef.current.set(va.id, blob); setVideoBlobTick((n) => n + 1); }
+        } else if (va.source.kind === 'embedded') {
+          const blob = new Blob([base64ToArrayBuffer(va.source.base64)], { type: va.source.mime });
+          if (!cancelled) { videoBlobsRef.current.set(va.id, blob); setVideoBlobTick((n) => n + 1); }
         }
       }
     })();
@@ -1526,6 +1549,7 @@ export function App() {
     setSelTrack(id);
     if (isMedia) setSongMode(true); // media plays on the song timeline
     if (type === 'video') void importVideoClip(id); // immediately prompt for a file
+    return id;
   };
   // A title is a video-track clip with `text` (no asset) → reuses the whole video
   // pipeline (compositing, transform, fades, trim/split, export burn-in).
@@ -1596,8 +1620,13 @@ export function App() {
 
   // ── Clip selection + clipboard (arrangement): click selects; Delete/⌘C/⌘X/⌘V/⌘D. ──
   type ClipSel = { trackId: string; clipId: string; kind: 'pattern' | 'audio' | 'video' };
-  const [selClip, setSelClip] = useState<ClipSel | null>(null);
+  const [selClip, setSelClipState] = useState<ClipSel | null>(null);
   const selClipRef = useRef<ClipSel | null>(null); selClipRef.current = selClip;
+  // Multi-selection (marquee / shift-click). `selClip` stays the primary (last-picked) clip.
+  const [selClips, setSelClips] = useState<ClipSel[]>([]);
+  const selClipsRef = useRef<ClipSel[]>([]); selClipsRef.current = selClips;
+  const setSelClip = (s: ClipSel | null) => { setSelClipState(s); setSelClips(s ? [s] : []); };
+  const selectClips = (l: ClipSel[]) => { setSelClips(l); setSelClipState(l[l.length - 1] ?? null); };
   const clipClipboardRef = useRef<{ kind: ClipSel['kind']; trackId: string; data: any } | null>(null);
   const findSelClip = (): any => {
     const s = selClipRef.current; if (!s) return null;
@@ -1606,13 +1635,45 @@ export function App() {
       : s.kind === 'audio' ? (t.audioClips ?? []).find((c) => c.id === s.clipId)
         : (t.videoClips ?? []).find((c) => c.id === s.clipId);
   };
-  const deleteSelClip = () => {
-    const s = selClipRef.current; if (!s) return;
-    if (s.kind === 'pattern') removeClip(s.trackId, s.clipId);
-    else if (s.kind === 'audio') removeAudioClip(s.trackId, s.clipId);
-    else removeVideoClip(s.trackId, s.clipId);
-    setSelClip(null);
+  /** Delete clips; `ripple` also pulls every later clip on the same track left over the gap. */
+  const deleteClips = (list: ClipSel[], ripple: boolean) => {
+    if (!list.length) return;
+    setProject((p) => ({
+      ...p,
+      tracks: p.tracks.map((t) => {
+        const mine = list.filter((s) => s.trackId === t.id); if (!mine.length) return t;
+        const ids = (k: ClipSel['kind']) => new Set(mine.filter((s) => s.kind === k).map((s) => s.clipId));
+        const pi = ids('pattern'), ai = ids('audio'), vi = ids('video');
+        const stepsOf = (sec: number) => sec * (p.bpm / 60) * p.stepsPerBeat;
+        // Remove `gone` from `arr` (sorted by start); with ripple, shift survivors left by the length of each removed clip that ended at/before them.
+        const cut = <C extends { id: string; start: number }>(arr: C[], gone: Set<string>, lenOf: (c: C, next?: C) => number): C[] => {
+          if (!gone.size) return arr;
+          const sorted = [...arr].sort((x, y) => x.start - y.start);
+          const removed = sorted.map((c, i) => ({ c, len: lenOf(c, sorted[i + 1]) })).filter((r) => gone.has(r.c.id));
+          return sorted.filter((c) => !gone.has(c.id)).map((c) => {
+            if (!ripple) return c;
+            const shift = removed.reduce((sum, r) => (c.start >= r.c.start + r.len - 1e-6 ? sum + r.len : sum), 0);
+            return shift ? { ...c, start: Math.max(0, c.start - shift) } : c;
+          });
+        };
+        return {
+          ...t,
+          clips: cut(t.clips, pi, (c, next) => ((c as any).loop ? (next?.start ?? Math.max(c.start + 1, p.songSlots)) - c.start : (c as any).length)),
+          audioClips: cut(t.audioClips ?? [], ai, (c) => stepsOf((c as any).duration)),
+          videoClips: cut(t.videoClips ?? [], vi, (c) => stepsOf((c as any).duration)),
+        };
+      }),
+    }));
+    setSelClips([]); setSelClipState(null);
   };
+  const currentSelection = (): ClipSel[] => (selClipsRef.current.length ? selClipsRef.current : selClipRef.current ? [selClipRef.current] : []);
+  const deleteSelClip = () => deleteClips(currentSelection(), false);
+  const rippleDeleteSelClip = () => deleteClips(currentSelection(), true);
+  const selectAllClips = () => selectClips(projectRef.current.tracks.flatMap((t) => [
+    ...t.clips.map((c) => ({ trackId: t.id, clipId: c.id, kind: 'pattern' as const })),
+    ...(t.audioClips ?? []).map((c) => ({ trackId: t.id, clipId: c.id, kind: 'audio' as const })),
+    ...(t.videoClips ?? []).map((c) => ({ trackId: t.id, clipId: c.id, kind: 'video' as const })),
+  ]));
   const copySelClip = () => {
     const s = selClipRef.current; const c = findSelClip();
     if (s && c) clipClipboardRef.current = { kind: s.kind, trackId: s.trackId, data: JSON.parse(JSON.stringify(c)) };
@@ -1646,6 +1707,9 @@ export function App() {
     togglePlay: () => { if (isPlayingRef.current) stop(); else void play(); },
     rewind: () => seekTo(0),
     deleteClip: deleteSelClip,
+    rippleDeleteClip: rippleDeleteSelClip,
+    selectAllClips,
+    clearClipSel: () => setSelClip(null),
     copyClip: copySelClip,
     cutClip: () => { copySelClip(); deleteSelClip(); },
     pasteClip,
@@ -1679,7 +1743,7 @@ export function App() {
       }),
     };
   });
-  const setClipLen = (trackId: string, clipId: string, length: number) => mapTrack(trackId, (t) => ({ ...t, clips: t.clips.map((c) => (c.id === clipId ? { ...c, length } : c)) }));
+  const setClipLen = (trackId: string, clipId: string, length: number) => mapTrack(trackId, (t) => ({ ...t, clips: t.clips.map((c) => (c.id === clipId ? { ...c, length, loop: false } : c)) }));
   const moveClip = (trackId: string, clipId: string, start: number) => mapTrack(trackId, (t) => ({ ...t, clips: t.clips.map((c) => (c.id === clipId ? { ...c, start } : c)) }));
   const moveAudioClip = (trackId: string, clipId: string, start: number) => mapTrack(trackId, (t) => ({ ...t, audioClips: (t.audioClips ?? []).map((c) => (c.id === clipId ? { ...c, start } : c)) }));
   const updateAudioClips = (trackId: string, fn: (cs: AudioClip[]) => AudioClip[]) => mapTrack(trackId, (t) => ({ ...t, audioClips: fn(t.audioClips ?? []) }));
@@ -1688,6 +1752,7 @@ export function App() {
   const moveVideoClip = (trackId: string, clipId: string, start: number) => mapTrack(trackId, (t) => ({ ...t, videoClips: (t.videoClips ?? []).map((c) => (c.id === clipId ? { ...c, start } : c)) }));
   const removeVideoClip = (trackId: string, clipId: string) => mapTrack(trackId, (t) => ({ ...t, videoClips: (t.videoClips ?? []).filter((c) => c.id !== clipId) }));
   const setVideoClip = (trackId: string, clipId: string, patch: Partial<VideoClip>) => mapTrack(trackId, (t) => ({ ...t, videoClips: (t.videoClips ?? []).map((c) => (c.id === clipId ? { ...c, ...patch } : c)) }));
+  const setCanvasSize = (canvasWidth: number, canvasHeight: number) => setProject((p) => ({ ...p, canvasWidth, canvasHeight }));
   const splitVideoClip = (trackId: string, clipId: string, atSteps: number) => {
     const secPerStep = 60 / projectRef.current.bpm / projectRef.current.stepsPerBeat;
     mapTrack(trackId, (t) => ({ ...t, videoClips: (t.videoClips ?? []).flatMap((c) => {
@@ -1720,6 +1785,21 @@ export function App() {
     void buildAudio();
   };
 
+  const renameRecording = (assetId: string, name: string) => setProject((p) => ({ ...p, assets: p.assets.map((a) => (a.id === assetId ? { ...a, name } : a)) }));
+  // Import a file (wav/mp3/…) straight into the pool as a recording — no clip,
+  // no track; place it later with the "+" button or by dragging it onto a lane.
+  const ingestRecording = async (name: string, bytes: ArrayBuffer, mime: string) => {
+    await ensureAudio();
+    try {
+      const asset = await ensureAssets().ingest(name, bytes, mime);
+      const next = { ...projectRef.current, assets: [...projectRef.current.assets, asset] };
+      projectRef.current = next; setProject(next);
+    } catch (e) { console.warn('[Mothscilla] audio import failed', name, e); }
+  };
+  const importRecording = async () => {
+    const picked = await pickAudioFile();
+    if (picked) await ingestRecording(picked.name.replace(/\.[^.]+$/, ''), picked.bytes, picked.mime);
+  };
   // Delete a recording from the project: drop the asset and any clips that use it.
   const removeRecording = (assetId: string) => {
     if (previewKey === 'asset:' + assetId) stopAudition();
@@ -1854,13 +1934,22 @@ export function App() {
     const blob = new Blob([bytes], { type: mime });
     const ext = mime.includes('webm') ? '.webm' : mime.includes('quicktime') ? '.mov' : '.mp4';
     const fileName = `${baseName}${ext}`;
-    let source: VideoAsset['source'] = { kind: 'embedded', base64: '', mime }; // bytes live in videoBlobsRef this session
+    // No folder (or the disk write fails — e.g. a stale/denied FS permission) →
+    // embed the real bytes as base64, same durable fallback AudioAssets.ingest()
+    // uses, so the clip survives a reload instead of vanishing with the session.
+    let source: VideoAsset['source'] | null = null;
     if (folderRef.current) {
-      try { await writeVideoFile(folderRef.current, fileName, blob); source = { kind: 'disk', fileName, mime }; } catch { /* keep session-only */ }
+      try { await writeVideoFile(folderRef.current, fileName, blob); source = { kind: 'disk', fileName, mime }; }
+      catch { /* fall through to the embedded fallback below */ }
     }
+    if (!source) source = { kind: 'embedded', base64: arrayBufferToBase64(bytes), mime };
+    // probe.duration is always finite (see probeVideo), but guard anyway — an
+    // Infinity/NaN clip duration blows up the arrangement timeline's ruler math.
+    const rawDuration = probe.duration || audioBuf?.duration || 0;
+    const duration = Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 0;
     const videoAsset: VideoAsset = {
       id: uid('vasset'), name: baseName, source,
-      duration: probe.duration || audioBuf?.duration || 0,
+      duration,
       width: probe.width, height: probe.height, hasAudio: !!audioBuf,
       audioAssetId: audioAsset?.id, poster: probe.poster,
     };
@@ -1868,6 +1957,32 @@ export function App() {
     const vclip: VideoClip = { id: uid('vclip'), assetId: videoAsset.id, start, offset: 0, duration: videoAsset.duration };
     const aclip: AudioClip | null = audioAsset ? { id: uid('aclip'), assetId: audioAsset.id, start, offset: 0, duration: audioAsset.duration, gain: 1 } : null;
     return { videoAsset, audioAsset, vclip, aclip, hadAudio: !!audioBuf };
+  };
+
+  // Place a built video (+ its extracted audio) into the project: the VideoClip
+  // lands on `trackId`; the audio rides on its OWN new audio track (video tracks
+  // don't play their own audioClips), aligned to the clip, so it's audible and
+  // editable separately. Shared by file import, drag-and-drop, and recording.
+  const placeVideoEntities = (
+    trackId: string, baseName: string,
+    entities: { videoAsset: VideoAsset; audioAsset: AudioAsset | null; vclip: VideoClip; aclip: AudioClip | null },
+  ) => {
+    const { videoAsset, audioAsset, vclip, aclip } = entities;
+    const cur = projectRef.current;
+    const audioTrack: Track | null = (audioAsset && aclip) ? {
+      id: uid('track'), name: `${baseName} (audio)`, type: 'audio', volume: 0.8, loop: true,
+      length: cur.totalSteps, uses: [], clips: [], audioClips: [aclip], fx: [], automation: [],
+    } : null;
+    const next: Project = {
+      ...cur,
+      videoAssets: [...(cur.videoAssets ?? []), videoAsset],
+      assets: audioAsset ? [...cur.assets, audioAsset] : cur.assets,
+      tracks: [
+        ...cur.tracks.map((t) => (t.id !== trackId ? t : { ...t, videoClips: [...(t.videoClips ?? []), vclip] })),
+        ...(audioTrack ? [audioTrack] : []),
+      ],
+    };
+    projectRef.current = next; setProject(next);
   };
 
   // Import a video onto a video track (+ the extracted audio on its audio lane).
@@ -1883,27 +1998,11 @@ export function App() {
     try {
       await ensureAudio();
       const baseName = picked.name.replace(/\.[^.]+$/, '');
-      const { videoAsset, audioAsset, vclip, aclip, hadAudio } = await buildVideoEntities(picked.bytes, picked.mime, baseName, Math.max(0, currentStepRef.current));
-      const cur = projectRef.current;
-      // The video's audio rides on its OWN audio track (video tracks don't play their
-      // own audioClips), aligned to the clip, so it's audible and editable separately.
-      const audioTrack: Track | null = (audioAsset && aclip) ? {
-        id: uid('track'), name: `${baseName} (audio)`, type: 'audio', volume: 0.8, loop: true,
-        length: cur.totalSteps, uses: [], clips: [], audioClips: [aclip], fx: [], automation: [],
-      } : null;
-      const next: Project = {
-        ...cur,
-        videoAssets: [...(cur.videoAssets ?? []), videoAsset],
-        assets: audioAsset ? [...cur.assets, audioAsset] : cur.assets,
-        tracks: [
-          ...cur.tracks.map((t) => (t.id !== trackId ? t : { ...t, videoClips: [...(t.videoClips ?? []), vclip] })),
-          ...(audioTrack ? [audioTrack] : []),
-        ],
-      };
-      projectRef.current = next; setProject(next);
+      const entities = await buildVideoEntities(picked.bytes, picked.mime, baseName, Math.max(0, currentStepRef.current));
+      placeVideoEntities(trackId, baseName, entities);
       setSongMode(true);                 // the extracted audio plays on the arrangement timeline
       await buildAudio();
-      if (!hadAudio) window.alert(`Imported "${baseName}". This file's audio couldn't be extracted in-browser (common for AVI). The video still imports; see docs/VIDEO.md for the demux fallback.`);
+      if (!entities.hadAudio) window.alert(`Imported "${baseName}". This file's audio couldn't be extracted in-browser (common for AVI). The video still imports; see docs/VIDEO.md for the demux fallback.`);
     } catch (e) {
       console.warn('[Mothscilla] video import failed', e);
       window.alert('Video import failed — see the console.');
@@ -1987,11 +2086,9 @@ export function App() {
           try {
             await ensureAudio();
             const baseName = name.replace(/\.[^.]+$/, '');
-            const { videoAsset, audioAsset, vclip, aclip } = await buildVideoEntities(await f.arrayBuffer(), f.type, baseName, Math.max(0, currentStepRef.current));
-            const cur = projectRef.current;
-            const audioTrack: Track | null = (audioAsset && aclip) ? { id: uid('track'), name: `${baseName} (audio)`, type: 'audio', volume: 0.8, loop: true, length: cur.totalSteps, uses: [], clips: [], audioClips: [aclip], fx: [], automation: [] } : null;
-            const next: Project = { ...cur, videoAssets: [...(cur.videoAssets ?? []), videoAsset], assets: audioAsset ? [...cur.assets, audioAsset] : cur.assets, tracks: [...cur.tracks.map((t) => (t.id !== trackId ? t : { ...t, videoClips: [...(t.videoClips ?? []), vclip] })), ...(audioTrack ? [audioTrack] : [])] };
-            projectRef.current = next; setProject(next); setSongMode(true);
+            const entities = await buildVideoEntities(await f.arrayBuffer(), f.type, baseName, Math.max(0, currentStepRef.current));
+            placeVideoEntities(trackId, baseName, entities);
+            setSongMode(true);
             await buildAudio();
           } finally { setImporting(null); }
         }
@@ -2000,21 +2097,20 @@ export function App() {
   };
 
   // ── Live capture: mic, recorded to a clip ────────────────────────────────────
-  // No preview screen — Mic just arms the source, Record captures it, from the topbar.
-  const [micStream, setMicStream] = useState<MediaStream | null>(null);
+  // One click records the chosen input at the playhead; options (input device,
+  // playback output device, play-along) live in the Record popover.
   const [recording, setRecording] = useState(false);
   const monitorCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const recRef = useRef<{ rec: MediaRecorder } | null>(null);
-  const micOn = !!micStream;
-
-  const toggleMic = useCallback(async () => {
-    if (micOn) { micStream?.getTracks().forEach((t) => t.stop()); setMicStream(null); return; }
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
-      setMicStream(s);
-      s.getAudioTracks()[0]?.addEventListener('ended', () => setMicStream(null));
-    } catch (e) { console.warn('[Mothscilla] mic denied', e); window.alert('Could not start the microphone (permission denied or no device).'); }
-  }, [micOn, micStream]);
+  const [recMon, setRecMon] = useState<{ analyser: AnalyserNode; startMs: number } | null>(null);
+  const [recOpts, setRecOpts] = useState<RecordOpts>(loadRecOpts);
+  const recOptsRef = useRef(recOpts); recOptsRef.current = recOpts;
+  const changeRecOpts = (o: RecordOpts) => { setRecOpts(o); saveRecOpts(o); };
+  // Route all playback to the chosen output device (Chrome/Edge: AudioContext.setSinkId).
+  useEffect(() => {
+    const ctx = ctxRef.current as (AudioContext & { setSinkId?: (id: string) => Promise<void> }) | null;
+    void ctx?.setSinkId?.(recOpts.outputId).catch((e) => console.warn('[Mothscilla] output device switch failed', e));
+  }, [recOpts.outputId]);
 
   // Ingest the mic recording into its own new audio track, anchored at `startStep`.
   const ingestRecordedSources = async (label: string, mime: string, bytes: ArrayBuffer, startStep: number) => {
@@ -2029,30 +2125,147 @@ export function App() {
     await buildAudio();
   };
 
-  // Record the mic to its own track, anchored at the current playhead position.
+  // Record the input to an audio track, anchored at the playhead. Lands on the selected
+  // audio track if there is one, else on a new track. Optionally rolls playback along.
   const toggleRecord = useCallback(async () => {
     if (recording) { try { recRef.current?.rec.stop(); } catch { /* already stopped */ } return; }
-    if (!micStream) { window.alert('Enable the microphone first, then record.'); return; }
+    const o = recOptsRef.current;
+    let stream: MediaStream;
+    if (o.source === 'tab') {
+      let disp: MediaStream;
+      try {
+        // video:true is required for Chrome's picker to appear; we drop the video
+        // track immediately below and keep only the (unprocessed) tab audio.
+        disp = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 2, sampleRate: 48000 },
+          ...({ preferCurrentTab: true, selfBrowserSurface: 'include', systemAudio: 'exclude' } as Record<string, unknown>),
+        } as DisplayMediaStreamOptions);
+      } catch (e) { console.warn('[Mothscilla] tab share cancelled/denied', e); return; }
+      disp.getVideoTracks().forEach((t) => t.stop());
+      const audioTracks = disp.getAudioTracks();
+      if (!audioTracks.length) {
+        disp.getTracks().forEach((t) => t.stop());
+        window.alert('No tab audio was shared — when picking a tab, check "Share tab audio" (or "Share audio").');
+        return;
+      }
+      stream = new MediaStream(audioTracks);
+    } else {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: {
+          ...(o.inputId ? { deviceId: { exact: o.inputId } } : {}),
+          echoCancellation: false, noiseSuppression: false, autoGainControl: false,   // clean take, not a call
+        } });
+      } catch (e) { console.warn('[Mothscilla] mic denied', e); window.alert('Could not open the selected input (permission denied or device unavailable).'); return; }
+    }
     const amime = ['audio/webm;codecs=opus', 'audio/webm'].find((m) => MediaRecorder.isTypeSupported(m)) ?? 'audio/webm';
-    const stamp = new Date().toLocaleTimeString();
-    const label = `Mic ${stamp}`;
+    const label = `Rec ${new Date().toLocaleTimeString()}`;
     await ensureAudio();
+    const actx = ctxRef.current!; await actx.resume();
+    const monSrc = actx.createMediaStreamSource(stream);
+    const monAn = actx.createAnalyser(); monAn.fftSize = 2048;
+    monSrc.connect(monAn);                                  // meter only — never routed to the output
     const startStep = Math.max(0, currentStepRef.current);
+    const wasPlaying = isPlayingRef.current;
     const chunks: Blob[] = [];
-    const rec = new MediaRecorder(micStream, { mimeType: amime });
+    const rec = new MediaRecorder(stream, { mimeType: amime });
     rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
     const blob = new Promise<Blob>((resolve) => { rec.onstop = () => resolve(new Blob(chunks, { type: amime })); });
     recRef.current = { rec };
     rec.start(250);
     setRecording(true);
+    setRecMon({ analyser: monAn, startMs: performance.now() });
+    let startedPlayback = false;
+    if (o.playAlong && !wasPlaying) { seekRef.current = startStep; await play(); startedPlayback = true; }
+    else if (!o.playAlong && wasPlaying) stop();   // record dry: silence the project
     void blob.then(async (b) => {
+      stream.getTracks().forEach((t) => t.stop());
+      monSrc.disconnect(); setRecMon(null);
       setRecording(false);
       recRef.current = null;
-      try { await ingestRecordedSources(label, amime, await b.arrayBuffer(), startStep); }
-      catch (e) { console.warn('[Mothscilla] recording ingest failed', e); }
-      micStream?.getTracks().forEach((t) => t.stop()); setMicStream(null);
+      if (startedPlayback && isPlayingRef.current) stop();
+      try {
+        const bytes = await b.arrayBuffer();
+        const sel = projectRef.current.tracks.find((t) => t.id === selTrackRef.current);
+        if (sel?.type === 'audio') await ingestAndAdd(sel.id, label, bytes, amime, startStep);
+        else await ingestRecordedSources(label, amime, bytes, startStep);
+      } catch (e) { console.warn('[Mothscilla] recording ingest failed', e); }
     });
-  }, [recording, micStream, ensureAudio]);
+  }, [recording, ensureAudio, play, stop]);
+
+  // ── Live capture: screen/window/tab video, recorded to a video track ────────
+  // getDisplayMedia's own picker offers screen/window/tab regardless of the hint;
+  // `surface` just biases which of its tabs opens first. Video + (usually) audio
+  // are captured together and go through the same buildVideoEntities/placeVideoEntities
+  // path as an imported file, so trim/crop/cut work identically on the result.
+  const [screenRecording, setScreenRecording] = useState(false);
+  const screenRecRef = useRef<{ rec: MediaRecorder; stream: MediaStream } | null>(null);
+  const [screenRecOpts, setScreenRecOpts] = useState<ScreenRecordOpts>(loadScreenRecOpts);
+  const screenRecOptsRef = useRef(screenRecOpts); screenRecOptsRef.current = screenRecOpts;
+  const changeScreenRecOpts = (o: ScreenRecordOpts) => { setScreenRecOpts(o); saveScreenRecOpts(o); };
+
+  const toggleScreenRecord = useCallback(async () => {
+    if (screenRecording) { try { screenRecRef.current?.rec.stop(); } catch { /* already stopped */ } return; }
+    const o = screenRecOptsRef.current;
+    let stream: MediaStream;
+    try {
+      if (o.surface === 'camera') {
+        // Any camera the OS exposes — built-in, a capture card, or a phone set up
+        // as a webcam over WiFi/USB (Continuity Camera, Camo, iVCam, …) — shows up
+        // as a normal video input device here; we just ask for the best it offers.
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            ...(o.cameraId ? { deviceId: { exact: o.cameraId } } : {}),
+            width: { ideal: 3840 }, height: { ideal: 2160 }, frameRate: { ideal: 30, max: 60 },
+          },
+          audio: o.withAudio ? { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 2, sampleRate: 48000 } : false,
+        });
+      } else {
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { displaySurface: o.surface, frameRate: { ideal: 30, max: 60 } } as MediaTrackConstraints,
+          audio: o.withAudio ? { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 2, sampleRate: 48000 } : false,
+          ...({ preferCurrentTab: o.surface === 'browser', selfBrowserSurface: 'include', systemAudio: o.withAudio ? 'include' : 'exclude' } as Record<string, unknown>),
+        } as DisplayMediaStreamOptions);
+      }
+    } catch (e) { console.warn('[Mothscilla] video capture cancelled/denied', e); return; }
+    const vmime = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
+      .find((m) => MediaRecorder.isTypeSupported(m)) ?? 'video/webm';
+    const baseName = `${o.surface === 'camera' ? 'Camera' : 'Screen'} ${new Date().toLocaleTimeString()}`;
+    const startStep = Math.max(0, currentStepRef.current);
+    // Scale bitrate with actual resolution (a phone camera can hand back real 4K)
+    // instead of a flat rate that would under-serve it or over-serve a small window.
+    const { width: capW, height: capH } = stream.getVideoTracks()[0]?.getSettings() ?? {};
+    const videoBitsPerSecond = Math.max(12_000_000, Math.round((capW || 1920) * (capH || 1080) * 30 * 0.12));
+    const chunks: Blob[] = [];
+    const rec = new MediaRecorder(stream, { mimeType: vmime, videoBitsPerSecond, audioBitsPerSecond: 256_000 });
+    rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+    const blob = new Promise<Blob>((resolve) => { rec.onstop = () => resolve(new Blob(chunks, { type: vmime })); });
+    // The browser's own "Stop sharing" bar ends the track directly — stop the recorder too.
+    stream.getVideoTracks()[0]?.addEventListener('ended', () => { if (rec.state !== 'inactive') rec.stop(); });
+    screenRecRef.current = { rec, stream };
+    rec.start(250);
+    setScreenRecording(true);
+    void blob.then(async (b) => {
+      stream.getTracks().forEach((t) => t.stop());
+      setScreenRecording(false);
+      screenRecRef.current = null;
+      try {
+        const rawBytes = await b.arrayBuffer();
+        setImporting({ name: baseName, phase: 'processing', read: 0, total: 0, startedAt: Date.now() });
+        // MediaRecorder's webm has no seek index — fix it up-front so scrubbing/
+        // exporting the recording later doesn't stall or go black past a few seconds.
+        const { bytes, mime } = await remuxForSeeking(rawBytes, vmime);
+        await ensureAudio();
+        const entities = await buildVideoEntities(bytes, mime, baseName, startStep);
+        const trackId = ensureTrackOfType('video');
+        placeVideoEntities(trackId, baseName, entities);
+        setSongMode(true);
+        setView('video'); // land where the new clip actually shows, not wherever recording was started from
+        await buildAudio();
+      } catch (e) { console.warn('[Mothscilla] screen recording ingest failed', e); window.alert('Could not process the screen recording — see the console.'); }
+      finally { setImporting(null); }
+    });
+  }, [screenRecording, ensureAudio]);
 
   // Shared audio library: every disk asset used by any song in the folder, merged
   // with the open song's assets. Refreshed when the "from project" picker opens.
@@ -2076,7 +2289,7 @@ export function App() {
 
   // Drop a clip from a library/project asset (no re-import/decode) at the playhead.
   // Registers the asset into the open song if it isn't there yet (deduped by file).
-  const addClipFromAsset = async (trackId: string, asset: AudioAsset) => {
+  const addClipFromAsset = async (trackId: string, asset: AudioAsset, startStep?: number) => {
     await ensureAudio();
     let a = asset;
     // A raw disk file has no duration yet — open it (WAV header) or convert it
@@ -2090,7 +2303,7 @@ export function App() {
     const existing = cur.assets.find((x) => assetKey(x) === assetKey(a));
     const assetId = existing ? existing.id : uid('asset');
     const assets = existing ? cur.assets : [...cur.assets, { ...a, id: assetId }];
-    const clip: AudioClip = { id: uid('aclip'), assetId, start: Math.max(0, currentStepRef.current), offset: 0, duration: a.duration, gain: 1 };
+    const clip: AudioClip = { id: uid('aclip'), assetId, start: Math.max(0, startStep ?? currentStepRef.current), offset: 0, duration: a.duration, gain: 1 };
     const next: Project = { ...cur, assets, tracks: cur.tracks.map((t) => (t.id === trackId ? { ...t, audioClips: [...(t.audioClips ?? []), clip] } : t)) };
     projectRef.current = next; setProject(next);
     await buildAudio();
@@ -2147,6 +2360,14 @@ export function App() {
     mapTrack(trackId, (t) => ({ ...t, uses: [...t.uses, use] }));
     const dest = mixerRef.current?.use(use.id, trackId);
     if (dest) void buildUse(use.id, pool, dest, (use as { voices?: number }).voices);
+  };
+
+  /** An instrument/drum pool item was dropped onto the arrangement: create a new
+   *  track of the matching type and load it there. */
+  const dropInstrumentAsNewTrack = (poolId: string) => {
+    const item = projectRef.current.pool.find((p) => p.id === poolId); if (!item) return;
+    const id = addTrack(item.kind === 'drum' ? 'drums' : 'synth');
+    addUseOfPool(id, item);
   };
 
   /** Stable identity for a browser pick: library entries use their id; gallery
@@ -2310,7 +2531,7 @@ export function App() {
   // ─── position readout ──────────────────────────────────────────────────────
   const sib = currentStep < 0 ? 0 : currentStep % project.totalSteps;
   const bar = currentStep < 0 ? 1 : Math.floor(currentStep / project.totalSteps) + 1;
-  const pos = `${String(bar).padStart(3, '0')}.${Math.floor(sib / project.stepsPerBeat) + 1}.${String((sib % project.stepsPerBeat) * 25).padStart(2, '0')}`;
+  const pos = `${String(bar).padStart(3, '0')}.${Math.floor(sib / project.stepsPerBeat) + 1}.${String(Math.floor((sib % project.stepsPerBeat) * 25)).padStart(2, '0')}`;
   const hasVideoContent = project.tracks.some((t) => t.type === 'video' && (t.videoClips?.length ?? 0) > 0);
 
   return (
@@ -2325,14 +2546,16 @@ export function App() {
         canUndo={histUI.canUndo} canRedo={histUI.canRedo} onUndo={undo} onRedo={redo}
         projectName={project.name} onProjectName={(name) => setProject((p) => ({ ...p, name }))}
         onNewSong={newSong} onSave={saveSong} saved={saved} onOpenSong={openSong} onExport={() => setExportOpen(true)} exporting={exporting} exportProgress={exportProgress} onBounce={bounceSong} bouncing={bouncing} bounceProgress={bounceProgress} onExportMidi={() => downloadMidi(projectRef.current)} onExportStems={exportStems}
-        micOn={micOn} onToggleMic={toggleMic} recording={recording} onToggleRecord={toggleRecord}
+        recording={recording} onToggleRecord={toggleRecord} recOpts={recOpts} onRecOpts={changeRecOpts}
+        screenRecording={screenRecording} onToggleScreenRecord={toggleScreenRecord} screenRecOpts={screenRecOpts} onScreenRecOpts={changeScreenRecOpts}
         midiConnected={midi.devices.length > 0} midiTitle={midi.devices.length ? `MIDI: ${midi.devices.join(', ')}` : 'No MIDI device'} midiLearn={midiLearn.active} onMidiLearn={() => setMidiLearn((m) => ({ active: !m.active, target: null }))}
         onOpenSettings={() => setSettingsOpen(true)}
       />
       {settingsOpen && <SettingsPanel settings={settings} onChange={updateSettings} onClose={() => setSettingsOpen(false)} />}
       <div className="workspace">
-        <Pool pool={project.pool} effects={effects} instrumentLib={library.filter((e) => e.group === 'instrument')} armed={armedPool} recordings={project.assets} previewKey={previewKey} onPreview={auditionAsset} onPlaceRecording={placeAssetOnTrack} onRemoveRecording={removeRecording} onOpenInstrument={openInstrument} onEditEffect={openEffectPage} onRemoveInstrument={removePoolItem} onRemoveEffect={removeEffect} onAddFromFolder={addFromFolder} onAddInstrument={addInstrumentToPool} onNewEffect={newEffect} onBrowsePool={openPoolBrowser} source={folder ? `disk · ${folder.name}` : 'built-in'} collapsed={!browserOpen} onToggleCollapsed={() => toggleBrowserOpen(!browserOpen)} />
+        <Pool pool={project.pool} effects={effects} instrumentLib={library.filter((e) => e.group === 'instrument')} armed={armedPool} recordings={project.assets} previewKey={previewKey} onPreview={auditionAsset} onPlaceRecording={placeAssetOnTrack} onRemoveRecording={removeRecording} onRenameRecording={renameRecording} onImportRecording={importRecording} onOpenInstrument={openInstrument} onEditEffect={openEffectPage} onRemoveInstrument={removePoolItem} onRemoveEffect={removeEffect} onAddFromFolder={addFromFolder} onAddInstrument={addInstrumentToPool} onNewEffect={newEffect} onBrowsePool={openPoolBrowser} source={folder ? `disk · ${folder.name}` : 'built-in'} collapsed={!browserOpen} onToggleCollapsed={() => toggleBrowserOpen(!browserOpen)} />
         <div className="main">
+          {recMon && <RecordingMonitor analyser={recMon.analyser} startMs={recMon.startMs} />}
           {view === 'tracks' && (
             <div className="tracks-view">
               <div className="tracks-rail">
@@ -2360,17 +2583,16 @@ export function App() {
             </div>
           )}
 
-          {view === 'song' && (
-            <>
-              {hasVideoContent && monitorOpen && (
-                <ProgramMonitor dock project={project} currentStep={currentStep} isPlaying={isPlaying} getVideoUrl={getVideoUrl} onSetClip={setVideoClip} onClose={() => setMonitorOpen(false)} canvasRef={monitorCanvasRef} />
-              )}
+          {(view === 'song' || view === 'video') && (() => {
+            const arrangePanel = (
               <Arrange
                 project={project} currentStep={currentStep} songMode={songMode} selTrack={selTrack}
                 onToggleSongMode={toggleSongMode} onSetSongSlots={setSongSlots} onSelectTrack={setSelTrack} onToggleMute={toggleTrackMute} onToggleSolo={toggleTrackSolo} onToggleTrackLoop={toggleTrackLoop} onTrackVolume={setTrackVolume} onSeek={seekTo} onOpenInstrument={openInstrumentUse}
                 markers={project.markers ?? []} onAddMarker={addMarker} onRenameMarker={renameMarker} onRemoveMarker={removeMarker}
                 loop={project.loop} onSetLoop={setLoop}
-                onAddClip={addClip} onRemoveClip={removeClip} onToggleLoop={toggleClipLoop} onCycleClipPattern={cycleClipPattern} onClipLen={setClipLen} selClip={selClip} onSelectClip={setSelClip} onEditAutomationPoints={onEditAutomationPoints}
+                onDropInstrument={dropInstrumentAsNewTrack}
+                onDropRecording={(trackId, assetId, atStep) => { const asset = projectRef.current.assets.find((a) => a.id === assetId); if (asset) void addClipFromAsset(trackId, asset, atStep); }}
+                onAddClip={addClip} onRemoveClip={removeClip} onToggleLoop={toggleClipLoop} onCycleClipPattern={cycleClipPattern} onClipLen={setClipLen} selClip={selClip} selClips={selClips} onSelectClips={selectClips} onDeleteClips={deleteClips} onSelectClip={setSelClip} onEditAutomationPoints={onEditAutomationPoints}
                 onMoveClip={moveClip} onMoveAudioClip={moveAudioClip} onRemoveAudioClip={removeAudioClip}
                 onMoveVideoClip={moveVideoClip} onRemoveVideoClip={removeVideoClip} onSetAudioClip={setAudioClip} onSetVideoClip={setVideoClip}
                 onSplitAudioClip={splitAudioClip} onSplitVideoClip={splitVideoClip} onPlayClip={auditionClip} previewKey={previewKey}
@@ -2378,11 +2600,31 @@ export function App() {
                 getClipPeaks={getClipPeaks} getClipPeaksAsync={getClipPeaksAsync}
                 trackWidth={settings.trackWidth} trackHeight={settings.trackHeight}
               />
-              {hasVideoContent && !monitorOpen && (
-                <button className="pgm-reopen" title="Show video preview" onClick={() => setMonitorOpen(true)}><Film size={14} /> Preview</button>
-              )}
-            </>
-          )}
+            );
+            if (view === 'video') {
+              // Dedicated video view — always reachable (unlike the Song-view dock,
+              // which only shows once there's already video content). The split
+              // between monitor and arrangement is draggable, and its orientation
+              // (stacked / side-by-side) can be flipped.
+              return (
+                <VideoViewSplit
+                  monitor={<ProgramMonitor mode="full" project={project} currentStep={currentStep} isPlaying={isPlaying} getVideoUrl={getVideoUrl} onSetClip={setVideoClip} onSetCanvasSize={setCanvasSize} onSelectClip={(trackId, clipId) => setSelClip({ trackId, clipId, kind: 'video' })} canvasRef={monitorCanvasRef} />}
+                  arrange={arrangePanel}
+                />
+              );
+            }
+            return (
+              <>
+                {hasVideoContent && monitorOpen && (
+                  <ProgramMonitor mode="dock" project={project} currentStep={currentStep} isPlaying={isPlaying} getVideoUrl={getVideoUrl} onSetClip={setVideoClip} onSetCanvasSize={setCanvasSize} onSelectClip={(trackId, clipId) => setSelClip({ trackId, clipId, kind: 'video' })} onClose={() => setMonitorOpen(false)} canvasRef={monitorCanvasRef} />
+                )}
+                {arrangePanel}
+                {hasVideoContent && !monitorOpen && (
+                  <button className="pgm-reopen" title="Show video preview" onClick={() => setMonitorOpen(true)}><Film size={14} /> Preview</button>
+                )}
+              </>
+            );
+          })()}
 
           {view === 'live' && (() => {
             // The Live tab IS the instrument view: show the instrument you clicked
@@ -2422,7 +2664,9 @@ export function App() {
                   onVstaiSample={(msg) => vstaiInstrumentSample(pool.id, msg)}
                   onAutomateParam={instrumentAutomateParam(pool.id)}
                   fx={pool.fx ?? []} effects={effects}
-                  onFxAdd={(fxId) => onPoolFxAdd(pool.id, fxId)} onFxRemove={(i) => onPoolFxRemove(pool.id, i)}
+                  onFxAdd={(fxId) => onPoolFxAdd(pool.id, fxId)}
+                  onFxBrowse={() => openEffectBrowser(`Add effect — ${pool.name}`, (ins) => { const next = [...(poolById(pool.id)?.fx ?? []), ins]; mapPool(pool.id, (pi) => ({ ...pi, fx: next })); rebuildPoolFx(pool.id, next); })}
+                  onFxRemove={(i) => onPoolFxRemove(pool.id, i)}
                   onFxEdit={(i) => onPoolFxEdit(pool.id, i)} onFxKnob={(i, nodeId, param, v) => onPoolFxKnob(pool.id, i, nodeId, param, v)}
                 />
               );
@@ -2481,8 +2725,8 @@ export function App() {
                       <span className="mx-pan-val">{panLabel(t.pan ?? 0)}</span>
                     </div>
                     <div className="mx-volrow">
-                      <input className="mx-vol" type="range" min={0} max={1} step={0.01} value={t.volume} onChange={(e) => setTrackVolume(t.id, parseFloat(e.target.value))} />
-                      <span className="mx-pct">{Math.round(t.volume * 100)}</span>
+                      <input className="mx-vol" type="range" min={0} max={1} step={0.01} value={t.volume} title="Volume (double-click = 0 dB)" onDoubleClick={() => setTrackVolume(t.id, 1)} onChange={(e) => setTrackVolume(t.id, parseFloat(e.target.value))} />
+                      <span className="mx-pct">{volDb(t.volume)}</span>
                     </div>
                     <FxBar label="Track FX" fx={t.fx} effects={effects} compact
                       onAdd={(fx) => { const ins = fxInsert(fx); mapTrack(t.id, (x) => ({ ...x, fx: [...x.fx, ins] })); rebuildTrackChain(t.id, [...t.fx, ins]); }}

@@ -160,12 +160,20 @@ export async function exportVideo(
   const allClips = videoTracks.flatMap((t) => t.clips);
   const vassets = new Map((project.videoAssets ?? []).map((a) => [a.id, a]));
 
-  // Target resolution from the first real (non-title) clip; default 16:9 if titles only.
+  // Target resolution: the project's own "screen size" (what the program monitor
+  // shows/crops) by default — an explicit width/height in opts (e.g. a resolution
+  // preset) scales from that aspect ratio, so exported video always matches what
+  // was previewed. Falls back to the first real (non-title) clip, then 16:9.
   const firstVideoClip = allClips.find((c) => c.text == null && c.assetId);
   const first = firstVideoClip ? vassets.get(firstVideoClip.assetId) : undefined;
-  const srcW = first?.width || 1280, srcH = first?.height || 720;
-  const W = even(opts.width || srcW);
-  const H = even(opts.height || Math.round(W * (srcH / srcW)));
+  const arW = project.canvasWidth || first?.width || 1280;
+  const arH = project.canvasHeight || first?.height || 720;
+  let W: number, H: number;
+  if (opts.width && opts.height) { W = opts.width; H = opts.height; }
+  else if (opts.height) { H = opts.height; W = Math.round(H * (arW / arH)); }
+  else if (opts.width) { W = opts.width; H = Math.round(W * (arH / arW)); }
+  else { W = arW; H = arH; }
+  W = even(W); H = even(H);
   const fps = opts.fps;
 
   // Range → frame count. Reuses the constant-BPM step math.
@@ -241,7 +249,7 @@ export async function exportVideo(
         if (clip.text != null) { drawTitle(ctx, W, H, clip, evalTransform(clip, localT), localT); continue; }
         const src = els.get(clip.assetId); if (!src) continue;
         await seekVideo(src.el, clip.offset + localT);
-        drawVideoLayer(ctx, src.el, W, H, evalTransform(clip, localT), clip.blend, clip.color);
+        drawVideoLayer(ctx, src.el, W, H, evalTransform(clip, localT), clip.blend, clip.color, clip.crop);
       }
       ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
       const frame = new VideoFrame(canvas, { timestamp: f * frameDurUs, duration: frameDurUs });

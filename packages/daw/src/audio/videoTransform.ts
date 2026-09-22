@@ -2,7 +2,7 @@
 // clip-local time (interpolating keyframes with easing), and draw a video layer
 // with that transform. Shared by the program monitor (ui) and the exporter
 // (audio) so preview and render match exactly. See docs/VIDEO.md.
-import { blendCompositeOp, type ClipColor, type Easing, type Keyframe, type VideoBlend, type VideoClip } from '../model/project';
+import { blendCompositeOp, type ClipColor, type ClipCrop, type Easing, type Keyframe, type VideoBlend, type VideoClip } from '../model/project';
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 const clamp255 = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
@@ -75,9 +75,20 @@ export function evalTransform(clip: VideoClip, t: number): EvaluatedTransform {
 
 type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
+/** Resolve a clip's crop rect to source pixels, clamped to the frame. `undefined` = full frame. */
+export function cropRectPx(crop: ClipCrop | undefined, vw: number, vh: number): { sx: number; sy: number; sw: number; sh: number } {
+  if (!crop) return { sx: 0, sy: 0, sw: vw, sh: vh };
+  const x = clamp01(crop.x), y = clamp01(crop.y);
+  const w = Math.max(0.01, Math.min(1 - x, crop.w));
+  const h = Math.max(0.01, Math.min(1 - y, crop.h));
+  return { sx: x * vw, sy: y * vh, sw: w * vw, sh: h * vh };
+}
+
 /** Draw a video frame into a WxH canvas with the evaluated transform + blend.
- *  Base fit is object-fit: contain; `scale` multiplies it, `x`/`y` offset by a
- *  fraction of the frame, rotation is around the clip centre. */
+ *  `crop` (fractions of the source frame) is applied first — the cropped region
+ *  becomes the frame that's then fit/positioned/scaled/rotated. Base fit is
+ *  object-fit: contain; `scale` multiplies it, `x`/`y` offset by a fraction of
+ *  the frame, rotation is around the clip centre. */
 export function drawVideoLayer(
   ctx: Ctx2D,
   el: HTMLVideoElement,
@@ -85,18 +96,21 @@ export function drawVideoLayer(
   ev: EvaluatedTransform,
   blend: VideoBlend | undefined,
   color?: ClipColor,
+  crop?: ClipCrop,
 ): void {
   const vw = el.videoWidth, vh = el.videoHeight;
   if (!vw || !vh) return;
+  const { sx, sy, sw, sh } = cropRectPx(crop, vw, vh);
+  if (!sw || !sh) return;
   ctx.save();
   ctx.globalAlpha = clamp01(ev.opacity);
   ctx.globalCompositeOperation = blendCompositeOp(blend);
   ctx.translate(W / 2 + ev.x * W, H / 2 + ev.y * H);
   if (ev.rotation) ctx.rotate((ev.rotation * Math.PI) / 180);
-  const fit = Math.min(W / vw, H / vh) * Math.max(0, ev.scale);
-  const w = vw * fit, h = vh * fit;
+  const fit = Math.min(W / sw, H / sh) * Math.max(0, ev.scale);
+  const w = sw * fit, h = sh * fit;
   ctx.filter = colorFilter(color);                          // exposure/contrast/saturation
-  try { ctx.drawImage(el, -w / 2, -h / 2, w, h); } catch { /* frame not ready */ }
+  try { ctx.drawImage(el, sx, sy, sw, sh, -w / 2, -h / 2, w, h); } catch { /* frame not ready */ }
   ctx.filter = 'none';
   const tc = tintColor(color);                              // warm/cool + magenta/green
   if (tc) { ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = tc; ctx.fillRect(-w / 2, -h / 2, w, h); }

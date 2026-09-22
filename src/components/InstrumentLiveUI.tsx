@@ -47,6 +47,20 @@ export function InstrumentLiveUI({ title, nodes, customUi, valueOf, onKnob, onKn
   const on = (m: number) => { if (down.current.has(m)) return; down.current.add(m); setLit(new Set(down.current)); onNoteOn?.(m); };
   const off = (m: number) => { if (!down.current.has(m)) return; down.current.delete(m); setLit(new Set(down.current)); onNoteOff?.(m); };
 
+  // Mouse/touch glissando: one active key follows the pointer while pressed.
+  const cur = useRef<number | null>(null);
+  const glide = (e: React.PointerEvent | null) => {
+    let m: number | null = null;
+    if (e) {
+      const el = (document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null)?.closest('[data-midi]') as HTMLElement | null;
+      if (el) m = Number(el.dataset.midi);
+    }
+    if (m === cur.current) return;
+    if (cur.current != null) off(cur.current);
+    cur.current = m;
+    if (m != null) on(m);
+  };
+
   // Computer-keyboard playing (only when not editing the custom HTML elsewhere).
   useEffect(() => {
     if (kind === 'effect') return;
@@ -137,11 +151,14 @@ export function InstrumentLiveUI({ title, nodes, customUi, valueOf, onKnob, onKn
                 <button className="lui-oct" onClick={() => setOctave((o) => Math.min(8, o + 1))}>+</button>
                 <span className="lui-playhint">play with a–k</span>
               </div>
-              <div className="lui-keyboard" style={{ ['--whites' as any]: whites.length }}>
+              <div className="lui-keyboard" style={{ ['--whites' as any]: whites.length }}
+                onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); glide(e); }}
+                onPointerMove={(e) => { if (e.buttons & 1) glide(e); }}
+                onPointerUp={() => glide(null)} onPointerCancel={() => glide(null)}>
                 <div className="lui-whites">
                   {whites.map((m) => (
                     <button key={m} className={`lui-white ${lit.has(m) ? 'on' : ''}`}
-                      onPointerDown={(e) => { e.preventDefault(); on(m); }} onPointerUp={() => off(m)} onPointerLeave={(e) => { if (e.buttons) off(m); }}>
+                      data-midi={m}>
                       {m % 12 === 0 && <span className="lui-keylabel">{midiName(m)}</span>}
                     </button>
                   ))}
@@ -153,7 +170,7 @@ export function InstrumentLiveUI({ title, nodes, customUi, valueOf, onKnob, onKn
                     return (
                       <button key={b} className={`lui-black ${lit.has(b) ? 'on' : ''}`}
                         style={{ left: `calc(${((i + 1) / whites.length) * 100}% - (100% / ${whites.length}) * 0.3)` }}
-                        onPointerDown={(e) => { e.preventDefault(); on(b); }} onPointerUp={() => off(b)} onPointerLeave={(e) => { if (e.buttons) off(b); }} />
+                        data-midi={b} />
                     );
                   })}
                 </div>

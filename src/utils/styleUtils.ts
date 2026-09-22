@@ -45,29 +45,17 @@ export const makeGlow = (hex: string, strength: 'normal' | 'strong' = 'normal'):
   const cached = glowCache.get(cacheKey);
   if (cached) return cached;
   const rgb = hexToRgb(hex) || { r: 0, g: 255, b: 136 };
-  const baseShadow = '0 1px 3px rgba(0,0,0,0.45)';
   let result: string;
   if (strength === 'strong') {
-    result = `${baseShadow}, 0 0 14px 3px rgba(${rgb.r},${rgb.g},${rgb.b},0.40)`;
+    result = `0 0 0 2px rgb(${rgb.r},${rgb.g},${rgb.b})`;
   } else {
-    result = `${baseShadow}, 0 0 8px 2px rgba(${rgb.r},${rgb.g},${rgb.b},0.12)`;
+    result = `0 0 0 1px rgba(${rgb.r},${rgb.g},${rgb.b},0.35)`;
   }
   glowCache.set(cacheKey, result);
   return result;
 };
 
-const edgeGlowCache = new Map<string, string>();
-export const makeEdgeGlowFilter = (hex: string, strength: 'normal' | 'strong' = 'normal'): string => {
-  const cacheKey = `${hex}-${strength}`;
-  const cached = edgeGlowCache.get(cacheKey);
-  if (cached) return cached;
-  const rgb = hexToRgb(hex) || { r: 255, g: 255, b: 255 };
-  const a1 = strength === 'strong' ? 0.8 : 0.6;
-  const a2 = strength === 'strong' ? 0.5 : 0.3;
-  const result = `drop-shadow(0 0 2px rgba(${rgb.r},${rgb.g},${rgb.b},${a1})) drop-shadow(0 0 4px rgba(${rgb.r},${rgb.g},${rgb.b},${a2}))`;
-  edgeGlowCache.set(cacheKey, result);
-  return result;
-};
+export const makeEdgeGlowFilter = (_hex: string, _strength: 'normal' | 'strong' = 'normal'): string => 'none';
 
 export function normalizeNodeStylesForTheme(arr: any[] | undefined): any[] {
   if (!Array.isArray(arr)) return [];
@@ -87,9 +75,8 @@ export function normalizeNodeStylesForTheme(arr: any[] | undefined): any[] {
     if (catColor) {
       const rgb = hexToRgb(catColor) || { r: 255, g: 255, b: 255 };
       style.borderTop = `3px solid ${catColor}`;
-      const insetGlow = `inset 0 3px 12px rgba(${rgb.r},${rgb.g},${rgb.b},0.22)`;
       const outerGlow = makeGlow(style.glowColor || '#00ff88', 'normal');
-      style.boxShadow = `${outerGlow}, ${insetGlow}`;
+      style.boxShadow = outerGlow;
       (style as any)['--node-accent'] = catColor;
     }
     return { ...n, data: { ...data, style } };

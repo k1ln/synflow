@@ -271,7 +271,7 @@ export async function loadProject(root: any, file: string): Promise<any | null> 
 
 // ─── DAW settings (UI prefs like track sizing) — <folder>/settings.json ──────
 export interface DawSettings { trackWidth: number; trackHeight: number; poolCollapsed: boolean }
-export const DEFAULT_SETTINGS: DawSettings = { trackWidth: 200, trackHeight: 78, poolCollapsed: false };
+export const DEFAULT_SETTINGS: DawSettings = { trackWidth: 200, trackHeight: 78, poolCollapsed: true };
 
 /** Read <folder>/settings.json, filling in defaults for anything missing/new. */
 export async function loadSettings(root: any): Promise<DawSettings> {

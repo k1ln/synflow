@@ -18,7 +18,13 @@ const fmtDur = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)
  * (click → live mode) and the effects available to add. "Add from folder" pulls
  * more flows in from the on-disk library.
  */
-export function Pool({ pool, effects, instrumentLib, armed, recordings, previewKey, onPreview, onPlaceRecording, onRemoveRecording, onOpenInstrument, onEditEffect, onRemoveInstrument, onRemoveEffect, onAddFromFolder, onAddInstrument, onNewEffect, onBrowsePool, source, collapsed, onToggleCollapsed }: {
+/** Drag payloads used for internal (in-app) drag-and-drop: an instrument/drum pool
+ *  item dropped onto the arrangement creates a new track for it; a recording
+ *  dropped onto an audio lane places it there as a clip. */
+export const DND_POOL_ITEM = 'application/x-synflow-pool-item';
+export const DND_RECORDING = 'application/x-synflow-recording';
+
+export function Pool({ pool, effects, instrumentLib, armed, recordings, previewKey, onPreview, onPlaceRecording, onRemoveRecording, onRenameRecording, onImportRecording, onOpenInstrument, onEditEffect, onRemoveInstrument, onRemoveEffect, onAddFromFolder, onAddInstrument, onNewEffect, onBrowsePool, source, collapsed, onToggleCollapsed }: {
   pool: PoolItem[];
   effects: LibraryEntry[];
   instrumentLib: LibraryEntry[];   // the on-disk/bundled instruments you can add to the pool
@@ -28,6 +34,8 @@ export function Pool({ pool, effects, instrumentLib, armed, recordings, previewK
   onPreview: (assetId: string) => void;
   onPlaceRecording: (assetId: string) => void;
   onRemoveRecording: (assetId: string) => void;
+  onRenameRecording: (assetId: string, name: string) => void;
+  onImportRecording: () => void;   // pick a wav/mp3/… file from disk and add it as a recording
   onOpenInstrument: (poolId: string) => void;
   onEditEffect: (effectId: string) => void;
   onRemoveInstrument: (poolId: string) => void;
@@ -84,8 +92,10 @@ export function Pool({ pool, effects, instrumentLib, armed, recordings, previewK
     </div>
   );
 
-  const item = ({ id, name, color, live, onClick, onRemove, tag, title }: { id: string; name: string; color: string; live?: boolean; onClick?: () => void; onRemove?: () => void; tag?: string; title?: string }) => (
-    <div key={id} className={`browser-item ${live ? 'live' : ''}`} onClick={onClick} title={title}>
+  const item = ({ id, name, color, live, onClick, onRemove, tag, title, dragPoolId }: { id: string; name: string; color: string; live?: boolean; onClick?: () => void; onRemove?: () => void; tag?: string; title?: string; dragPoolId?: string }) => (
+    <div key={id} className={`browser-item ${live ? 'live' : ''}`} onClick={onClick} title={title}
+      draggable={!!dragPoolId}
+      onDragStart={dragPoolId ? (e) => { e.dataTransfer.setData(DND_POOL_ITEM, dragPoolId); e.dataTransfer.effectAllowed = 'copy'; } : undefined}>
       <span className="bi-dot" style={{ background: color }} />
       <span className="bi-name">{name}</span>
       {live && <Radio size={11} className="bi-live" />}
@@ -112,13 +122,13 @@ export function Pool({ pool, effects, instrumentLib, armed, recordings, previewK
       <div className="browser-list">
         {section({ name: 'Instruments', count: synths.length, onNew: () => (onBrowsePool ? onBrowsePool('synth') : setAdding((a) => (a === 'synth' ? null : 'synth'))), newTitle: 'Add an instrument — library or VibeSynth gallery', menu: addMenu('synth', synthCand), children: (
           <>
-            {synths.map((p) => item({ id: p.id, name: p.name, color: SECTION.Instruments.color, live: armed === p.id, tag: isVstaiFlow(p.flow) ? 'AI' : undefined, onClick: () => onOpenInstrument(p.id), onRemove: () => onRemoveInstrument(p.id), title: isVstaiFlow(p.flow) ? 'Open AI plugin (its own GUI)' : 'Open instrument (live + knobs)' }))}
+            {synths.map((p) => item({ id: p.id, name: p.name, color: SECTION.Instruments.color, live: armed === p.id, tag: isVstaiFlow(p.flow) ? 'AI' : undefined, onClick: () => onOpenInstrument(p.id), onRemove: () => onRemoveInstrument(p.id), title: isVstaiFlow(p.flow) ? 'Open AI plugin (its own GUI) — drag onto the arrangement to add a track' : 'Open instrument (live + knobs) — drag onto the arrangement to add a track', dragPoolId: p.id }))}
             {synths.length === 0 && <div className="browser-empty">none — add with + (or a whole folder above)</div>}
           </>
         ) })}
         {section({ name: 'Drums', count: drums.length, onNew: () => (onBrowsePool ? onBrowsePool('drum') : setAdding((a) => (a === 'drum' ? null : 'drum'))), newTitle: 'Add a drum — library or VibeSynth gallery', menu: addMenu('drum', drumCand), children: (
           <>
-            {drums.map((p) => item({ id: p.id, name: p.name, color: SECTION.Drums.color, live: armed === p.id, tag: isVstaiFlow(p.flow) ? 'AI' : undefined, onClick: () => onOpenInstrument(p.id), onRemove: () => onRemoveInstrument(p.id), title: isVstaiFlow(p.flow) ? 'Open AI plugin (its own GUI)' : 'Open instrument (live + knobs)' }))}
+            {drums.map((p) => item({ id: p.id, name: p.name, color: SECTION.Drums.color, live: armed === p.id, tag: isVstaiFlow(p.flow) ? 'AI' : undefined, onClick: () => onOpenInstrument(p.id), onRemove: () => onRemoveInstrument(p.id), title: isVstaiFlow(p.flow) ? 'Open AI plugin (its own GUI) — drag onto the arrangement to add a track' : 'Open instrument (live + knobs) — drag onto the arrangement to add a track', dragPoolId: p.id }))}
             {drums.length === 0 && <div className="browser-empty">none — add with + (or a whole folder above)</div>}
           </>
         ) })}
@@ -128,23 +138,24 @@ export function Pool({ pool, effects, instrumentLib, armed, recordings, previewK
             {effects.length === 0 && <div className="browser-empty">none — add from folder or +</div>}
           </>
         ) })}
-        {section({ name: 'Recordings', count: recordings.length, children: (
+        {section({ name: 'Recordings', count: recordings.length, onNew: onImportRecording, newTitle: 'Import audio (wav, mp3, ogg, flac, m4a, aac)', children: (
           <>
           {recordings.map((a) => {
             const playing = previewKey === 'asset:' + a.id;
             return (
-              <div key={a.id} className="rec-item" title={a.name}>
+              <div key={a.id} className="rec-item" title={`${a.name} — drag onto an audio lane, or double-click the name to rename`}
+                draggable onDragStart={(e) => { e.dataTransfer.setData(DND_RECORDING, a.id); e.dataTransfer.effectAllowed = 'copy'; }}>
                 <button className={`rec-play ${playing ? 'on' : ''}`} title={playing ? 'Stop' : 'Preview'} onClick={() => onPreview(a.id)}>
                   {playing ? <Square size={11} /> : <Play size={11} />}
                 </button>
-                <span className="rec-name">{a.name}</span>
+                <span className="rec-name" onDoubleClick={(e) => { e.stopPropagation(); const n = window.prompt('Recording name', a.name); if (n != null) onRenameRecording(a.id, n.trim() || a.name); }}>{a.name}</span>
                 <span className="rec-dur">{fmtDur(a.duration)}</span>
                 <button className="rec-add" title="Place on the selected audio track at the playhead" onClick={() => onPlaceRecording(a.id)}><Plus size={12} /></button>
                 <button className="bi-del" title="Delete recording" onClick={() => onRemoveRecording(a.id)}><X size={12} /></button>
               </div>
             );
           })}
-          {recordings.length === 0 && <div className="browser-empty">none — record or import on an audio track</div>}
+          {recordings.length === 0 && <div className="browser-empty">none — record, import (+), or drag a file from Finder</div>}
           </>
         ) })}
       </div>

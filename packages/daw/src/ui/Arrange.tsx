@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Repeat, X, Drum, Music2, AudioWaveform, Film, Play, Square, Scissors, Copy, Maximize2, SlidersHorizontal } from 'lucide-react';
+import { Repeat, X, Drum, Music2, AudioWaveform, Film, Play, Square, Scissors, Copy, Maximize2, SlidersHorizontal, Eraser } from 'lucide-react';
 import { songLengthSlots, TIMELINE_HEADROOM_BARS, clipPatternId, type Project, type Clip, type AudioClip, type VideoClip, type Marker, type LoopRegion } from '../model/project';
 import { Waveform } from './Waveform';
 import { PatternMini } from './PatternMini';
 import { AutoCurveRow } from './AutoCurveRow';
 import { slicePeaks, type Peaks } from '../audio/waveform';
+import { DND_POOL_ITEM, DND_RECORDING } from './Pool';
 
 const coverage = (clip: Clip, next: Clip | undefined, slots: number) => (clip.loop ? (next?.start ?? slots) - clip.start : clip.length);
 
@@ -115,8 +116,9 @@ const pickStep = (ladder: number[], minValue: number) => ladder.find((s) => s >=
  *  the playhead (live-seeks while playing); it follows playback. */
 export function Arrange({
   project, currentStep, songMode, selTrack,
-  onToggleSongMode, onSetSongSlots, onSelectTrack, onToggleMute, onToggleSolo, onToggleTrackLoop, onTrackVolume, onSeek, onAddClip, onRemoveClip, onToggleLoop, onCycleClipPattern, onClipLen, onMoveClip, selClip, onSelectClip, onEditAutomationPoints, onMoveAudioClip, onRemoveAudioClip, onMoveVideoClip, onRemoveVideoClip, onSetAudioClip, onSetVideoClip, onSplitAudioClip, onSplitVideoClip, onPlayClip, onDuplicateAudioClip, onNormalizeAudioClip, getClipPeaks, getClipPeaksAsync, previewKey,
+  onToggleSongMode, onSetSongSlots, onSelectTrack, onToggleMute, onToggleSolo, onToggleTrackLoop, onTrackVolume, onSeek, onAddClip, onRemoveClip, onToggleLoop, onCycleClipPattern, onClipLen, onMoveClip, selClip, selClips, onSelectClips, onDeleteClips, onSelectClip, onEditAutomationPoints, onMoveAudioClip, onRemoveAudioClip, onMoveVideoClip, onRemoveVideoClip, onSetAudioClip, onSetVideoClip, onSplitAudioClip, onSplitVideoClip, onPlayClip, onDuplicateAudioClip, onNormalizeAudioClip, getClipPeaks, getClipPeaksAsync, previewKey,
   markers, onAddMarker, onRenameMarker, onRemoveMarker, loop, onSetLoop, onOpenInstrument,
+  onDropInstrument, onDropRecording,
   trackWidth = DEFAULT_TRK_W, trackHeight = DEFAULT_ROW_H,
 }: {
   project: Project;
@@ -138,11 +140,18 @@ export function Arrange({
   onRemoveMarker: (id: string) => void;
   loop?: LoopRegion;
   onSetLoop: (patch: Partial<LoopRegion>) => void;
+  /** An instrument/drum pool item was dropped onto the arrangement — creates a new track for it. */
+  onDropInstrument: (poolId: string) => void;
+  /** A recording was dropped onto an audio track's lane at the given step. */
+  onDropRecording: (trackId: string, assetId: string, atStep: number) => void;
   onAddClip: (trackId: string, slot: number) => void;
   onRemoveClip: (trackId: string, clipId: string) => void;
   onToggleLoop: (trackId: string, clipId: string) => void;
   onCycleClipPattern: (trackId: string, clipId: string) => void;
   selClip: { trackId: string; clipId: string; kind: 'pattern' | 'audio' | 'video' } | null;
+  selClips: { trackId: string; clipId: string; kind: 'pattern' | 'audio' | 'video' }[];
+  onSelectClips: (list: { trackId: string; clipId: string; kind: 'pattern' | 'audio' | 'video' }[]) => void;
+  onDeleteClips: (list: { trackId: string; clipId: string; kind: 'pattern' | 'audio' | 'video' }[], ripple: boolean) => void;
   onSelectClip: (sel: { trackId: string; clipId: string; kind: 'pattern' | 'audio' | 'video' } | null) => void;
   onEditAutomationPoints: (trackId: string, laneId: string, points: import('../model/project').AutoPoint[]) => void;
   onClipLen: (trackId: string, clipId: string, length: number) => void;
@@ -165,8 +174,21 @@ export function Arrange({
   trackHeight?: number;  // track row height, px (Settings — default 78)
 }) {
   const TRK_W = trackWidth; // kept as a local alias — every internal use below predates the prop
-  const isSel = (clipId: string) => selClip?.clipId === clipId;
-  const contentSlots = songLengthSlots(project);          // bars up to the last element (audio/video/title)
+  const isSel = (clipId: string) => selClip?.clipId === clipId || selClips.some((s) => s.clipId === clipId);
+  type ClipRef = { trackId: string; clipId: string; kind: 'pattern' | 'audio' | 'video' };
+  // Click a clip: plain = select only it; Shift/Cmd/Ctrl = toggle it in the multi-selection.
+  const pick = (e: React.MouseEvent, ref: ClipRef) => {
+    if (eraser) return;
+    if (e.shiftKey || e.metaKey || e.ctrlKey) {
+      const base = selClips.length ? selClips : selClip ? [selClip] : [];
+      const has = base.some((s) => s.clipId === ref.clipId);
+      onSelectClips(has ? base.filter((s) => s.clipId !== ref.clipId) : [...base, ref]);
+    } else onSelectClip(ref);
+  };
+  // Clamped defensively: a bad (e.g. Infinity) clip duration must never blow up
+  // the ruler math below into an unbounded loop that hangs/crashes the tab.
+  const rawContentSlots = songLengthSlots(project);
+  const contentSlots = Number.isFinite(rawContentSlots) ? Math.min(rawContentSlots, 100_000) : 1; // bars up to the last element (audio/video/title)
   const N = contentSlots + TIMELINE_HEADROOM_BARS;         // draw a bit further so there's always room past the end
   const secToSteps = (s: number) => s * (project.bpm / 60) * project.stepsPerBeat;
   const totalTimelineSteps = N * project.totalSteps;        // whole-song length in steps
@@ -201,6 +223,45 @@ export function Arrange({
   for (let b = 0; b < N; b += barEvery) barMarks.push(b);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const eraseClip = (e: React.PointerEvent, ref: ClipRef) => {
+    e.stopPropagation(); if (e.button !== 0) return;
+    onDeleteClips([ref], false);
+  };
+  // Marquee: drag on empty lane space to box-select clips (Shift adds to the selection).
+  const [marquee, setMarquee] = useState<null | { x0: number; y0: number; x1: number; y1: number }>(null);
+  const suppressClick = useRef(false);
+  const startMarquee = (e: React.PointerEvent) => {
+    suppressClick.current = false;
+    if (e.button !== 0 || eraser || razor) return;
+    const t = e.target as HTMLElement;
+    if (!t.closest('.arr2-lane') || t.closest('.arr2-clip') || t.closest('button,input,select')) return;
+    const x0 = e.clientX, y0 = e.clientY, add = e.shiftKey || e.metaKey || e.ctrlKey;
+    const base = add ? (selClips.length ? selClips : selClip ? [selClip] : []) : [];
+    let moved = false;
+    const hits = (x1: number, y1: number): ClipRef[] => {
+      const l = Math.min(x0, x1), r = Math.max(x0, x1), tp = Math.min(y0, y1), b = Math.max(y0, y1);
+      const out: ClipRef[] = [];
+      scrollRef.current?.querySelectorAll<HTMLElement>('.arr2-clip[data-clip]').forEach((el) => {
+        const q = el.getBoundingClientRect();
+        if (q.right >= l && q.left <= r && q.bottom >= tp && q.top <= b) out.push({ trackId: el.dataset.track!, clipId: el.dataset.clip!, kind: el.dataset.kind as ClipRef['kind'] });
+      });
+      return out;
+    };
+    const move = (ev: PointerEvent) => {
+      if (!moved && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 4) return;
+      moved = true;
+      setMarquee({ x0, y0, x1: ev.clientX, y1: ev.clientY });
+      const h = hits(ev.clientX, ev.clientY);
+      onSelectClips([...base, ...h.filter((c) => !base.some((s) => s.clipId === c.clipId))]);
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
+      setMarquee(null);
+      if (moved) suppressClick.current = true;       // don't let the release also add a clip / seek
+      else if (!add) onSelectClips([]);              // plain click on empty space deselects
+    };
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+  };
   // Middle-click drag pans the timeline (both axes) — like the piano roll.
   const onPanDown = (e: React.PointerEvent) => {
     if (e.button !== 1) return;
@@ -321,8 +382,9 @@ export function Arrange({
   };
 
   // ── Edit tools: snap-to-grid + razor (hold Alt during any edit to bypass snap) ─
-  const [snap, setSnap] = useState<'off' | 'bar' | 'beat'>('bar');
+  const [snap, setSnap] = useState<'off' | 'bar' | 'beat'>('off');
   const [razor, setRazor] = useState(false);
+  const [eraser, setEraser] = useState(false);  // drag across clips to delete them
   const snapUnit = snap === 'bar' ? project.totalSteps : snap === 'beat' ? project.stepsPerBeat : 0;
   const snapStep = (steps: number, bypass = false) => (snapUnit > 0 && !bypass ? Math.round(steps / snapUnit) * snapUnit : steps);
   const stepsToSec = (st: number) => st * secPerStep;
@@ -415,6 +477,19 @@ export function Arrange({
   // midpoint cut; if the playhead isn't over the clip there's nothing to split.
   const playheadOverClip = (clip: { start: number; duration: number }) =>
     currentStep > clip.start + 0.05 && currentStep < clip.start + secToSteps(clip.duration) - 0.05;
+  // Markers strictly inside a clip (steps), latest first — splitting from the right keeps the original id on the left piece.
+  const markersInside = (clip: { start: number; duration: number }) =>
+    markers.map((m) => m.step).filter((st) => st > clip.start + 0.05 && st < clip.start + secToSteps(clip.duration) - 0.05).sort((a, b) => b - a);
+  const splitAtMarkers = (media: 'audio' | 'video', trackId: string, clip: { id: string; start: number; duration: number }) => {
+    for (const st of markersInside(clip)) (media === 'audio' ? onSplitAudioClip : onSplitVideoClip)(trackId, clip.id, st);
+  };
+  // The selected audio/video clip (drives the Split controls in the bar).
+  const selMedia = (() => {
+    if (!selClip || selClip.kind === 'pattern') return null;
+    const t = project.tracks.find((x) => x.id === selClip.trackId); if (!t) return null;
+    const clip = selClip.kind === 'audio' ? (t.audioClips ?? []).find((c) => c.id === selClip.clipId) : (t.videoClips ?? []).find((c) => c.id === selClip.clipId);
+    return clip ? { media: selClip.kind as 'audio' | 'video', trackId: t.id, clip } : null;
+  })();
   const splitMedia = (media: 'audio' | 'video', trackId: string, clip: { id: string; start: number; duration: number }) => {
     if (!playheadOverClip(clip)) return;
     (media === 'audio' ? onSplitAudioClip : onSplitVideoClip)(trackId, clip.id, currentStep);
@@ -448,7 +523,16 @@ export function Arrange({
           <span>{pxPerBar >= 10 ? Math.round(pxPerBar) : pxPerBar.toFixed(pxPerBar >= 1 ? 1 : 2)}px/bar</span>
           <button onClick={() => zoom(1.5)} aria-label="Zoom in">+</button>
         </div>
-        <button className={`arr2-razorbtn ${razor ? 'on' : ''}`} title="Razor tool — click a clip to cut it under the cursor (hold Alt to bypass snap)" onClick={() => setRazor((v) => !v)}><Scissors size={12} /> Razor</button>
+        {selMedia && (
+          <div className="arr2-selsplit" title="Split the selected clip">
+            <span className="arr2-selsplit-lbl">Selected</span>
+            <button disabled={!playheadOverClip(selMedia.clip)} title={playheadOverClip(selMedia.clip) ? 'Split the selected clip at the playhead' : 'Move the playhead over the selected clip to split'} onClick={() => splitMedia(selMedia.media, selMedia.trackId, selMedia.clip)}><Scissors size={12} /> Split at playhead</button>
+            {markersInside(selMedia.clip).length > 0 && <button title="Cut the selected clip at every marker inside it" onClick={() => splitAtMarkers(selMedia.media, selMedia.trackId, selMedia.clip)}><Scissors size={12} /> At markers ({markersInside(selMedia.clip).length})</button>}
+          </div>
+        )}
+        <button className={`arr2-razorbtn ${razor ? 'on' : ''}`} title="Razor tool — click a clip to cut it under the cursor (hold Alt to bypass snap)" onClick={() => { setRazor((v) => !v); setEraser(false); }}><Scissors size={12} /> Razor</button>
+        <button className={`arr2-razorbtn ${eraser ? 'on' : ''}`} title="Eraser — click or drag across clips to delete them" onClick={() => { setEraser((v) => !v); setRazor(false); }}><Eraser size={12} /> Erase</button>
+        {(selClips.length > 1) && <span className="arr2-hint">{selClips.length} clips selected · Del delete · ⇧Del ripple delete</span>}
         <label className="arr2-snap" title="Snap clip moves, trims and cuts to the grid (hold Alt to bypass)">snap
           <select value={snap} onChange={(e) => setSnap(e.target.value as 'off' | 'bar' | 'beat')}>
             <option value="off">off</option>
@@ -463,8 +547,11 @@ export function Arrange({
         </label>
       </div>
 
+      {marquee && <div className="arr2-marquee" style={{ left: Math.min(marquee.x0, marquee.x1), top: Math.min(marquee.y0, marquee.y1), width: Math.abs(marquee.x1 - marquee.x0), height: Math.abs(marquee.y1 - marquee.y0) }} />}
       <div className="arr2-scrollwrap">
-      <div className="arr2-scroll" ref={scrollRef} onPointerDown={onPanDown}>
+      <div className="arr2-scroll" ref={scrollRef} onPointerDown={(e) => { onPanDown(e); startMarquee(e); }} onClickCapture={(e) => { if (suppressClick.current) { suppressClick.current = false; e.stopPropagation(); } }}
+        onDragOver={(e) => { if (e.dataTransfer.types.includes(DND_POOL_ITEM)) e.preventDefault(); }}
+        onDrop={(e) => { const poolId = e.dataTransfer.getData(DND_POOL_ITEM); if (poolId) { e.preventDefault(); onDropInstrument(poolId); } }}>
         <div className="arr2-grid" style={{ ['--lane-w' as any]: `${lanePx}px` }}>
           <div className="arr2-ruler">
             <div className="arr2-headcell" />
@@ -542,11 +629,19 @@ export function Arrange({
                       onClick={(e) => e.stopPropagation()} onChange={(e) => onTrackVolume(track.id, parseFloat(e.target.value))} />
                   </div>
                   <div
-                    className={`arr2-lane ${razor && isMedia ? 'razor' : ''}`}
+                    className={`arr2-lane ${razor && isMedia ? 'razor' : ''} ${eraser ? 'erase' : ''}`}
                     style={{ ['--n' as any]: N / lineEvery, cursor: isMedia ? 'default' : 'copy' }}
-                    onClick={isMedia ? undefined : (e) => { const r = e.currentTarget.getBoundingClientRect(); onAddClip(track.id, Math.floor(((e.clientX - r.left) / r.width) * N)); }}
+                    onClick={isMedia || eraser ? undefined : (e) => { const r = e.currentTarget.getBoundingClientRect(); onAddClip(track.id, Math.floor(((e.clientX - r.left) / r.width) * N)); }}
                     onPointerMove={razor && isMedia ? onRazorHover : undefined}
                     onPointerLeave={razor && isMedia ? onRazorLeave : undefined}
+                    onDragOver={isAudio ? (e) => { if (e.dataTransfer.types.includes(DND_RECORDING)) e.preventDefault(); } : undefined}
+                    onDrop={isAudio ? (e) => {
+                      const assetId = e.dataTransfer.getData(DND_RECORDING); if (!assetId) return;
+                      e.preventDefault(); e.stopPropagation();
+                      const r = e.currentTarget.getBoundingClientRect();
+                      const frac = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+                      onDropRecording(track.id, assetId, snapStep(frac * totalTimelineSteps, e.altKey));
+                    } : undefined}
                   >
                     {razor && isMedia && razorFrac != null && <div className="arr2-cutline" style={{ left: `${razorFrac * 100}%` }} />}
                     {isVideo
@@ -556,16 +651,13 @@ export function Arrange({
                           return (
                             <div
                               key={c.id} className={`arr2-clip ${c.text != null ? 'title' : 'video'} ${isSel(c.id) ? 'sel' : ''}`}
-                              onClickCapture={() => onSelectClip({ trackId: track.id, clipId: c.id, kind: 'video' })}
+                              data-clip={c.id} data-track={track.id} data-kind="video" onClickCapture={(e) => pick(e, { trackId: track.id, clipId: c.id, kind: 'video' })}
+                              onPointerEnter={(e) => { if (eraser && e.buttons === 1) onDeleteClips([{ trackId: track.id, clipId: c.id, kind: 'video' }], false); }}
                               style={{ left: `${(c.start / totalTimelineSteps) * 100}%`, width: `${Math.max(0.5, w * 100)}%`, backgroundImage: asset?.poster ? `url(${asset.poster})` : undefined }}
-                              onPointerDown={(e) => razor ? razorCut(e, 'video', track.id, c.id) : begin(e, 'video', track.id, c.id, c.start)}
+                              onPointerDown={(e) => eraser ? eraseClip(e, { trackId: track.id, clipId: c.id, kind: 'video' }) : razor ? razorCut(e, 'video', track.id, c.id) : begin(e, 'video', track.id, c.id, c.start)}
                               onContextMenu={(e) => openMenu(e, 'video', track.id, c)}
                             >
                               <span className="arr2-clip-name">{c.text != null ? (c.text || 'title') : (asset?.name ?? 'video')}</span>
-                              <div className="arr2-clip-tools">
-                                <button className="arr2-clip-btn" title={playheadOverClip(c) ? 'Split at playhead' : 'Move the playhead over this clip to split'} disabled={!playheadOverClip(c)} onPointerDown={(e) => e.stopPropagation()} onClick={() => splitMedia('video', track.id, c)}><Scissors size={10} /></button>
-                                <button className="arr2-clip-btn" title="Delete clip" onPointerDown={(e) => e.stopPropagation()} onClick={() => onRemoveVideoClip(track.id, c.id)}><X size={10} /></button>
-                              </div>
                               <span className="arr2-trim left" title="Trim in" onPointerDown={(e) => beginTrim(e, 'L', 'video', track.id, c)} />
                               <span className="arr2-trim right" title="Trim out" onPointerDown={(e) => beginTrim(e, 'R', 'video', track.id, c)} />
                             </div>
@@ -578,9 +670,10 @@ export function Arrange({
                           return (
                             <div
                               key={c.id} className={`arr2-clip audio ${isSel(c.id) ? 'sel' : ''}`}
-                              onClickCapture={() => onSelectClip({ trackId: track.id, clipId: c.id, kind: 'audio' })}
+                              data-clip={c.id} data-track={track.id} data-kind="audio" onClickCapture={(e) => pick(e, { trackId: track.id, clipId: c.id, kind: 'audio' })}
+                              onPointerEnter={(e) => { if (eraser && e.buttons === 1) onDeleteClips([{ trackId: track.id, clipId: c.id, kind: 'audio' }], false); }}
                               style={{ left: `${(c.start / totalTimelineSteps) * 100}%`, width: `${Math.max(0.5, w * 100)}%` }}
-                              onPointerDown={(e) => razor ? razorCut(e, 'audio', track.id, c.id) : begin(e, 'audio', track.id, c.id, c.start)}
+                              onPointerDown={(e) => eraser ? eraseClip(e, { trackId: track.id, clipId: c.id, kind: 'audio' }) : razor ? razorCut(e, 'audio', track.id, c.id) : begin(e, 'audio', track.id, c.id, c.start)}
                               onContextMenu={(e) => openMenu(e, 'audio', track.id, c)}
                             >
                               {asset?.peaks && (
@@ -596,11 +689,6 @@ export function Arrange({
                               {!razor && <span className="arr2-fadeh in" title="Drag to fade in (overlap clips for a crossfade)" style={{ left: `${Math.min(100, ((c.fadeIn ?? 0) / Math.max(0.01, c.duration)) * 100)}%` }} onPointerDown={(e) => beginFade(e, 'in', 'audio', track.id, c)} />}
                               {!razor && <span className="arr2-fadeh out" title="Drag to fade out" style={{ right: `${Math.min(100, ((c.fadeOut ?? 0) / Math.max(0.01, c.duration)) * 100)}%` }} onPointerDown={(e) => beginFade(e, 'out', 'audio', track.id, c)} />}
                               <span className="arr2-clip-name">{asset?.name ?? 'audio'}{c.pitch ? ` · ${c.pitch > 0 ? '+' : ''}${c.pitch}st` : ''}</span>
-                              <div className="arr2-clip-tools">
-                                <button className={`arr2-clip-btn ${previewKey === c.id ? 'on' : ''}`} title={previewKey === c.id ? 'Stop' : 'Play'} onPointerDown={(e) => e.stopPropagation()} onClick={() => onPlayClip(c)}>{previewKey === c.id ? <Square size={11} /> : <Play size={11} />}</button>
-                                <button className="arr2-clip-btn" title={playheadOverClip(c) ? 'Split at playhead' : 'Move the playhead over this clip to split'} disabled={!playheadOverClip(c)} onPointerDown={(e) => e.stopPropagation()} onClick={() => splitMedia('audio', track.id, c)}><Scissors size={11} /></button>
-                                <button className="arr2-clip-btn" title="Right-click for all clip actions · delete" onPointerDown={(e) => e.stopPropagation()} onClick={() => onRemoveAudioClip(track.id, c.id)}><X size={11} /></button>
-                              </div>
                               <span className="arr2-trim left" title="Trim in" onPointerDown={(e) => beginTrim(e, 'L', 'audio', track.id, c)} />
                               <span className="arr2-trim right" title="Trim out" onPointerDown={(e) => beginTrim(e, 'R', 'audio', track.id, c)} />
                             </div>
@@ -611,9 +699,10 @@ export function Arrange({
                           return (
                             <div
                               key={c.id} className={`arr2-clip ${c.loop ? 'loop' : ''} ${track.type} ${isSel(c.id) ? 'sel' : ''}`}
-                              onClickCapture={() => onSelectClip({ trackId: track.id, clipId: c.id, kind: 'pattern' })}
+                              data-clip={c.id} data-track={track.id} data-kind="pattern" onClickCapture={(e) => pick(e, { trackId: track.id, clipId: c.id, kind: 'pattern' })}
+                              onPointerEnter={(e) => { if (eraser && e.buttons === 1) onDeleteClips([{ trackId: track.id, clipId: c.id, kind: 'pattern' }], false); }}
                               style={{ left: `${(c.start / N) * 100}%`, width: `${(w / N) * 100}%` }}
-                              onPointerDown={(e) => begin(e, 'move', track.id, c.id, c.start)}
+                              onPointerDown={(e) => eraser ? eraseClip(e, { trackId: track.id, clipId: c.id, kind: 'pattern' }) : begin(e, 'move', track.id, c.id, c.start)}
                               onClick={(e) => e.stopPropagation()}
                               onContextMenu={(e) => openMenu(e, 'pattern', track.id, c)}
                             >
@@ -629,10 +718,7 @@ export function Arrange({
                                   {track.patterns!.find((p) => p.id === clipPatternId(track, c))?.name ?? 'A'}
                                 </button>
                               )}
-                              <div className="arr2-clip-tools">
-                                <button className="arr2-clip-btn" title="Remove" onPointerDown={(e) => e.stopPropagation()} onClick={() => onRemoveClip(track.id, c.id)}><X size={11} /></button>
-                              </div>
-                              {!c.loop && <span className="arr2-clip-resize" onPointerDown={(e) => begin(e, 'resize', track.id, c.id, c.length)} />}
+                              <span className="arr2-clip-resize" title={c.loop ? 'Drag to give this looping clip a fixed length' : 'Drag to resize'} onPointerDown={(e) => begin(e, 'resize', track.id, c.id, w)} />
                             </div>
                           );
                         })}
@@ -673,6 +759,7 @@ export function Arrange({
             return (<>
               <button onClick={() => runMenu(() => onPlayClip(c))}>{previewKey === c.id ? <Square size={12} /> : <Play size={12} />} {previewKey === c.id ? 'Stop' : 'Play'}</button>
               <button disabled={!playheadOverClip(c)} onClick={() => runMenu(() => onSplitAudioClip(menu.trackId, c.id, currentStep))}><Scissors size={12} /> Split at playhead</button>
+              <button disabled={markersInside(c).length === 0} onClick={() => runMenu(() => splitAtMarkers('audio', menu.trackId, c))}><Scissors size={12} /> Split at markers{markersInside(c).length ? ` (${markersInside(c).length})` : ''}</button>
               <button onClick={() => runMenu(() => onDuplicateAudioClip(menu.trackId, c.id))}><Copy size={12} /> Duplicate</button>
               <div className="arr2-menu-sep" />
               <button onClick={() => runMenu(() => onNormalizeAudioClip(menu.trackId, c.id))}><Maximize2 size={12} /> Normalize to peak</button>
@@ -680,16 +767,17 @@ export function Arrange({
               <button onClick={() => runMenu(() => { const v = window.prompt('Repitch — semitones (−24…24, varispeed)', String(c.pitch ?? 0)); if (v != null) onSetAudioClip(menu.trackId, c.id, { pitch: Math.max(-24, Math.min(24, parseInt(v, 10) || 0)) || undefined }); })}>Repitch…{c.pitch ? ` (${c.pitch > 0 ? '+' : ''}${c.pitch}st)` : ''}</button>
               <button disabled={!c.fadeIn && !c.fadeOut} onClick={() => runMenu(() => onSetAudioClip(menu.trackId, c.id, { fadeIn: 0, fadeOut: 0 }))}>Clear fades</button>
               <div className="arr2-menu-sep" />
-              <button className="danger" onClick={() => runMenu(() => onRemoveAudioClip(menu.trackId, c.id))}><X size={12} /> Remove clip</button>
+              <button className="danger" onClick={() => runMenu(() => onRemoveAudioClip(menu.trackId, c.id))}><X size={12} /> Delete clip</button>
             </>);
           })()}
           {menu.kind === 'video' && (() => {
             const c = menu.clip as VideoClip;
             return (<>
               <button disabled={!playheadOverClip(c)} onClick={() => runMenu(() => onSplitVideoClip(menu.trackId, c.id, currentStep))}><Scissors size={12} /> Split at playhead</button>
+              <button disabled={markersInside(c).length === 0} onClick={() => runMenu(() => splitAtMarkers('video', menu.trackId, c))}><Scissors size={12} /> Split at markers{markersInside(c).length ? ` (${markersInside(c).length})` : ''}</button>
               <button disabled={!c.fadeIn && !c.fadeOut} onClick={() => runMenu(() => onSetVideoClip(menu.trackId, c.id, { fadeIn: 0, fadeOut: 0 }))}>Clear fades</button>
               <div className="arr2-menu-sep" />
-              <button className="danger" onClick={() => runMenu(() => onRemoveVideoClip(menu.trackId, c.id))}><X size={12} /> Remove clip</button>
+              <button className="danger" onClick={() => runMenu(() => onRemoveVideoClip(menu.trackId, c.id))}><X size={12} /> Delete clip</button>
             </>);
           })()}
           {menu.kind === 'pattern' && (() => {
@@ -698,7 +786,7 @@ export function Arrange({
               <button onClick={() => runMenu(() => onToggleLoop(menu.trackId, c.id))}><Repeat size={12} /> {c.loop ? 'Stop looping' : 'Loop clip'}</button>
               <button onClick={() => runMenu(() => onCycleClipPattern(menu.trackId, c.id))}>Cycle pattern</button>
               <div className="arr2-menu-sep" />
-              <button className="danger" onClick={() => runMenu(() => onRemoveClip(menu.trackId, c.id))}><X size={12} /> Remove clip</button>
+              <button className="danger" onClick={() => runMenu(() => onRemoveClip(menu.trackId, c.id))}><X size={12} /> Delete clip</button>
             </>);
           })()}
         </div>

@@ -58,20 +58,39 @@ export async function pickVideoFile(onProgress?: (read: number, total: number) =
 
 export interface VideoProbe { duration: number; width: number; height: number; poster?: string; }
 
+/** MediaRecorder-produced webm has no duration/Cues in its header, so `<video>`
+ *  reports `duration === Infinity` until you seek near the end — the documented
+ *  Chrome workaround. Resolves a finite duration (0 if it still can't). */
+function fixInfiniteDuration(v: HTMLVideoElement): Promise<number> {
+  return new Promise((resolve) => {
+    const done = () => {
+      v.removeEventListener('timeupdate', done);
+      const d = v.duration;
+      try { v.currentTime = 0; } catch { /* ignore */ }
+      resolve(Number.isFinite(d) && d > 0 ? d : 0);
+    };
+    v.addEventListener('timeupdate', done);
+    try { v.currentTime = 1e10; } catch { done(); }
+    window.setTimeout(done, 2000);
+  });
+}
+
 /** Load just enough of a video to read its dimensions/duration and grab a poster
  *  frame. Uses an offscreen <video>; returns zeros if the browser can't decode it
- *  (e.g. AVI) so the import still proceeds. */
+ *  (e.g. AVI) so the import still proceeds. Duration is always finite. */
 export async function probeVideo(bytes: ArrayBuffer, mime: string): Promise<VideoProbe> {
   const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
   try {
     const v = document.createElement('video');
     v.muted = true; v.preload = 'metadata'; v.src = url;
-    const meta = await new Promise<VideoProbe>((resolve) => {
-      const read = () => resolve({ duration: v.duration || 0, width: v.videoWidth || 0, height: v.videoHeight || 0 });
+    let meta = await new Promise<VideoProbe>((resolve) => {
+      const read = () => resolve({ duration: v.duration, width: v.videoWidth || 0, height: v.videoHeight || 0 });
       v.onloadedmetadata = read;
       v.onerror = () => resolve({ duration: 0, width: 0, height: 0 });
       window.setTimeout(read, 4000);
     });
+    if (!Number.isFinite(meta.duration)) meta = { ...meta, duration: await fixInfiniteDuration(v) };
+    else if (!(meta.duration > 0)) meta = { ...meta, duration: 0 };
     let poster: string | undefined;
     if (meta.width && meta.height) {
       poster = await new Promise<string | undefined>((resolve) => {

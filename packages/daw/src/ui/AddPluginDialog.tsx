@@ -27,15 +27,17 @@ export function AddPluginDialog({ mode, title, library, pool, onPick, onClose }:
   const [q, setQ] = useState('');
   const [items, setItems] = useState<GalleryItem[] | null>(null);
   const [galleryError, setGalleryError] = useState('');
+  const [source, setSource] = useState<'synflow' | 'vibeplugin'>('synflow');
   const [busy, setBusy] = useState('');          // slug being downloaded
 
   useEffect(() => {
+    if (source !== 'vibeplugin' || items !== null) return;   // fetch the gallery lazily
     let dead = false;
     fetchGalleryIndex()
       .then((list) => { if (!dead) setItems(list); })
       .catch((e) => { if (!dead) setGalleryError(e?.message || String(e)); });
     return () => { dead = true; };
-  }, []);
+  }, [source]);
 
   const needle = q.trim().toLowerCase();
   const match = (...hay: (string | undefined)[]) => !needle || hay.some((h) => h?.toLowerCase().includes(needle));
@@ -68,8 +70,13 @@ export function AddPluginDialog({ mode, title, library, pool, onPick, onClose }:
           <button className="syn-close" onClick={onClose} title="Close"><X size={16} /></button>
         </div>
 
+        <div className="plg-tabs" role="tablist">
+          <button role="tab" aria-selected={source === 'synflow'} className={`plg-tab ${source === 'synflow' ? 'on' : ''}`} onClick={() => setSource('synflow')}>Synflow <span className="plg-tabcount">{libItems.length + poolItems.length}</span></button>
+          <button role="tab" aria-selected={source === 'vibeplugin'} className={`plg-tab ${source === 'vibeplugin' ? 'on' : ''}`} onClick={() => setSource('vibeplugin')}>VibePlugin <span className="plg-tabcount">{items ? galleryItems.length : '…'}</span></button>
+        </div>
+
         <div className="plg-body">
-          {poolItems.length > 0 && (
+          {source === 'synflow' && poolItems.length > 0 && (
             <section className="plg-section">
               <h3 className="plg-sect"><Package size={12} /> In this project</h3>
               <div className="plg-grid">
@@ -84,7 +91,7 @@ export function AddPluginDialog({ mode, title, library, pool, onPick, onClose }:
             </section>
           )}
 
-          <section className="plg-section">
+          {source === 'synflow' && <section className="plg-section">
             <h3 className="plg-sect"><Music2 size={12} /> Synflow library</h3>
             <div className="plg-grid">
               {libItems.length === 0 && <span className="plg-none">nothing matches</span>}
@@ -96,9 +103,9 @@ export function AddPluginDialog({ mode, title, library, pool, onPick, onClose }:
                 </button>
               ))}
             </div>
-          </section>
+          </section>}
 
-          <section className="plg-section">
+          {source === 'vibeplugin' && <section className="plg-section">
             <h3 className="plg-sect"><Globe size={12} /> VibeSynth gallery <span className="plg-sub">AI-built plugins · vibeplugin</span></h3>
             {items === null && !galleryError && <div className="plg-loading"><Loader size={14} className="spin" /> Loading gallery…</div>}
             {galleryError && <div className="plg-error">{galleryError}</div>}
@@ -114,7 +121,7 @@ export function AddPluginDialog({ mode, title, library, pool, onPick, onClose }:
               ))}
               {items !== null && galleryItems.length === 0 && !galleryError && <span className="plg-none">nothing matches</span>}
             </div>
-          </section>
+          </section>}
         </div>
       </div>
     </div>

@@ -47,5 +47,5 @@ export function SpectrumAnalyzer({ analyser, height = 60 }: { analyser: () => An
     return () => cancelAnimationFrame(raf);
   }, [analyser]);
 
-  return <canvas ref={ref} width={320} height={height} className="spectrum-canvas" style={{ width: '100%', height }} />;
+  return <canvas ref={ref} width={1280} height={height * 2} className="spectrum-canvas" style={{ width: '100%', height }} />;
 }

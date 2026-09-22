@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Synflow — node-graph audio workstation</title>
+  <meta name="description" content="Synflow is a browser-based node-graph workstation for building synths, effects, MIDI tools and interactive audio. Browse the public flow gallery.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap">
+      <a class="logo" href="./" style="text-decoration:none">SYNFLOW</a>
+      <a class="link" href="#features">FEATURES</a>
+      <a class="link" href="gallery/">GALLERY</a>
+      <a class="link" href="https://github.com/k1ln/synflow">GITHUB</a>
+      <a class="btn primary small" href="https://synflow.org">OPEN EDITOR</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero wrap">
+      <h1>Patch sound. <em>Share the graph.</em></h1>
+      <p class="lead">Synflow is a browser-based, node-graph workstation for building synths, effects, MIDI tools and interactive audio — powered by the Web Audio API and AudioWorklets. No install, no account.</p>
+      <div class="cta">
+        <a class="btn primary" href="https://synflow.org">LAUNCH SYNFLOW</a>
+        <a class="btn" href="gallery/">BROWSE THE GALLERY</a>
+      </div>
+      <div class="shot"><img src="assets/screenshot.png" alt="The Synflow node editor with a patch open" loading="lazy"></div>
+    </section>
+
+    <section class="block" id="features">
+      <div class="wrap">
+        <h2>What's in the box</h2>
+        <p class="sub">A modular-synth feel with an editor built for fast iteration: wire nodes, hear the result, keep what works.</p>
+        <div class="grid">
+          <div class="feature" style="--c:var(--cat-source)"><h3>Visual node editor</h3><p>Drag oscillators, filters, envelopes and effects onto a canvas and connect them. Hybrid graph: audio-rate signals and flow-event/control streams side by side.</p></div>
+          <div class="feature" style="--c:var(--cat-gain)"><h3>Web Audio building blocks</h3><p>Oscillators, filters, dynamics, delay, reverb, distortion, frequency shifters and analyzers — plus AudioWorklet/WASM processors for low-latency DSP.</p></div>
+          <div class="feature" style="--c:var(--cat-mod)"><h3>MIDI &amp; sequencing</h3><p>MIDI notes, knobs and files, clocks, arpeggiators, automation and frequency utilities. Play a patch from a keyboard or the on-screen piano.</p></div>
+          <div class="feature" style="--c:var(--cat-fx)"><h3>Live instrument panel</h3><p>Expose the knobs that matter and get a playable panel with keyboard or drum pad — or design a custom HTML faceplate.</p></div>
+          <div class="feature" style="--c:var(--accent)"><h3>Mothscilla DAW</h3><p>Use Synflow flows as instruments and effects inside a pattern/arrangement DAW with mixer, buses, automation and a built-in EQ.</p></div>
+          <div class="feature" style="--c:var(--violet)"><h3>VibePlugin support</h3><p>Load AI-built <code>.vstai</code> plugins from the VibePlugin gallery as instruments or effects, next to your own flows.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="gallery">
+      <div class="wrap">
+        <h2>Public flow gallery</h2>
+        <p class="sub">Open a community patch, see its graph, and load it into the editor with one click. Every flow is plain JSON — download it, remix it, publish your own.</p>
+        <div class="grid" id="teaser"></div>
+        <p style="margin-top:28px"><a class="btn" href="gallery/">SEE ALL FLOWS →</a></p>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap">
+        <h2>Share your own</h2>
+        <p class="sub">Add a flow to the gallery with a pull request: <code>node scripts/build-flow-gallery.mjs publish my-flow.json --name "My Flow" --desc "…"</code> bundles its sub-flows and regenerates the catalogue. See the <a href="https://github.com/k1ln/synflow/blob/main/site/README.md">gallery guide</a>.</p>
+        <span class="tag soon">In development</span> <span class="sub" style="color:var(--ink-3);font-size:13px;margin-left:8px">Native VST3/AU plugin that renders flows outside the browser.</span>
+      </div>
+    </section>
+  </main>
+
+  <footer><div class="wrap"><span>© Kilian Hertel · MIT License</span><span><a href="https://synflow.org">synflow.org</a> · <a href="https://github.com/k1ln/synflow">GitHub</a> · <a href="https://k1ln.github.io/VibePlugin/gallery/">VibePlugin gallery</a></span></div></footer>
+
+  <script>
+    // Three newest gallery entries as a teaser (silently empty if the catalogue can't load).
+    fetch('gallery/data/index.json').then(r => r.json()).then(list => {
+      const el = document.getElementById('teaser');
+      for (const f of list.slice(0, 3)) {
+        const a = document.createElement('a');
+        a.className = 'feature'; a.href = 'gallery/#' + f.slug; a.style.textDecoration = 'none';
+        const h = document.createElement('h3'); h.textContent = f.name;
+        const p = document.createElement('p'); p.textContent = f.description || (f.nodes + ' nodes');
+        a.append(h, p); el.append(a);
+      }
+    }).catch(() => {});
+  </script>
+</body>
+</html>

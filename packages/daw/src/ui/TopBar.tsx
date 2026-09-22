@@ -1,12 +1,16 @@
 import React from 'react';
-import { Play, Pause, Square, Circle, SkipBack, Grid3x3, Layers, SlidersHorizontal, PanelLeft, Save, FolderOpen, FilePlus, Settings, Piano, Check, Download, FileAudio, Loader, Mic, Disc, Undo2, Redo2 } from 'lucide-react';
+import { RecordControl, type RecordOpts } from './RecordControl';
+import { ScreenRecordControl, type ScreenRecordOpts } from './ScreenRecordControl';
+import { ExportMenu } from './ExportMenu';
+import { Play, Pause, Square, Circle, SkipBack, Grid3x3, Layers, SlidersHorizontal, PanelLeft, Save, FolderOpen, FilePlus, Settings, Piano, Check, Undo2, Redo2, Film } from 'lucide-react';
 
-export type ViewId = 'tracks' | 'song' | 'live' | 'mix';
+export type ViewId = 'tracks' | 'song' | 'live' | 'video' | 'mix';
 
 const TABS: [ViewId, string, React.ComponentType<any>][] = [
   ['song', 'Song', Layers],
   ['tracks', 'Tracks', Grid3x3],
   ['live', 'Live', Piano],
+  ['video', 'Video', Film],
   ['mix', 'Mixer', SlidersHorizontal],
 ];
 
@@ -14,7 +18,8 @@ export function TopBar({
   view, setView, isPlaying, onPlay, onStop, armed, onArm, metronome, onToggleMetronome, bpm, onBpm, swing, onSwing, beatsPerBar, onTimeSig, position, browserOpen, setBrowserOpen,
   projectName, onProjectName, onNewSong, onSave, saved, onOpenSong, onExport, exporting, exportProgress, onBounce, bouncing, bounceProgress, onExportMidi, onExportStems,
   canUndo, canRedo, onUndo, onRedo,
-  micOn, onToggleMic, recording, onToggleRecord,
+  recording, onToggleRecord, recOpts, onRecOpts,
+  screenRecording, onToggleScreenRecord, screenRecOpts, onScreenRecOpts,
   midiConnected, midiTitle, midiLearn, onMidiLearn,
   onOpenSettings,
 }: {
@@ -54,17 +59,20 @@ export function TopBar({
   canRedo: boolean;
   onUndo: () => void;
   onRedo: () => void;
-  micOn: boolean;
-  onToggleMic: () => void;
+  recOpts: RecordOpts;
+  onRecOpts: (o: RecordOpts) => void;
   recording: boolean;
   onToggleRecord: () => void;
+  screenRecOpts: ScreenRecordOpts;
+  onScreenRecOpts: (o: ScreenRecordOpts) => void;
+  screenRecording: boolean;
+  onToggleScreenRecord: () => void;
   midiConnected: boolean;
   midiLearn: boolean;
   onMidiLearn: () => void;
   midiTitle: string;
   onOpenSettings: () => void;
 }) {
-  const pct = (f: number) => `${Math.round(f * 100)}%`;
   return (
     <div className="topbar">
       <div className="brand">
@@ -96,7 +104,8 @@ export function TopBar({
             {isPlaying ? <Pause size={17} /> : <Play size={17} />}
           </button>
           <button className="t-btn" title="Stop" onClick={onStop}><Square size={15} /></button>
-          <button className={`t-btn rec ${armed ? 'on' : ''}`} title="Record arm" onClick={onArm}><Circle size={14} /></button>
+          <RecordControl recording={recording} opts={recOpts} onOpts={onRecOpts} onToggle={onToggleRecord} />
+          <ScreenRecordControl recording={screenRecording} opts={screenRecOpts} onOpts={onScreenRecOpts} onToggle={onToggleScreenRecord} />
           <button className={`t-btn metro ${metronome ? 'on' : ''}`} title={metronome ? 'Metronome on' : 'Metronome (click track)'} onClick={onToggleMetronome}>
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 14 L7 2.5 H9 L11 14 Z" /><line x1="3.5" y1="14" x2="12.5" y2="14" /><line x1="8" y1="11" x2="11" y2="5" />
@@ -124,18 +133,11 @@ export function TopBar({
         {midiConnected && <span className="midi-chip" title={midiTitle}><Piano size={13} /> MIDI</span>}
         {midiConnected && <button className={`midi-learn ${midiLearn ? 'on' : ''}`} onClick={onMidiLearn}
           title={midiLearn ? 'Learning: touch a volume/pan fader in the DAW, then move a knob on your controller' : 'MIDI learn: map a hardware knob to a fader'}>learn</button>}
-        <button className={`icon-btn ${micOn ? 'active' : ''}`} title={micOn ? 'Microphone on (recorded with the program)' : 'Enable microphone'} onClick={onToggleMic}><Mic size={18} /></button>
-        <button className={`icon-btn cap-rec ${recording ? 'on' : ''}`} title={recording ? 'Stop recording' : 'Record the program (mic) to a clip'} onClick={onToggleRecord}><Disc size={18} /></button>
         <div className="tb-divider" />
         <button className={`icon-btn ${browserOpen ? 'active' : ''}`} title="Browser" onClick={() => setBrowserOpen(!browserOpen)}><PanelLeft size={18} /></button>
-        <button className={`icon-btn ${exporting ? 'busy' : ''}`} title="Export portable song (.json with audio embedded as base64)" onClick={onExport} disabled={exporting}>
-          {exporting ? <><Loader size={16} className="spin" /><span className="btn-pct">{pct(exportProgress)}</span></> : <Download size={18} />}
-        </button>
-        <button className={`icon-btn ${bouncing ? 'busy' : ''}`} title="Bounce song to WAV (offline, faster than realtime)" onClick={onBounce} disabled={bouncing}>
-          {bouncing ? <><Loader size={16} className="spin" /><span className="btn-pct">{pct(bounceProgress)}</span></> : <FileAudio size={18} />}
-        </button>
-        <button className="icon-btn" title="Export MIDI (.mid — synth tracks' notes)" onClick={onExportMidi}><Piano size={18} /></button>
-        <button className={`icon-btn ${bouncing ? 'busy' : ''}`} title="Export stems (one pre-master WAV per track)" onClick={onExportStems} disabled={bouncing}><Layers size={18} /></button>
+        <ExportMenu onExport={onExport} exporting={exporting} exportProgress={exportProgress}
+          onBounce={onBounce} bouncing={bouncing} bounceProgress={bounceProgress}
+          onExportMidi={onExportMidi} onExportStems={onExportStems} />
         <button className="icon-btn" title="Settings" onClick={onOpenSettings}><Settings size={18} /></button>
       </div>
     </div>

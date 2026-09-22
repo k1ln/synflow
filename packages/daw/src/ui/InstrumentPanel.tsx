@@ -20,7 +20,7 @@ const VISIBLE = 17;
  * / drum pad), tweak every knob exported from Synflow, set its gain, edit the flow.
  * Effects show only their knobs (no live play).
  */
-export function InstrumentPanel({ name, trackName, kind, flow, gain, onGain, onKnob, onKnobRename, onEdit, onBack, onNoteOn, onNoteOff, onHit, customUi, onEditUi, fx, effects, onFxAdd, onFxRemove, onFxEdit, onFxKnob, onVstaiSample, onAutomateParam }: {
+export function InstrumentPanel({ name, trackName, kind, flow, gain, onGain, onKnob, onKnobRename, onEdit, onBack, onNoteOn, onNoteOff, onHit, customUi, onEditUi, fx, effects, onFxAdd, onFxBrowse, onFxRemove, onFxEdit, onFxKnob, onVstaiSample, onAutomateParam }: {
   name: string;
   /** Set only for a track-scoped session (Track Live): shows a badge so it's never
    *  mistaken for the shared/pool instrument, which every other track also hears. */
@@ -46,6 +46,7 @@ export function InstrumentPanel({ name, trackName, kind, flow, gain, onGain, onK
   fx?: FxInsert[];
   effects?: LibraryEntry[];
   onFxAdd?: (fxId: string) => void;
+  onFxBrowse?: () => void;
   onFxRemove?: (i: number) => void;
   onFxEdit?: (i: number) => void;
   onFxKnob?: (i: number, nodeId: string, param: string, value: number | string) => void;
@@ -72,6 +73,20 @@ export function InstrumentPanel({ name, trackName, kind, flow, gain, onGain, onK
   const [lit, setLit] = useState<Set<number>>(new Set());
   const on = (m: number) => { if (down.current.has(m)) return; down.current.add(m); setLit(new Set(down.current)); onNoteOn?.(m); };
   const off = (m: number) => { if (!down.current.has(m)) return; down.current.delete(m); setLit(new Set(down.current)); onNoteOff?.(m); };
+
+  // Mouse/touch glissando: one active key follows the pointer while pressed.
+  const cur = useRef<number | null>(null);
+  const glide = (e: React.PointerEvent | null) => {
+    let m: number | null = null;
+    if (e) {
+      const el = (document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null)?.closest('[data-midi]') as HTMLElement | null;
+      if (el) m = Number(el.dataset.midi);
+    }
+    if (m === cur.current) return;
+    if (cur.current != null) off(cur.current);
+    cur.current = m;
+    if (m != null) on(m);
+  };
 
   // Changing the octave shifts `base`, so a still-held key's keyup would arrive at a
   // NEW pitch and never match the noteOn we sent — leaving the old note stuck on.
@@ -183,7 +198,7 @@ export function InstrumentPanel({ name, trackName, kind, flow, gain, onGain, onK
           <div className="lp-group">
             <div className="lp-section-title">Instrument FX</div>
             <FxBar label="" color="var(--cat-mod)" fx={fx ?? []} effects={effects ?? []}
-              onAdd={onFxAdd} onRemove={(i) => onFxRemove?.(i)} onEdit={(i) => onFxEdit?.(i)} onKnob={onFxKnob} />
+              onAdd={onFxAdd} onBrowse={onFxBrowse} onRemove={(i) => onFxRemove?.(i)} onEdit={(i) => onFxEdit?.(i)} onKnob={onFxKnob} />
           </div>
         )}
 
@@ -203,11 +218,14 @@ export function InstrumentPanel({ name, trackName, kind, flow, gain, onGain, onK
                 <button className="live-oct" onClick={() => setOctave((o) => Math.min(8, o + 1))}>+</button>
                 <span className="live-hint">play with a–k, click, or MIDI</span>
               </div>
-              <div className="live-keyboard lp-kb" style={{ ['--whites' as any]: whites.length }}>
+              <div className="live-keyboard lp-kb" style={{ ['--whites' as any]: whites.length }}
+                onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); glide(e); }}
+                onPointerMove={(e) => { if (e.buttons & 1) glide(e); }}
+                onPointerUp={() => glide(null)} onPointerCancel={() => glide(null)}>
                 <div className="lk-whites">
                   {whites.map((m) => (
                     <button key={m} className={`lk-white ${lit.has(m) ? 'on' : ''}`}
-                      onPointerDown={(e) => { e.preventDefault(); on(m); }} onPointerUp={() => off(m)} onPointerLeave={(e) => { if (e.buttons) off(m); }}>
+                      data-midi={m}>
                       {m % 12 === 0 && <span className="lk-oct">{midiName(m)}</span>}
                     </button>
                   ))}
@@ -219,7 +237,7 @@ export function InstrumentPanel({ name, trackName, kind, flow, gain, onGain, onK
                     return (
                       <button key={b} className={`lk-black ${lit.has(b) ? 'on' : ''}`}
                         style={{ left: `calc(${((i + 1) / whites.length) * 100}% - (100% / ${whites.length}) * 0.3)` }}
-                        onPointerDown={(e) => { e.preventDefault(); on(b); }} onPointerUp={() => off(b)} onPointerLeave={(e) => { if (e.buttons) off(b); }} />
+                        data-midi={b} />
                     );
                   })}
                 </div>

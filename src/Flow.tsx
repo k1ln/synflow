@@ -161,6 +161,20 @@ const AUTO_SAVE_ENABLED = false;
 const DEFAULT_EXAMPLE_NAME = 'Hard-Synth';
 const DEFAULT_EXAMPLE_FOLDER = 'examples';
 const WELCOMED_KEY = 'synflow:welcomed';
+const GALLERY_FOLDER = 'gallery';
+// Only flows from hosts we control may be deep-linked: a flow can contain script
+// nodes, so an arbitrary ?import= URL would be a code-injection vector.
+const GALLERY_IMPORT_HOSTS = ['k1ln.github.io', 'synflow.org', 'www.synflow.org', 'localhost', '127.0.0.1'];
+function readGalleryImportUrl(): string | null {
+  try {
+    const raw = new URLSearchParams(window.location.search).get('import');
+    if (!raw) return null;
+    const u = new URL(raw);
+    if (!GALLERY_IMPORT_HOSTS.includes(u.hostname)) return null;
+    if (u.protocol !== 'https:' && u.hostname !== 'localhost' && u.hostname !== '127.0.0.1') return null;
+    return u.toString();
+  } catch { return null; }
+}
 
 function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEngineFactory } = {}) {
   /**
@@ -510,7 +524,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
         const d = n.data || {};
         const style = { ...(d.style || {}) } as any;
         // Remove strong glow (downgrade to neutral or remove entirely)
-        if (style.boxShadow && /14px 3px/.test(style.boxShadow)) {
+        if (style.boxShadow && /14px 3px|0 0 0 2px/.test(style.boxShadow)) {
           style.boxShadow =
             '0 1px 3px rgba(0,0,0,0.45), 0 0 8px 2px rgba(0,255,136,0.08)';
         }
@@ -582,6 +596,35 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
       try {
         // Removed URL path parsing (/editNode/, /editFlow/) due to bugs
         const { name: storedFlow, folder: storedFolder } = readCurrentFlowPointer();
+        // Deep link from the public gallery: ?import=<flow.json URL> saves the flow
+        // (plus any sub-flows it bundles) under "gallery/" and opens it.
+        const importUrl = readGalleryImportUrl();
+        if (importUrl) {
+          try {
+            setIsFlowLoading(true);
+            const resp = await fetch(importUrl, { cache: 'no-store' });
+            if (!resp.ok) throw new Error(`fetch ${importUrl} → ${resp.status}`);
+            const doc = await resp.json();
+            const base = importUrl.split('?')[0].split('/').pop()!.replace(/\.json$/i, '');
+            const flowName = String(doc.name || base).replace(/[\\/]/g, '-');
+            const put = (name: string, f: any) => db.put(makeFlowDbKey(name, GALLERY_FOLDER), {
+              nodes: f.nodes || [], edges: f.edges || [], folder_path: GALLERY_FOLDER,
+              updated_at: new Date().toISOString(),
+              ...(typeof f.customUi === 'string' ? { customUi: f.customUi } : {}),
+            });
+            for (const [depName, dep] of Object.entries(doc.dependencies || {})) await put(depName, dep);
+            await put(flowName, doc);
+            try { localStorage.setItem(WELCOMED_KEY, '1'); } catch { /* noop */ }
+            const clean = new URL(window.location.href); clean.searchParams.delete('import');
+            window.history.replaceState(null, '', clean.toString());
+            await openFlowFromIndexedDB(flowName, GALLERY_FOLDER);
+            return;
+          } catch (e) {
+            console.warn('[Flow] Gallery import failed', e);
+            showToast?.('Could not import the gallery flow', 'error');
+            setIsFlowLoading(false);
+          }
+        }
         if (storedFlow) {
           setIsFlowLoading(true);
           await openFlowFromIndexedDB(storedFlow, storedFolder);
@@ -1265,7 +1308,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
     const cleanedNodes = nodes.map((n: any) => {
       const d = n.data || {};
       const style = { ...(d.style || {}) } as any;
-      if (style.boxShadow && /14px 3px/.test(style.boxShadow)) {
+      if (style.boxShadow && /14px 3px|0 0 0 2px/.test(style.boxShadow)) {
         style.boxShadow =
           '0 1px 3px rgba(0,0,0,0.45), '
           + '0 0 8px 2px rgba(0,255,136,0.08)';
@@ -1464,7 +1507,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
       setNodes((nds) => nds.map((n) => {
         const st = (n.data?.style as any) || {};
         const bs = (st.boxShadow as string) || '';
-        if (!/14px 3px/.test(bs)) return n;
+        if (!/14px 3px|0 0 0 2px/.test(bs)) return n;
         const glow = (st.glowColor as string) || '#00ff88';
         return { ...n, data: { ...n.data, style: { ...st, boxShadow: makeGlow(glow, 'normal') } } };
       }));
@@ -1544,7 +1587,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
       setNodes((nds) => nds.map((n) => {
         const st = (n.data?.style as any) || {};
         const bs = (st.boxShadow as string) || '';
-        if (!/14px 3px/.test(bs)) return n;
+        if (!/14px 3px|0 0 0 2px/.test(bs)) return n;
         const glow = (st.glowColor as string) || '#00ff88';
         return { ...n, data: { ...n.data, style: { ...st, boxShadow: makeGlow(glow, 'normal') } } };
       }));
@@ -1603,7 +1646,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
           return { ...n, data: { ...n.data, style: { ...st, glowColor: glow, boxShadow: strongGlow } } };
         }
         const bs = (st.boxShadow as string) || '';
-        if (/14px 3px/.test(bs)) {
+        if (/14px 3px|0 0 0 2px/.test(bs)) {
           const g = (st.glowColor as string) || '#00ff88';
           return { ...n, data: { ...n.data, style: { ...st, boxShadow: makeGlow(g, 'normal') } } };
         }
@@ -1806,9 +1849,8 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
       if (catColor) {
         const rgb = hexToRgb(catColor) || { r: 255, g: 255, b: 255 };
         styleObj.borderTop = `3px solid ${catColor}`;
-        const insetGlow = `inset 0 3px 12px rgba(${rgb.r},${rgb.g},${rgb.b},0.22)`;
         const outerGlow = makeGlow(styleObj.glowColor || '#00ff88', 'normal');
-        styleObj.boxShadow = `${outerGlow}, ${insetGlow}`;
+        styleObj.boxShadow = outerGlow;
         (styleObj as any)['--node-accent'] = catColor;
       }
     }

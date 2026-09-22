@@ -91,6 +91,14 @@ export interface ClipColor {
   tint?: number;         // magenta (+) / green (−)
 }
 
+/** A source-frame crop rect, as fractions (0..1) of the asset's native width/height.
+ *  Applied before `transform` (crop first, then position/scale/rotation into the
+ *  program frame) — lets a screen recording be trimmed down to one region. */
+export interface ClipCrop {
+  x: number; y: number;  // top-left, fraction of source width/height
+  w: number; h: number;  // size, fraction of source width/height
+}
+
 /** A clip on a video track. Mirrors {@link AudioClip}: `start` in fractional steps,
  *  `offset`/`duration` in seconds into the asset. `opacity`/`blend` drive multi-
  *  track compositing (upper video tracks over lower); `transform` adds position/
@@ -104,6 +112,7 @@ export interface VideoClip {
   muted?: boolean;       // mute this clip's extracted audio
   opacity?: number;      // 0..1 (default 1)
   blend?: VideoBlend;    // default 'normal'
+  crop?: ClipCrop;       // source-frame crop, applied before transform (undefined = full frame)
   transform?: ClipTransform;
   fadeIn?: number;       // opacity fade-in (s) — cross dissolve = overlap + fade
   fadeOut?: number;      // opacity fade-out (s)
@@ -305,7 +314,17 @@ export interface Project {
   assets: AudioAsset[];    // audio recordings/imports referenced by audio clips
   videoAssets?: VideoAsset[]; // video imports referenced by video clips
   masterFx: FxInsert[];    // master FX (level 3)
+  canvasWidth?: number;    // program monitor / export frame size in px (default 1920×1080)
+  canvasHeight?: number;
 }
+
+/** Quick "screen size" presets for the program monitor / export frame. */
+export const CANVAS_SIZE_PRESETS: { label: string; sub: string; width: number; height: number }[] = [
+  { label: 'YouTube', sub: '16:9', width: 1920, height: 1080 },
+  { label: 'Shorts', sub: '9:16', width: 1080, height: 1920 },
+];
+export const DEFAULT_CANVAS_WIDTH = 1920;
+export const DEFAULT_CANVAS_HEIGHT = 1080;
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -526,6 +545,8 @@ export function normalizeProject(p: Project): Project {
     videoAssets: p.videoAssets ?? [],
     buses: p.buses ?? [],
     markers: p.markers ?? [],
+    canvasWidth: p.canvasWidth ?? DEFAULT_CANVAS_WIDTH,
+    canvasHeight: p.canvasHeight ?? DEFAULT_CANVAS_HEIGHT,
     tracks: (p.tracks ?? []).map((t) => {
       if (t.type === 'audio') return { ...t, audioClips: t.audioClips ?? [] };
       if (t.type === 'video') return { ...t, videoClips: t.videoClips ?? [] };
