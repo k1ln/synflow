@@ -1,6 +1,11 @@
-// @ts-nocheck
 import { SynNode as Node, SynEdge as Edge } from "./types";
 import EventBus from "./EventBus";
+
+// This package is the headless engine (see package.json's description) and
+// has no dependency on React — `React.RefObject<T>`'s only property this
+// class actually needs is `.current`, so a minimal structural type stands
+// in for it rather than adding a react dependency just for this type.
+type RefLike<T> = { current: T };
 import type { EngineOptions } from "./env";
 import { getInput, getFlowLoader } from "./hostBindings";
 import { VirtualAudioWorkletNode, VirtualOscilloscopeNode, VirtualAudioWorkletOscillatorNode, VirtualClockNode } from "./virtualNodes";
@@ -41,8 +46,8 @@ export class AudioGraphManager {
     public virtualEdges: Map<string, Edge[]>;
     private eventBus: EventBus;
     private eventManager?: any;
-    private nodesRef: React.RefObject<Node[]>;
-    private edgesRef: React.RefObject<Edge[]>;
+    private nodesRef: RefLike<Node[]>;
+    private edgesRef: RefLike<Edge[]>;
     public sourceNodeMapConnectionTree: Map<string, Set<string>> = new Map();
     public targetNodeMapConnectionTree: Map<string, Set<string>> = new Map();
     public virtualNodes: Map<string, VirtualNodeType>;
@@ -64,8 +69,8 @@ export class AudioGraphManager {
 
     constructor(
         audioContext: AudioContext,
-        nodesRef: React.RefObject<any[]>,
-        edgesRef: React.RefObject<any[]>,
+        nodesRef: RefLike<any[]>,
+        edgesRef: RefLike<any[]>,
         options: EngineOptions = {},
     ) {
         this.audioContext = audioContext;
@@ -109,14 +114,6 @@ export class AudioGraphManager {
             console.warn('[AudioGraphManager] flowLoader failed for', flowName, e);
         }
         return null;
-    }
-
-    async connectCustomNode(node: DataBaseNode, parentNode: CustomNode | null = null) {
-        if (node) {
-            this.connectVirtualNodes(node.edges);
-        } else {
-            console.warn(`Custom node with ID ${node.id} not found in IndexedDB.`);
-        }
     }
 
     public dispose() {
@@ -360,10 +357,14 @@ export class AudioGraphManager {
     }
 
     public async updateEdges() {
-        this.virtualNodes.forEach((node) => {
+        // `node` here is the raw AudioNode when a virtual node's audioNode
+        // itself is stored directly in the map — it has no `.id` (that only
+        // compiled under @ts-nocheck); the id is the map's own key, same as
+        // the other disconnectFromMaps call sites in this file.
+        this.virtualNodes.forEach((node, nodeId) => {
             if (node instanceof AudioNode) {
                 node.disconnect();
-                this.disconnectFromMaps(node.id);
+                this.disconnectFromMaps(nodeId);
             }
         });
 

@@ -4,7 +4,7 @@ import { CustomNode, ExtendedOscillatorNode } from "../AudioGraphManager";
 import { OscillatorFlowNodeProps } from "../nodeData";
 import { buildPulsePeriodicWave, buildWavetablePeriodicWave } from "../oscillatorWaves";
 
-export class VirtualOscillatorNode extends VirtualNode<CustomNode & OscillatorFlowNodeProps> {
+export class VirtualOscillatorNode extends VirtualNode<CustomNode & OscillatorFlowNodeProps, ExtendedOscillatorNode> {
     private resetConnectionsOfNode: (nodeId: string) => void;
     private gainNode?: GainNode;
 

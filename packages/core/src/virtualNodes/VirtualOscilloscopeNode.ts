@@ -9,7 +9,10 @@ type OscilloscopeConfig = {
 
 class VirtualOscilloscopeNode extends VirtualNode<CustomNode> {
   private analyser: AnalyserNode;
-  private wave: Uint8Array;
+  // Explicit <ArrayBuffer>: getByteTimeDomainData requires it, and this is
+  // always constructed via `new Uint8Array(fftSize)`, which is always
+  // ArrayBuffer-backed.
+  private wave: Uint8Array<ArrayBuffer>;
   private raf?: number;
   private lastEmit = 0;
   private emitMs = 16; // ~60fps for smoother waveform

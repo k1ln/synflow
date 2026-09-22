@@ -2,7 +2,7 @@ import VirtualNode from "./VirtualNode";
 import { CustomNode } from "../AudioGraphManager";
 import EventBus from "../EventBus";
 
-export class VirtualGainNode extends VirtualNode<GainNode> {
+export class VirtualGainNode extends VirtualNode<CustomNode, GainNode> {
     constructor(audioContext: AudioContext, eventBus: EventBus, node: CustomNode) {
         super(
             audioContext, 

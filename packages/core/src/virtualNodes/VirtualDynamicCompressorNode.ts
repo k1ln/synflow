@@ -2,7 +2,7 @@ import VirtualNode from "./VirtualNode";
 import { CustomNode } from "../AudioGraphManager";
 import EventBus from "../EventBus";
 
-export class VirtualDynamicCompressorNode extends VirtualNode<DynamicsCompressorNode> {
+export class VirtualDynamicCompressorNode extends VirtualNode<CustomNode, DynamicsCompressorNode> {
     constructor(audioContext: AudioContext, eventBus: EventBus, node: CustomNode) {
         super(
             audioContext, 

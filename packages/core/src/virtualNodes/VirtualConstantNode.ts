@@ -59,9 +59,17 @@ export class VirtualConstantNode extends VirtualNode<CustomNode & ConstantNodePr
 
     // Optionally, call this to clean up subscriptions if needed
     public dispose() {
+        // Was `this.handleReceiveNodeOn`, which doesn't exist on this class
+        // (only compiled under @ts-nocheck) — unsubscribe always silently
+        // failed, leaking both listeners render() subscribes. Also added the
+        // matching receiveNodeOff unsubscribe, which was missing entirely.
         this.eventBus.unsubscribe(
             this.node.id + ".main-input.receiveNodeOn",
-            this.handleReceiveNodeOn
+            this.handleNodeOn
+        );
+        this.eventBus.unsubscribe(
+            this.node.id + ".main-input.receiveNodeOff",
+            this.handleNodeOff
         );
     }
 }

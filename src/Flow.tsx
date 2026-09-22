@@ -1941,8 +1941,6 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
     'EnvGenFlowNode',
     'MicFlowNode',
     'RecordingFlowNode',
-    'WebRTCPulseNode',
-    'WebSocketAudioNode',
     'AnalyzerNodeGPT',
     'OscilloscopeFlowNode',
     'EqualizerFlowNode',

@@ -158,7 +158,10 @@ export class VirtualFunctionNode extends VirtualNode<CustomNode & FunctionNodePr
             `${this.node.id}.main-input.receiveNodeOn`,
             (inputData: any) => {
                 const mainValue = inputData.data?.value ?? "";
-                this.evaluateFunction(mainValue);
+                // Matches the paired subscribe() call for this same channel
+                // (`evaluateFunction(mainValue, "receiveNodeOn")` above) —
+                // only compiled with the 2nd arg missing under @ts-nocheck.
+                this.evaluateFunction(mainValue, "receiveNodeOn");
             }
         );
     }

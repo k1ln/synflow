@@ -7,7 +7,7 @@ import {
   FrequencyGateEvent,
   MusicNote,
   OrchestratorRow
-} from '../types/OrchestratorTypes';
+} from './OrchestratorTypes';
 
 export type OrchestratorRuntimeNode = CustomNode & { data: OrchestratorData; id: string };
 

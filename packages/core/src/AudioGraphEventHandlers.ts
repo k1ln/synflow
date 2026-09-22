@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { SynEdge as Edge } from "./types";
 import { ButtonNodeProps } from "./nodeData";
 import { webAudioApiFlowNodes, CustomNode } from "./AudioGraphTypes";
@@ -425,8 +424,14 @@ export function handleConnectedEdges(
                 if (webAudioApiFlowNodes.has(type) && type !== "SampleFlowNode") {
                     const targetNodeHandle = edge.targetHandle;
                     let targetNodeHandleData = data.value;
+                    // When `data` itself is the array (a multi-value payload
+                    // selected by `index`), pick the element directly — not
+                    // `data.value[index]`, which only compiled because
+                    // @ts-nocheck hid the type error; `data.value` is
+                    // undefined on a plain array, so this branch would have
+                    // thrown "Cannot read properties of undefined" at runtime.
                     if (Array.isArray(data) && index !== null) {
-                        targetNodeHandleData = data.value[index || 0];
+                        targetNodeHandleData = data[index || 0];
                     }
                     const targetDataObject = {
                         nodeId: targetNodeId,

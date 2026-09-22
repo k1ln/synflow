@@ -18,6 +18,11 @@ export interface ButtonInput {
 export interface MidiInput {
   ensureAccess(): Promise<void>;
   onMessage(cb: (m: { status: number; channel: number; data1: number; data2: number }) => void): () => void;
+  /** Start/cancel "MIDI learn" for a button node — src/components/MidiManager.ts
+   *  implements both; this contract only declared onMessage/ensureAccess
+   *  until VirtualMidiButtonNode's @ts-nocheck removal surfaced the gap. */
+  startButtonLearn(id: string, cb: (mapping: { type: 'note' | 'cc' | 'aftertouch'; channel: number; number: number }) => void): void;
+  cancelButtonLearn(id: string): void;
 }
 
 /** Resolve a sub-flow (FlowNode) by name → its graph. */

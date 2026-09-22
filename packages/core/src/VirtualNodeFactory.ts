@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { SynEdge as Edge } from "./types";
 import { VirtualADSRNode } from "./virtualNodes";
 import { VirtualBlockingSwitchNode } from "./virtualNodes";
@@ -132,16 +131,13 @@ export async function addVirtualNode(manager: any, node: CustomNode, parentNode:
             manager.virtualNodes.set(node.id, virtualGainNode);
             break;
         }
-        case "CrossfaderFlowNode": {
-            const crossfaderNode = new VirtualCrossfaderNode(
-                manager.audioContext,
-                manager.eventBus,
-                node
-            );
-            crossfaderNode.render(nodeData.crossfade || 0);
-            manager.virtualNodes.set(node.id, crossfaderNode);
-            break;
-        }
+        // "CrossfaderFlowNode" used to be handled here, constructing a
+        // `VirtualCrossfaderNode` that was never defined anywhere in this
+        // package — dead, unreachable code (the type isn't in the editor's
+        // nodeTypes registry, so this case could never run; it would have
+        // thrown `ReferenceError: VirtualCrossfaderNode is not defined` if
+        // it ever had). Removed instead of inventing a class that never
+        // existed. Restored @ts-nocheck removal surfaced this.
         case "DelayFlowNode": {
             const delayNode = new VirtualDelayNode(
                 manager.audioContext,
@@ -358,7 +354,7 @@ export async function addVirtualNode(manager: any, node: CustomNode, parentNode:
                 manager.eventBus,
                 node
             );
-            let curveArray: Float32Array | null = null;
+            let curveArray: Float32Array<ArrayBuffer> | null = null;
             if (nodeData.curve && typeof nodeData.curve === 'string') {
                 const values = nodeData.curve.split(',').map(Number);
                 curveArray = new Float32Array(values);
@@ -419,7 +415,10 @@ export async function addVirtualNode(manager: any, node: CustomNode, parentNode:
                 manager.eventBus,
                 node
             );
-            virtualEqualizer.render(nodeData);
+            // EqualizerConfig's `bands: EQBand[]` isn't exported from
+            // VirtualEqualizerNode.ts for AudioNodeData to declare, but this
+            // node type's actual data does carry it (see EqualizerFlowNode.tsx).
+            virtualEqualizer.render(nodeData as any);
             manager.virtualNodes.set(node.id, virtualEqualizer);
             break;
         }
@@ -522,14 +521,15 @@ export async function addVirtualNode(manager: any, node: CustomNode, parentNode:
             );
             virtualSpeedDivider.setSendNodeOn((data) => manager.emitEventsForConnectedEdges(node, data, 'receiveNodeOn'));
             virtualSpeedDivider.setSendNodeOff((data) => manager.emitEventsForConnectedEdges(node, data, 'receiveNodeOff'));
-            manager.eventBus.subscribe(node.id + '.divider-input.receiveNodeOn', (payload: any) => {
-                virtualSpeedDivider.divider = typeof payload.value === 'number' ? Math.max(1, Math.min(10, payload.value)) : virtualSpeedDivider.divider;
-                virtualSpeedDivider.hitCount = 0;
-                virtualSpeedDivider.emitHitCount?.();
-            });
-            manager.eventBus.subscribe(node.id + '.multiplier-input.receiveNodeOn', (payload: any) => {
-                virtualSpeedDivider.multiplier = typeof payload.value === 'number' ? Math.max(1, Math.min(10, payload.value)) : virtualSpeedDivider.multiplier;
-            });
+            // VirtualSpeedDividerNode's own constructor already subscribes to
+            // both '.divider-input.receiveNodeOn' and
+            // '.multiplier-input.receiveNodeOn' and does this exact clamp/
+            // reset/emit — this block used to duplicate that from outside by
+            // reaching into the node's private `divider`/`hitCount`/
+            // `multiplier` fields (only compiling because @ts-nocheck hid
+            // the private-access errors), double-processing every one of
+            // those events. Removed as dead duplication rather than made to
+            // typecheck.
             manager.virtualNodes.set(node.id, virtualSpeedDivider);
             break;
         }
@@ -802,26 +802,12 @@ export async function addVirtualNode(manager: any, node: CustomNode, parentNode:
             manager.virtualNodes.set(node.id, virtualWebRTCOut);
             break;
         }
-        case "WebRTCPulseNode": {
-            const virtualWebRTC = new VirtualWebRTCPulseNode(
-                manager.audioContext,
-                manager.eventBus,
-                node
-            );
-            await virtualWebRTC.render();
-            manager.virtualNodes.set(node.id, virtualWebRTC);
-            break;
-        }
-        case "WebSocketAudioNode": {
-            const virtualWebSocket = new VirtualWebSocketAudioNode(
-                manager.audioContext,
-                manager.eventBus,
-                node
-            );
-            await virtualWebSocket.render();
-            manager.virtualNodes.set(node.id, virtualWebSocket);
-            break;
-        }
+        // "WebRTCPulseNode" and "WebSocketAudioNode" used to be handled
+        // here too, constructing `VirtualWebRTCPulseNode` and
+        // `VirtualWebSocketAudioNode` — neither class was ever defined in
+        // this package. Same dead/unreachable situation as the
+        // CrossfaderFlowNode case removed above: not in the editor's
+        // nodeTypes registry, so this could never actually run.
         case "UnisonBeginFlowNode": {
             const virtualUnisonBegin = new VirtualUnisonBeginNode(
                 manager.audioContext,

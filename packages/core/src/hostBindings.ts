@@ -29,5 +29,10 @@ export const getFlowLoader = (): FlowLoader | undefined => _flowLoader;
 export const getAssetStore = (): AssetStore | undefined => _assetStore;
 
 /** No-op MIDI so nodes can call ensureAccess()/onMessage() unconditionally when unbound. */
-const NOOP_MIDI: MidiInput = { ensureAccess: async () => { /* noop */ }, onMessage: () => () => { /* noop */ } };
+const NOOP_MIDI: MidiInput = {
+  ensureAccess: async () => { /* noop */ },
+  onMessage: () => () => { /* noop */ },
+  startButtonLearn: () => { /* noop */ },
+  cancelButtonLearn: () => { /* noop */ },
+};
 export const getMidiOrNoop = (): MidiInput => _midi ?? NOOP_MIDI;

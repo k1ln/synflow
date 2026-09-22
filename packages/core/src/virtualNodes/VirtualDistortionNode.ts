@@ -2,7 +2,7 @@ import VirtualNode from "./VirtualNode";
 import { CustomNode } from "../AudioGraphManager";
 import EventBus from "../EventBus";
 
-export class VirtualDistortionNode extends VirtualNode<CustomNode> {
+export class VirtualDistortionNode extends VirtualNode<CustomNode, WaveShaperNode> {
     constructor(audioContext: AudioContext, eventBus: EventBus, node: CustomNode) {
         super(
             audioContext,
@@ -12,16 +12,20 @@ export class VirtualDistortionNode extends VirtualNode<CustomNode> {
         );
     }
 
-    render(curve: Float32Array | null = null, oversample: OverSampleType = "none") {
+    // WaveShaperNode.curve requires Float32Array<ArrayBuffer> specifically
+    // (not the bare, ArrayBufferLike-defaulted `Float32Array`) — every curve
+    // here is always freshly constructed from a plain number[], so this is
+    // just an accurate annotation, not a behavior change.
+    render(curve: Float32Array<ArrayBuffer> | null = null, oversample: OverSampleType = "none") {
         if (this.audioNode) {
             this.audioNode.curve = curve;
             this.audioNode.oversample = oversample;
         }
     }
 
-    private parseCurve(value: unknown): Float32Array | null {
+    private parseCurve(value: unknown): Float32Array<ArrayBuffer> | null {
         if (!value && value !== 0) return null;
-        if (value instanceof Float32Array) return value;
+        if (value instanceof Float32Array) return value as Float32Array<ArrayBuffer>;
         if (Array.isArray(value)) {
             const floats = value.map(Number).filter((num) => Number.isFinite(num));
             return new Float32Array(floats);

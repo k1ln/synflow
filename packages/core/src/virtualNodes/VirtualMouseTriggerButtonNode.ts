@@ -5,7 +5,9 @@ import { CustomNode } from '../AudioGraphManager';
 export interface MouseTriggerButtonNodeData {
   id: string;
   label?: string;
-  style?: React.CSSProperties;
+  // Never read in this package (headless engine, no React dependency) —
+  // just carried through as opaque UI styling from the editor's data.
+  style?: Record<string, unknown>;
 }
 
 export type MouseTriggerCustomNode = CustomNode & { data: MouseTriggerButtonNodeData };

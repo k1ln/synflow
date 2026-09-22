@@ -62,14 +62,18 @@ class VirtualEqualizerNode extends VirtualNode<CustomNode> {
   private analyser: AnalyserNode;
   private filters: BiquadFilterNode[] = [];
   private bands: EQBand[] = [];
-  private freq: Uint8Array;
-  private wave: Uint8Array;
+  // Explicit <ArrayBuffer> (not the bare, ArrayBufferLike-defaulted type
+  // names): AnalyserNode/getFrequencyResponse require it, and every one of
+  // these is always constructed via `new Uint8Array(n)`/`new Float32Array(n)`
+  // below, which is always ArrayBuffer-backed.
+  private freq: Uint8Array<ArrayBuffer>;
+  private wave: Uint8Array<ArrayBuffer>;
   private raf?: number;
   private lastEmit = 0;
   private emitMs = 33;
-  private responseFreqs: Float32Array;
-  private responseMag: Float32Array;
-  private responsePhase: Float32Array;
+  private responseFreqs: Float32Array<ArrayBuffer>;
+  private responseMag: Float32Array<ArrayBuffer>;
+  private responsePhase: Float32Array<ArrayBuffer>;
 
   constructor(
     ctx: AudioContext,
