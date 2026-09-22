@@ -46,7 +46,12 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
     const [showExplorerDialog, setShowExplorerDialog] = useState(false);
     const remoteLoadedRef = useRef(false);
 
-    const refreshRemoteFlows = useCallback(async ()=>{
+    // Stub: sets loading, never fetches or resolves it, and setServerFlows/
+    // setPublicFlows below are never called anywhere in this file (same in
+    // Flow.tsx) — "My Flows"/"All Published by Users" have no backend wired
+    // up yet. Not `async` since nothing here awaits anything, matching
+    // ExplorerDialog's onRefresh?: () => void.
+    const refreshRemoteFlows = useCallback(() => {
         setLoadingRemote(true);
     }, []);
 

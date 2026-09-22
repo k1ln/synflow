@@ -71,9 +71,9 @@ export class VirtualRingModNode extends VirtualNode<
   public connectToInput(source: AudioNode, handleName: string): void {
     if (handleName === "b") {
       if (this.inputB) source.connect(this.inputB);
-    } else {
+    } else if (this.inputA) {
       // "a" / "main-input" / unknown -> carrier
-      if (this.inputA) source.connect(this.inputA);
+      source.connect(this.inputA);
     }
   }
 

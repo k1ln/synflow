@@ -316,7 +316,7 @@ export async function migrateIndexedDbRecordings(
   }
 }
 
-export async function hasFsApi(): Promise<boolean> { return !!window.showDirectoryPicker; }
+export function hasFsApi(): boolean { return !!window.showDirectoryPicker; }
 
 // List all subdirectories in the root
 export async function listAllSubdirectories(root: FileSystemDirectoryHandle): Promise<string[]> {

@@ -22,7 +22,7 @@ export type OnsetDetectionOptions = {
 /**
  * Initialize Essentia.js (lazy loading)
  */
-async function initEssentia() {
+function initEssentia() {
   if (essentiaInstance) return essentiaInstance;
   
   try {

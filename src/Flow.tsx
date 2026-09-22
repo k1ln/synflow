@@ -1067,7 +1067,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
   // Initial FS setup attempt (run once on mount)
   useEffect(() => {
     void (async () => {
-      const supported = await hasFsApi();
+      const supported = hasFsApi();
       setFsSupported(supported);
       if (!supported) { return; }
       const existing = await loadAudioRootHandle();
@@ -1803,7 +1803,6 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
       const width = container?.clientWidth ?? window.innerWidth;
       const height = container?.clientHeight ?? window.innerHeight;
       const screenCenter = { x: width / 2, y: height / 2 };
-      // @ts-ignore
       flowCenter = reactFlow?.screenToFlowPosition ? reactFlow.screenToFlowPosition(screenCenter) : { x: 0, y: 0 };
     } catch {
       flowCenter = { x: 0, y: 0 };
@@ -2074,9 +2073,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
           const width = container?.clientWidth ?? window.innerWidth;
           const height = container?.clientHeight ?? window.innerHeight;
           const screenCenter = { x: width / 2, y: height / 2 };
-          // @ts-ignore
           if (reactFlow?.screenToFlowPosition) {
-            // @ts-ignore
             targetCenter = reactFlow.screenToFlowPosition(screenCenter);
           }
         } catch {

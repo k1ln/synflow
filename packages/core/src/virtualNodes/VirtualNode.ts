@@ -119,11 +119,9 @@ export class VirtualNode<U extends { id: string; data?: any }, T extends AudioNo
                                     }
                                 }
                             }
-                        } else {
+                        } else if (incoming !== undefined) {
                             // Non-AudioParam assignment only if primitive or plain object (skip functions)
-                            if (incoming !== undefined) {
-                                (audioNode as any)[key] = incoming;
-                            }
+                            (audioNode as any)[key] = incoming;
                         }
                     }
                 });
