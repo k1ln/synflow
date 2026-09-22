@@ -2,7 +2,7 @@
 import { Handle, Position } from '@xyflow/react';
 import { EventBus } from '../sys';
 import { MidiKnob } from '../components';
-import { ArpeggiatorMode } from '../virtualNodes';
+import { type ArpeggiatorMode } from '../sys';
 import './AudioNode.css';
 
 export interface ArpeggiatorFlowNodeData {

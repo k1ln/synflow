@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualDistortionNode } from '../src/virtualNodes/VirtualDistortionNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualDistortionNode } from '../packages/core/src/virtualNodes/VirtualDistortionNode';
 
 const mockWaveShaper = () => ({
   curve: null as Float32Array | null,

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualLogNode } from '../src/virtualNodes/VirtualLogNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualLogNode } from '../packages/core/src/virtualNodes/VirtualLogNode';
 
 const makeNode = (overrides: any = {}) => ({
   id: 'log-1',

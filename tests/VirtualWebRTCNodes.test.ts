@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
+import EventBus from '../packages/core/src/EventBus';
 
 // Mock RTCPeerConnection so the nodes never actually try to connect
 vi.stubGlobal('RTCPeerConnection', vi.fn(() => ({
@@ -40,13 +40,13 @@ describe('VirtualWebRTCOutputNode', () => {
   });
 
   it('constructs without throwing', async () => {
-    const { VirtualWebRTCOutputNode } = await import('../src/virtualNodes/VirtualWebRTCOutputNode');
+    const { VirtualWebRTCOutputNode } = await import('../packages/core/src/virtualNodes/VirtualWebRTCOutputNode');
     const ctx = mockCtx();
     expect(() => new VirtualWebRTCOutputNode(ctx, bus, makeNode() as any)).not.toThrow();
   });
 
   it('audioNode is the input gain node', async () => {
-    const { VirtualWebRTCOutputNode } = await import('../src/virtualNodes/VirtualWebRTCOutputNode');
+    const { VirtualWebRTCOutputNode } = await import('../packages/core/src/virtualNodes/VirtualWebRTCOutputNode');
     const ctx = mockCtx();
     const n = new VirtualWebRTCOutputNode(ctx, bus, makeNode() as any);
     expect(n.audioNode).toBeDefined();
@@ -54,7 +54,7 @@ describe('VirtualWebRTCOutputNode', () => {
   });
 
   it('handleUpdateParams with no session change does not throw', async () => {
-    const { VirtualWebRTCOutputNode } = await import('../src/virtualNodes/VirtualWebRTCOutputNode');
+    const { VirtualWebRTCOutputNode } = await import('../packages/core/src/virtualNodes/VirtualWebRTCOutputNode');
     const ctx = mockCtx();
     const node = makeNode({ sessionId: 'abc', serverUrl: 'http://x' });
     const n = new VirtualWebRTCOutputNode(ctx, bus, node as any);
@@ -70,13 +70,13 @@ describe('VirtualWebRTCInputNode', () => {
   });
 
   it('constructs without throwing', async () => {
-    const { VirtualWebRTCInputNode } = await import('../src/virtualNodes/VirtualWebRTCInputNode');
+    const { VirtualWebRTCInputNode } = await import('../packages/core/src/virtualNodes/VirtualWebRTCInputNode');
     const ctx = mockCtx();
     expect(() => new VirtualWebRTCInputNode(ctx, bus, makeNode() as any)).not.toThrow();
   });
 
   it('audioNode is the output gain node', async () => {
-    const { VirtualWebRTCInputNode } = await import('../src/virtualNodes/VirtualWebRTCInputNode');
+    const { VirtualWebRTCInputNode } = await import('../packages/core/src/virtualNodes/VirtualWebRTCInputNode');
     const ctx = mockCtx();
     const n = new VirtualWebRTCInputNode(ctx, bus, makeNode() as any);
     expect(n.audioNode).toBeDefined();

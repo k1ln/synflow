@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualClockNode } from '../src/virtualNodes/VirtualClockNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualClockNode } from '../packages/core/src/virtualNodes/VirtualClockNode';
 
 const makeNode = (overrides: any = {}) => ({
   id: 'clock-1',

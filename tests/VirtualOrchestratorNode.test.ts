@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualOrchestratorNode } from '../src/virtualNodes/VirtualOrchestratorNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualOrchestratorNode } from '../packages/core/src/virtualNodes/VirtualOrchestratorNode';
 
 const makeGain = () => ({ gain: { value: 1 }, connect: vi.fn(), disconnect: vi.fn() });
 

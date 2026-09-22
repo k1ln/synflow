@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import VirtualSampleFlowNode from '../src/virtualNodes/VirtualAudioBufferSourceNode';
+import EventBus from '../packages/core/src/EventBus';
+import VirtualSampleFlowNode from '../packages/core/src/virtualNodes/VirtualAudioBufferSourceNode';
 
 const makeBufferSource = () => ({
   buffer: null as any,

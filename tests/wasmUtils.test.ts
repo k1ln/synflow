@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // compileWasmModule uses a module-level Map cache; reimport each test suite run
 // by resetting modules so the cache starts empty.
-vi.mock('../src/sys/wasmUtils', async (importOriginal) => {
+vi.mock('../packages/core/src/wasmUtils', async (importOriginal) => {
   // We want the real implementation but with fetch / WebAssembly mocked globally.
   return importOriginal();
 });
@@ -33,7 +33,7 @@ describe('wasmUtils.compileWasmModule', () => {
   it('fetches and compiles a WASM module', async () => {
     mockFetchOk();
     mockCompileStreaming(fakeModule);
-    const { compileWasmModule } = await import('../src/sys/wasmUtils');
+    const { compileWasmModule } = await import('../packages/core/src/wasmUtils');
     const result = await compileWasmModule('/test.wasm');
     expect(result).toBe(fakeModule);
     expect((globalThis as any).fetch).toHaveBeenCalledWith('/test.wasm');
@@ -42,7 +42,7 @@ describe('wasmUtils.compileWasmModule', () => {
   it('returns the cached module on a second call without re-fetching', async () => {
     mockFetchOk();
     mockCompileStreaming(fakeModule);
-    const { compileWasmModule } = await import('../src/sys/wasmUtils');
+    const { compileWasmModule } = await import('../packages/core/src/wasmUtils');
     await compileWasmModule('/cached.wasm');
     await compileWasmModule('/cached.wasm');
     expect((globalThis as any).fetch).toHaveBeenCalledTimes(1);
@@ -54,14 +54,14 @@ describe('wasmUtils.compileWasmModule', () => {
       vi.fn().mockResolvedValue({ ok: false, status: 404 } as Response)
     );
     mockCompileStreaming(fakeModule);
-    const { compileWasmModule } = await import('../src/sys/wasmUtils');
+    const { compileWasmModule } = await import('../packages/core/src/wasmUtils');
     await expect(compileWasmModule('/missing.wasm')).rejects.toThrow('404');
   });
 
   it('caches different URLs independently', async () => {
     mockFetchOk();
     mockCompileStreaming(fakeModule);
-    const { compileWasmModule } = await import('../src/sys/wasmUtils');
+    const { compileWasmModule } = await import('../packages/core/src/wasmUtils');
     await compileWasmModule('/a.wasm');
     await compileWasmModule('/b.wasm');
     expect((globalThis as any).fetch).toHaveBeenCalledTimes(2);

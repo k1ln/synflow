@@ -5,8 +5,8 @@ vi.mock('../src/nodes/OscillatorFlowNode', () => ({
   buildWavetablePeriodicWave: vi.fn(() => ({})),
 }));
 
-import EventBus from '../src/sys/EventBus';
-import VirtualOscillatorNode from '../src/virtualNodes/VirtualOscillatorNode';
+import EventBus from '../packages/core/src/EventBus';
+import VirtualOscillatorNode from '../packages/core/src/virtualNodes/VirtualOscillatorNode';
 
 const makeOscillator = () => ({
   frequency: { value: 440, setTargetAtTime: vi.fn() },

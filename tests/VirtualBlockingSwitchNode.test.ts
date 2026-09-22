@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualBlockingSwitchNode } from '../src/virtualNodes/VirtualBlockingSwitchNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualBlockingSwitchNode } from '../packages/core/src/virtualNodes/VirtualBlockingSwitchNode';
 
 const makeNode = (numOutputs = 2) => ({
   id: 'bsw-1',

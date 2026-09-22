@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import VirtualMidiKnobNode from '../src/virtualNodes/VirtualMidiKnobNode';
+import EventBus from '../packages/core/src/EventBus';
+import VirtualMidiKnobNode from '../packages/core/src/virtualNodes/VirtualMidiKnobNode';
 
 vi.mock('../src/components/MidiManager', () => ({
   default: {

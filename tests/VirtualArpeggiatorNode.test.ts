@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualArpeggiatorNode } from '../src/virtualNodes/VirtualArpeggiatorNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualArpeggiatorNode } from '../packages/core/src/virtualNodes/VirtualArpeggiatorNode';
 
 const makeNode = (overrides: any = {}) => ({
   id: 'arp-1',

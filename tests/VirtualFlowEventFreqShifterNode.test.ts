@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualFlowEventFreqShifterNode } from '../src/virtualNodes/VirtualFlowEventFreqShifterNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualFlowEventFreqShifterNode } from '../packages/core/src/virtualNodes/VirtualFlowEventFreqShifterNode';
 
 const makeNode = (shift = 0) => ({
   id: 'shifter-1',

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualAudioWorkletNode } from '../src/virtualNodes/VirtualAudioWorkletNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualAudioWorkletNode } from '../packages/core/src/virtualNodes/VirtualAudioWorkletNode';
 
 // Stub AudioWorkletNode globally
 const makeWorkletNode = () => ({

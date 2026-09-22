@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import VirtualOscilloscopeNode from '../src/virtualNodes/VirtualOscilloscopeNode';
+import EventBus from '../packages/core/src/EventBus';
+import VirtualOscilloscopeNode from '../packages/core/src/virtualNodes/VirtualOscilloscopeNode';
 
 (globalThis as any).requestAnimationFrame = vi.fn(() => 0);
 (globalThis as any).cancelAnimationFrame = vi.fn();

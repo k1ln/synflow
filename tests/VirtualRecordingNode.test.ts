@@ -5,8 +5,8 @@ vi.mock('../src/util/FileSystemAudioStore', () => ({
   writeAudioBlob: vi.fn(async () => {}),
 }));
 
-import EventBus from '../src/sys/EventBus';
-import { VirtualRecordingNode } from '../src/virtualNodes/VirtualRecordingNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualRecordingNode } from '../packages/core/src/virtualNodes/VirtualRecordingNode';
 
 const makeGain = () => ({ gain: { value: 1 }, connect: vi.fn(), disconnect: vi.fn() });
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualFunctionNode } from '../src/virtualNodes/VirtualFunctionNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualFunctionNode } from '../packages/core/src/virtualNodes/VirtualFunctionNode';
 
 const makeNode = (overrides: any = {}) => ({
   id: 'fn-1',

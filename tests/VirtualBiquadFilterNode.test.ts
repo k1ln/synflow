@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualBiquadFilterNode } from '../src/virtualNodes/VirtualBiquadFilterNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualBiquadFilterNode } from '../packages/core/src/virtualNodes/VirtualBiquadFilterNode';
 
 const mockParam = (initial = 0) => ({ value: initial });
 const mockBiquadNode = () => ({

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualIIRFilterNode } from '../src/virtualNodes/VirtualIIRFilterNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualIIRFilterNode } from '../packages/core/src/virtualNodes/VirtualIIRFilterNode';
 
 let iirNodeCount = 0;
 const mockIIRNode = () => ({

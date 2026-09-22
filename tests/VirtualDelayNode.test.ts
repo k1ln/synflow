@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualDelayNode } from '../src/virtualNodes/VirtualDelayNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualDelayNode } from '../packages/core/src/virtualNodes/VirtualDelayNode';
 
 const mockDelayNode = () => ({
   delayTime: { value: 0 },

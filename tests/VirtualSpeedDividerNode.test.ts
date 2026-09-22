@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualSpeedDividerNode } from '../src/virtualNodes/VirtualSpeedDividerNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualSpeedDividerNode } from '../packages/core/src/virtualNodes/VirtualSpeedDividerNode';
 
 const makeNode = (divider = 2, multiplier = 1) => ({
   id: 'div-1',

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import EventBus from '../src/sys/EventBus';
-import { VirtualChorusNode } from '../src/virtualNodes/VirtualChorusNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualChorusNode } from '../packages/core/src/virtualNodes/VirtualChorusNode';
 
 const mockParam = (v = 0) => ({ value: v, setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn(), cancelScheduledValues: vi.fn() });
 const mockGain = () => ({ gain: mockParam(1), connect: vi.fn(), disconnect: vi.fn() });

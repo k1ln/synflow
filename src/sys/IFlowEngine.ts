@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import { AudioGraphManager } from './AudioGraphManager';
+import { AudioGraphManager } from '@synflow/core';
 
 /**
  * The audio-engine surface the Flow editor actually uses. The web app injects the

@@ -221,14 +221,13 @@ export default tseslint.config(
       app: ['components', 'constants', 'docs', 'host', 'nodes', 'sys', 'util', 'utils'],
       ui: ['components', 'host', 'sys'],
       'plugin-ui': ['sys', 'ui'],
-      nodes: ['components', 'host', 'sys', 'types', 'util', 'utils', 'virtualNodes'],
+      nodes: ['components', 'host', 'sys', 'types', 'util', 'utils'],
       constants: ['nodes'],
       docs: ['nodes'],
       components: ['host', 'util'],
       utils: ['components'],
       host: ['util'],
       sys: [],
-      virtualNodes: [],
       util: [],
       types: [],
       audioWorklets: [],
@@ -240,7 +239,7 @@ export default tseslint.config(
     const FOLDER = {
       ui: 'src/ui', 'plugin-ui': 'src/plugin-ui', nodes: 'src/nodes', constants: 'src/constants',
       docs: 'src/docs', components: 'src/components', utils: 'src/utils', host: 'src/host',
-      sys: 'src/sys', virtualNodes: 'src/virtualNodes', util: 'src/util', types: 'src/types',
+      sys: 'src/sys', util: 'src/util', types: 'src/types',
       audioWorklets: 'src/audioWorklets',
     };
     // Modules with a real barrel (src/<module>/index.ts) — every other module
@@ -250,7 +249,6 @@ export default tseslint.config(
       host: ['compileWorklet', 'workletWasmShim', 'compileFlowWorklets', 'exportPortableFlow'],
       util: ['pitchDetection'],
       types: [],
-      virtualNodes: [],
       sys: [],
       utils: [],
       components: [],
@@ -259,6 +257,17 @@ export default tseslint.config(
       ui: [],
       nodes: [],
     };
+    // '@synflow/core' is an external package, so it's invisible to the
+    // MODULE_GRAPH/FOLDER machinery above (which only knows about paths
+    // inside src/) — it needs its own check. Only sys/ (the module that
+    // exists specifically to mediate engine access — see src/sys/index.ts),
+    // host/ (implements the engine's host-adapter interfaces: AssetStore,
+    // FlowLoader) and ui/ (the composition root that wires host adapters
+    // into the engine via setHostAdapters) are allowed to import it
+    // directly. Everything else — nodes/, components/, docs/, constants/,
+    // utils/, util/, types/, audioWorklets/, plugin-ui/, app, entry — goes
+    // through sys/, same as every other cross-module dependency here.
+    const CORE_PACKAGE_ALLOWED = new Set(['sys', 'host', 'ui']);
     const sourceBlocks = [
       { ownType: 'entry', filesGlob: 'index.tsx', allowed: MODULE_GRAPH.entry },
       { ownType: 'app', filesGlob: 'src/Flow.tsx', allowed: MODULE_GRAPH.app },
@@ -289,11 +298,15 @@ export default tseslint.config(
           message: `Import from the ${target} barrel ('../${target}') instead of reaching into a sibling file directly — see src/${target}/index.ts.`,
         });
       }
-      if (patterns.length === 0) return null;
+      const paths = CORE_PACKAGE_ALLOWED.has(ownType) ? [] : [{
+        name: '@synflow/core',
+        message: 'Import engine primitives from the sys barrel (\'../sys\') instead of \'@synflow/core\' directly — sys/, host/ and ui/ are the only modules allowed to reach the engine package directly. Add the export to src/sys/index.ts if it isn\'t re-exported yet.',
+      }];
+      if (patterns.length === 0 && paths.length === 0) return null;
       return {
         files: [filesGlob],
         rules: {
-          'no-restricted-imports': ['error', { patterns }],
+          'no-restricted-imports': ['error', { paths, patterns }],
         },
       };
     }).filter(Boolean);
@@ -308,11 +321,27 @@ export default tseslint.config(
   //   reasoning — see packages/core/src/virtualNodes/index.ts.
   {
     files: ['packages/core/src/*.ts'],
-    ignores: ['packages/core/src/virtualNodes/**'],
+    ignores: ['packages/core/src/virtualNodes/**', 'packages/core/src/index.ts'],
     rules: {
       'no-restricted-imports': ['error', {
         patterns: [{
           group: ['**/virtualNodes/*', '!**/virtualNodes/index'],
+          message: 'Import from the virtualNodes barrel (\'./virtualNodes\') instead of reaching into a sibling file directly — see packages/core/src/virtualNodes/index.ts.',
+        }],
+      }],
+    },
+  },
+  // index.ts gets a narrower version of the same rule: it may reach
+  // VirtualArpeggiatorNode directly (see the comment on that export in
+  // index.ts — going through the barrel would drag the whole package's
+  // public dts build through all 63 files instead of just this one), but
+  // nothing else in virtualNodes/ is fair game from here either.
+  {
+    files: ['packages/core/src/index.ts'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['**/virtualNodes/*', '!**/virtualNodes/index', '!**/virtualNodes/VirtualArpeggiatorNode'],
           message: 'Import from the virtualNodes barrel (\'./virtualNodes\') instead of reaching into a sibling file directly — see packages/core/src/virtualNodes/index.ts.',
         }],
       }],

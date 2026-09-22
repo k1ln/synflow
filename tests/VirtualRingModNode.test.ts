@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import EventBus from '../src/sys/EventBus';
-import { VirtualRingModNode } from '../src/virtualNodes/VirtualRingModNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualRingModNode } from '../packages/core/src/virtualNodes/VirtualRingModNode';
 
 const mockGain = () => ({ gain: { value: 1 }, connect: vi.fn(), disconnect: vi.fn() });
 const mockAudioContext = () => ({

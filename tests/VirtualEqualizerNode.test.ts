@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import VirtualEqualizerNode from '../src/virtualNodes/VirtualEqualizerNode';
+import EventBus from '../packages/core/src/EventBus';
+import VirtualEqualizerNode from '../packages/core/src/virtualNodes/VirtualEqualizerNode';
 
 (globalThis as any).requestAnimationFrame = vi.fn(() => 0);
 (globalThis as any).cancelAnimationFrame = vi.fn();

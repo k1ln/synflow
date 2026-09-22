@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualButtonNode } from '../src/virtualNodes/VirtualButtonNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualButtonNode } from '../packages/core/src/virtualNodes/VirtualButtonNode';
 
 const mockWindow = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
 

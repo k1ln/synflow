@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualMidiButtonNode } from '../src/virtualNodes/VirtualMidiButtonNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualMidiButtonNode } from '../packages/core/src/virtualNodes/VirtualMidiButtonNode';
 
 // Stub EventManager — only key binding calls matter; MIDI setup is async/browser-only
 const mkEvtMgr = () => ({

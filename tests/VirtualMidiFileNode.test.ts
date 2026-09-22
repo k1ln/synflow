@@ -5,8 +5,8 @@ vi.mock('../src/nodes/MidiFileFlowNode', () => ({
   // Types only — no runtime values needed; the virtual node just uses them as interfaces
 }));
 
-import EventBus from '../src/sys/EventBus';
-import { VirtualMidiFileNode } from '../src/virtualNodes/VirtualMidiFileNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualMidiFileNode } from '../packages/core/src/virtualNodes/VirtualMidiFileNode';
 
 // Minimal ParsedMidiFile with two notes starting at tick 0 and tick 480
 const makeMidiFile = (overrides: any = {}) => ({

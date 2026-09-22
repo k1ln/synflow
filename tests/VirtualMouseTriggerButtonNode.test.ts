@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualMouseTriggerButtonNode } from '../src/virtualNodes/VirtualMouseTriggerButtonNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualMouseTriggerButtonNode } from '../packages/core/src/virtualNodes/VirtualMouseTriggerButtonNode';
 
 const makeNode = (overrides: any = {}) => ({
   id: 'mouse-btn-1',

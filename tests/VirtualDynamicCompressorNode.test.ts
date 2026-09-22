@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualDynamicCompressorNode } from '../src/virtualNodes/VirtualDynamicCompressorNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualDynamicCompressorNode } from '../packages/core/src/virtualNodes/VirtualDynamicCompressorNode';
 
 const mockParam = (v = 0) => ({ value: v });
 const mockCompressorNode = () => ({

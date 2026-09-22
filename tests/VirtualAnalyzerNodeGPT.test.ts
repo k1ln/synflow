@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import VirtualAnalyzerNodeGPT from '../src/virtualNodes/VirtualAnalyzerNodeGPT';
+import EventBus from '../packages/core/src/EventBus';
+import VirtualAnalyzerNodeGPT from '../packages/core/src/virtualNodes/VirtualAnalyzerNodeGPT';
 
 // Suppress rAF loop in node environment
 (globalThis as any).requestAnimationFrame = vi.fn(() => 1);

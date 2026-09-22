@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualGainNode } from '../src/virtualNodes/VirtualGainNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualGainNode } from '../packages/core/src/virtualNodes/VirtualGainNode';
 
 const mockGainNode = () => {
   const gain = { value: 1 };

@@ -4,7 +4,7 @@ import React from 'react';
 import { render, fireEvent, screen } from '@testing-library/react';
 import ArpeggiatorFlowNode, { ArpeggiatorFlowNodeProps } from '../src/nodes/ArpeggiatorFlowNode';
 import { ReactFlowProvider } from '@xyflow/react';
-import EventBus from '../src/sys/EventBus';
+import EventBus from '../packages/core/src/EventBus';
 
 describe('ArpeggiatorFlowNode', () => {
   let eventBus: EventBus;

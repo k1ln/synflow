@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualVocoderNode } from '../src/virtualNodes/VirtualVocoderNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualVocoderNode } from '../packages/core/src/virtualNodes/VirtualVocoderNode';
 
 (globalThis as any).requestAnimationFrame = vi.fn(() => 0);
 (globalThis as any).cancelAnimationFrame = vi.fn();

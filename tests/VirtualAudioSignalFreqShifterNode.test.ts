@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-vi.mock('../src/sys/wasmUtils', () => ({ compileWasmModule: vi.fn(async () => ({})) }));
+vi.mock('../packages/core/src/wasmUtils', () => ({ compileWasmModule: vi.fn(async () => ({})) }));
 
-import EventBus from '../src/sys/EventBus';
-import { VirtualAudioSignalFreqShifterNode } from '../src/virtualNodes/VirtualAudioSignalFreqShifterNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualAudioSignalFreqShifterNode } from '../packages/core/src/virtualNodes/VirtualAudioSignalFreqShifterNode';
 
 const makeWorkletNode = () => {
   const shiftParam = { value: 0 };

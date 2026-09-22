@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualScriptSequencerNode } from '../src/virtualNodes/VirtualScriptSequencerNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualScriptSequencerNode } from '../packages/core/src/virtualNodes/VirtualScriptSequencerNode';
 
 const makeNode = (script = '', overrides: any = {}) => ({
   id: 'seq-1',

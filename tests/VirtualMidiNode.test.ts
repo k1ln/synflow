@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { VirtualMidiNode } from '../src/virtualNodes/VirtualMidiNode';
+import { VirtualMidiNode } from '../packages/core/src/virtualNodes/VirtualMidiNode';
 
 describe('VirtualMidiNode', () => {
   it('stores id and sourceId', () => {

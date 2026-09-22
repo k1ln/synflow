@@ -11,8 +11,8 @@ type AnalyzerConfig = {
 
 class VirtualAnalyzerNodeGPT extends VirtualNode<CustomNode> {
   private analyser: AnalyserNode;
-  private freq: Uint8Array;
-  private wave: Uint8Array;
+  private freq: Uint8Array<ArrayBuffer>;
+  private wave: Uint8Array<ArrayBuffer>;
   private raf?: number;
   private lastEmit = 0;
   private emitMs = 33;

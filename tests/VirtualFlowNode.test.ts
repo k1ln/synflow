@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualFlowNode } from '../src/virtualNodes/VirtualFlowNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualFlowNode } from '../packages/core/src/virtualNodes/VirtualFlowNode';
 
 const makeNode = (overrides: any = {}) => ({
   id: 'flow-1',

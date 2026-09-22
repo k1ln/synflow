@@ -6,8 +6,8 @@ vi.mock('../src/nodes/OscillatorFlowNode', () => ({
   buildWavetablePeriodicWave: vi.fn(() => ({})),
 }));
 
-import EventBus from '../src/sys/EventBus';
-import { VirtualAudioWorkletOscillatorNode } from '../src/virtualNodes/VirtualAudioWorkletOscillatorNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualAudioWorkletOscillatorNode } from '../packages/core/src/virtualNodes/VirtualAudioWorkletOscillatorNode';
 
 const makeWorkletNode = () => ({
   parameters: new Map<string, AudioParam>(),

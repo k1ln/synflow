@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import VirtualMasterOut from '../src/virtualNodes/VirtualMasterOut';
+import EventBus from '../packages/core/src/EventBus';
+import VirtualMasterOut from '../packages/core/src/virtualNodes/VirtualMasterOut';
 
 const mockAudioContext = () => ({
   destination: {},

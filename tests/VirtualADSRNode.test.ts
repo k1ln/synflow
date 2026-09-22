@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualADSRNode } from '../src/virtualNodes/VirtualADSRNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualADSRNode } from '../packages/core/src/virtualNodes/VirtualADSRNode';
 
 const makeNode = (overrides: any = {}) => ({
   id: 'adsr-1',

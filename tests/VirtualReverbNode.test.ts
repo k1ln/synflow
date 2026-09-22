@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualReverbNode } from '../src/virtualNodes/VirtualReverbNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualReverbNode } from '../packages/core/src/virtualNodes/VirtualReverbNode';
 
 // Minimal AudioContext mock supporting convolver + buffer creation
 const mockAudioContext = () => {

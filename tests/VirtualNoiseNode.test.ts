@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('../packages/core/src/wasmUtils', () => ({ compileWasmModule: vi.fn(async () => ({})) }));
 
-import EventBus from '../src/sys/EventBus';
-import VirtualNoiseNode from '../src/virtualNodes/VirtualNoiseNode';
+import EventBus from '../packages/core/src/EventBus';
+import VirtualNoiseNode from '../packages/core/src/virtualNodes/VirtualNoiseNode';
 
 const makeWorkletNode = () => ({
   parameters: new Map([['gain', { value: 1 }]]),

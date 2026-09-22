@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import EventBus from '../src/sys/EventBus';
-import { VirtualLadderFilterNode } from '../src/virtualNodes/VirtualLadderFilterNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualLadderFilterNode } from '../packages/core/src/virtualNodes/VirtualLadderFilterNode';
 
 // In the node test env there is no AudioWorkletNode global, so initWorklet()
 // throws and is caught internally — the virtual node still constructs and its

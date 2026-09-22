@@ -1,6 +1,6 @@
 import type { RefObject } from 'react';
 import type { IFlowEngine } from './IFlowEngine';
-import EventBus from './EventBus';
+import { EventBus } from '@synflow/core';
 
 // Strip functions / non-JSON bits from the live graph -> the shared flow-JSON
 // contract the C++ FlowLoader reads. (Sub-flow embedding, as in

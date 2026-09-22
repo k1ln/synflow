@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualSwitchNode } from '../src/virtualNodes/VirtualSwitchNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualSwitchNode } from '../packages/core/src/virtualNodes/VirtualSwitchNode';
 
 const makeNode = (numOutputs = 3, activeOutput = 0) => ({
   id: 'switch-1',

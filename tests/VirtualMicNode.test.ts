@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualMicNode } from '../src/virtualNodes/VirtualMicNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualMicNode } from '../packages/core/src/virtualNodes/VirtualMicNode';
 
 // Minimal AudioWorkletNode mock (for passthrough node creation)
 (globalThis as any).AudioWorkletNode = class {

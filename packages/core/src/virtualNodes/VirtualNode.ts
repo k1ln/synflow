@@ -41,10 +41,10 @@ export class VirtualNode<U extends { id: string; data?: any }, T extends AudioNo
                     if (key in audioNode) {
                         target = (audioNode as any)[key];
                     } else if (
-                        audioNode.parameters &&
-                        audioNode.parameters.has(key)
+                        (audioNode as any).parameters &&
+                        (audioNode as any).parameters.has(key)
                     ) {
-                        target = audioNode.parameters.get(key);
+                        target = (audioNode as any).parameters.get(key);
                     }
 
                     let incoming = data.data[key];

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualAutomationNode } from '../src/virtualNodes/VirtualAutomationNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualAutomationNode } from '../packages/core/src/virtualNodes/VirtualAutomationNode';
 
 const makeNode = (overrides: any = {}) => ({
   id: 'auto-1',

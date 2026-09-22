@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualUnisonEndNode } from '../src/virtualNodes/VirtualUnisonEndNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualUnisonEndNode } from '../packages/core/src/virtualNodes/VirtualUnisonEndNode';
 
 const makeGainNode = () => {
   const gain = { value: 1 };

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualFrequencyShifterNode } from '../src/virtualNodes/VirtualFrequencyShifterNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualFrequencyShifterNode } from '../packages/core/src/virtualNodes/VirtualFrequencyShifterNode';
 
 // Minimal AudioContext mock — audioWorklet failures are caught internally
 const mockAudioContext = () => ({

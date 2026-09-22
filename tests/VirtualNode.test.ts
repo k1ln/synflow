@@ -6,8 +6,8 @@ class AudioParam { value = 0; setValueAtTime = vi.fn(); }
 vi.stubGlobal('AudioNode', AudioNode);
 vi.stubGlobal('AudioParam', AudioParam);
 
-import EventBus from '../src/sys/EventBus';
-import { VirtualNode } from '../src/virtualNodes/VirtualNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualNode } from '../packages/core/src/virtualNodes/VirtualNode';
 
 const makeAudioParam = (initial = 0) => Object.assign(new AudioParam(), {
   value: initial,

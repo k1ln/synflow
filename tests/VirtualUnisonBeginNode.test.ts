@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualUnisonBeginNode } from '../src/virtualNodes/VirtualUnisonBeginNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualUnisonBeginNode } from '../packages/core/src/virtualNodes/VirtualUnisonBeginNode';
 
 const makeNode = (overrides: any = {}) => ({
   id: 'unison-1',

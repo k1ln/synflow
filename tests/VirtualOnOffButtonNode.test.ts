@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualOnOffButtonNode } from '../src/virtualNodes/VirtualOnOffButtonNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualOnOffButtonNode } from '../packages/core/src/virtualNodes/VirtualOnOffButtonNode';
 
 const mockAudioContext = () => ({
   createGain: () => ({

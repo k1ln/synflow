@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import EventBus from '../src/sys/EventBus';
-import { VirtualInputNode } from '../src/virtualNodes/VirtualInputNode';
+import EventBus from '../packages/core/src/EventBus';
+import { VirtualInputNode } from '../packages/core/src/virtualNodes/VirtualInputNode';
 
 const makeNode = (index = 0, value: any = 42) => ({
   id: 'input-node-1',
