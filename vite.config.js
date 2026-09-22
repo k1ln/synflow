@@ -17,12 +17,4 @@ export default defineConfig({
   // optimizer uses Vite's default browser target otherwise, which rejects TLA).
   build: { target: 'es2022' },
   optimizeDeps: { esbuildOptions: { target: 'es2022' } },
-  server: {
-    // Mothscilla (packages/daw) mounts at /daw — its own vite dev server
-    // (port 5174, `base: '/daw/'`) is proxied through here so both apps live
-    // on one origin in dev, matching how nginx serves them in production.
-    proxy: {
-      '/daw': { target: 'http://localhost:5174', changeOrigin: true, ws: true },
-    },
-  },
 });
