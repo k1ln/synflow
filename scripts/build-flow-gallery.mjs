@@ -46,38 +46,45 @@ const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 export function flowToSvg(flow) {
   const nodes = (flow.nodes || []).filter((n) => n && n.position);
   if (!nodes.length) return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 6"/>';
-  const size = (n) => ({ w: n.measured?.width || n.width || 150, h: n.measured?.height || n.height || 56 });
+  // One box per node. The same box (not the node's real, often much taller, size) is used for the
+  // bounds and for where the edges attach, and it is at least as wide as its label.
+  const FONT = 17, CHAR_W = FONT * 0.56, BOX_H = 56;
+  const boxOf = (n) => {
+    const label = String(n.data?.label || shortType(n.type)).slice(0, 26);
+    const w = Math.max(n.measured?.width || n.width || 150, Math.ceil(label.length * CHAR_W) + 32);
+    return { n, label, w, h: BOX_H };
+  };
+  const boxes = nodes.map(boxOf);
+  const byId = new Map(boxes.map((b) => [b.n.id, b]));
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  for (const n of nodes) {
-    const { w, h } = size(n);
+  for (const { n, w, h } of boxes) {
     x0 = Math.min(x0, n.position.x); y0 = Math.min(y0, n.position.y);
     x1 = Math.max(x1, n.position.x + w); y1 = Math.max(y1, n.position.y + h);
   }
   const pad = 40;
   const vw = x1 - x0 + pad * 2, vh = y1 - y0 + pad * 2;
-  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const seen = new Set();
   const edges = (flow.edges || []).map((e) => {
     const a = byId.get(e.source), b = byId.get(e.target);
     if (!a || !b) return '';
-    const sa = size(a), sb = size(b);
-    const ax = a.position.x + sa.w - x0 + pad, ay = a.position.y + sa.h / 2 - y0 + pad;
-    const bx = b.position.x - x0 + pad, by = b.position.y + sb.h / 2 - y0 + pad;
+    const ax = a.n.position.x + a.w - x0 + pad, ay = a.n.position.y + a.h / 2 - y0 + pad;
+    const bx = b.n.position.x - x0 + pad, by = b.n.position.y + b.h / 2 - y0 + pad;
     const dx = Math.max(40, Math.abs(bx - ax) / 2);
-    return `<path d="M${ax.toFixed(1)} ${ay.toFixed(1)}C${(ax + dx).toFixed(1)} ${ay.toFixed(1)} ${(bx - dx).toFixed(1)} ${by.toFixed(1)} ${bx.toFixed(1)} ${by.toFixed(1)}"/>`;
+    const d = `M${ax.toFixed(1)} ${ay.toFixed(1)}C${(ax + dx).toFixed(1)} ${ay.toFixed(1)} ${(bx - dx).toFixed(1)} ${by.toFixed(1)} ${bx.toFixed(1)} ${by.toFixed(1)}`;
+    if (seen.has(d)) return ''; // parallel handle-to-handle edges collapse to one line
+    seen.add(d);
+    return `<path d="${d}"/>`;
   }).join('');
-  const boxes = nodes.map((n) => {
-    const { w, h } = size(n);
+  const rects = boxes.map(({ n, label, w, h }) => {
     const c = CAT[category(n.type)];
     const x = n.position.x - x0 + pad, y = n.position.y - y0 + pad;
-    const label = esc(String(n.data?.label || shortType(n.type)).slice(0, 22));
-    const bh = Math.min(h, 56);
-    return `<g><rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w}" height="${bh}" rx="8" fill="#121324" stroke="${c}" stroke-opacity=".7" stroke-width="2"/>`
-      + `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="6" height="${bh}" rx="3" fill="${c}"/>`
-      + `<text x="${(x + 16).toFixed(1)}" y="${(y + bh / 2 + 6).toFixed(1)}" font-size="17" fill="#eef1f8">${label}</text></g>`;
+    return `<g><rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w}" height="${h}" rx="8" fill="#121324" stroke="${c}" stroke-opacity=".7" stroke-width="2"/>`
+      + `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="6" height="${h}" rx="3" fill="${c}"/>`
+      + `<text x="${(x + 16).toFixed(1)}" y="${(y + h / 2 + 6).toFixed(1)}" font-size="${FONT}" fill="#eef1f8">${esc(label)}</text></g>`;
   }).join('');
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${vw.toFixed(0)} ${vh.toFixed(0)}" font-family="ui-sans-serif,system-ui,sans-serif">`
     + `<rect width="100%" height="100%" fill="#0a0b0f"/>`
-    + `<g fill="none" stroke="#4da8ff" stroke-opacity=".45" stroke-width="2.5">${edges}</g>${boxes}</svg>`;
+    + `<g fill="none" stroke="#4da8ff" stroke-opacity=".45" stroke-width="2.5">${edges}</g>${rects}</svg>`;
 }
 
 // ── catalogue ─────────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Save, Upload, Download, FolderOpen, Plus, Settings, HardDriveDownload, FilePlus, FileInput, FileOutput, Play, Square, MoreHorizontal, Music, BookOpen, Github, Youtube, HelpCircle, Shield, Trash2, SlidersHorizontal, LayoutDashboard, CloudUpload } from 'lucide-react';
+import { Save, Upload, Download, FolderOpen, Plus, Settings, HardDriveDownload, FilePlus, FileInput, FileOutput, Play, Square, MoreHorizontal, Music, BookOpen, Github, Youtube, HelpCircle, Shield, Trash2, SlidersHorizontal, LayoutDashboard, CloudUpload, Images } from 'lucide-react';
 
 export interface TopBarProps {
   // Left cluster (sidebar-related)
@@ -473,6 +473,27 @@ export const TopBar: React.FC<TopBarProps> = ({
           {onOpenImpressum && <IconBtn title="Impressum" onClick={onOpenImpressum}><HelpCircle size={18} /></IconBtn>}
           {onOpenDatenschutz && <IconBtn title="Datenschutz" onClick={onOpenDatenschutz}><Shield size={18} /></IconBtn>}
 
+          <a
+            href="https://k1ln.github.io/synflow/gallery/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Public flow gallery"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 32,
+              height: 32,
+              borderRadius: 6,
+              background: 'transparent',
+              color: '#eee',
+              border: 'none',
+              cursor: 'pointer',
+              marginLeft: 4,
+            }}
+          >
+            <Images size={18} />
+          </a>
           <a
             href="https://www.youtube.com/@synflow-org"
             target="_blank"

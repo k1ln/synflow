@@ -74,8 +74,8 @@ body.gal { height: 100vh; display: flex; flex-direction: column; overflow: hidde
 .detail h2 { font-family: var(--display); font-size: 24px; margin: 0 0 6px; }
 .detail .desc { color: var(--ink-2); line-height: 1.55; max-width: 700px; margin: 0 0 16px; }
 .detail .actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0 20px; }
-.graph { border: 1px solid var(--border-default); border-radius: var(--r-lg); background: var(--bg-void); overflow: auto; max-height: 56vh; }
-.graph img { display: block; width: 100%; min-width: 560px; height: auto; }
+.graph { border: 1px solid var(--border-default); border-radius: var(--r-lg); background: var(--bg-void); overflow: hidden; }
+.graph img { display: block; width: 100%; height: auto; max-height: 62vh; object-fit: contain; }
 .facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .fact { background: var(--bg-panel); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); padding: 4px 10px; font-size: 12px; color: var(--ink-2); }
 .fact b { color: var(--ink-1); }
