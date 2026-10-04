@@ -57,7 +57,7 @@ import { CustomNode } from '../AudioGraphManager';
  *   print <expr>           — console.log for debugging
  *   //... or empty line    — no-op
  *
- * Inputs (target handles):
+ * Inputs (target handles): 
  *   clock          → advance one line per ON event
  *   reset          → reset cursor to line 0
  *   bpm-input      → optional explicit clock period in ms
