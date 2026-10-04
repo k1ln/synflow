@@ -227,7 +227,7 @@ export function buildPulsePeriodicWave(
 const OscillatorFlowNode: React.FC<OscillatorFlowNodeProps> = ({ data }) => {
   const [frequency, setFrequency] = useState(data.frequency || 440);
   const [detune, setDetune] = useState(data.detune || 0);
-  const [label, setLabel] = useState(data.label || "Oscillator");
+  const [label, _setLabel] = useState(data.label || "Oscillator");
   const [waveform, setWaveform] = useState<OscillatorType>(data.type || "sine");
   const [pulseWidth, setPulseWidth] = useState(data.pulseWidth ?? 0.5);
   const [periodicWaveHarmonics, setPeriodicWaveHarmonics] = useState(data.periodicWaveHarmonics ?? 128);

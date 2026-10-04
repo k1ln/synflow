@@ -39,7 +39,7 @@ const WavetableFlowNode: React.FC<WavetableFlowNodeProps> = ({ data }) => {
   const [decay, setDecay] = useState(data.decay ?? 0.3);
   const [sustain, setSustain] = useState(data.sustain ?? 0.8);
   const [release, setRelease] = useState(data.release ?? 0.3);
-  const [label, setLabel] = useState(data.label ?? "Wavetable");
+  const [label, _setLabel] = useState(data.label ?? "Wavetable");
   const [posMidiMapping, setPosMidiMapping] = useState<MidiMapping | null>(data.posMidiMapping ?? null);
   const [warpMidiMapping, setWarpMidiMapping] = useState<MidiMapping | null>(data.warpMidiMapping ?? null);
 

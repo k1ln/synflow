@@ -61,8 +61,8 @@ const MidiFlowNote: React.FC<{ data: MidiFlowNoteData }> = ({ data }) => {
   const eventBus = EventBus.getInstance();
   const [accessError, setAccessError] = useState<string | null>(null);
   const [deviceName, setDeviceName] = useState<string>('');
-  const [lastNote, setLastNote] = useState(data.lastNote || '');
-  const [frequency, setFrequency] = useState<number>(data.frequency || 0);
+  const [lastNote, _setLastNote] = useState(data.lastNote || '');
+  const [frequency, _setFrequency] = useState<number>(data.frequency || 0);
   const [lastChannel, setLastChannel] = useState<number | null>(null); // 0-based
   const [devices, setDevices] = useState<string[]>([]);
 

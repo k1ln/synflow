@@ -59,7 +59,7 @@ const VocoderFlowNode: React.FC<VocoderFlowNodeProps> = ({ data }) => {
   const spectrumRef = useRef<number[]>([]);
 
   // State for vocoder parameters
-  const [label, setLabel] = useState(data.label || "Vocoder");
+  const [label, _setLabel] = useState(data.label || "Vocoder");
   const [bandCount, setBandCount] = useState(data.bandCount ?? 16);
   const [lowFreq, setLowFreq] = useState(data.lowFreq ?? 100);
   const [highFreq, setHighFreq] = useState(data.highFreq ?? 8000);

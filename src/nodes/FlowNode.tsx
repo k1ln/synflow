@@ -39,8 +39,8 @@ const FlowNode: React.FC<FlowNodeProps> = ({ id, data }) => {
     const [embeddedKnobs, setEmbeddedKnobs] = useState<Array<{ id: string; label: string; min: number; max: number; curve: Curve; value: number }>>([]);
     const [flowQuery, setFlowQuery] = useState('');
     // Remote flows like top bar dialog
-    const [serverFlows, setServerFlows] = useState<any[]>([]);
-    const [publicFlows, setPublicFlows] = useState<any[]>([]);
+    const [serverFlows, _setServerFlows] = useState<any[]>([]);
+    const [publicFlows, _setPublicFlows] = useState<any[]>([]);
     const [loadingRemote, setLoadingRemote] = useState(false);
     // Use global ExplorerDialog instead of small popup
     const [showExplorerDialog, setShowExplorerDialog] = useState(false);

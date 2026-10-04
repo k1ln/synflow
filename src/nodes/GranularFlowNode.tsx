@@ -35,7 +35,7 @@ const GranularFlowNode: React.FC<GranularFlowNodeProps> = ({ data }) => {
   const [pitch, setPitch] = useState(data.pitch ?? 1);
   const [mix, setMix] = useState(data.mix ?? 1);
   const [freeze, setFreeze] = useState<boolean>(!!data.freeze);
-  const [label, setLabel] = useState(data.label ?? "Granular");
+  const [label, _setLabel] = useState(data.label ?? "Granular");
   const [posMidiMapping, setPosMidiMapping] = useState<MidiMapping | null>(data.posMidiMapping ?? null);
   const [pitchMidiMapping, setPitchMidiMapping] = useState<MidiMapping | null>(data.pitchMidiMapping ?? null);
 

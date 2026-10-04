@@ -25,7 +25,7 @@ const DelayFlowNode: React.FC<DelayFlowNodeProps> = ({ data }) => {
     const initial = data.delayTime ?? 500; // default 500ms
     return Math.min(MAX_MS, Math.max(MIN_MS, initial));
   });
-  const [label, setLabel] = useState(data.label ?? "Delay");
+  const [label, _setLabel] = useState(data.label ?? "Delay");
   // Map ms -> knob (0..1) logarithmically
   const msToKnob = (ms: number) => {
     const clamped = Math.min(MAX_MS, Math.max(MIN_MS, ms));

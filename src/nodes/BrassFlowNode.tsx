@@ -50,7 +50,7 @@ const BrassFlowNode: React.FC<BrassFlowNodeProps> = ({ data }) => {
   const [release, setRelease] = useState(data.release ?? 0.1);
   const [vibratoRate, setVibratoRate] = useState(data.vibratoRate ?? 0.5);
   const [vibratoGain, setVibratoGain] = useState(data.vibratoGain ?? 0.0);
-  const [label, setLabel] = useState(data.label ?? "Brass");
+  const [label, _setLabel] = useState(data.label ?? "Brass");
   const [freqMidiMapping, setFreqMidiMapping] = useState<MidiMapping | null>(data.freqMidiMapping ?? null);
   const [tensionMidiMapping, setTensionMidiMapping] = useState<MidiMapping | null>(data.tensionMidiMapping ?? null);
   const [slideMidiMapping, setSlideMidiMapping] = useState<MidiMapping | null>(data.slideMidiMapping ?? null);

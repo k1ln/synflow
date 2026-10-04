@@ -113,6 +113,19 @@ export function HostInterfacePanel({ nodes, setNodes, active, onClose }: {
 
       <div style={head}>Play</div>
       <label style={row}><input type="checkbox" style={chk(!!d.isTrigger)} checked={!!d.isTrigger} onChange={(e) => update({ isTrigger: e.target.checked })} /> Trigger (note on / off)</label>
+      {d.isTrigger && (
+        <div style={{ ...row, marginLeft: 21 }}>
+          <span style={{ color: C.dim }}>into input</span>
+          <input list="host-trigger-handles" value={d.triggerHandle ?? ''} placeholder="main-input"
+            onChange={(e) => update({ triggerHandle: e.target.value.trim() || undefined })}
+            style={{ ...numInput, width: 120 }} />
+          <datalist id="host-trigger-handles">
+            <option value="main-input" />
+            <option value="trigger-input" />
+            {params.map((p) => <option key={p} value={`${p}-input`} />)}
+          </datalist>
+        </div>
+      )}
 
       <div style={head}>Parameters → Knobs</div>
       {params.length === 0 && <div style={{ color: C.dim }}>This node has no numeric parameters.</div>}

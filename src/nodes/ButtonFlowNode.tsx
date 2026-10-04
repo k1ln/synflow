@@ -17,7 +17,7 @@ export type ButtonNodeProps = {
 };
 
 const ButtonFlowNode: React.FC<ButtonNodeProps> = ({ data }) => {
-  const [label, setLabel] = useState(data.label || "Button");
+  const [label, _setLabel] = useState(data.label || "Button");
   const [assignedKey, setAssignedKey] = useState<string | null>(data.assignedKey);
   const [style, setStyle] = useState<React.CSSProperties>(data.style);
   const [oldKey, setOldKey] = useState<string | null>();

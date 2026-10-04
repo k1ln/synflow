@@ -19,7 +19,7 @@ export type ADSRFlowNodeProps = {
 };
 
 const ADSRFlowNode: React.FC<ADSRFlowNodeProps> = ({ data }) => {
-  const [label, setLabel] = useState(data.label || "ADSR");
+  const [label, _setLabel] = useState(data.label || "ADSR");
   const [attackTime, setAttackTime] = useState(data.attackTime || 0.1);
   const [sustainTime, setSustainTime] = useState(data.sustainTime || 0.5);
   const [sustainLevel, setSustainLevel] = useState(data.sustainLevel || 0.7);

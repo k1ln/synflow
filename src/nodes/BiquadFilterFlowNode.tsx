@@ -46,7 +46,7 @@ const BiquadFilterFlowNode: React.FC<BiquadFilterFlowNodeProps> = ({ data }) => 
   const [detune, setDetune] = useState(data.detune);
   const [Q, setQ] = useState(data.Q);
   const [gain, setGain] = useState(data.gain);
-  const [label, setLabel] = useState(data.label);
+  const [label, _setLabel] = useState(data.label);
   const [type, setType] = useState<BiquadFilterType>(data.type);
   const [freqMidiMapping, setFreqMidiMapping] = useState<MidiMapping | null>(null);
   const [detuneMidiMapping, setDetuneMidiMapping] = useState<MidiMapping | null>(null);

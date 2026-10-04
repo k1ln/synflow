@@ -128,7 +128,7 @@ const FMFlowNode: React.FC<FMFlowNodeProps> = ({ data }) => {
   const [release, setRelease] = useState(data.release ?? 0.3);
   const [ratios, setRatios] = useState<number[]>([0, 1, 2, 3, 4, 5].map((i) => (data as any)[`ratio${i}`] ?? 1));
   const [levels, setLevels] = useState<number[]>([0, 1, 2, 3, 4, 5].map((i) => (data as any)[`level${i}`] ?? (i === 0 ? 1 : 0)));
-  const [label, setLabel] = useState(data.label ?? "FM");
+  const [label, _setLabel] = useState(data.label ?? "FM");
   const [fbMidiMapping, setFbMidiMapping] = useState<MidiMapping | null>(data.fbMidiMapping ?? null);
 
   useEffect(() => {

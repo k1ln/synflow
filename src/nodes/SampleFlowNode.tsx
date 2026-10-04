@@ -1782,7 +1782,7 @@ const adjustNumericInput = (
 const SampleFlowNode: React.FC<SampleFlowNodeProps> = ({ data }) => {
   const eventBus = EventBus.getInstance();
   const updateNodeInternals = useUpdateNodeInternals();
-  const [label, setLabel] = useState(data.label || 'Sample');
+  const [label, _setLabel] = useState(data.label || 'Sample');
   const [fileName, setFileName] = useState<string | undefined>(data.fileName);
   const [fileId, setFileId] = useState<string | undefined>(data.fileId);
   const [fileUrl, setFileUrl] = useState<string | undefined>(data.fileUrl);

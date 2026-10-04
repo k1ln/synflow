@@ -19,7 +19,7 @@ const MicFlowNode: React.FC<MicFlowNodeProps> = ({ data }) => {
   const eventBus = EventBus.getInstance();
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | undefined>(data.selectedDeviceId);
-  const [label, setLabel] = useState<string>(data.label || 'Mic');
+  const [label, _setLabel] = useState<string>(data.label || 'Mic');
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 

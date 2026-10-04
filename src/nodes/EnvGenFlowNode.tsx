@@ -29,7 +29,7 @@ const EnvGenFlowNode: React.FC<EnvGenFlowNodeProps> = ({ data }) => {
   const [release, setRelease] = useState(data.release ?? 0.3);
   const [amount, setAmount] = useState(data.amount ?? 1);
   const [bias, setBias] = useState(data.bias ?? 0);
-  const [label, setLabel] = useState(data.label ?? "Env Gen");
+  const [label, _setLabel] = useState(data.label ?? "Env Gen");
   const [amtMidiMapping, setAmtMidiMapping] = useState<MidiMapping | null>(data.amtMidiMapping ?? null);
 
   useEffect(() => {

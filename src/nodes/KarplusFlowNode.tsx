@@ -47,7 +47,7 @@ const KarplusFlowNode: React.FC<KarplusFlowNodeProps> = ({ data }) => {
   const [attack, setAttack] = useState(data.attack ?? 0.15);
   const [scatter, setScatter] = useState(data.scatter ?? 0.3);
   const [muffle, setMuffle] = useState(data.muffle ?? 0.2);
-  const [label, setLabel] = useState(data.label ?? "Karplus");
+  const [label, _setLabel] = useState(data.label ?? "Karplus");
   const [freqMidiMapping, setFreqMidiMapping] = useState<MidiMapping | null>(data.freqMidiMapping ?? null);
   const [decayMidiMapping, setDecayMidiMapping] = useState<MidiMapping | null>(data.decayMidiMapping ?? null);
   const [toneMidiMapping, setToneMidiMapping] = useState<MidiMapping | null>(data.toneMidiMapping ?? null);

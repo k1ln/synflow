@@ -62,11 +62,11 @@ const OscilloscopeFlowNode: React.FC<OscilloscopeFlowNodeProps> = ({
   const nodeId = data.id || reactFlowNodeId || "";
   const { onChange, style } = data;
 
-  const [label, setLabel] = useState(data.label || "Scope");
+  const [label, _setLabel] = useState(data.label || "Scope");
   const [fftSize, setFftSize] = useState(data.fftSize || 4096);
-  const [lineWidth, setLineWidth] = useState(data.lineWidth || 2);
+  const [lineWidth, _setLineWidth] = useState(data.lineWidth || 2);
   const [triggerLevel, setTriggerLevel] = useState(data.triggerLevel ?? 0.0);
-  const [glowIntensity, setGlowIntensity] = useState(data.glowIntensity ?? 8);
+  const [glowIntensity, _setGlowIntensity] = useState(data.glowIntensity ?? 8);
   const [zoom, setZoom] = useState(data.zoom ?? 1.0);
   const [zoomX, setZoomX] = useState(data.zoomX ?? 20);
   const [zoomY, setZoomY] = useState(data.zoomY ?? 1.0);

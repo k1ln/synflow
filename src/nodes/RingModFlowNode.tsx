@@ -17,7 +17,7 @@ export type RingModFlowNodeProps = {
  * Handles: a (top-left), b (bottom-left), output (right).
  */
 const RingModFlowNode: React.FC<RingModFlowNodeProps> = ({ data }) => {
-  const [label, setLabel] = useState(data.label ?? "Ring Mod");
+  const [label, _setLabel] = useState(data.label ?? "Ring Mod");
 
   useEffect(() => {
     if (data.onChange instanceof Function) data.onChange({ ...data, label });

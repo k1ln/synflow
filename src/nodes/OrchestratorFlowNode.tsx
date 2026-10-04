@@ -13,7 +13,7 @@ export interface OrchestratorFlowNodeProps {
 }
 
 const OrchestratorFlowNode: React.FC<OrchestratorFlowNodeProps> = ({ data }) => {
-  const [label, setLabel] = useState(data.label || 'Orchestrator');
+  const [label, _setLabel] = useState(data.label || 'Orchestrator');
   const [orchestratorData, setOrchestratorData] = useState<OrchestratorData>(
     data.orchestrator || DEFAULT_ORCHESTRATOR_DATA
   );

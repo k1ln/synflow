@@ -174,7 +174,7 @@ const GainFlowNode: React.FC<GainFlowNodeProps> = ({ data }) => {
   const flowId = (data as any).flowId || 'default';
   const [gain, setGain] = useState<number>(initialGain);
   const [gainKnob, setGainKnob] = useState<number>(gainToKnob(initialGain));
-  const [label, setLabel] = useState(data.label);
+  const [label, _setLabel] = useState(data.label);
   const [gainMidiMapping, setGainMidiMapping] = useState<MidiMapping | null>(null);
   const [gainInput, setGainInput] = useState<string>(Number.isFinite(initialGain) ? initialGain.toFixed(4) : '');
   useEffect(() => {

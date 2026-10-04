@@ -23,7 +23,7 @@ const ChorusFlowNode: React.FC<ChorusFlowNodeProps> = ({ data }) => {
   const [rate, setRate] = useState(data.rate ?? 0.8);
   const [depth, setDepth] = useState(data.depth ?? 2.5);
   const [mix, setMix] = useState(data.mix ?? 0.5);
-  const [label, setLabel] = useState(data.label ?? "Chorus");
+  const [label, _setLabel] = useState(data.label ?? "Chorus");
   const [rateMidiMapping, setRateMidiMapping] = useState<MidiMapping | null>(data.rateMidiMapping ?? null);
   const [depthMidiMapping, setDepthMidiMapping] = useState<MidiMapping | null>(data.depthMidiMapping ?? null);
   const [mixMidiMapping, setMixMidiMapping] = useState<MidiMapping | null>(data.mixMidiMapping ?? null);

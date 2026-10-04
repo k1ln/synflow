@@ -35,7 +35,7 @@ const UnisonBeginFlowNode: React.FC<UnsisonBeginFlowNodeProps> = ({ data }) => {
   const [msTimeEndDeviation, setMsTimeEndDeviation] = useState<string>(String(data.msTimeEndDeviation ?? 0));
   const [detuneFreqDeviation, setDetuneFreqDeviation] = useState<string>(String(data.detuneFreqDeviation ?? 0));
   const [gainDeviation, setGainDeviation] = useState<string>(String(data.gainDeviation ?? 0));
-  const [label, setLabel] = useState(data.label);
+  const [label, _setLabel] = useState(data.label);
   useEffect(() => {
     if (data.onChange instanceof Function) {
       data.onChange({

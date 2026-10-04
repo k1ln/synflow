@@ -23,7 +23,7 @@ export type MidiButtonNodeProps = {
 };
 
 const MidiButtonFlowNode: React.FC<MidiButtonNodeProps> = ({ data }) => {
-  const [label, setLabel] = useState(data.label || 'MIDI Button');
+  const [label, _setLabel] = useState(data.label || 'MIDI Button');
   const [style, setStyle] = useState<React.CSSProperties>(data.style);
   const [isMidiLearning, setIsMidiLearning] = useState(false);
   const [midiMapping, setMidiMapping] = useState<MidiButtonMapping | null>(data.midiMapping || null);

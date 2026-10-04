@@ -1,5 +1,6 @@
 node_modules
 src/audio
+.DS_Store
 
 # Environment files - NEVER commit these!
 .env
@@ -22,8 +23,8 @@ build/
 *.tsbuildinfo
 packages/*/dist/
 
-# Docker
-.dockerignore
+# Rust build artifacts (wasm crates under src/wasm/*)
+target/
 
 # Logs
 logs/

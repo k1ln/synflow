@@ -22,8 +22,8 @@ const OnOffButtonFlowNode: React.FC<OnOffButtonFlowNodeProps> = ({ data }) => {
   useEffect(() => {
     setIsOn(data.isOn);
   }, [data.isOn]);
-  const [label, setLabel] = useState<string>(data.label || 'Gate');
-  const [style, setStyle] = useState<React.CSSProperties>(data.style || { padding: '10px', border: '1px solid #555', borderRadius: 5, width:110, maxHeight: 70, background: 'transparent', color: '#eee' });
+  const [label, _setLabel] = useState<string>(data.label || 'Gate');
+  const [style, _setStyle] = useState<React.CSSProperties>(data.style || { padding: '10px', border: '1px solid #555', borderRadius: 5, width:110, maxHeight: 70, background: 'transparent', color: '#eee' });
 
   const nodeStyle: React.CSSProperties = {
     ...style,

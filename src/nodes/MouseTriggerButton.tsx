@@ -26,7 +26,7 @@ const DEFAULT_STYLE: React.CSSProperties = {
 
 const MouseTriggerButton: React.FC<MouseTriggerButtonProps> = ({ data }) => {
   const eventBus = EventBus.getInstance();
-  const [style, setStyle] = useState<React.CSSProperties>({ ...DEFAULT_STYLE, ...(data.style||{}) });
+  const [style, _setStyle] = useState<React.CSSProperties>({ ...DEFAULT_STYLE, ...(data.style||{}) });
   const [active, setActive] = useState(false);
 
   useEffect(()=>{ data.onChange?.({ ...data, style }); }, [style]);

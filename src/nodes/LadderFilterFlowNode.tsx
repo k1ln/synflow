@@ -41,7 +41,7 @@ const LadderFilterFlowNode: React.FC<LadderFilterFlowNodeProps> = ({ data }) => 
   const [resonance, setResonance] = useState(data.resonance ?? 0.3);
   const [drive, setDrive] = useState(data.drive ?? 1);
   const [poles, setPoles] = useState<number>(data.poles ?? 4);
-  const [label, setLabel] = useState(data.label ?? "Ladder");
+  const [label, _setLabel] = useState(data.label ?? "Ladder");
   const [cutoffMidiMapping, setCutoffMidiMapping] = useState<MidiMapping | null>(data.cutoffMidiMapping ?? null);
   const [resoMidiMapping, setResoMidiMapping] = useState<MidiMapping | null>(data.resoMidiMapping ?? null);
   const [driveMidiMapping, setDriveMidiMapping] = useState<MidiMapping | null>(data.driveMidiMapping ?? null);

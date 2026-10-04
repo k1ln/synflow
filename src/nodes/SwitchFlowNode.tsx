@@ -17,7 +17,7 @@ const SwitchFlowNode: React.FC<SwitchFlowNodeProps> = ({ data }) => {
   const [numOutputsInput, setNumOutputsInput] = useState(
     String(data.numOutputs || 2)
   );
-  const [activeOutput, setActiveOutput] = useState(data.activeOutput || 0);
+  const [activeOutput, _setActiveOutput] = useState(data.activeOutput || 0);
   const [debouncedActiveOutput, setDebouncedActiveOutput] = useState(activeOutput); // Debounced state
   const eventBus = useMemo(() => EventBus.getInstance(), []);
   const updateNodeInternals = useUpdateNodeInternals();

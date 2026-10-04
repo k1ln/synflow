@@ -65,7 +65,7 @@ const driveMultiplierToKnob = (driveAmount: number): number => {
 const DistortionFlowNode: React.FC<DistortionFlowNodeProps> = ({ data }) => {
   const [curve, setCurve] = useState(data.curve || "");
   const [oversample, setOversample] = useState<OverSampleType>(data.oversample || "none");
-  const [label, setLabel] = useState(data.label || "Distortion");
+  const [label, _setLabel] = useState(data.label || "Distortion");
   const [preset, setPreset] = useState(data.preset || "Soft Clip");
   const [formula, setFormula] = useState(data.formula || "Math.tanh(x*3)");
   const initialDriveKnob = (() => {

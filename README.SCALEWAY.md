@@ -5,7 +5,7 @@ This guide covers deploying Synflow to Scaleway Object Storage with HTTPS suppor
 ## 📋 Table of Contents
 
 1. [Prerequisites](#prerequisites)
-2. [Infrastructure Setup with Terraform](#infrastructure-setup-with-terraform)
+2. [Bucket Setup](#bucket-setup)
 3. [GitHub Actions Configuration](#github-actions-configuration)
 4. [Custom Domain Setup](#custom-domain-setup)
 5. [Deployment](#deployment)
@@ -19,7 +19,6 @@ This guide covers deploying Synflow to Scaleway Object Storage with HTTPS suppor
 
 - **Scaleway Account**: Sign up at [scaleway.com](https://www.scaleway.com)
 - **GitHub Account**: For repository and Actions
-- **Terraform**: Install from [terraform.io](https://www.terraform.io/downloads)
 - **AWS CLI**: Required for S3 sync (Scaleway is S3-compatible)
 
 ### Install AWS CLI
@@ -39,7 +38,10 @@ aws --version
 
 ---
 
-## Infrastructure Setup with Terraform
+## Bucket Setup
+
+The `.github/workflows/deploy-scaleway.yml` workflow only syncs `dist/` into an
+existing bucket — it does not create the bucket. Provision it once, manually:
 
 ### Step 1: Get Scaleway API Credentials
 
@@ -48,67 +50,19 @@ aws --version
 3. Click **Generate API Key**
 4. Save the **Access Key** and **Secret Key** (you won't see the secret again!)
 
-### Step 2: Configure Terraform Variables
+### Step 2: Create the Object Storage bucket
 
-Create a `terraform.tfvars` file (not committed to git):
+In the [Scaleway Console](https://console.scaleway.com) under **Object Storage**:
 
-```bash
-cd terraform
-```
+1. Create a bucket (e.g. `synflow-prod`) in your chosen region (e.g. `fr-par`)
+2. Enable **Website hosting** on the bucket, with:
+   - Index document: `index.html`
+   - Error document: `index.html` (needed for SPA routing on refresh)
+3. Set the bucket's visibility/policy to allow public read access
+4. Note the website endpoint shown, e.g. `synflow-prod.s3-website.fr-par.scw.cloud`
 
-Create `terraform.tfvars`:
-
-```hcl
-region      = "fr-par"           # Options: fr-par (Paris), nl-ams (Amsterdam), pl-waw (Warsaw)
-zone        = "fr-par-1"
-bucket_name = "synflow-prod"     # Must be globally unique
-environment = "production"
-```
-
-### Step 3: Set Scaleway Credentials
-
-```bash
-export SCW_ACCESS_KEY="your-access-key"
-export SCW_SECRET_KEY="your-secret-key"
-export SCW_DEFAULT_ORGANIZATION_ID="your-org-id"  # Found in Scaleway console
-export SCW_DEFAULT_PROJECT_ID="your-project-id"   # Found in Scaleway console
-```
-
-Or create `~/.scwrc`:
-
-```ini
-[default]
-access_key = your-access-key
-secret_key = your-secret-key
-default_organization_id = your-org-id
-default_project_id = your-project-id
-default_region = fr-par
-default_zone = fr-par-1
-```
-
-### Step 4: Initialize and Apply Terraform
-
-```bash
-cd terraform
-
-# Initialize Terraform
-terraform init
-
-# Preview changes
-terraform plan
-
-# Create infrastructure
-terraform apply
-
-# Save outputs
-terraform output
-```
-
-**Important Outputs:**
-- `bucket_name`: Your bucket name
-- `website_endpoint`: HTTP endpoint
-- `website_endpoint_https`: HTTPS endpoint
-- `bucket_region`: Region code
+Equivalently, via the [Scaleway CLI](https://github.com/scaleway/scaleway-cli) or
+`aws s3api` pointed at the Scaleway S3-compatible endpoint.
 
 ---
 
@@ -155,7 +109,7 @@ git push origin main
 
 You'll use **CNAME records** to point your domain to the Scaleway bucket.
 
-1. **Get your bucket website endpoint** (from Terraform output):
+1. **Get your bucket website endpoint** (from the bucket's Website hosting settings):
    ```
    synflow-prod.s3-website.fr-par.scw.cloud
    ```
@@ -230,11 +184,7 @@ However, for custom domains with HTTPS, you need a CDN/proxy:
 
 ### Initial Deployment
 
-1. **Deploy infrastructure:**
-   ```bash
-   cd terraform
-   terraform apply
-   ```
+1. **Ensure the bucket exists** (see [Bucket Setup](#bucket-setup) above).
 
 2. **Commit and push with `/prod`:**
    ```bash
@@ -293,15 +243,12 @@ aws s3 sync dist/ s3://synflow-prod/ \
 
 #### 1. **403 Forbidden when accessing bucket**
 
-**Solution**: Check bucket policy and ACL
-```bash
-cd terraform
-terraform apply  # Reapply to ensure policies are set
-```
+**Solution**: Check the bucket's public-read policy and website hosting settings
+in the Scaleway Console.
 
 #### 2. **CORS errors in browser**
 
-**Solution**: Verify CORS configuration in Terraform or add manually:
+**Solution**: Add a CORS configuration to the bucket:
 ```bash
 aws s3api put-bucket-cors \
   --bucket synflow-prod \
@@ -339,12 +286,8 @@ aws s3 ls s3://synflow-prod/ \
 
 #### 4. **SPA routing not working (404 on refresh)**
 
-**Solution**: Ensure error document is set to `index.html` in Terraform:
-```hcl
-error_document {
-  key = "index.html"
-}
-```
+**Solution**: Ensure the bucket's Website hosting error document is set to
+`index.html` (see [Bucket Setup](#bucket-setup)).
 
 #### 5. **Custom domain not resolving**
 
@@ -379,7 +322,6 @@ Scaleway Object Storage pricing (as of 2024):
 ## Additional Resources
 
 - [Scaleway Object Storage Docs](https://www.scaleway.com/en/docs/storage/object/)
-- [Terraform Scaleway Provider](https://registry.terraform.io/providers/scaleway/scaleway/latest/docs)
 - [AWS CLI S3 Commands](https://docs.aws.amazon.com/cli/latest/reference/s3/)
 
 ---

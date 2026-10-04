@@ -44,7 +44,7 @@ const AutomationFlowNode: React.FC<AutomationFlowNodeProps> = ({ data }) => {
   const [points, setPoints] = useState<AutomationPoint[]>((data.points && data.points.length) ? data.points : DEFAULT_POINTS);
   // Keep a ref with latest points so pointer event handlers (installed once) always see current data
   const pointsRef = useRef<AutomationPoint[]>(points);
-  const [style, setStyle] = useState<React.CSSProperties>(data.style);
+  const [style, _setStyle] = useState<React.CSSProperties>(data.style);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const dragIndexRef = useRef<number | null>(null);
   const isMouseDownRef = useRef(false);

@@ -28,7 +28,7 @@ const MIN_DECAY = 0.01;
 const MAX_DECAY = 100;
 
 const ReverbFlowNode: React.FC<ReverbFlowNodeProps> = ({ data }) => {
-  const [label, setLabel] = useState(() => data.label ?? "Reverb");
+  const [label, _setLabel] = useState(() => data.label ?? "Reverb");
   const [seconds, setSeconds] = useState(() => {
     const initial = data.seconds ?? 3;
     return clamp(initial, MIN_SECONDS, MAX_SECONDS);

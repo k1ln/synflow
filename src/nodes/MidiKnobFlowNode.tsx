@@ -51,7 +51,7 @@ const MidiKnobFlowNode: React.FC<MidiKnobFlowNodeProps> = ({ id, data }) => {
   const [maxText, setMaxText] = useState<string>(String(max));
     const [curve, setCurve] = useState<CurveType>(data.curve || 'linear');
     const [value, setValue] = useState<number>(typeof data.value === 'number' ? data.value : 0);
-    const [midiMapping, setMidiMapping] = useState<MidiKnobMapping>(data.midiMapping ?? null);
+    const [midiMapping, _setMidiMapping] = useState<MidiKnobMapping>(data.midiMapping ?? null);
     const [controlsOpen, setControlsOpen] = useState<boolean>(data.controlsOpen ?? false);
     const [snapEnabled, setSnapEnabled] = useState<boolean>(data.snapEnabled ?? false);
     const [snapStep, setSnapStep] = useState<number>(typeof data.snapStep === 'number' && data.snapStep > 0 ? data.snapStep : 0.25);

@@ -32,7 +32,7 @@ export type AudioWorkletOscillatorFlowNodeProps = {
 const AudioWorkletOscillatorFlowNode: React.FC<AudioWorkletOscillatorFlowNodeProps> = ({ data }) => {
   const [frequency, setFrequency] = useState(data.frequency || 440);
   const [detune, setDetune] = useState(data.detune || 0);
-  const [label, setLabel] = useState(data.label || "AW Oscillator");
+  const [label, _setLabel] = useState(data.label || "AW Oscillator");
   const [waveform, setWaveform] = useState<OscillatorType>(data.type || "sine");
   const [oscFrequencyType, setOscFrequencyType] = useState<FrequencyType>(data.frequencyType);
   const [knobValue, setKnobValue] = useState(data.knobValue || 0);
