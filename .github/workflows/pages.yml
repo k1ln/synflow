@@ -6,7 +6,6 @@ name: Deploy site (GitHub Pages)
 on:
   push:
     branches: [main]
-    paths: ['site/**', 'scripts/build-flow-gallery.mjs', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -20,6 +19,9 @@ concurrency:
 
 jobs:
   deploy:
+    # Same gate as deploy-scaleway.yml: only a commit whose message contains '/prod'
+    # (or a manual run) publishes the site.
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '/prod')
     runs-on: ubuntu-latest
     environment:
       name: github-pages
