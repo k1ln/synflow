@@ -1,0 +1,12 @@
+# Only used if you deploy to Cloudflare instead of Scaleway.
+name = "synflow-publish"
+main = "cloudflare.mjs"
+compatibility_date = "2024-11-01"
+
+[vars]
+GITHUB_OWNER = "k1ln"
+GITHUB_REPO = "synflow"
+PUBLIC_URL = "https://synflow-publish.<your-subdomain>.workers.dev"
+OAUTH_CLIENT_ID = "<github oauth app client id>"
+PAGES_URL = "https://k1ln.github.io/synflow"
+# Secrets (wrangler secret put …): GITHUB_TOKEN, OAUTH_CLIENT_SECRET, SESSION_SECRET

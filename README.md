@@ -18,7 +18,7 @@
   <img src="public/synflow_new_image.png" alt="Synflow Screenshot" width="800" />
 </p>
 
-Visit at https://synflow.org
+Visit at https://synflow.org · Gallery & docs: https://k1ln.github.io/synflow/ · Share your own flows with the **Publish to GitHub** button (setup: [publish-proxy/](publish-proxy/README.md)).
 
 
 Synflow is a browser-based, node-graph workstation for building interactive audio, MIDI, and control flows. It combines a modular synth feel with a visual editor powered by @xyflow/react, React 19, and the Web Audio API. Patch oscillators, filters, FX, MIDI utilities, and flow-event processors together to prototype ideas fast—entirely in the browser.

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Save, Upload, Download, FolderOpen, Plus, Settings, HardDriveDownload, FilePlus, FileInput, FileOutput, Play, Square, MoreHorizontal, Music, BookOpen, Github, Youtube, HelpCircle, Shield, Trash2, SlidersHorizontal, LayoutDashboard } from 'lucide-react';
+import { Save, Upload, Download, FolderOpen, Plus, Settings, HardDriveDownload, FilePlus, FileInput, FileOutput, Play, Square, MoreHorizontal, Music, BookOpen, Github, Youtube, HelpCircle, Shield, Trash2, SlidersHorizontal, LayoutDashboard, CloudUpload } from 'lucide-react';
 
 export interface TopBarProps {
   // Left cluster (sidebar-related)
@@ -13,6 +13,8 @@ export interface TopBarProps {
   onSaveAsFlow?: () => void;
   onExportFlowJson?: () => void;
   onExportAllJson?: () => void;
+  // Publish the open flow to the public gallery (opens a review issue on GitHub).
+  onPublish?: () => void;
   onImportFlowJsonClick?: () => void;
   onImportAllJsonClick?: () => void;
   onInitAudio?: () => void;
@@ -84,6 +86,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onSaveAsFlow, 
   onExportFlowJson, 
   onExportAllJson, 
+  onPublish,
   onImportFlowJsonClick, 
   onImportAllJsonClick, 
   onInitAudio,
@@ -289,6 +292,8 @@ export const TopBar: React.FC<TopBarProps> = ({
 
           {/* Save & Publish (flow) */}
           {onSaveFlow && <IconBtn title="Save Flow" onClick={onSaveFlow}><Save size={18} /></IconBtn>}
+          {/* Publish to the public gallery on GitHub (needs an open flow) */}
+          {onPublish && showCurrent && currentItemType === 'flow' && <IconBtn title="Publish to GitHub gallery" onClick={onPublish}><CloudUpload size={18} /></IconBtn>}
           {/* Save As (flow) only when not a component */}
           {onSaveAsFlow && currentItemType !== 'component' && <IconBtn title="Save Flow As" onClick={onSaveAsFlow}><HardDriveDownload size={18} /></IconBtn>}
           {/* Delete current flow */}

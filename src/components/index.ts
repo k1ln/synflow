@@ -20,6 +20,7 @@ export * from './NodePaletteDialog';
 export { default as NodePaletteDialog } from './NodePaletteDialog';
 export { default as ImpressumDialog } from './ImpressumDialog';
 export { default as DatenschutzDialog } from './DatenschutzDialog';
+export { default as PublishDialog } from './PublishDialog';
 export * from './TopBar';
 export { default as MiniPlayer } from './MiniPlayer';
 export { default as AudioExplorer } from './AudioExplorer';

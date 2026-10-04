@@ -38,6 +38,21 @@ function defaultMax(v: number): number {
   return 1;                                     // 0..1 params (sustain, gain…)
 }
 
+// Known enum params → their full choice list, so an option button offers every choice
+// (e.g. all oscillator waveforms) instead of only the node's current value.
+// Looked up by `<NodeType>.<param>` first, then by bare param name.
+const OPTION_PRESETS: Record<string, string[]> = {
+  'OscillatorFlowNode.type': ['sine', 'square', 'sawtooth', 'triangle', 'custom'],
+  'BiquadFilterFlowNode.filterType': ['lowpass', 'highpass', 'bandpass', 'lowshelf', 'highshelf', 'peaking', 'notch', 'allpass'],
+  filterType: ['lowpass', 'highpass', 'bandpass', 'lowshelf', 'highshelf', 'peaking', 'notch', 'allpass'],
+  oversample: ['none', '2x', '4x'],
+};
+const presetChoices = (nodeType: string | undefined, param: string): string[] | undefined =>
+  OPTION_PRESETS[`${nodeType}.${param}`] ?? OPTION_PRESETS[param];
+
+// Nodes whose note input isn't `main-input` (flow-event freq shifters listen on `trigger-input`).
+const DEFAULT_TRIGGER_HANDLE: Record<string, string> = { FlowEventFreqShifterFlowNode: 'trigger-input' };
+
 const C = { accent: '#6ee7a8', panel: '#0c0f16', border: '#26324a', ink: '#cdd6e6', dim: '#7c8aa3' };
 
 /** Small ✕ close button, shown only when the panel is a toggled overlay (standalone editor). */
@@ -88,12 +103,17 @@ export function HostInterfacePanel({ nodes, setNodes, active, onClose }: {
   const options: HostOption[] = Array.isArray(d.options) ? d.options : [];
   const isOption = (p: string) => options.some((o) => o.param === p);
   const toggleOption = (p: string) => {
-    update({ options: isOption(p) ? options.filter((o) => o.param !== p) : [...options, { param: p, label: p, choices: [String(d[p])] }] });
+    update({ options: isOption(p) ? options.filter((o) => o.param !== p) : [...options, { param: p, label: p, choices: presetChoices(sel.type, p) ?? [String(d[p])] }] });
   };
   const setOption = (p: string, field: keyof HostOption, value: any) =>
     update({ options: options.map((o) => (o.param === p ? { ...o, [field]: value } : o)) });
 
   const params = numericParams(d);
+  // Inputs this node can be triggered through (always includes the current value, so a
+  // stale/custom handle stays visible and can be switched away from).
+  const triggerHandles = Array.from(new Set([
+    'main-input', 'trigger-input', ...params.map((p) => `${p}-input`), ...(d.triggerHandle ? [d.triggerHandle] : []),
+  ]));
   const optParams = stringParams(d);
   const title = d.label || sel.type || sel.id;
 
@@ -112,18 +132,15 @@ export function HostInterfacePanel({ nodes, setNodes, active, onClose }: {
       <label style={row}><input type="checkbox" style={chk(!!d.isOutput)} checked={!!d.isOutput} onChange={(e) => update({ isOutput: e.target.checked })} /> Main Out (audio output)</label>
 
       <div style={head}>Play</div>
-      <label style={row}><input type="checkbox" style={chk(!!d.isTrigger)} checked={!!d.isTrigger} onChange={(e) => update({ isTrigger: e.target.checked })} /> Trigger (note on / off)</label>
+      <label style={row}><input type="checkbox" style={chk(!!d.isTrigger)} checked={!!d.isTrigger} onChange={(e) => update(e.target.checked ? { isTrigger: true, ...(DEFAULT_TRIGGER_HANDLE[sel.type] ? { triggerHandle: DEFAULT_TRIGGER_HANDLE[sel.type] } : {}) } : { isTrigger: false })} /> Trigger (note on / off)</label>
       {d.isTrigger && (
         <div style={{ ...row, marginLeft: 21 }}>
           <span style={{ color: C.dim }}>into input</span>
-          <input list="host-trigger-handles" value={d.triggerHandle ?? ''} placeholder="main-input"
-            onChange={(e) => update({ triggerHandle: e.target.value.trim() || undefined })}
-            style={{ ...numInput, width: 120 }} />
-          <datalist id="host-trigger-handles">
-            <option value="main-input" />
-            <option value="trigger-input" />
-            {params.map((p) => <option key={p} value={`${p}-input`} />)}
-          </datalist>
+          <select value={d.triggerHandle ?? ''} onChange={(e) => update({ triggerHandle: e.target.value || undefined })}
+            style={{ ...numInput, width: 140 }}>
+            <option value="">main-input (default)</option>
+            {triggerHandles.filter((h) => h !== 'main-input').map((h) => <option key={h} value={h}>{h}</option>)}
+          </select>
         </div>
       )}
 
@@ -167,6 +184,11 @@ export function HostInterfacePanel({ nodes, setNodes, active, onClose }: {
             {on && o && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, margin: '4px 0 2px 21px' }}>
                 <input value={o.label} onChange={(e) => setOption(p, 'label', e.target.value)} placeholder="label" style={{ ...numInput, width: 116 }} />
+                {presetChoices(sel.type, p) && o.choices.join() !== presetChoices(sel.type, p)!.join() && (
+                  <button onClick={() => setOption(p, 'choices', presetChoices(sel.type, p)!)}
+                    style={{ alignSelf: 'flex-start', fontSize: 10, padding: '2px 6px', borderRadius: 4, cursor: 'pointer', border: `1px solid ${C.border}`, background: 'transparent', color: C.accent }}>
+                    use all choices ({presetChoices(sel.type, p)!.length})</button>
+                )}
                 <input value={o.choices.join(', ')} onChange={(e) => setOption(p, 'choices', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))}
                   placeholder="choices (comma-separated)" style={{ ...numInput, width: 196 }} />
               </div>

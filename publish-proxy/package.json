@@ -1,0 +1,8 @@
+{
+  "name": "synflow-publish-proxy",
+  "private": true,
+  "type": "module",
+  "description": "Turns the editor's Publish button into a reviewable GitHub issue, with per-account rate limiting.",
+  "engines": { "node": ">=20" },
+  "scripts": { "start": "node node-server.mjs" }
+}

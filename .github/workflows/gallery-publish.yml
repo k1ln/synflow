@@ -1,0 +1,82 @@
+# Publish a flow to the public gallery once a maintainer approves its request issue.
+#
+#   editor "Publish to GitHub" → publish proxy → issue "Publish: …" (label publish-request)
+#   you read it, then add the `approved` label  →  this workflow commits the flow to
+#   site/gallery/, redeploys Pages and closes the issue.
+#
+# Only people with triage access can add labels, so the label *is* the approval. The issue
+# body/comments are untrusted data: scripts/publish-from-issue.mjs re-validates them and never
+# passes them to a shell.
+name: Publish approved gallery flow
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write   # commit the flow to main
+  issues: write     # comment + close
+  actions: write    # dispatch the Pages deploy (pushes made with GITHUB_TOKEN don't trigger workflows)
+
+# One at a time, so two approvals can't race on the push to main.
+concurrency:
+  group: gallery-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.event.label.name == 'approved' &&
+      github.event.issue.state == 'open' &&
+      contains(github.event.issue.labels.*.name, 'publish-request')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate the submission and add it to the gallery
+        id: build
+        run: node scripts/publish-from-issue.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit to main
+        env:
+          SLUG: ${{ steps.build.outputs.slug }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/gallery
+          git commit -m "gallery: publish ${SLUG} (#${ISSUE})"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep 3
+          done
+          exit 1
+
+      - name: Redeploy the site and close the issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLUG: ${{ steps.build.outputs.slug }}
+          ISSUE: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh workflow run pages.yml --ref main
+          OWNER="${REPO%%/*}"; NAME="${REPO##*/}"
+          gh issue comment "$ISSUE" --body "✅ Published — it will be live in a minute at https://${OWNER}.github.io/${NAME}/gallery/#${SLUG}"
+          gh issue close "$ISSUE" --reason completed
+
+      - name: Report a failed publish
+        if: failure() && steps.build.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue comment "$ISSUE" --body "❌ Publishing failed after validation (probably the push to main). See ${RUN_URL}"
+          gh issue edit "$ISSUE" --remove-label approved

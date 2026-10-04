@@ -39,7 +39,7 @@ import {
   loadFlowFromDisk,
   makeFlowDbKey,
 } from './util';
-import { ImpressumDialog, DatenschutzDialog, TopBar, MiniPlayer, AudioExplorer, InstrumentLiveUI, CustomUiEditor } from './components';
+import { ImpressumDialog, DatenschutzDialog, PublishDialog, TopBar, MiniPlayer, AudioExplorer, InstrumentLiveUI, CustomUiEditor } from './components';
 import { OrchestratorDialog } from './nodes';
 import DocsPlayground from './docs';
 import { DawEditorBridge, isDawEditMode, isPluginWebview, HostInterfacePanel, flowKnobs, flowKind } from './host';
@@ -930,6 +930,9 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
   const [saveDialogFolder, setSaveDialogFolder] = useState("");
   const [saveDialogIsNewFlow, setSaveDialogIsNewFlow] = useState(false);
   const [impressumOpen, setImpressumOpen] = useState(false);
+  // "Publish to GitHub" (public gallery) dialog
+  const [publishOpen, setPublishOpen] = useState(false);
+  const getFlowForPublish = useCallback(() => ({ nodes: nodesRef.current, edges: edgesRef.current, customUi: customUiRef.current }), []);
   const [datenschutzOpen, setDatenschutzOpen] = useState(false);
 
   // --- Recordings Panel & Storage (File System + fallback IndexedDB) ---------
@@ -2471,7 +2474,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
     <div className={`flow-root${dawEdit ? ' flow-root--daw' : ''}`} onContextMenu={handleRootContextMenu}>
       {/* DAW bridge: when opened by Mothscilla (#mothscilla), load the incoming flow + show "Send to Mothscilla". No-op otherwise. */}
       <DawEditorBridge nodes={nodes} edges={edges} setNodes={setNodes as any} setEdges={setEdges as any}
-        customUi={customUi} onCustomUi={setCustomUi} />
+        customUi={customUi} onCustomUi={setCustomUi} attachNodeHandlers={addOnchangeToNodes} />
       {/* Host interface editor (edit mode only): expose audio I/O, trigger, pitch + knobs to Mothscilla. */}
       <HostInterfacePanel nodes={nodes} setNodes={setNodes as any} active={dawEdit || exposeOpen}
         onClose={dawEdit ? undefined : () => setExposeOpen(false)} />
@@ -2532,6 +2535,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
         onSaveFlow={triggerSave}
         onExportFlowJson={exportFlowAsJSON}
         onExportAllJson={exportAllAsJSON}
+        onPublish={() => setPublishOpen(true)}
         onImportFlowJsonClick={handleImportFlowJsonClick}
         onImportAllJsonClick={handleImportAllJsonClick}
         onInitAudio={handleInitAudio}
@@ -2588,6 +2592,7 @@ function Flow({ engineFactory = createDefaultEngine }: { engineFactory?: FlowEng
       {/* Legal dialogs */}
       <ImpressumDialog open={impressumOpen} onOpenChange={setImpressumOpen} />
       <DatenschutzDialog open={datenschutzOpen} onOpenChange={setDatenschutzOpen} />
+      <PublishDialog open={publishOpen} onOpenChange={setPublishOpen} flowName={flowNameInput || ''} getFlow={getFlowForPublish} />
       <NodePaletteDialog open={nodePaletteOpen} onOpenChange={setNodePaletteOpen} nodeTypes={nodeTypes} onSelect={handlePaletteSelect} />
       {/* Audio Folder Selection Prompt (File System Access) */}
       {fsSupported && showFsFolderPrompt && (

@@ -14,3 +14,4 @@ export * from './flowKnobs';
 export * from './browserFlowLoader';
 export * from './browserAssetStore';
 export * from './vstaiGallery';
+export * from './publishToGallery';

@@ -15,6 +15,7 @@
       <a class="logo" href="./" style="text-decoration:none">SYNFLOW</a>
       <a class="link" href="#features">FEATURES</a>
       <a class="link" href="gallery/">GALLERY</a>
+      <a class="link" href="#publish">PUBLISH</a>
       <a class="link" href="https://github.com/k1ln/synflow">GITHUB</a>
       <a class="btn primary small" href="https://synflow.org">OPEN EDITOR</a>
     </div>
@@ -49,17 +50,23 @@
     <section class="block" id="gallery">
       <div class="wrap">
         <h2>Public flow gallery</h2>
-        <p class="sub">Open a community patch, see its graph, and load it into the editor with one click. Every flow is plain JSON — download it, remix it, publish your own.</p>
+        <p class="sub">Open a community patch, see its graph, and load it into the editor with one click. Every flow is plain JSON — download it, remix it, <a href="#publish">publish your own</a>.</p>
         <div class="grid" id="teaser"></div>
         <p style="margin-top:28px"><a class="btn" href="gallery/">SEE ALL FLOWS →</a></p>
       </div>
     </section>
 
-    <section class="block">
+    <section class="block" id="publish">
       <div class="wrap">
-        <h2>Share your own</h2>
-        <p class="sub">Add a flow to the gallery with a pull request: <code>node scripts/build-flow-gallery.mjs publish my-flow.json --name "My Flow" --desc "…"</code> bundles its sub-flows and regenerates the catalogue. See the <a href="https://github.com/k1ln/synflow/blob/main/site/README.md">gallery guide</a>.</p>
-        <span class="tag soon">In development</span> <span class="sub" style="color:var(--ink-3);font-size:13px;margin-left:8px">Native VST3/AU plugin that renders flows outside the browser.</span>
+        <h2>Publish your own</h2>
+        <p class="sub">Built something worth hearing? Send it to the gallery straight from the editor — no fork, no pull request.</p>
+        <div class="grid">
+          <div class="feature" style="--c:var(--cat-source)"><h3>1 · Click publish</h3><p>Open your flow in <a href="https://synflow.org">the editor</a> and press the cloud-upload button in the top bar. Name it, describe it, add a few tags.</p></div>
+          <div class="feature" style="--c:var(--cat-gain)"><h3>2 · Sign in with GitHub</h3><p>So the gallery can credit you. Synflow only reads your public profile, and your flow is filed as an issue on the <a href="https://github.com/k1ln/synflow/issues?q=label%3Apublish-request">Synflow repository</a>.</p></div>
+          <div class="feature" style="--c:var(--cat-mod)"><h3>3 · It gets reviewed</h3><p>A maintainer looks at every flow — especially ones with script or worklet nodes. Once approved it shows up here within a minute, with your name on it.</p></div>
+        </div>
+        <p class="sub" style="margin-top:22px;font-size:14px">To keep the gallery clean you need a GitHub account at least a week old and can publish a few flows per day. Flows are shared under the MIT license. Prefer the command line? <code>node scripts/build-flow-gallery.mjs publish my-flow.json</code> still works for pull requests — see the <a href="https://github.com/k1ln/synflow/blob/main/site/README.md">gallery guide</a>.</p>
+        <p style="margin-top:20px"><span class="tag soon">In development</span> <span class="sub" style="color:var(--ink-3);font-size:13px;margin-left:8px">Native VST3/AU plugin that renders flows outside the browser.</span></p>
       </div>
     </section>
   </main>

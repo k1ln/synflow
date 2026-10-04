@@ -7,7 +7,7 @@
  *       every flow in site/gallery/data/*.json.
  *
  *   node scripts/build-flow-gallery.mjs publish <flow.json> [--name "Title"] [--desc "…"]
- *                                       [--tags a,b] [--author "Name"] [--search <dir>]…
+ *                                       [--tags a,b] [--author "Name"] [--slug file-name] [--search <dir>]…
  *       Add a flow to the gallery: copies it to site/gallery/data/<slug>.json, bundles
  *       any sub-flows (FlowNode → selectedNode) found by name in the --search folders
  *       (default: flow-examples), then rebuilds the catalogue.
@@ -21,8 +21,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const DATA = path.join(ROOT, 'site', 'gallery', 'data');
-const SHOTS = path.join(ROOT, 'site', 'gallery', 'shots');
+const GALLERY = process.env.SYNFLOW_GALLERY_DIR || path.join(ROOT, 'site', 'gallery');   // override: tests
+const DATA = path.join(GALLERY, 'data');
+const SHOTS = path.join(GALLERY, 'shots');
 
 const slugify = (s) => String(s).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'flow';
 const shortType = (t) => String(t || 'Node').replace(/FlowNode$|Node$/, '') || 'Node';
@@ -165,10 +166,12 @@ async function publish(argv) {
     nodes: doc.nodes, edges: doc.edges,
     ...(typeof doc.customUi === 'string' && doc.customUi ? { customUi: doc.customUi } : {}),
   };
-  const deps = await bundleDeps(doc, dirs);
+  // Sub-flows already carried by the document (e.g. a submission from the editor) win;
+  // anything else is looked up by name in the search folders.
+  const deps = await bundleDeps(doc, dirs, { ...(doc.dependencies || {}) });
   if (Object.keys(deps).length) out.dependencies = deps;
   await fs.mkdir(DATA, { recursive: true });
-  const slug = slugify(name);
+  const slug = opt.slug ? slugify(opt.slug) : slugify(name);
   await fs.writeFile(path.join(DATA, `${slug}.json`), JSON.stringify(out));
   console.log(`published "${name}" → site/gallery/data/${slug}.json`);
 }

@@ -12,7 +12,7 @@
 //
 // In any normal editor session (no host / no hash / no JUCE) this renders nothing
 // and attaches no listeners, so it has zero effect on standalone web use.
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 // We don't know the DAW's origin up front; the DAW verifies `event.source`, and
 // the payload is only flow JSON, so '*' is acceptable here.
@@ -70,7 +70,15 @@ export function isDawEditMode(): boolean {
 
 type AnyArr = any[];
 
-export function DawEditorBridge({ nodes, edges, setNodes, setEdges, customUi, onCustomUi }: {
+// Edits are pushed to the DAW automatically (Mothscilla owns the saving). Wait for
+// the user to pause before sending, since each save rebuilds the DAW's engines.
+const AUTOSEND_DEBOUNCE_MS = 800;
+// UI-only fields that change without the flow itself changing.
+const VOLATILE_KEYS = new Set(['selected', 'dragging', 'resizing', 'measured']);
+const flowSignature = (nodes: AnyArr, edges: AnyArr, customUi?: string) =>
+  JSON.stringify({ nodes, edges, customUi }, (k, v) => (VOLATILE_KEYS.has(k) ? undefined : v));
+
+export function DawEditorBridge({ nodes, edges, setNodes, setEdges, customUi, onCustomUi, attachNodeHandlers }: {
   nodes: AnyArr;
   edges: AnyArr;
   setNodes: (n: AnyArr) => void;
@@ -79,9 +87,21 @@ export function DawEditorBridge({ nodes, edges, setNodes, setEdges, customUi, on
   // load, sent back on save, so it round-trips and survives editing in Synflow.
   customUi?: string;
   onCustomUi?: (html: string) => void;
+  // Wires editor behaviour onto freshly loaded nodes (node.data.onChange, which
+  // nodes like ADSR call to report their edits). Without it, edits to such nodes
+  // never reach node.data — so they aren't sent to the DAW or applied live.
+  attachNodeHandlers?: (nodes: AnyArr) => void;
 }) {
   const host = bridgeHost();
   const active = !!host;
+  // Signature of the last flow exchanged with the DAW (loaded from it or sent to it).
+  // null = a load just happened and the next settled state becomes the baseline.
+  const lastSigRef = useRef<string | null>(null);
+  const [sentAt, setSentAt] = useState(0);
+  const latest = useRef({ nodes, edges, customUi });
+  latest.current = { nodes, edges, customUi };
+  const attachRef = useRef(attachNodeHandlers);
+  attachRef.current = attachNodeHandlers;
 
   // Native plugin webview: no postMessage host — the flow arrives via JUCE
   // initialisationData. Load it into the canvas once on mount. (Mothscilla's
@@ -94,6 +114,7 @@ export function DawEditorBridge({ nodes, edges, setNodes, setEdges, customUi, on
       ...n,
       position: n.position ?? { x: 80 + i * 240, y: 120 + (i % 2) * 130 },
     }));
+    attachRef.current?.(incoming);
     setNodes(incoming);
     setEdges(flow.edges);
     if (flow.customUi != null) onCustomUi?.(flow.customUi);
@@ -112,9 +133,11 @@ export function DawEditorBridge({ nodes, edges, setNodes, setEdges, customUi, on
         ...n,
         position: n.position ?? { x: 80 + i * 240, y: 120 + (i % 2) * 130 },
       }));
+      attachRef.current?.(incoming);
       setNodes(incoming);
       setEdges(d.flow.edges ?? []);
       onCustomUi?.(typeof d.flow.customUi === 'string' ? d.flow.customUi : '');
+      lastSigRef.current = null; // don't echo the freshly loaded flow back as an "edit"
       try { host.postMessage({ type: 'mothscilla:loaded' }, TARGET); } catch { /* noop */ }
     };
     window.addEventListener('message', onMessage);
@@ -122,17 +145,40 @@ export function DawEditorBridge({ nodes, edges, setNodes, setEdges, customUi, on
     return () => window.removeEventListener('message', onMessage);
   }, [host, setNodes, setEdges, onCustomUi]);
 
-  if (!active) return null;
-
   const send = () => {
-    const flow = JSON.parse(JSON.stringify({ nodes, edges, ...(customUi ? { customUi } : {}) }));
+    const { nodes: n, edges: e, customUi: ui } = latest.current;
+    const flow = JSON.parse(JSON.stringify({ nodes: n, edges: e, ...(ui ? { customUi: ui } : {}) }));
     try { host!.postMessage({ type: 'mothscilla:save', flow }, TARGET); } catch { /* noop */ }
+    lastSigRef.current = flowSignature(n, e, ui);
+    setSentAt(Date.now());
   };
+
+  // Auto-send: after the user pauses, push the flow to the DAW if it really changed.
+  useEffect(() => {
+    if (!host) return;
+    const t = window.setTimeout(() => {
+      const { nodes: n, edges: e, customUi: ui } = latest.current;
+      if (!n.length) return; // nothing loaded yet
+      const sig = flowSignature(n, e, ui);
+      if (lastSigRef.current === null) { lastSigRef.current = sig; return; } // baseline after load
+      if (sig !== lastSigRef.current) send();
+    }, AUTOSEND_DEBOUNCE_MS);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [host, nodes, edges, customUi]);
+
+  useEffect(() => {
+    if (!sentAt) return;
+    const t = window.setTimeout(() => setSentAt(0), 1800);
+    return () => window.clearTimeout(t);
+  }, [sentAt]);
+
+  if (!active) return null;
 
   return (
     <button
       onClick={send}
-      title="Send the edited flow back to Mothscilla"
+      title="Changes are sent to Mothscilla automatically — click to send immediately"
       style={{
         position: 'fixed', top: 12, right: 12, zIndex: 99999,
         background: 'linear-gradient(180deg,#1c3a2a,#142a1f)', color: '#6ee7a8',
@@ -141,7 +187,7 @@ export function DawEditorBridge({ nodes, edges, setNodes, setEdges, customUi, on
         boxShadow: '0 2px 12px rgba(0,0,0,.5), 0 0 16px rgba(110,231,168,.25)',
       }}
     >
-      ⇪ Send to Mothscilla
+      {sentAt ? '✓ Synced to Mothscilla' : '⇪ Send now'}
     </button>
   );
 }
